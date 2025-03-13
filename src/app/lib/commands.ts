@@ -91,14 +91,21 @@ export class CreateMeshCommand implements Command {
 // Command for deleting objects
 export class DeleteMeshCommand implements Command {
   private isVisible: boolean;
+  private gizmoManager: BABYLON.GizmoManager | null;
 
-  constructor(private mesh: BABYLON.Mesh) {
+  constructor(private mesh: BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
     this.isVisible = mesh.isEnabled();
+    this.gizmoManager = gizmoManager;
   }
 
   public execute(): void {
     // Hide the mesh rather than actually deleting it
     this.mesh.setEnabled(false);
+    
+    // Detach gizmo if this mesh was selected
+    if (this.gizmoManager && this.gizmoManager.gizmos.positionGizmo?.attachedMesh === this.mesh) {
+      this.gizmoManager.attachToMesh(null);
+    }
   }
 
   public undo(): void {

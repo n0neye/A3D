@@ -46,7 +46,6 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
       
       // Only update if the attached mesh has changed
       if (attachedMesh !== currentAttachedMesh) {
-        // Use type assertion to handle the nullable type
         currentAttachedMesh = attachedMesh as BABYLON.AbstractMesh | null;
         
         if (attachedMesh) {
@@ -78,15 +77,29 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
     };
   }, [scene, gizmoManager, objects]);
 
+  useEffect(() => {
+    if (!scene) return;
+    
+    // Setup observer for when meshes are removed
+    const disposedObserver = scene.onMeshRemovedObservable.add(() => {
+      updateObjectsList();
+    });
+    
+    return () => {
+      scene.onMeshRemovedObservable.remove(disposedObserver);
+    };
+  }, [scene]);
+
   const updateObjectsList = () => {
     if (!scene) return;
 
     const meshes = scene.meshes.filter(mesh => 
-      // Exclude any utility meshes or internal BabylonJS objects
+      // Exclude any utility meshes, internal BabylonJS objects, or disabled meshes
       !mesh.name.startsWith("__") && 
       mesh.name !== "BackgroundSkybox" &&
       !(mesh instanceof BABYLON.InstancedMesh) &&
-      !(mesh.name.includes("gizmo"))
+      !(mesh.name.includes("gizmo")) &&
+      mesh.isEnabled() // Only include enabled meshes
     );
 
     const objectsList = meshes.map(mesh => ({

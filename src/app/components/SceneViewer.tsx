@@ -241,10 +241,16 @@ export default function SceneViewer() {
   // Function to delete an object with history
   const deleteObject = (mesh: BABYLON.Mesh) => {
     // Create a command for this action
-    const command = new DeleteMeshCommand(mesh);
+    const command = new DeleteMeshCommand(mesh, gizmoManagerRef.current);
     
     // Execute the command and add to history
     historyManagerRef.current.executeCommand(command);
+    
+    // Force update the objects list
+    if (sceneState) {
+      // Trigger a custom event that ObjectsPanel can listen for
+      sceneState.onNewMeshAddedObservable.notifyObservers(null);
+    }
   };
 
   return (
