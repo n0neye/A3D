@@ -7,6 +7,48 @@ interface PreviewPanelProps {
   renderEngine: RenderEngine | null;
 }
 
+type ModelType = 'fal-turbo' | 'fal-lcm' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm';
+
+interface AIModel {
+  id: ModelType;
+  name: string;
+  description: string;
+}
+
+// Model definitions with descriptions
+const availableModels: AIModel[] = [
+  {
+    id: 'fal-turbo',
+    name: 'Fal Turbo',
+    description: 'Fast general-purpose image-to-image model with good quality'
+  },
+  {
+    id: 'fal-lcm',
+    name: 'Fal LCM',
+    description: 'Very fast Latent Consistency Model, fewer steps needed'
+  },
+  {
+    id: 'flux-dev',
+    name: 'Flux Dev',
+    description: 'Experimental Flux model with creative results'
+  },
+  {
+    id: 'flux-pro-depth',
+    name: 'Flux Pro Depth',
+    description: 'Uses depth information to create dramatic depth effects'
+  },
+  {
+    id: 'flux-lora-depth',
+    name: 'Flux LoRA Depth',
+    description: 'Uses LoRA fine-tuning with depth maps for targeted style transformations'
+  },
+  {
+    id: 'replicate-lcm',
+    name: 'Replicate LCM',
+    description: 'Alternative LCM implementation via Replicate API'
+  }
+];
+
 const PreviewPanel: React.FC<PreviewPanelProps> = ({ 
   renderEngine,
 }) => {
@@ -14,11 +56,12 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string>('a brutalism architecture in the forest, photorealistic');
-  const [strength, setStrength] = useState<number>(0.9); // Default to 0.7 strength
+  const [promptStrength, setPromptStrength] = useState<number>(0.9); // Default to 0.7 strength
   const previewImageRef = useRef<HTMLImageElement | null>(null);
   const [debugImage, setDebugImage] = useState<string | null>(null);
   const [noiseStrength, setNoiseStrength] = useState<number>(0.6); // Default to 0 (no noise)
   const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [model, setModel] = useState<ModelType>('fal-turbo');
 
   const generateDebugImage = async () => {
     if (!renderEngine) return;
@@ -71,11 +114,12 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
       // Start measuring time
       const startTime = Date.now();
       
-      // Call the fal.ai API for image-to-image generation
+      // Call the API with the selected model
       const result = await generatePreviewImage({
         imageUrl: imageBlob,
         prompt: prompt,
-        strength: strength,
+        promptStrength: promptStrength,
+        model: model,
       });
       
       // Calculate execution time
@@ -149,16 +193,16 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
         {/* Strength slider */}
         <div className="w-full mb-4">
           <div className="flex justify-between items-center">
-            <label className="block text-sm text-gray-400 mb-1">Strength: {strength.toFixed(2)}</label>
-            <span className="text-xs text-gray-500">{strength < 0.4 ? 'More accurate' : strength > 0.7 ? 'More creative' : 'Balanced'}</span>
+            <label className="block text-sm text-gray-400 mb-1">PromptStrength: {promptStrength.toFixed(2)}</label>
+            <span className="text-xs text-gray-500">{promptStrength < 0.4 ? 'More accurate' : promptStrength > 0.7 ? 'More creative' : 'Balanced'}</span>
           </div>
           <input
             type="range"
             min="0.1"
             max="1"
             step="0.05"
-            value={strength}
-            onChange={(e) => setStrength(parseFloat(e.target.value))}
+            value={promptStrength}
+            onChange={(e) => setPromptStrength(parseFloat(e.target.value))}
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -210,6 +254,29 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
             </div>
           </div>
         )}
+        
+        {/* Model selection */}
+        <div className="w-full mb-4">
+          <label className="block text-sm text-gray-400 mb-1">Model</label>
+          <div className="grid grid-cols-2 gap-2">
+            {availableModels.map((aiModel) => (
+              <button
+                key={aiModel.id}
+                onClick={() => setModel(aiModel.id)}
+                className={`py-2 px-3 text-sm rounded-md ${
+                  model === aiModel.id
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {aiModel.name}
+              </button>
+            ))}
+          </div>
+          <div className="mt-1 text-xs text-gray-400">
+            {availableModels.find(m => m.id === model)?.description}
+          </div>
+        </div>
         
         {/* Action buttons */}
         <div className="flex gap-2 w-full">

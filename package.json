@@ -13,9 +13,11 @@
     "@babylonjs/loaders": "^7.52.3",
     "@fal-ai/client": "^1.2.3",
     "@fal-ai/server-proxy": "^1.1.1",
+    "install": "^0.13.0",
     "next": "15.2.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "replicate": "^1.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
