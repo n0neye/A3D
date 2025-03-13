@@ -6,6 +6,8 @@ import { GizmoManager } from '@babylonjs/core/Gizmos/gizmoManager';
 import { RenderEngine } from '../lib/renderEngine';
 import ShapesPanel from './ShapesPanel';
 import ObjectsPanel from './ObjectsPanel';
+import { HistoryManager, Command } from './HistoryManager';
+import { TransformCommand, CreateMeshCommand, DeleteMeshCommand } from '../lib/commands';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -30,6 +32,9 @@ export default function SceneViewer() {
   const renderEngineRef = useRef<RenderEngine | null>(null);
   const previewImageRef = useRef<HTMLImageElement | null>(null);
   const gizmoManagerRef = useRef<BABYLON.GizmoManager | null>(null);
+  const historyManagerRef = useRef<HistoryManager>(new HistoryManager());
+  const activeTranformCommandRef = useRef<TransformCommand | null>(null);
+  const lastAttachedMeshRef = useRef<BABYLON.AbstractMesh | null>(null);
   
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [sceneState, setSceneState] = useState<BABYLON.Scene | null>(null);
@@ -96,6 +101,32 @@ export default function SceneViewer() {
         }
       }, BABYLON.PointerEventTypes.POINTERPICK);
       
+      // Add these observers for transform events
+      scene.onBeforeRenderObservable.add(() => {
+        // Get the attached mesh, which could be undefined or null
+        const attachedMesh = gizmoManager.gizmos.positionGizmo?.attachedMesh;
+        
+        // Only proceed if we have a mesh and it's different from the last one
+        if (attachedMesh && attachedMesh !== lastAttachedMeshRef.current) {
+          // Type assertion to tell TypeScript this is a Mesh
+          const mesh = attachedMesh as BABYLON.Mesh;
+          lastAttachedMeshRef.current = mesh;
+          startTransform(mesh);
+        }
+      });
+
+      gizmoManager.gizmos.positionGizmo?.onDragEndObservable.add(() => {
+        endTransform();
+      });
+
+      gizmoManager.gizmos.rotationGizmo?.onDragEndObservable.add(() => {
+        endTransform();
+      });
+
+      gizmoManager.gizmos.scaleGizmo?.onDragEndObservable.add(() => {
+        endTransform();
+      });
+      
       return scene;
     };
     
@@ -131,6 +162,40 @@ export default function SceneViewer() {
     };
   }, []);
   
+  useEffect(() => {
+    if (!sceneState) return;
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for key combinations
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+        // Ctrl+Z (or Cmd+Z on Mac) = Undo
+        event.preventDefault();
+        if (event.shiftKey) {
+          // Ctrl+Shift+Z = Redo
+          historyManagerRef.current.redo();
+        } else {
+          // Ctrl+Z = Undo
+          historyManagerRef.current.undo();
+        }
+      } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+        // Ctrl+Y = Redo
+        event.preventDefault();
+        historyManagerRef.current.redo();
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        // Delete/Backspace = Delete selected object
+        const activeMesh = gizmoManagerState?.gizmos.positionGizmo?.attachedMesh as BABYLON.Mesh;
+        if (activeMesh && sceneState) {
+          deleteObject(activeMesh);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [sceneState, gizmoManagerState]);
+  
   const handleTakePreview = () => {
     if (!renderEngineRef.current) return;
     
@@ -142,6 +207,46 @@ export default function SceneViewer() {
     }
   };
 
+  // Function to handle object transform start
+  const startTransform = (mesh: BABYLON.Mesh) => {
+    // Create a new transform command
+    const command = new TransformCommand(mesh);
+    activeTranformCommandRef.current = command;
+  };
+  
+  // Function to handle object transform end
+  const endTransform = () => {
+    if (activeTranformCommandRef.current) {
+      // Update the final state and add to history
+      activeTranformCommandRef.current.updateFinalState();
+      historyManagerRef.current.executeCommand(activeTranformCommandRef.current);
+      activeTranformCommandRef.current = null;
+    }
+  };
+  
+  // Function to add a new object with history
+  const addObject = (createFn: () => BABYLON.Mesh) => {
+    if (!sceneState) return null;
+    
+    // Create a command for this action
+    const command = new CreateMeshCommand(createFn, sceneState);
+    
+    // Execute the command and add to history
+    historyManagerRef.current.executeCommand(command);
+    
+    // Return the created mesh
+    return command.getMesh();
+  };
+  
+  // Function to delete an object with history
+  const deleteObject = (mesh: BABYLON.Mesh) => {
+    // Create a command for this action
+    const command = new DeleteMeshCommand(mesh);
+    
+    // Execute the command and add to history
+    historyManagerRef.current.executeCommand(command);
+  };
+
   return (
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200">
       <div className="flex h-full">
@@ -149,9 +254,17 @@ export default function SceneViewer() {
         <div className="w-64 bg-gray-800 p-4 overflow-y-auto border-r border-gray-700">
           <h2 className="text-xl font-bold mb-6 text-white">3D Editor</h2>
           
-          <ShapesPanel scene={sceneState} gizmoManager={gizmoManagerState} />
+          <ShapesPanel 
+            scene={sceneState} 
+            gizmoManager={gizmoManagerState} 
+            onCreateObject={addObject}
+          />
           
-          <ObjectsPanel scene={sceneState} gizmoManager={gizmoManagerState} />
+          <ObjectsPanel 
+            scene={sceneState} 
+            gizmoManager={gizmoManagerState} 
+            onDeleteObject={deleteObject}
+          />
           
           <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg mt-4">
             <h3 className="text-lg font-medium mb-3 text-white">Render Controls</h3>
@@ -235,6 +348,18 @@ export default function SceneViewer() {
           </div>
         </div>
       )}
+
+      {/* Add a status bar at the bottom of your UI to show available shortcuts */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-2 text-xs text-gray-400 flex justify-between">
+        <div>
+          <span className="mr-4">⌘Z / Ctrl+Z: Undo</span>
+          <span className="mr-4">⌘⇧Z / Ctrl+Y: Redo</span>
+          <span>Delete: Remove selected object</span>
+        </div>
+        <div>
+          Press G to toggle gizmo modes
+        </div>
+      </div>
     </div>
   );
 } 

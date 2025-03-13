@@ -4,6 +4,7 @@ import * as BABYLON from '@babylonjs/core';
 interface ObjectsPanelProps {
   scene: BABYLON.Scene | null;
   gizmoManager: BABYLON.GizmoManager | null;
+  onDeleteObject?: (mesh: BABYLON.Mesh) => void;
 }
 
 interface SceneObjectDisplay {
@@ -13,7 +14,7 @@ interface SceneObjectDisplay {
   mesh: BABYLON.Mesh;
 }
 
-const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager }) => {
+const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDeleteObject }) => {
   const [objects, setObjects] = useState<SceneObjectDisplay[]>([]);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
 
@@ -45,7 +46,8 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager }) => {
       
       // Only update if the attached mesh has changed
       if (attachedMesh !== currentAttachedMesh) {
-        currentAttachedMesh = attachedMesh;
+        // Use type assertion to handle the nullable type
+        currentAttachedMesh = attachedMesh as BABYLON.AbstractMesh | null;
         
         if (attachedMesh) {
           // Find the object in our list that matches this mesh
@@ -129,8 +131,13 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager }) => {
 
     const objToDelete = objects.find(obj => obj.id === objectId);
     if (objToDelete) {
-      // Remove mesh from scene
-      objToDelete.mesh.dispose();
+      // Use the provided delete function if available
+      if (onDeleteObject) {
+        onDeleteObject(objToDelete.mesh);
+      } else {
+        // Fallback to direct disposal
+        objToDelete.mesh.dispose();
+      }
       
       // Update the list
       updateObjectsList();

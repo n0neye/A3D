@@ -4,44 +4,46 @@ import * as BABYLON from '@babylonjs/core';
 interface ShapesPanelProps {
   scene: BABYLON.Scene | null;
   gizmoManager: BABYLON.GizmoManager | null;
+  onCreateObject?: (createFn: () => BABYLON.Mesh) => BABYLON.Mesh | null;
 }
 
-const ShapesPanel: React.FC<ShapesPanelProps> = ({ scene, gizmoManager }) => {
+const ShapesPanel: React.FC<ShapesPanelProps> = ({ scene, gizmoManager, onCreateObject }) => {
   const addShape = (shapeType: string) => {
     console.log("Trying to add shape:", scene, gizmoManager);
     if (!scene || !gizmoManager) return;
 
     console.log("Adding shape:", shapeType);
 
-    let mesh: BABYLON.Mesh | null = null;
-    
-    // Create the selected shape type
-    switch (shapeType) {
-      case 'box':
-        mesh = BABYLON.MeshBuilder.CreateBox(`box-${Date.now()}`, { size: 1 }, scene);
-        break;
-      case 'sphere':
-        mesh = BABYLON.MeshBuilder.CreateSphere(`sphere-${Date.now()}`, { diameter: 1 }, scene);
-        break;
-      case 'cylinder':
-        mesh = BABYLON.MeshBuilder.CreateCylinder(`cylinder-${Date.now()}`, { height: 1, diameter: 1 }, scene);
-        break;
-      case 'cone':
-        mesh = BABYLON.MeshBuilder.CreateCylinder(`cone-${Date.now()}`, { height: 1, diameterTop: 0, diameterBottom: 1 }, scene);
-        break;
-      case 'torus':
-        mesh = BABYLON.MeshBuilder.CreateTorus(`torus-${Date.now()}`, { diameter: 1, thickness: 0.3 }, scene);
-        break;
-      case 'plane':
-        mesh = BABYLON.MeshBuilder.CreatePlane(`plane-${Date.now()}`, { width: 1, height: 1 }, scene);
-        break;
-    }
-    
-    if (mesh) {
-      // Randomize position slightly to avoid exact overlapping when adding multiple objects
-      mesh.position.x = (Math.random() - 0.5) * 2;
+    const createMeshFn = (): BABYLON.Mesh => {
+      let mesh: BABYLON.Mesh;
       
-      // Create and assign a random colored material
+      // Create the selected shape type
+      switch (shapeType) {
+        case 'box':
+          mesh = BABYLON.MeshBuilder.CreateBox(`box-${Date.now()}`, { size: 1 }, scene);
+          break;
+        case 'sphere':
+          mesh = BABYLON.MeshBuilder.CreateSphere(`sphere-${Date.now()}`, { diameter: 1 }, scene);
+          break;
+        case 'cylinder':
+          mesh = BABYLON.MeshBuilder.CreateCylinder(`cylinder-${Date.now()}`, { height: 1, diameter: 1 }, scene);
+          break;
+        case 'cone':
+          mesh = BABYLON.MeshBuilder.CreateCylinder(`cone-${Date.now()}`, { height: 1, diameterTop: 0, diameterBottom: 1 }, scene);
+          break;
+        case 'torus':
+          mesh = BABYLON.MeshBuilder.CreateTorus(`torus-${Date.now()}`, { diameter: 1, thickness: 0.3 }, scene);
+          break;
+        case 'plane':
+          mesh = BABYLON.MeshBuilder.CreatePlane(`plane-${Date.now()}`, { width: 1, height: 1 }, scene);
+          break;
+        default:
+          // Default to box if somehow no valid type was provided
+          mesh = BABYLON.MeshBuilder.CreateBox(`box-${Date.now()}`, { size: 1 }, scene);
+      }
+      
+      // Apply material and position
+      mesh.position.x = (Math.random() - 0.5) * 2;
       const material = new BABYLON.StandardMaterial(`${shapeType}-material-${Date.now()}`, scene);
       material.diffuseColor = new BABYLON.Color3(
         Math.random() * 0.8 + 0.2,
@@ -50,8 +52,20 @@ const ShapesPanel: React.FC<ShapesPanelProps> = ({ scene, gizmoManager }) => {
       );
       mesh.material = material;
       
-      // Update the gizmo to attach to this new mesh
-      gizmoManager.attachToMesh(mesh);
+      return mesh;
+    };
+
+    // Use the provided create function if available
+    let newMesh: BABYLON.Mesh | null = null;
+    if (onCreateObject) {
+      newMesh = onCreateObject(createMeshFn);
+    } else {
+      newMesh = createMeshFn();
+    }
+    
+    // Update the gizmo to attach to this new mesh
+    if (newMesh) {
+      gizmoManager.attachToMesh(newMesh);
     }
   };
 
