@@ -5,6 +5,7 @@ import * as BABYLON from '@babylonjs/core';
 import { GizmoManager } from '@babylonjs/core/Gizmos/gizmoManager';
 import { RenderEngine } from '../lib/renderEngine';
 import ShapesPanel from './ShapesPanel';
+import ObjectsPanel from './ObjectsPanel';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -81,6 +82,20 @@ export default function SceneViewer() {
       // Store gizmo manager in ref
       gizmoManagerRef.current = gizmoManager;
       
+      // Add mesh selection via pointer click
+      scene.onPointerObservable.add((pointerInfo) => {
+        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
+          const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
+          
+          // If we clicked on a mesh that's not a gizmo or utility object
+          if (pickedMesh && 
+              !pickedMesh.name.includes("gizmo") && 
+              !pickedMesh.name.startsWith("__")) {
+            gizmoManager.attachToMesh(pickedMesh as BABYLON.Mesh);
+          }
+        }
+      }, BABYLON.PointerEventTypes.POINTERPICK);
+      
       return scene;
     };
     
@@ -135,6 +150,8 @@ export default function SceneViewer() {
           <h2 className="text-xl font-bold mb-6 text-white">3D Editor</h2>
           
           <ShapesPanel scene={sceneState} gizmoManager={gizmoManagerState} />
+          
+          <ObjectsPanel scene={sceneState} gizmoManager={gizmoManagerState} />
           
           <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg mt-4">
             <h3 className="text-lg font-medium mb-3 text-white">Render Controls</h3>
