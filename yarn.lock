@@ -12,6 +12,11 @@
   resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-7.52.3.tgz#52aa17b4b76f278655726146cbaf2a29e11df04c"
   integrity sha512-YXZy+tgLoajDr4FslDxeBewvdulhj8N2O4RgSnyntujzagGDHa8srbj1O5ehIyqH4COMX93bCpzQmXfWr36o6g==
 
+"@babylonjs/loaders@^7.52.3":
+  version "7.52.3"
+  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-7.52.3.tgz#94dc027a003d6a43f3a172beeddb785971696c0b"
+  integrity sha512-ZSgsqLKKTLjRBpEPX1etflSiiseC7VuzBvODErFTi1BwZh2TiG/iQ4ho0bBYbW4l2djFXDdlM8e9SDPrQFPrOA==
+
 "@emnapi/runtime@^1.2.0":
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/@emnapi/runtime/-/runtime-1.3.1.tgz#0fcaa575afc31f455fd33534c19381cfce6c6f60"

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
+import { GizmoManager } from '@babylonjs/core/Gizmos/gizmoManager';
 import { RenderEngine } from '../lib/renderEngine';
 
 // Mock AIService implementation for testing
@@ -62,10 +63,14 @@ export default function SceneViewer() {
       boxMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.6, 0.9);
       box.material = boxMaterial;
       
-      // Animation
-      scene.registerBeforeRender(() => {
-        box.rotation.y += 0.01;
-      });
+      // Add gizmo manager for transformations
+      const gizmoManager = new BABYLON.GizmoManager(scene);
+      gizmoManager.positionGizmoEnabled = true;
+      gizmoManager.rotationGizmoEnabled = true;
+      gizmoManager.scaleGizmoEnabled = true;
+      gizmoManager.attachableMeshes = [box];
+      gizmoManager.usePointerToAttachGizmos = false;
+      gizmoManager.attachToMesh(box);
       
       return scene;
     };
@@ -144,7 +149,7 @@ export default function SceneViewer() {
               }],
               lighting: {
                 lights: [{
-                  type: "hemispheric",
+                  type: "hemispheric" as "hemispheric",
                   intensity: 0.7,
                   position: { x: 0, y: 1, z: 0 },
                   color: { r: 1, g: 1, b: 1 }
