@@ -128,14 +128,16 @@ export default function SceneViewer() {
   };
 
   return (
-    <div className="flex flex-col w-full">
-      <div className="flex gap-4">
+    <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200">
+      <div className="flex h-full">
         {/* Left panel for shapes and controls */}
-        <div className="w-64">
+        <div className="w-64 bg-gray-800 p-4 overflow-y-auto border-r border-gray-700">
+          <h2 className="text-xl font-bold mb-6 text-white">3D Editor</h2>
+          
           <ShapesPanel scene={sceneState} gizmoManager={gizmoManagerState} />
           
-          <div className="p-4 bg-white rounded-lg shadow-md">
-            <h3 className="text-lg font-medium mb-3">Render Controls</h3>
+          <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg mt-4">
+            <h3 className="text-lg font-medium mb-3 text-white">Render Controls</h3>
             <div className="flex flex-col gap-2">
               <button 
                 onClick={handleTakePreview}
@@ -189,23 +191,31 @@ export default function SceneViewer() {
           </div>
         </div>
         
-        {/* Main 3D canvas */}
-        <div className="flex-1">
-          <div className="relative w-full h-[500px] border border-gray-400 rounded-lg overflow-hidden">
-            <canvas ref={canvasRef} className="w-full h-full" />
-          </div>
+        {/* Main 3D canvas - make it fill the remaining space */}
+        <div className="flex-1 relative">
+          <canvas ref={canvasRef} className="w-full h-full" />
         </div>
       </div>
       
-      {/* Preview section */}
+      {/* Preview section as a modal/overlay when active */}
       {previewUrl && (
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-2">Preview Image</h3>
-          <img 
-            src={previewUrl} 
-            alt="Scene Preview" 
-            className="max-w-full border border-gray-300 rounded-md"
-          />
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10 p-8">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-2xl max-w-3xl w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-medium text-white">Preview Image</h3>
+              <button 
+                onClick={() => setPreviewUrl(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <img 
+              src={previewUrl} 
+              alt="Scene Preview" 
+              className="max-w-full border border-gray-600 rounded-md"
+            />
+          </div>
         </div>
       )}
     </div>
