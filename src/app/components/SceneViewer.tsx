@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { GizmoManager } from '@babylonjs/core/Gizmos/gizmoManager';
 import { RenderEngine } from '../lib/renderEngine';
 import ShapesPanel from './ShapesPanel';
 import ObjectsPanel from './ObjectsPanel';
@@ -58,6 +57,19 @@ export default function SceneViewer() {
         new BABYLON.Vector3(0, 0, 0), 
         scene
       );
+
+      // Reduce zoom sensitivity - higher number = slower zoom
+      camera.wheelPrecision = 40; // Default is around 0.3
+
+      // Optional: Also adjust other camera control properties for better UX
+      camera.panningSensibility = 1000; // Make panning less sensitive
+      camera.angularSensibilityX = 500; // Make rotation less sensitive
+      camera.angularSensibilityY = 500;
+
+      // Set zoom limits to prevent zooming too far in or out
+      camera.lowerRadiusLimit = 1; // Can't zoom closer than this
+      camera.upperRadiusLimit = 20; // Can't zoom farther than this
+
       camera.attachControl(canvasRef.current, true);
       
       // Light
