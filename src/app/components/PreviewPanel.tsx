@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { RenderEngine } from '../lib/renderEngine';
 import { generatePreviewImage, dataURLtoBlob } from '../util/image-api';
-import { addNoiseToImage } from '../util/image-processing';
+import { addNoiseToImage, resizeImage } from '../util/image-processing';
 
 interface PreviewPanelProps {
   renderEngine: RenderEngine | null;
@@ -62,8 +62,11 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
       // Update the debug image with the processed image
       setDebugImage(processedImage);
       
-      // Convert the processed image to blob for API
-      const imageBlob = dataURLtoBlob(processedImage);
+      // Resize the image to 512x512 before sending to API
+      const resizedImage = await resizeImage(processedImage, 512, 512);
+      
+      // Convert the resized image to blob for API
+      const imageBlob = dataURLtoBlob(resizedImage);
       
       // Start measuring time
       const startTime = Date.now();
@@ -72,7 +75,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
       const result = await generatePreviewImage({
         imageUrl: imageBlob,
         prompt: prompt,
-        strength: strength, // The API strength parameter
+        strength: strength,
       });
       
       // Calculate execution time
