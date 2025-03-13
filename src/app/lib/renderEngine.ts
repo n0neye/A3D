@@ -1,4 +1,4 @@
-import { Scene, Engine } from '@babylonjs/core';
+import { Scene, Engine, Tools } from '@babylonjs/core';
 
 // Define interfaces for the service and data structures
 export interface AIService {
@@ -100,19 +100,22 @@ export class RenderEngine {
     this.aiService = aiService;
   }
 
-  // Quick preview render using BabylonJS native renderer
-  generatePreview(): HTMLImageElement | null {
-    // Trigger a render
+  // Alternative screenshot method using Babylon's built-in Tools
+  async generateScreenshot(): Promise<string> {
+    if (!this.scene || !this.scene.activeCamera) {
+      throw new Error("Scene not available");
+    }
+    
+    // Force a render
     this.scene.render();
     
-    // Get the canvas and convert to image
-    const canvas = this.scene.getEngine().getRenderingCanvas();
-    if (canvas) {
-      const img = new Image();
-      img.src = canvas.toDataURL();
-      return img;
-    }
-    return null;
+    // Use Babylon's built-in screenshot functionality
+    var result = await Tools.CreateScreenshotAsync(
+      this.scene.getEngine(),
+      this.scene.activeCamera,
+      { precision: 1 }
+    );
+    return result;
   }
 
   // Queue high-quality render using AI service

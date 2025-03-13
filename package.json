@@ -11,6 +11,8 @@
   "dependencies": {
     "@babylonjs/core": "^7.52.3",
     "@babylonjs/loaders": "^7.52.3",
+    "@fal-ai/client": "^1.2.3",
+    "@fal-ai/server-proxy": "^1.1.1",
     "next": "15.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
