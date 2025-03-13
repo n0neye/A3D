@@ -164,21 +164,12 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
   };
 
   return (
-    <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg mb-4">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-medium text-white">Objects</h3>
-        <button 
-          onClick={updateObjectsList}
-          className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded"
-        >
-          Refresh
-        </button>
-      </div>
+    <div className="p-4 bg-black rounded-lg border border-gray-700 shadow-lg mb-4">
       
       {objects.length === 0 ? (
         <div className="text-gray-400 italic text-sm">No objects in scene</div>
       ) : (
-        <div className="max-h-[200px] overflow-y-auto pr-1">
+        <div className="max-h-96 overflow-y-auto pr-1">
           {objects.map(obj => (
             <div 
               key={obj.id}

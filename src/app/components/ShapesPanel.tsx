@@ -70,7 +70,7 @@ const ShapesPanel: React.FC<ShapesPanelProps> = ({ scene, gizmoManager, onCreate
   };
 
   return (
-    <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg mb-4">
+    <div className="p-4 bg-black rounded-lg border border-gray-700 shadow-lg mb-4">
       <h3 className="text-lg font-medium mb-3 text-white">Add Shapes</h3>
       <div className="grid grid-cols-2 gap-2">
         <button 

@@ -246,7 +246,7 @@ export default function SceneViewer() {
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200">
       <div className="flex h-full">
         {/* Left panel for shapes and controls */}
-        <div className="w-64 bg-gray-800 p-4 overflow-y-auto border-r border-gray-700">
+        <div className="w-64 bg-black bg-opacity-80 p-4 overflow-y-auto border-r border-gray-700">
           <h2 className="text-xl font-bold mb-6 text-white">3D Editor</h2>
           
           <ShapesPanel 
@@ -260,52 +260,6 @@ export default function SceneViewer() {
             gizmoManager={gizmoManagerState} 
             onDeleteObject={deleteObject}
           />
-          
-          <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg mt-4">
-            <h3 className="text-lg font-medium mb-3 text-white">Render Controls</h3>
-            
-            <button 
-              onClick={() => {
-                if (!renderEngineRef.current || !sceneRef.current) return;
-                
-                // Create a scene data representation for AI rendering
-                const sceneData = {
-                  objects: [{
-                    id: "box1",
-                    type: "box",
-                    position: { x: 0, y: 0, z: 0 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    scale: { x: 1, y: 1, z: 1 },
-                    material: {
-                      type: "standard",
-                      color: { r: 0.4, g: 0.6, b: 0.9 }
-                    }
-                  }],
-                  lighting: {
-                    lights: [{
-                      type: "hemispheric" as "hemispheric",
-                      intensity: 0.7,
-                      position: { x: 0, y: 1, z: 0 },
-                      color: { r: 1, g: 1, b: 1 }
-                    }]
-                  },
-                  camera: {
-                    position: { x: 0, y: 0, z: -3 },
-                    target: { x: 0, y: 0, z: 0 },
-                    fov: 0.8
-                  }
-                };
-                
-                renderEngineRef.current.queueHighQualityRender(
-                  sceneData,
-                  { width: 512, height: 512, quality: 'high' }
-                );
-              }}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Render with AI
-            </button>
-          </div>
         </div>
         
         {/* Main 3D canvas - make it fill the main area */}
@@ -314,12 +268,11 @@ export default function SceneViewer() {
         </div>
         
         {/* Right panel for preview */}
-        <div className="w-80 bg-gray-800 p-4 overflow-y-auto border-l border-gray-700">
+        <div className="w-80 bg-black bg-opacity-80 p-4 overflow-y-auto border-l border-gray-700">
           <h2 className="text-xl font-bold mb-6 text-white">Preview</h2>
           
           <PreviewPanel
             renderEngine={renderEngineRef.current}
-            standalone={true}
           />
         </div>
       </div>

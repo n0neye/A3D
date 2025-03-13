@@ -22,17 +22,39 @@ interface ImageToImageResult {
 }
 
 // Image to image generation using fal.ai's fast-lcm-diffusion model
-export async function generateImageVariation(params: ImageToImageParams): Promise<ImageToImageResult> {
+export async function generatePreviewImage(params: ImageToImageParams): Promise<ImageToImageResult> {
   try {
-    const result = await fal.subscribe("fal-ai/fast-lcm-diffusion/image-to-image", {
+
+    // Use the fast-lcm-diffusion model
+    // const result = await fal.subscribe("fal-ai/fast-lcm-diffusion/image-to-image", {
+    //   input: {
+    //     image_url: params.imageUrl,
+    //     prompt: params.prompt,
+    //     negative_prompt: params.negativePrompt || "",
+    //     // guidance_scale: params.guidanceScale || 7.5,
+    //     // num_inference_steps: params.numInferenceSteps || 25,
+    //     strength: params.strength || 0.3,
+    //   },
+    //   logs: true,
+    //   onQueueUpdate: (update) => {
+    //     if (update.status === "IN_PROGRESS") {
+    //       console.log("Generation in progress...");
+    //       update.logs?.map((log) => log.message).forEach(console.log);
+    //     }
+    //   },
+    // });
+
+    // Use the fast-turbo-diffusion model
+    const result = await fal.subscribe("fal-ai/fast-turbo-diffusion/image-to-image", {
       input: {
         image_url: params.imageUrl,
         prompt: params.prompt,
         negative_prompt: params.negativePrompt || "",
-        guidance_scale: params.guidanceScale || 7.5,
-        num_inference_steps: params.numInferenceSteps || 25,
-        strength: params.strength || 0.7,
+        // guidance_scale: params.guidanceScale || 7.5,
+        // num_inference_steps: params.numInferenceSteps || 25,
+        strength: params.strength,
       },
+
       logs: true,
       onQueueUpdate: (update) => {
         if (update.status === "IN_PROGRESS") {
@@ -68,18 +90,3 @@ export function dataURLtoBlob(dataUrl: string): Blob {
   
   return new Blob([u8arr], {type: mime});
 }
-
-// API Reference
-// const result = await fal.subscribe("fal-ai/fast-lcm-diffusion/image-to-image", {
-//   input: {
-//     // Can be a Blob, File, or URL
-//     image_url: "https://fal-cdn.batuhan-941.workers.dev/files/tiger/IExuP-WICqaIesLZAZPur.jpeg",
-//     prompt: "an island near sea, with seagulls, moon shining over the sea, light house, boats int he background, fish flying over the sea"
-//   },
-//   logs: true,
-//   onQueueUpdate: (update) => {
-//     if (update.status === "IN_PROGRESS") {
-//       update.logs.map((log) => log.message).forEach(console.log);
-//     }
-//   },
-// });
