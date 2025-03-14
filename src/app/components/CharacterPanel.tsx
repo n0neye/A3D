@@ -11,6 +11,11 @@ import {
   setupIKForRegisteredCharacters
 } from '../util/character/ik';
 import { stopCharacterAnimations } from '../util/character/animation';
+import { 
+  registerCharacterForBoneControl, 
+  toggleBoneControlsForAllCharacters, 
+  resetAllBoneRotations 
+} from '../util/character/bones';
 
 interface CharacterPanelProps {
   scene: BABYLON.Scene | null;
@@ -65,6 +70,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
   const [ikEnabled, setIkEnabled] = useState<boolean>(false);
+  const [boneControlEnabled, setBoneControlEnabled] = useState<boolean>(false);
   
   // Register the IK animation loop once when the component mounts
   useEffect(() => {
@@ -126,6 +132,9 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
             if (modelData.ikData) {
               registerCharacterForIK(root, skeleton, modelData.ikData);
             }
+            
+            // Register for bone control
+            registerCharacterForBoneControl(scene, root, skeleton);
           }
           
           // Delete the placeholder after we've finished setting up
@@ -164,6 +173,25 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
     toggleIKForAllCharacters(scene, newIkEnabled);
   };
 
+  // Toggle bone control visibility for all characters
+  const toggleBoneControl = () => {
+    const newBoneControlEnabled = !boneControlEnabled;
+    setBoneControlEnabled(newBoneControlEnabled);
+    
+    // Toggle bone control visibility for all characters
+    toggleBoneControlsForAllCharacters(scene, newBoneControlEnabled);
+    
+    // If we're enabling bone control, make sure IK is disabled to avoid conflicts
+    if (newBoneControlEnabled && ikEnabled) {
+      toggleIK();
+    }
+  };
+
+  // Reset all bone rotations
+  const resetPose = () => {
+    resetAllBoneRotations();
+  };
+
   return (
     <div className="p-4 bg-black rounded-lg border border-gray-700 shadow-lg mb-4">
       <h3 className="text-lg font-medium mb-3 text-white">Add Characters</h3>
@@ -192,24 +220,48 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
       
       {/* IK Controls Section */}
       <div className="mt-4 border-t border-gray-700 pt-3">
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex flex-col  mb-2">
           <h4 className="text-sm font-medium text-white">Character Posing</h4>
-          <button 
-            onClick={toggleIK}
-            className={`px-3 py-1 text-xs rounded ${
-              ikEnabled 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            {ikEnabled ? 'IK Enabled' : 'Enable IK'}
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={toggleIK}
+              disabled={boneControlEnabled}
+              className={`px-3 py-1 text-xs rounded ${
+                ikEnabled 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              } ${boneControlEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {ikEnabled ? 'IK Enabled' : 'Enable IK'}
+            </button>
+            
+            <button 
+              onClick={toggleBoneControl}
+              disabled={ikEnabled}
+              className={`px-3 py-1 text-xs rounded ${
+                boneControlEnabled 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              } ${ikEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {boneControlEnabled ? 'Bones Enabled' : 'Enable Bones'}
+            </button>
+            
+            <button 
+              onClick={resetPose}
+              className="px-3 py-1 text-xs rounded bg-gray-700 text-gray-300 hover:bg-gray-600"
+            >
+              Reset Pose
+            </button>
+          </div>
         </div>
         
         <div className="text-xs text-gray-400 mb-2">
           {ikEnabled 
             ? 'Click and drag the colored control points to pose the character' 
-            : 'Enable IK to pose the character by dragging control points'}
+            : boneControlEnabled
+            ? 'Click on bones to select them, then use the rotation gizmo to adjust'
+            : 'Enable IK or Bone control to pose the character'}
         </div>
         
         {ikEnabled && (
@@ -233,6 +285,19 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
             <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
               <div className="w-2 h-2 rounded-full bg-yellow-500 mr-1"></div>
               Right Foot
+            </span>
+          </div>
+        )}
+        
+        {boneControlEnabled && (
+          <div className="flex flex-wrap gap-1">
+            <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
+              <div className="w-2 h-2 rounded-full bg-yellow-500 mr-1"></div>
+              Select any bone
+            </span>
+            <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
+              <div className="w-2 h-2 rounded-full bg-orange-500 mr-1"></div>
+              Rotate with gizmo
             </span>
           </div>
         )}

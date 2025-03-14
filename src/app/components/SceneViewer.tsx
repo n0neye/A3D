@@ -55,7 +55,7 @@ export default function SceneViewer() {
         -Math.PI / 2, 
         Math.PI / 2.5, 
         3, 
-        new BABYLON.Vector3(0, 0, 0), 
+        new BABYLON.Vector3(0, 1, 0), 
         scene
       );
 
