@@ -10,6 +10,8 @@ import { TransformCommand, CreateMeshCommand, DeleteMeshCommand } from '../lib/c
 import PreviewPanel from './PreviewPanel';
 import CharacterPanel from './CharacterPanel';
 import { getCurrentEditMode, EditMode } from '../util/scene-modes';
+import { EditorModeManager } from '../util/editor/modeManager';
+import { initializeEditorModes } from '../util/editor/initModes';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -102,23 +104,18 @@ export default function SceneViewer() {
       // Store gizmo manager in ref
       gizmoManagerRef.current = gizmoManager;
       
-      // Add mesh selection via pointer click
+      // Initialize editor modes
+      initializeEditorModes();
+      
+      // Add pointer observer that uses our mode system
       scene.onPointerObservable.add((pointerInfo) => {
         if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-          // Only handle mesh selection if not in bone edit mode
-          if (getCurrentEditMode() !== EditMode.BoneEditing) {
-            const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
-            
-            // If we clicked on a mesh that's not a gizmo or utility object or IK target
-            if (pickedMesh && 
-                !pickedMesh.name.includes("gizmo") && 
-                !pickedMesh.name.startsWith("__") &&
-                !pickedMesh.name.includes("ik-target")) {
-              gizmoManager.attachToMesh(pickedMesh as BABYLON.Mesh);
-            }
+          if (pointerInfo.pickInfo) {
+            // Let the mode manager handle this click
+            EditorModeManager.getInstance().handleSceneClick(pointerInfo.pickInfo, scene);
           }
         }
-      }, BABYLON.PointerEventTypes.POINTERDOWN);
+      });
       
       // Add these observers for transform events
       scene.onBeforeRenderObservable.add(() => {
@@ -185,7 +182,12 @@ export default function SceneViewer() {
     if (!sceneState) return;
     
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Check for key combinations
+      // Let mode manager try to handle key first
+      if (EditorModeManager.getInstance().handleKeyDown(event, sceneState)) {
+        return;
+      }
+      
+      // Handle any global key combos here
       if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
         // Ctrl+Z (or Cmd+Z on Mac) = Undo
         event.preventDefault();

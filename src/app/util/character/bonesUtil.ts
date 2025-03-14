@@ -333,9 +333,6 @@ export const toggleBoneControlsForAllCharacters = (
   
   console.log(`Toggling bone controls for all characters to ${visible}`);
   
-  // Set the global edit mode
-  setEditMode(visible ? EditMode.BoneEditing : EditMode.Default);
-  
   // For each character that has bone controls
   charactersWithBones.forEach((character, characterId) => {
     // Create bone controls if they don't exist and we're making them visible

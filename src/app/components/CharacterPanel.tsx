@@ -9,13 +9,15 @@ import {
   CharacterIKData,
   registerCharacterForIK,
   setupIKForRegisteredCharacters
-} from '../util/character/ik';
-import { stopCharacterAnimations } from '../util/character/animation';
+} from '../util/character/ikUtil';
+import { stopCharacterAnimations } from '../util/character/animationUtil';
 import { 
   registerCharacterForBoneControl, 
   toggleBoneControlsForAllCharacters, 
   resetAllBoneRotations 
-} from '../util/character/bones';
+} from '../util/character/bonesUtil';
+import { EditorModeManager } from '../util/editor/modeManager';
+import { useEditorMode } from '../util/editor/modeManager';
 
 interface CharacterPanelProps {
   scene: BABYLON.Scene | null;
@@ -69,8 +71,7 @@ const characterModels: CharacterModelData[] = [
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacter }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
-  const [ikEnabled, setIkEnabled] = useState<boolean>(false);
-  const [boneControlEnabled, setBoneControlEnabled] = useState<boolean>(false);
+  const { currentModeId, setMode, isInMode } = useEditorMode(scene);
   
   // Register the IK animation loop once when the component mounts
   useEffect(() => {
@@ -162,28 +163,19 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
   
   // Toggle IK system on/off
   const toggleIK = () => {
-    const newIkEnabled = !ikEnabled;
-    setIkEnabled(newIkEnabled);
-    
-    if (newIkEnabled) {
-      // When enabling, set up IK for any characters that don't have it yet
-      setupIKForRegisteredCharacters(scene);
+    if (isInMode('ik')) {
+      setMode('default');
+    } else {
+      setMode('ik');
     }
-    
-    toggleIKForAllCharacters(scene, newIkEnabled);
   };
 
   // Toggle bone control visibility for all characters
   const toggleBoneControl = () => {
-    const newBoneControlEnabled = !boneControlEnabled;
-    setBoneControlEnabled(newBoneControlEnabled);
-    
-    // Toggle bone control visibility for all characters
-    toggleBoneControlsForAllCharacters(scene, newBoneControlEnabled);
-    
-    // If we're enabling bone control, make sure IK is disabled to avoid conflicts
-    if (newBoneControlEnabled && ikEnabled) {
-      toggleIK();
+    if (isInMode('bone')) {
+      setMode('default');
+    } else {
+      setMode('bone');
     }
   };
 
@@ -225,26 +217,26 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
           <div className="flex gap-2">
             <button 
               onClick={toggleIK}
-              disabled={boneControlEnabled}
+              disabled={isInMode('bone')}
               className={`px-3 py-1 text-xs rounded ${
-                ikEnabled 
+                isInMode('ik')
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              } ${boneControlEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${isInMode('bone') ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {ikEnabled ? 'IK Enabled' : 'Enable IK'}
+              {isInMode('ik') ? 'IK Enabled' : 'Enable IK'}
             </button>
             
             <button 
               onClick={toggleBoneControl}
-              disabled={ikEnabled}
+              disabled={isInMode('ik')}
               className={`px-3 py-1 text-xs rounded ${
-                boneControlEnabled 
+                isInMode('bone')
                   ? 'bg-purple-600 text-white' 
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              } ${ikEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${isInMode('ik') ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {boneControlEnabled ? 'Bones Enabled' : 'Enable Bones'}
+              {isInMode('bone') ? 'Bones Enabled' : 'Enable Bones'}
             </button>
             
             <button 
@@ -257,14 +249,14 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
         </div>
         
         <div className="text-xs text-gray-400 mb-2">
-          {ikEnabled 
+          {isInMode('ik') 
             ? 'Click and drag the colored control points to pose the character' 
-            : boneControlEnabled
+            : isInMode('bone')
             ? 'Click on bones to select them, then use the rotation gizmo to adjust'
             : 'Enable IK or Bone control to pose the character'}
         </div>
         
-        {ikEnabled && (
+        {isInMode('ik') && (
           <div className="flex flex-wrap gap-1">
             <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
               <div className="w-2 h-2 rounded-full bg-orange-500 mr-1"></div>
@@ -289,7 +281,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
           </div>
         )}
         
-        {boneControlEnabled && (
+        {isInMode('bone') && (
           <div className="flex flex-wrap gap-1">
             <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
               <div className="w-2 h-2 rounded-full bg-yellow-500 mr-1"></div>

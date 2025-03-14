@@ -418,4 +418,29 @@ export const setupIKForRegisteredCharacters = (scene: BABYLON.Scene | null) => {
       character.isSetup = true;
     }
   });
+};
+
+// Add this function to your ik.ts file
+export const resetIKTargetsForAllCharacters = (scene: BABYLON.Scene | null): void => {
+  if (!scene) return;
+  
+  console.log('Resetting IK targets for all characters');
+  
+  // Reset all active IK targets to their original positions
+  activeIKSystems.forEach((ikSystem) => {
+    ikSystem.targets.forEach(target => {
+      if (target.mesh && target.originalPosition) {
+        // Reset the target mesh position
+        target.controlNode.position = target.originalPosition.clone();
+        
+        // Update the IK controller if it exists
+        if (target.ikController) {
+          target.ikController.update();
+        }
+      }
+    });
+    
+    // Make sure the skeleton is updated
+    ikSystem.skeleton.computeAbsoluteMatrices();
+  });
 }; 
