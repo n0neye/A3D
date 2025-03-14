@@ -25,6 +25,7 @@ export class EditorModeManager extends EventEmitter {
   private static instance: EditorModeManager;
   private currentMode: EditorMode | null = null;
   private modes: Map<string, EditorMode> = new Map();
+  private gizmoManager: BABYLON.GizmoManager | null = null;
   
   // Get singleton instance
   static getInstance(): EditorModeManager {
@@ -114,6 +115,16 @@ export class EditorModeManager extends EventEmitter {
     if (this.currentMode) {
       this.currentMode.configureGizmos(gizmoManager);
     }
+  }
+  
+  // Set the gizmo manager reference
+  setGizmoManager(gizmoManager: BABYLON.GizmoManager): void {
+    this.gizmoManager = gizmoManager;
+  }
+  
+  // Get the gizmo manager
+  getGizmoManager(): BABYLON.GizmoManager | null {
+    return this.gizmoManager;
   }
 }
 

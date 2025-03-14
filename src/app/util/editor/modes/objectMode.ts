@@ -42,15 +42,15 @@ export class ObjectManipulationMode implements EditorMode {
     
     console.log("Object selected:", mesh.name);
     
-    // Find the gizmo manager
-    const gizmoManager = scene.getNodes()
-      .find(node => node.constructor?.name === "GizmoManager") as unknown as BABYLON.GizmoManager;
+    // Get the gizmo manager from the mode manager
+    const modeManager = require('../modeManager').EditorModeManager.getInstance();
+    const gizmoManager = modeManager.getGizmoManager();
     
     if (gizmoManager) {
       this.configureGizmos(gizmoManager);
       gizmoManager.attachToMesh(mesh);
     } else {
-      console.error("No gizmo manager found in scene");
+      console.error("No gizmo manager found");
     }
   }
   

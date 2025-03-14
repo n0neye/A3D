@@ -11,7 +11,7 @@ import PreviewPanel from './PreviewPanel';
 import CharacterPanel from './CharacterPanel';
 import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
 import { initializeEditorModes } from '../util/editor/initModes';
-import { EditModeEnum } from '../util/scene-modes';
+import { EditModeEnum, getModeName } from '../util/scene-modes';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -107,6 +107,10 @@ export default function SceneViewer() {
       
       // Initialize editor modes
       initializeEditorModes();
+      
+      // Add this code after initializing editor modes in SceneViewer's createScene function
+      // After line: initializeEditorModes();
+      EditorModeManager.getInstance().setGizmoManager(gizmoManager);
       
       // Add pointer observer that uses our mode system
       scene.onPointerObservable.add((pointerInfo) => {
@@ -279,17 +283,6 @@ export default function SceneViewer() {
     }
   };
 
-  // Helper function to get a friendly mode name
-  const getModeName = (modeId: string | null): string => {
-    if (!modeId) return 'Default';
-    
-    switch(modeId) {
-      case 'object': return 'Object Manipulation';
-      case 'bone': return 'Bone Editing';
-      case 'ik': return 'IK Posing';
-      default: return 'Default';
-    }
-  };
 
   return (
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200">
