@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { EditMode, setEditMode, getCurrentEditMode } from '../scene-modes';
+import { EditModeEnum, setEditMode, getCurrentEditMode } from '../scene-modes';
 
 // Track characters with available bone control
 const charactersWithBones = new Map<string, {
@@ -206,7 +206,7 @@ export const selectBone = (
   boneId: string
 ) => {
   // Ensure we're in bone editing mode
-  setEditMode(EditMode.BoneEditing);
+  setEditMode(EditModeEnum.BoneEditing);
 
   if (!scene || !gizmoManager || !rotationGizmo) return;
 

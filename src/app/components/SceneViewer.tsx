@@ -9,9 +9,9 @@ import { HistoryManager, Command } from './HistoryManager';
 import { TransformCommand, CreateMeshCommand, DeleteMeshCommand } from '../lib/commands';
 import PreviewPanel from './PreviewPanel';
 import CharacterPanel from './CharacterPanel';
-import { getCurrentEditMode, EditMode } from '../util/scene-modes';
-import { EditorModeManager } from '../util/editor/modeManager';
+import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
 import { initializeEditorModes } from '../util/editor/initModes';
+import { EditModeEnum } from '../util/scene-modes';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -41,6 +41,7 @@ export default function SceneViewer() {
   
   const [sceneState, setSceneState] = useState<BABYLON.Scene | null>(null);
   const [gizmoManagerState, setGizmoManagerState] = useState<BABYLON.GizmoManager | null>(null);
+  const { currentModeId, setMode, isInMode } = useEditorMode(sceneRef.current);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -244,8 +245,22 @@ export default function SceneViewer() {
     // Execute the command and add to history
     historyManagerRef.current.executeCommand(command);
     
+    // Get the created mesh
+    const mesh = command.getMesh();
+    
+    // Switch to object mode and attach gizmo to the new mesh
+    if (mesh) {
+      // Set editor mode to object mode
+      setMode('object');
+      
+      // Attach gizmo to the new mesh
+      if (gizmoManagerRef.current) {
+        gizmoManagerRef.current.attachToMesh(mesh);
+      }
+    }
+    
     // Return the created mesh
-    return command.getMesh();
+    return mesh;
   };
   
   // Function to delete an object with history
@@ -261,6 +276,18 @@ export default function SceneViewer() {
       // Trigger a custom event that ObjectsPanel can listen for
       // TODO: This is a hack to force the objects list to update
       sceneState.onNewMeshAddedObservable.notifyObservers(null as any);
+    }
+  };
+
+  // Helper function to get a friendly mode name
+  const getModeName = (modeId: string | null): string => {
+    if (!modeId) return 'Default';
+    
+    switch(modeId) {
+      case 'object': return 'Object Manipulation';
+      case 'bone': return 'Bone Editing';
+      case 'ik': return 'IK Posing';
+      default: return 'Default';
     }
   };
 
@@ -292,6 +319,11 @@ export default function SceneViewer() {
         {/* Main 3D canvas - make it fill the main area */}
         <div className="flex-1 relative">
           <canvas ref={canvasRef} className="w-full h-full" />
+          
+          {/* Mode indicator overlay */}
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 rounded-full px-4 py-1.5 text-sm font-medium text-white pointer-events-none">
+            {getModeName(currentModeId)}
+          </div>
         </div>
         
         {/* Right panel for preview */}
