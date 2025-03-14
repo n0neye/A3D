@@ -8,6 +8,7 @@ import ObjectsPanel from './ObjectsPanel';
 import { HistoryManager, Command } from './HistoryManager';
 import { TransformCommand, CreateMeshCommand, DeleteMeshCommand } from '../lib/commands';
 import PreviewPanel from './PreviewPanel';
+import CharacterPanel from './CharacterPanel';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -265,6 +266,11 @@ export default function SceneViewer() {
             scene={sceneState} 
             gizmoManager={gizmoManagerState} 
             onCreateObject={addObject}
+          />
+          
+          <CharacterPanel
+            scene={sceneState}
+            onCreateCharacter={addObject}
           />
           
           <ObjectsPanel 
