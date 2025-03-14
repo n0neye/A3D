@@ -81,12 +81,7 @@ export default function SceneViewer() {
       );
       light.intensity = 0.7;
       
-      // Create a box
-      const box = BABYLON.MeshBuilder.CreateBox("box", { size: 1 }, scene);
-      const boxMaterial = new BABYLON.StandardMaterial("boxMaterial", scene);
-      boxMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.6, 0.9);
-      box.material = boxMaterial;
-      
+
       // Add gizmo manager for transformations
       const gizmoManager = new BABYLON.GizmoManager(scene);
       gizmoManager.positionGizmoEnabled = true;
@@ -94,7 +89,14 @@ export default function SceneViewer() {
       gizmoManager.scaleGizmoEnabled = true;
       gizmoManager.attachableMeshes = [];
       gizmoManager.usePointerToAttachGizmos = true;
-      gizmoManager.attachToMesh(box);
+
+      
+      // Create a box
+      // const box = BABYLON.MeshBuilder.CreateBox("box", { size: 1 }, scene);
+      // const boxMaterial = new BABYLON.StandardMaterial("boxMaterial", scene);
+      // boxMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.6, 0.9);
+      // box.material = boxMaterial;
+      // gizmoManager.attachToMesh(box);
       
       // Store gizmo manager in ref
       gizmoManagerRef.current = gizmoManager;

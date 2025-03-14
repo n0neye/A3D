@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import '@babylonjs/loaders';
+import { BoneIKController } from '@babylonjs/core/Bones';
 
 interface CharacterPanelProps {
   scene: BABYLON.Scene | null;
@@ -14,6 +15,13 @@ interface CharacterModelData {
   modelUrl: string; 
   scale: number;
   description: string;
+  ikData?: {
+    headBone?: string;
+    leftHandBone?: string;
+    rightHandBone?: string;
+    leftFootBone?: string;
+    rightFootBone?: string;
+  };
 }
 
 // Available character models
@@ -24,7 +32,14 @@ const characterModels: CharacterModelData[] = [
     thumbnailUrl: '/characters/mannequin_man_thumbnail.jpg',
     modelUrl: '/characters/mannequin_man_idle_opt.glb',
     scale: 1.0,
-    description: 'Futuristic robot with full rig and animations'
+    description: 'Mannequin with rigging and IK controls',
+    ikData: {
+      headBone: 'mixamorig:Head',
+      leftHandBone: 'mixamorig:LeftHand',
+      rightHandBone: 'mixamorig:RightHand',
+      leftFootBone: 'mixamorig:LeftFoot',
+      rightFootBone: 'mixamorig:RightFoot'
+    }
   },
   {
     id: 'human-male',
@@ -32,7 +47,14 @@ const characterModels: CharacterModelData[] = [
     thumbnailUrl: '/characters/male_thumbnail.jpg',
     modelUrl: '/characters/human_male.glb',
     scale: 1.2,
-    description: 'Male human character with basic animations'
+    description: 'Male human character with basic animations',
+    ikData: {
+      headBone: 'mixamorig:Head',
+      leftHandBone: 'mixamorig:LeftHand',
+      rightHandBone: 'mixamorig:RightHand',
+      leftFootBone: 'mixamorig:LeftFoot',
+      rightFootBone: 'mixamorig:RightFoot'
+    }
   },
   // {
   //   id: 'human-female',
@@ -52,9 +74,27 @@ const characterModels: CharacterModelData[] = [
   // }
 ];
 
+// Interface for IK target management
+interface IKTarget {
+  mesh: BABYLON.Mesh;
+  targetBone: BABYLON.Bone;
+  originalPosition: BABYLON.Vector3;
+  controlNode: BABYLON.TransformNode;
+  ikController?: BABYLON.BoneIKController;
+}
+
+// Track all currently active IK systems
+const activeIKSystems = new Map<string, {
+  targets: IKTarget[],
+  skeleton: BABYLON.Skeleton,
+  characterMesh: BABYLON.AbstractMesh,
+  enabled: boolean
+}>();
+
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacter }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
+  const [ikEnabled, setIkEnabled] = useState<boolean>(false);
 
   const addCharacter = async (modelData: CharacterModelData) => {
     if (!scene || !onCreateCharacter) return;
@@ -75,8 +115,10 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
         placeholder.position.y = 0.0;
         
         // Load the actual model asynchronously
-        BABYLON.ImportMeshAsync(
+        BABYLON.SceneLoader.ImportMeshAsync(
+          "", 
           modelData.modelUrl, 
+          "", 
           scene
         ).then(result => {
           const root = result.meshes[0];
@@ -86,11 +128,18 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
           
           // Position at the same location as the placeholder
           root.position = placeholder.position.clone();
-
-          // Rename the mesh to the model name
-          root.name = modelData.name;
           
-          // Delete the placeholder
+          // Get the skeleton if available
+          const skeleton = result.skeletons && result.skeletons.length > 0 
+            ? result.skeletons[0] 
+            : null;
+          
+          // Setup IK system if we have a skeleton and IK data
+          if (skeleton && modelData.ikData) {
+            setupIKSystem(root, skeleton, modelData.ikData);
+          }
+          
+          // Delete the placeholder after we've finished setting up
           placeholder.dispose();
           
           // Handle animations if they exist
@@ -119,6 +168,262 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
     }
   };
 
+  // Setup the IK system for a character
+  const setupIKSystem = (
+    characterMesh: BABYLON.AbstractMesh, 
+    skeleton: BABYLON.Skeleton, 
+    ikData: CharacterModelData['ikData']
+  ) => {
+    if (!scene || !ikData) return;
+    
+    console.log("Setting up IK system for", characterMesh.name, "with skeleton", skeleton.name);
+    
+    // Create a unique ID for this character's IK system
+    const ikSystemId = `ik-${characterMesh.id}`;
+    
+    // Create IK targets array
+    const ikTargets: IKTarget[] = [];
+    
+    // Helper function to create IK target for a bone
+    const createIKTarget = (boneName: string | undefined, color: BABYLON.Color3, size: number = 0.05) => {
+      if (!boneName) return null;
+      
+      // Find the bone in the skeleton
+      const bone = skeleton.bones.find(b => b.name === boneName);
+      if (!bone) return null;
+      
+      // Create a sphere to visualize and control the IK target
+      const targetMesh = BABYLON.MeshBuilder.CreateSphere(
+        `ik-target-${boneName}`, 
+        { diameter: size }, 
+        scene
+      );
+      
+      // Set material for the target
+      const material = new BABYLON.StandardMaterial(`ik-target-material-${boneName}`, scene);
+      material.diffuseColor = color;
+      material.specularColor = BABYLON.Color3.Black();
+      material.emissiveColor = color.scale(0.5);
+      targetMesh.material = material;
+      
+      // Create a transform node for controlling the bone
+      const controlNode = new BABYLON.TransformNode(`ik-control-${boneName}`, scene);
+      
+      // Position the control at the bone's world position
+      const boneWorldPosition = bone.getPosition(BABYLON.Space.WORLD);
+      controlNode.position = boneWorldPosition.clone();
+      
+      // Position the target mesh at the control node
+      targetMesh.parent = controlNode;
+      targetMesh.position = BABYLON.Vector3.Zero();
+      
+      // Make the target mesh pickable
+      targetMesh.isPickable = true;
+      
+      // Create the IK controller
+      let ikController: BABYLON.BoneIKController | undefined;
+      
+      // Setup IK controller for limbs (arms and legs)
+      if (boneName.includes('Hand') || boneName.includes('Foot')) {
+        // Find the parent bones to create a chain
+        let parentBone = bone.getParent();
+        let grandparentBone = parentBone ? parentBone.getParent() : null;
+        
+        if (parentBone && grandparentBone) {
+          // Create an IK controller with a chain length of 2 (e.g., shoulder -> elbow -> hand)
+          ikController = new BABYLON.BoneIKController(characterMesh, bone, { targetMesh: targetMesh });
+          ikController.poleTargetPosition = new BABYLON.Vector3(0, 0, 0);
+          ikController.poleTargetBone = grandparentBone;
+          ikController.maxAngle = Math.PI;
+          ikController.slerpAmount = 0.5;
+        }
+      } else if (boneName.includes('Head')) {
+        // For the head, just create a simpler controller
+        ikController = new BABYLON.BoneIKController(characterMesh, bone, { targetMesh: targetMesh });
+        ikController.maxAngle = Math.PI / 4; // Limit head rotation
+        ikController.slerpAmount = 0.5;
+      }
+      
+      // Store the IK target
+      const ikTarget: IKTarget = {
+        mesh: targetMesh,
+        targetBone: bone,
+        originalPosition: boneWorldPosition.clone(),
+        controlNode: controlNode,
+        ikController: ikController
+      };
+      
+      // Hide the target initially
+      targetMesh.setEnabled(false);
+      
+      return ikTarget;
+    };
+    
+    // Create IK targets for each body part
+    const headTarget = createIKTarget(ikData.headBone, new BABYLON.Color3(1, 0.5, 0));
+    const leftHandTarget = createIKTarget(ikData.leftHandBone, new BABYLON.Color3(0, 1, 0));
+    const rightHandTarget = createIKTarget(ikData.rightHandBone, new BABYLON.Color3(0, 0, 1));
+    const leftFootTarget = createIKTarget(ikData.leftFootBone, new BABYLON.Color3(1, 0, 1));
+    const rightFootTarget = createIKTarget(ikData.rightFootBone, new BABYLON.Color3(1, 1, 0));
+    
+    // Add valid targets to the array
+    [headTarget, leftHandTarget, rightHandTarget, leftFootTarget, rightFootTarget]
+      .filter(target => target !== null)
+      .forEach(target => ikTargets.push(target!));
+    
+    // Store the IK system
+    activeIKSystems.set(ikSystemId, {
+      targets: ikTargets,
+      skeleton: skeleton,
+      characterMesh: characterMesh,
+      enabled: false
+    });
+    
+    console.log(`IK system ${ikSystemId} created with ${ikTargets.length} targets`);
+    
+    // Add drag behavior to each target
+    ikTargets.forEach(target => {
+      const dragBehavior = new BABYLON.PointerDragBehavior({
+        dragPlaneNormal: new BABYLON.Vector3(0, 0, 1)
+      });
+      
+      dragBehavior.onDragStartObservable.add(() => {
+        // Logic for drag start if needed
+      });
+      
+      dragBehavior.onDragObservable.add((event) => {
+        // When dragging, update the bone position using IK
+        updateIK(target, characterMesh);
+      });
+      
+      dragBehavior.onDragEndObservable.add(() => {
+        // Logic for drag end if needed
+      });
+      
+      target.mesh.addBehavior(dragBehavior);
+    });
+    
+    // Set up scene observable to detect when this character is selected
+    scene.onPointerObservable.add((pointerInfo) => {
+      if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
+        const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
+        
+        console.log("Pointer pick detected:", pickedMesh?.name);
+        
+        // If we clicked the character or any of its children
+        if (pickedMesh && isChildOf(pickedMesh, characterMesh)) {
+          console.log(`Character ${characterMesh.name} selected, showing IK (enabled: ${ikEnabled})`);
+          // Show IK controls if IK is enabled
+          setIKVisibility(ikSystemId, ikEnabled);
+        } else if (!isIKTarget(pickedMesh || null)) {
+          console.log("Clicked outside character, hiding IK");
+          // If we clicked elsewhere and not on an IK target, hide the controls
+          setIKVisibility(ikSystemId, false);
+        }
+      }
+    });
+  };
+  
+  // Helper to check if a mesh is a child of another
+  const isChildOf = (mesh: BABYLON.AbstractMesh, potentialParent: BABYLON.AbstractMesh): boolean => {
+    if (mesh === potentialParent) return true;
+    
+    let current = mesh.parent;
+    while (current) {
+      if (current === potentialParent) return true;
+      current = current.parent;
+    }
+    
+    return false;
+  };
+  
+  // Helper to check if a mesh is an IK target
+  const isIKTarget = (mesh: BABYLON.AbstractMesh | null): boolean => {
+    if (!mesh) return false;
+    
+    // Check all IK systems
+    for (const ikSystem of activeIKSystems.values()) {
+      if (ikSystem.targets.some(target => target.mesh === mesh)) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+  
+  // Set visibility of IK targets for a specific IK system
+  const setIKVisibility = (ikSystemId: string, visible: boolean) => {
+    const ikSystem = activeIKSystems.get(ikSystemId);
+    if (!ikSystem) {
+      console.log(`IK system ${ikSystemId} not found`);
+      return;
+    }
+    
+    console.log(`Setting IK visibility for ${ikSystemId} to ${visible}`);
+    
+    // Update the enabled state
+    ikSystem.enabled = visible;
+    
+    // Update target visibility
+    ikSystem.targets.forEach(target => {
+      target.mesh.setEnabled(visible);
+      console.log(`  - Target ${target.mesh.name} visibility set to ${visible}`);
+    });
+  };
+  
+  // Update IK for a specific target
+  const updateIK = (target: IKTarget, characterMesh: BABYLON.AbstractMesh) => {
+    if (target.ikController) {
+      // Use the BoneIKController when available
+      target.ikController.update();
+    } else {
+      // Fallback to direct bone manipulation (our old method)
+      // Get the current world position of the control node
+      const targetWorldPos = target.controlNode.getAbsolutePosition();
+      
+      // Convert the world position to bone local space
+      const parentBone = target.targetBone.getParent();
+      let targetLocalPos: BABYLON.Vector3;
+      
+      if (parentBone) {
+        // Get the world matrix of the parent bone
+        const parentWorldMatrix = parentBone.getWorldMatrix();
+        const invParentMatrix = BABYLON.Matrix.Invert(parentWorldMatrix);
+        
+        // Transform the target position to parent bone local space
+        targetLocalPos = BABYLON.Vector3.TransformCoordinates(targetWorldPos, invParentMatrix);
+      } else {
+        // If no parent, use the skeleton's local space
+        const skeleton = target.targetBone.getSkeleton();
+        const skeletonMatrix = new BABYLON.Matrix();
+        BABYLON.Matrix.FromArrayToRef(skeleton.getTransformMatrices(characterMesh), 0, skeletonMatrix);
+        const invSkeletonMatrix = BABYLON.Matrix.Invert(skeletonMatrix);
+        targetLocalPos = BABYLON.Vector3.TransformCoordinates(targetWorldPos, invSkeletonMatrix);
+      }
+      
+      // Set the bone's local position to match the target
+      target.targetBone.setPosition(targetLocalPos);
+      
+      // Update the skeleton to reflect changes
+      target.targetBone.getSkeleton().computeAbsoluteTransforms();
+    }
+  };
+  
+  // Toggle IK system on/off
+  const toggleIK = () => {
+    const newIkEnabled = !ikEnabled;
+    console.log(`Toggling IK mode to: ${newIkEnabled}`);
+    setIkEnabled(newIkEnabled);
+    
+    // Update all active IK systems
+    console.log(`Active IK systems: ${activeIKSystems.size}`);
+    activeIKSystems.forEach((ikSystem, id) => {
+      console.log(`Updating visibility for system: ${id}`);
+      setIKVisibility(id, newIkEnabled);
+    });
+  };
+
+  // Animation player function
   const playAnimation = (characterMesh: BABYLON.Mesh, animationName: string) => {
     // Find the root node that holds the animations
     const rootNode = characterMesh.getChildMeshes(false)[0]?.parent || characterMesh;
@@ -150,6 +455,20 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
     }
   };
 
+  // Add this to the scene's animation loop
+  scene?.registerBeforeRender(() => {
+    // Update all active IK systems on each frame
+    activeIKSystems.forEach(ikSystem => {
+      if (ikSystem.enabled) {
+        ikSystem.targets.forEach(target => {
+          if (target.ikController) {
+            target.ikController.update();
+          }
+        });
+      }
+    });
+  });
+
   return (
     <div className="p-4 bg-black rounded-lg border border-gray-700 shadow-lg mb-4">
       <h3 className="text-lg font-medium mb-3 text-white">Add Characters</h3>
@@ -174,6 +493,54 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
             <div className="text-xs text-gray-400 mt-1 line-clamp-2">{model.description}</div>
           </button>
         ))}
+      </div>
+      
+      {/* IK Controls Section */}
+      <div className="mt-4 border-t border-gray-700 pt-3">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="text-sm font-medium text-white">Character Posing</h4>
+          <button 
+            onClick={toggleIK}
+            className={`px-3 py-1 text-xs rounded ${
+              ikEnabled 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            {ikEnabled ? 'IK Enabled' : 'Enable IK'}
+          </button>
+        </div>
+        
+        <div className="text-xs text-gray-400 mb-2">
+          {ikEnabled 
+            ? 'Click and drag the colored control points to pose the character' 
+            : 'Enable IK to pose the character by dragging control points'}
+        </div>
+        
+        {ikEnabled && (
+          <div className="flex flex-wrap gap-1">
+            <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
+              <div className="w-2 h-2 rounded-full bg-orange-500 mr-1"></div>
+              Head
+            </span>
+            <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
+              <div className="w-2 h-2 rounded-full bg-green-500 mr-1"></div>
+              Left Hand
+            </span>
+            <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
+              <div className="w-2 h-2 rounded-full bg-blue-500 mr-1"></div>
+              Right Hand
+            </span>
+            <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
+              <div className="w-2 h-2 rounded-full bg-purple-500 mr-1"></div>
+              Left Foot
+            </span>
+            <span className="px-2 py-1 bg-gray-800 rounded text-xs flex items-center">
+              <div className="w-2 h-2 rounded-full bg-yellow-500 mr-1"></div>
+              Right Foot
+            </span>
+          </div>
+        )}
       </div>
       
       {isLoading && (
