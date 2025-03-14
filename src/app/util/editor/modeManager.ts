@@ -73,6 +73,11 @@ export class EditorModeManager extends EventEmitter {
     this.currentMode = targetMode;
     targetMode.onEnter(scene, previousModeId);
     
+    // Configure gizmos for the new mode
+    if (this.gizmoManager) {
+      targetMode.configureGizmos(this.gizmoManager);
+    }
+    
     // Emit change event
     this.emit('modeChanged', modeId, previousModeId);
   }

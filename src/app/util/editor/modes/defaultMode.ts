@@ -19,6 +19,27 @@ export class DefaultMode implements EditorMode {
   }
   
   handleSceneClick(pickInfo: BABYLON.PickingInfo, scene: BABYLON.Scene): boolean {
+    // If we clicked on a mesh that's not a utility object
+    const mesh = pickInfo.pickedMesh;
+    
+    if (mesh && 
+        !mesh.name.includes("gizmo") && 
+        !mesh.name.startsWith("__") &&
+        !mesh.name.includes("ik-target") &&
+        !(mesh.metadata && mesh.metadata.excludeFromObjectsPanel === true)) {
+      
+      console.log("Default mode: Object selected", mesh.name);
+      
+      // Switch to object manipulation mode and pass the selected mesh
+      const modeManager = require('../modeManager').EditorModeManager.getInstance();
+      modeManager.setMode('object', scene);
+      
+      // After switching mode, have the object mode handle this object
+      modeManager.handleObjectSelected(mesh, scene);
+      
+      return true;
+    }
+    
     // Background click does nothing in default mode
     return false;
   }
