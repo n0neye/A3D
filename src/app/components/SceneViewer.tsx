@@ -106,10 +106,13 @@ export default function SceneViewer() {
         if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
           const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
           
-          // If we clicked on a mesh that's not a gizmo or utility object
+          console.log("SceneViewer: Picked mesh:", pickedMesh?.name);
+          
+          // If we clicked on a mesh that's not a gizmo or utility object or IK target
           if (pickedMesh && 
               !pickedMesh.name.includes("gizmo") && 
-              !pickedMesh.name.startsWith("__")) {
+              !pickedMesh.name.startsWith("__") &&
+              !pickedMesh.name.includes("ik-target")) {
             gizmoManager.attachToMesh(pickedMesh as BABYLON.Mesh);
           }
         }

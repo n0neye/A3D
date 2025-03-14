@@ -30,15 +30,15 @@ const characterModels: CharacterModelData[] = [
     id: 'mannequin-man',
     name: 'Mannequin Man',
     thumbnailUrl: '/characters/mannequin_man_thumbnail.jpg',
-    modelUrl: '/characters/mannequin_man_idle_opt.glb',
+    modelUrl: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb',
     scale: 1.0,
     description: 'Mannequin with rigging and IK controls',
     ikData: {
-      headBone: 'mixamorig:Head',
-      leftHandBone: 'mixamorig:LeftHand',
-      rightHandBone: 'mixamorig:RightHand',
-      leftFootBone: 'mixamorig:LeftFoot',
-      rightFootBone: 'mixamorig:RightFoot'
+      headBone: 'mixamorig1:HeadTop_End',
+      leftHandBone: 'mixamorig1:LeftHand',
+      rightHandBone: 'mixamorig1:RightHand',
+      leftFootBone: 'mixamorig1:LeftFoot',
+      rightFootBone: 'mixamorig1:RightFoot'
     }
   },
   {
@@ -114,6 +114,9 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
         // Position the placeholder
         placeholder.position.y = 0.0;
         
+        // Store a reference that we can update
+        let actualMesh: BABYLON.AbstractMesh | null = placeholder;
+        
         // Load the actual model asynchronously
         BABYLON.SceneLoader.ImportMeshAsync(
           "", 
@@ -122,6 +125,14 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
           scene
         ).then(result => {
           const root = result.meshes[0];
+          actualMesh = root;  // Update our reference
+          
+          // Add to make tracking in the scene easier
+          root.name = `${modelData.name}-${Date.now()}`;
+          root.id = `character-${modelData.id}-${Date.now()}`;
+          
+          console.log("Character loaded successfully:", root.name);
+          console.log("Found meshes:", result.meshes.map(m => m.name).join(", "));
           
           // Apply the scale
           root.scaling = new BABYLON.Vector3(modelData.scale, modelData.scale, modelData.scale);
@@ -133,6 +144,11 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
           const skeleton = result.skeletons && result.skeletons.length > 0 
             ? result.skeletons[0] 
             : null;
+          
+          console.log("Found skeleton:", skeleton ? skeleton.name : "None");
+          if (skeleton) {
+            console.log("Bones:", skeleton.bones.map(b => b.name).join(", "));
+          }
           
           // Setup IK system if we have a skeleton and IK data
           if (skeleton && modelData.ikData) {
@@ -186,11 +202,19 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ scene, onCreateCharacte
     
     // Helper function to create IK target for a bone
     const createIKTarget = (boneName: string | undefined, color: BABYLON.Color3, size: number = 0.05) => {
-      if (!boneName) return null;
+      if (!boneName) {
+        console.log(`No bone name provided for target`);
+        return null;
+      }
       
       // Find the bone in the skeleton
       const bone = skeleton.bones.find(b => b.name === boneName);
-      if (!bone) return null;
+      if (!bone) {
+        console.log(`Bone not found: ${boneName}`);
+        return null;
+      }
+      
+      console.log(`Creating IK target for bone: ${boneName}`);
       
       // Create a sphere to visualize and control the IK target
       const targetMesh = BABYLON.MeshBuilder.CreateSphere(
