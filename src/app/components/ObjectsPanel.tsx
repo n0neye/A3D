@@ -93,14 +93,17 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
   const updateObjectsList = () => {
     if (!scene) return;
 
-    const meshes = scene.meshes.filter(mesh => 
-      // Exclude any utility meshes, internal BabylonJS objects, or disabled meshes
-      !mesh.name.startsWith("__") && 
-      mesh.name !== "BackgroundSkybox" &&
-      !(mesh instanceof BABYLON.InstancedMesh) &&
-      !(mesh.name.includes("gizmo")) &&
-      mesh.isEnabled() // Only include enabled meshes
-    );
+    const meshes = scene.meshes.filter(mesh => {
+      // Skip utility/system meshes
+      if (mesh.name.startsWith("__") || 
+          mesh.name.includes("gizmo") || 
+          mesh.name.includes("ik-target") ||
+          // New check for bone controls
+          (mesh.metadata && mesh.metadata.excludeFromObjectsPanel === true)) {
+        return false;
+      }
+      return true;
+    });
 
     const objectsList = meshes.map(mesh => ({
       id: mesh.uniqueId.toString(),

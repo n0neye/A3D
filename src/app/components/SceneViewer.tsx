@@ -9,6 +9,7 @@ import { HistoryManager, Command } from './HistoryManager';
 import { TransformCommand, CreateMeshCommand, DeleteMeshCommand } from '../lib/commands';
 import PreviewPanel from './PreviewPanel';
 import CharacterPanel from './CharacterPanel';
+import { getCurrentEditMode, EditMode } from '../util/scene-modes';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -103,20 +104,21 @@ export default function SceneViewer() {
       
       // Add mesh selection via pointer click
       scene.onPointerObservable.add((pointerInfo) => {
-        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
-          const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
-          
-          console.log("SceneViewer: Picked mesh:", pickedMesh?.name);
-          
-          // If we clicked on a mesh that's not a gizmo or utility object or IK target
-          if (pickedMesh && 
-              !pickedMesh.name.includes("gizmo") && 
-              !pickedMesh.name.startsWith("__") &&
-              !pickedMesh.name.includes("ik-target")) {
-            gizmoManager.attachToMesh(pickedMesh as BABYLON.Mesh);
+        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+          // Only handle mesh selection if not in bone edit mode
+          if (getCurrentEditMode() !== EditMode.BoneEditing) {
+            const pickedMesh = pointerInfo.pickInfo?.pickedMesh;
+            
+            // If we clicked on a mesh that's not a gizmo or utility object or IK target
+            if (pickedMesh && 
+                !pickedMesh.name.includes("gizmo") && 
+                !pickedMesh.name.startsWith("__") &&
+                !pickedMesh.name.includes("ik-target")) {
+              gizmoManager.attachToMesh(pickedMesh as BABYLON.Mesh);
+            }
           }
         }
-      }, BABYLON.PointerEventTypes.POINTERPICK);
+      }, BABYLON.PointerEventTypes.POINTERDOWN);
       
       // Add these observers for transform events
       scene.onBeforeRenderObservable.add(() => {

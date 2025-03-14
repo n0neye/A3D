@@ -1,4 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
+import { EditMode, setEditMode, getCurrentEditMode } from '../scene-modes';
 
 // Track characters with available bone control
 const charactersWithBones = new Map<string, {
@@ -38,6 +39,15 @@ export const registerCharacterForBoneControl = (
 
   // Create the gizmo manager if it doesn't exist
   if (!gizmoManager) {
+    // First, dispose any existing gizmo managers in the scene
+    scene.getNodes().forEach(node => {
+      // Only check constructor name and avoid direct type comparison
+      if (node.constructor?.name === "GizmoManager") {
+        // Use as any to bypass the TypeScript error
+        (node as any).dispose();
+      }
+    });
+    
     gizmoManager = new BABYLON.GizmoManager(scene);
     gizmoManager.positionGizmoEnabled = false;
     gizmoManager.rotationGizmoEnabled = true;
@@ -177,6 +187,12 @@ export const createBoneControlMeshes = (
         controlMesh,
         originalRotation
       });
+
+      // Add metadata tag
+      controlMesh.metadata = { 
+        type: "boneControl", 
+        excludeFromObjectsPanel: true 
+      };
     }
   });
 
@@ -189,6 +205,9 @@ export const selectBone = (
   characterId: string,
   boneId: string
 ) => {
+  // Ensure we're in bone editing mode
+  setEditMode(EditMode.BoneEditing);
+
   if (!scene || !gizmoManager || !rotationGizmo) return;
 
   const character = charactersWithBones.get(characterId);
@@ -222,7 +241,7 @@ export const selectBone = (
 
   // Set up gizmo rotation observable
   if (rotationGizmo) {
-    // Cast to specific implementation that has the observable
+    // Cast to specific implementation
     const concreteGizmo = rotationGizmo;
     
     // Remove any existing observers to prevent duplicates
@@ -234,11 +253,20 @@ export const selectBone = (
         updateBoneRotation(scene);
       }
     });
+    
+    // Add observer for continuous updates during rotation
+    concreteGizmo.onDragObservable.clear();
+    concreteGizmo.onDragObservable.add(() => {
+      if (selectedBoneControl) {
+        updateBoneRotation(scene);
+      }
+    });
   }
 };
 
 // Update bone rotation based on gizmo
 export const updateBoneRotation = (scene: BABYLON.Scene | null) => {
+  console.log("Updating bone rotation");
   if (!scene || !selectedBoneControl) return;
 
   const character = charactersWithBones.get(selectedBoneControl.characterId);
@@ -247,19 +275,23 @@ export const updateBoneRotation = (scene: BABYLON.Scene | null) => {
   const boneControl = character.boneControls.get(selectedBoneControl.boneId);
   if (!boneControl) return;
 
-  // Get the control mesh's rotation
-  const controlRotation = boneControl.controlMesh.rotationQuaternion || 
-                         BABYLON.Quaternion.FromEulerAngles(
-                           boneControl.controlMesh.rotation.x,
-                           boneControl.controlMesh.rotation.y,
-                           boneControl.controlMesh.rotation.z
-                         );
+  console.log("Bone control found");
 
-  // Apply the rotation to the bone
-  boneControl.bone.setRotationQuaternion(controlRotation);
-
-  // Update the skeleton
-  character.skeleton.computeAbsoluteTransforms();
+  // Get the rotationQuaternion from the control mesh
+  // boneControl.controlMesh.rotationQuaternion is undefined, use absoluteRotationQuaternion instead
+  if (boneControl.controlMesh.absoluteRotationQuaternion) {
+    // Apply the rotation to the bone in local space
+    boneControl.bone.setRotationQuaternion(
+      boneControl.controlMesh.absoluteRotationQuaternion.clone()
+    );
+    
+    // Update the skeleton to apply changes
+    // computeAbsoluteTransforms is deprecated, use computeAbsoluteMatrices instead
+    character.skeleton.computeAbsoluteMatrices();
+    
+    console.log(`Updated bone ${boneControl.bone.name} rotation:`, 
+      boneControl.controlMesh.absoluteRotationQuaternion);
+  }
 };
 
 // Toggle bone controls visibility for a character
@@ -298,9 +330,12 @@ export const toggleBoneControlsForAllCharacters = (
   visible: boolean
 ) => {
   if (!scene) return;
-
+  
   console.log(`Toggling bone controls for all characters to ${visible}`);
-
+  
+  // Set the global edit mode
+  setEditMode(visible ? EditMode.BoneEditing : EditMode.Default);
+  
   // For each character that has bone controls
   charactersWithBones.forEach((character, characterId) => {
     // Create bone controls if they don't exist and we're making them visible
