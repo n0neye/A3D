@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { RenderEngine } from '../lib/renderEngine';
 import ShapesPanel from './ShapesPanel';
-import ObjectsPanel from './ObjectsPanel';
+import HierarchyPanel from './HierarchyPanel';
 import { HistoryManager, Command } from './HistoryManager';
 import { TransformCommand, CreateMeshCommand, DeleteMeshCommand } from '../lib/commands';
 import PreviewPanel from './PreviewPanel';
@@ -278,7 +278,7 @@ export default function SceneViewer() {
     
     // Force update the objects list
     if (sceneState) {
-      // Trigger a custom event that ObjectsPanel can listen for
+      // Trigger a custom event that HierarchyPanel can listen for
       // TODO: This is a hack to force the objects list to update
       sceneState.onNewMeshAddedObservable.notifyObservers(null as any);
     }
@@ -307,7 +307,7 @@ export default function SceneViewer() {
 
           
           
-          <ObjectsPanel 
+          <HierarchyPanel 
             scene={sceneState} 
             gizmoManager={gizmoManagerState} 
             onDeleteObject={deleteObject}

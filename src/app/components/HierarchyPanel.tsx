@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 
-interface ObjectsPanelProps {
+interface HierarchyPanelProps {
   scene: BABYLON.Scene | null;
   gizmoManager: BABYLON.GizmoManager | null;
   onDeleteObject?: (mesh: BABYLON.Mesh) => void;
@@ -14,7 +14,7 @@ interface SceneObjectDisplay {
   mesh: BABYLON.Mesh;
 }
 
-const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDeleteObject }) => {
+const HierarchyPanel: React.FC<HierarchyPanelProps> = ({ scene, gizmoManager, onDeleteObject }) => {
   const [objects, setObjects] = useState<SceneObjectDisplay[]>([]);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
 
@@ -37,17 +37,17 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
 
   useEffect(() => {
     if (!scene || !gizmoManager) return;
-    
+
     let currentAttachedMesh: BABYLON.AbstractMesh | null = null;
-    
+
     // Function to update selected object based on gizmo attachment
     const updateSelectedFromScene = () => {
       const attachedMesh = gizmoManager.gizmos.positionGizmo?.attachedMesh;
-      
+
       // Only update if the attached mesh has changed
       if (attachedMesh !== currentAttachedMesh) {
         currentAttachedMesh = attachedMesh as BABYLON.AbstractMesh | null;
-        
+
         if (attachedMesh) {
           // Find the object in our list that matches this mesh
           const selectedObj = objects.find(obj => obj.mesh === attachedMesh);
@@ -60,7 +60,7 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
         }
       }
     };
-    
+
     // Check less frequently to improve performance
     const observer = scene.onBeforeRenderObservable.add(() => {
       // Only check every few frames
@@ -68,10 +68,10 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
         updateSelectedFromScene();
       }
     });
-    
+
     // Initial check
     updateSelectedFromScene();
-    
+
     return () => {
       scene.onBeforeRenderObservable.remove(observer);
     };
@@ -79,12 +79,12 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
 
   useEffect(() => {
     if (!scene) return;
-    
+
     // Setup observer for when meshes are removed
     const disposedObserver = scene.onMeshRemovedObservable.add(() => {
       updateObjectsList();
     });
-    
+
     return () => {
       scene.onMeshRemovedObservable.remove(disposedObserver);
     };
@@ -95,11 +95,11 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
 
     const meshes = scene.meshes.filter(mesh => {
       // Skip utility/system meshes
-      if (mesh.name.startsWith("__") || 
-          mesh.name.includes("gizmo") || 
-          mesh.name.includes("ik-target") ||
-          // New check for bone controls
-          (mesh.metadata && mesh.metadata.excludeFromObjectsPanel === true)) {
+      if ((mesh.metadata && mesh.metadata.excludeFromHierarchy === true) ||
+        mesh.name.startsWith("__") ||
+        mesh.name.includes("gizmo") ||
+        mesh.name.includes("ik-target")
+      ) {
         return false;
       }
       return true;
@@ -125,7 +125,7 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
     }
     if (mesh.name.includes("plane")) return "Plane";
     if (mesh.name.includes("torus")) return "Torus";
-    
+
     // Default fallback
     return "Mesh";
   };
@@ -134,7 +134,7 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
     if (!gizmoManager || !scene) return;
 
     setSelectedObjectId(objectId);
-    
+
     // Find the mesh and attach gizmo to it
     const selectedObject = objects.find(obj => obj.id === objectId);
     if (selectedObject) {
@@ -154,10 +154,10 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
         // Fallback to direct disposal
         objToDelete.mesh.dispose();
       }
-      
+
       // Update the list
       updateObjectsList();
-      
+
       // If this was selected, detach gizmo
       if (selectedObjectId === objectId && gizmoManager) {
         gizmoManager.attachToMesh(null);
@@ -168,17 +168,16 @@ const ObjectsPanel: React.FC<ObjectsPanelProps> = ({ scene, gizmoManager, onDele
 
   return (
     <div className="p-4 bg-black rounded-lg border border-gray-700 shadow-lg mb-4">
-      
+
       {objects.length === 0 ? (
         <div className="text-gray-400 italic text-sm">No objects in scene</div>
       ) : (
         <div className="max-h-96 overflow-y-auto pr-1">
           {objects.map(obj => (
-            <div 
+            <div
               key={obj.id}
-              className={`flex justify-between items-center p-2 rounded mb-1 cursor-pointer ${
-                selectedObjectId === obj.id ? 'bg-blue-900 bg-opacity-50' : 'hover:bg-gray-700'
-              }`}
+              className={`flex justify-between items-center p-2 rounded mb-1 cursor-pointer ${selectedObjectId === obj.id ? 'bg-blue-900 bg-opacity-50' : 'hover:bg-gray-700'
+                }`}
               onClick={() => handleSelectObject(obj.id)}
             >
               <div className="flex items-center">
@@ -225,4 +224,4 @@ function getObjectIcon(type: string): React.ReactNode {
   }
 }
 
-export default ObjectsPanel; 
+export default HierarchyPanel; 

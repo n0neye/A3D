@@ -191,7 +191,7 @@ export const createBoneControlMeshes = (
       // Add metadata tag
       controlMesh.metadata = { 
         type: "boneControl", 
-        excludeFromObjectsPanel: true 
+        excludeFromHierarchy: true 
       };
     }
   });

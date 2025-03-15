@@ -26,7 +26,7 @@ export class DefaultMode implements EditorMode {
         !mesh.name.includes("gizmo") && 
         !mesh.name.startsWith("__") &&
         !mesh.name.includes("ik-target") &&
-        !(mesh.metadata && mesh.metadata.excludeFromObjectsPanel === true)) {
+        !(mesh.metadata && mesh.metadata.excludeFromHierarchy === true)) {
       
       console.log("Default mode: Object selected", mesh.name);
       
