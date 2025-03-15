@@ -30,6 +30,13 @@ export interface EntityMetadata {
   created: Date;
   lastImageUrl?: string;
   
+  // Add progress tracking
+  processingState?: {
+    isGenerating: boolean;
+    isConverting: boolean;
+    progressMessage: string;
+  };
+  
   // For AI generated entities
   aiData?: {
     stage: 'image' | '3dModel';
@@ -213,6 +220,41 @@ export class EntityNode extends BABYLON.TransformNode {
   // Proxy methods for convenient access to mesh properties
   public getBoundingInfo(): BABYLON.BoundingInfo | null {
     return this.primaryMesh?.getBoundingInfo() || null;
+  }
+  
+  // Add these methods to EntityNode class
+  public setGeneratingState(isGenerating: boolean, message: string = ''): void {
+    if (!this.metadata.processingState) {
+      this.metadata.processingState = {
+        isGenerating: false,
+        isConverting: false,
+        progressMessage: ''
+      };
+    }
+    
+    this.metadata.processingState.isGenerating = isGenerating;
+    this.metadata.processingState.progressMessage = message;
+  }
+  
+  public setConvertingState(isConverting: boolean, message: string = ''): void {
+    if (!this.metadata.processingState) {
+      this.metadata.processingState = {
+        isGenerating: false,
+        isConverting: false,
+        progressMessage: ''
+      };
+    }
+    
+    this.metadata.processingState.isConverting = isConverting;
+    this.metadata.processingState.progressMessage = message;
+  }
+  
+  public getProcessingState(): {isGenerating: boolean; isConverting: boolean; progressMessage: string} {
+    return this.metadata.processingState || {
+      isGenerating: false,
+      isConverting: false,
+      progressMessage: ''
+    };
   }
 }
 

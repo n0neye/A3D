@@ -333,7 +333,6 @@ export default function SceneViewer() {
           {/* EntityPanel */}
           <EntityPanel 
             scene={sceneState} 
-            gizmoManager={gizmoManagerState} 
           />
         </div>
         
