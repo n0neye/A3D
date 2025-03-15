@@ -1,6 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { EditorMode, EditorModeManager } from '../modeManager';
 import { getEntityFromMesh, resolveEntity } from '../../entity-manager';
+import { Entity } from '../../../types/entity';
 
 export class DefaultMode implements EditorMode {
   id = 'default';
@@ -34,11 +35,11 @@ export class DefaultMode implements EditorMode {
       
       console.log("Default mode: Entity selected", entity.name, entity.metadata);
       
-      // Switch to object manipulation mode and pass the selected entity
+      // Switch to entity manipulation mode and pass the selected entity
       const modeManager = EditorModeManager.getInstance();
       modeManager.setMode('entity', scene);
       
-      // After switching mode, have the object mode handle this object
+      // After switching mode, have the entity mode handle this object
       modeManager.handleEntitySelected(entity, scene);
       
       return true;
@@ -49,9 +50,9 @@ export class DefaultMode implements EditorMode {
   }
   
   handleEntitySelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
-    // When object is selected, switch to object manipulation mode
+    // When object is selected, switch to entity manipulation mode
     const modeManager = EditorModeManager.getInstance();
-    modeManager.setMode('object', scene);
+    modeManager.setMode('entity', scene);
   }
   
   handleKeyDown(event: KeyboardEvent, scene: BABYLON.Scene): boolean {

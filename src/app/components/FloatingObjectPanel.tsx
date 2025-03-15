@@ -229,9 +229,9 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
                 </button>
                 
                 <button 
-                  className={`py-1 text-xs ${isConverting ? 'bg-gray-600' : selectedEntity?.metadata?.generatedImage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                  className={`py-1 text-xs ${isConverting ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
                   onClick={handleConvertTo3D}
-                  disabled={isGenerating || isConverting || !selectedEntity?.metadata?.generatedImage}
+                  disabled={isGenerating || isConverting || !selectedEntity?.getCurrentGeneration()?.imageUrl}
                 >
                   {isConverting ? 'Converting...' : 'Convert to 3D'}
                 </button>

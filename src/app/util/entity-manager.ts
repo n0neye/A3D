@@ -1,25 +1,32 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { EntityType, EntityMetadata, ImageRatio, ImageSize } from '../types/entity';
+import { Entity, EntityType, EntityMetadata, ImageRatio, ImageSize, isEntity } from '../types/entity';
 
 // Entity resolution functions
-export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): BABYLON.TransformNode | null {
-  return mesh?.metadata?.parentEntity || null;
+export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): Entity | null {
+  return mesh?.metadata?.parentEntity as Entity || null;
 }
 
-export function getPrimaryMeshFromEntity(entity: BABYLON.TransformNode): BABYLON.AbstractMesh | null {
+export function getPrimaryMeshFromEntity(entity: Entity | BABYLON.TransformNode): BABYLON.AbstractMesh | null {
+  if (isEntity(entity)) {
+    return entity.primaryMesh;
+  }
+  
+  // Legacy fallback for TransformNode
   return entity?.metadata?.primaryMesh || 
-         (entity.getChildMeshes?.(false)[0] as BABYLON.AbstractMesh) || 
+         (entity?.getChildMeshes?.(false)[0] as BABYLON.AbstractMesh) || 
          null;
 }
 
-export function resolveEntity(node: BABYLON.Node): BABYLON.TransformNode | null {
-  if (node instanceof BABYLON.AbstractMesh && node.metadata?.parentEntity) {
-    return node.metadata.parentEntity;
-  }
-  if (node instanceof BABYLON.TransformNode && node.metadata?.entityType) {
+export function resolveEntity(node: BABYLON.Node): Entity | null {
+  if (isEntity(node)) {
     return node;
   }
+  
+  if (node instanceof BABYLON.AbstractMesh && node.metadata?.parentEntity) {
+    return node.metadata.parentEntity as Entity;
+  }
+  
   return null;
 }
 
@@ -171,34 +178,11 @@ export function createEntity(
     imageSize?: ImageSize;
     name?: string;
   } = {}
-): BABYLON.TransformNode {
+): Entity {
   const name = options.name || `${type}-${uuidv4().substring(0, 8)}`;
   
-  // Create dummy node as the parent
-  const dummyNode = new BABYLON.TransformNode(name, scene);
-  
-  // Set position if provided
-  if (options.position) {
-    dummyNode.position = options.position;
-  }
-  
-  // Add entity metadata
-  dummyNode.metadata = {
-    entityType: type,
-    displayName: name,
-    created: new Date()
-  };
-  
-  // Add AI data for AI entities
-  if (['aiObject', 'character', 'skybox', 'background'].includes(type)) {
-    dummyNode.metadata.aiData = {
-      stage: 'image',
-      currentStateId: null,
-      ratio: options.ratio || '1:1',
-      imageSize: options.imageSize || 'medium',
-      generationHistory: []
-    };
-  }
+  // Create entity object
+  const entity = new Entity(name, scene, type, options);
   
   // Create child mesh based on entity type
   let childMesh: BABYLON.Mesh;
@@ -252,18 +236,13 @@ export function createEntity(
   material.backFaceCulling = false;
   childMesh.material = material;
   
-  // Parent the mesh to the dummy node
-  childMesh.parent = dummyNode;
+  // Parent the mesh to the entity
+  childMesh.parent = entity;
   
-  // Establish bidirectional references
-  childMesh.metadata = { 
-    isEntityMesh: true,
-    parentEntity: dummyNode 
-  };
+  // Set as primary mesh
+  entity.primaryMesh = childMesh;
   
-  dummyNode.metadata.primaryMesh = childMesh;
-  
-  return dummyNode;
+  return entity;
 }
 
 // Helper function to get size based on ratio
@@ -284,12 +263,12 @@ function getPlaneSize(ratio: ImageRatio): { width: number, height: number } {
 
 // Apply image to entity
 export function applyImageToEntity(
-  entity: BABYLON.TransformNode,
+  entity: Entity | BABYLON.TransformNode,
   imageUrl: string,
   scene: BABYLON.Scene
 ): void {
   // Get the primary mesh
-  const childMesh = getPrimaryMeshFromEntity(entity);
+  const childMesh = isEntity(entity) ? entity.primaryMesh : getPrimaryMeshFromEntity(entity);
   
   if (!childMesh) return;
   
@@ -302,8 +281,9 @@ export function applyImageToEntity(
   }
   
   // Check if we need to revoke previous blob URL
-  if (entity.metadata?.lastImageUrl?.startsWith('blob:')) {
-    URL.revokeObjectURL(entity.metadata.lastImageUrl);
+  const entityMetadata = isEntity(entity) ? entity.metadata : entity.metadata;
+  if (entityMetadata?.lastImageUrl?.startsWith('blob:')) {
+    URL.revokeObjectURL(entityMetadata.lastImageUrl);
   }
   
   // Create texture
@@ -315,5 +295,7 @@ export function applyImageToEntity(
   childMesh.material = material;
   
   // Update metadata
-  entity.metadata.lastImageUrl = imageUrl;
+  if (entityMetadata) {
+    entityMetadata.lastImageUrl = imageUrl;
+  }
 } 

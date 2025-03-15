@@ -2,6 +2,7 @@ import * as BABYLON from '@babylonjs/core';
 import { EventEmitter } from 'events';
 import React, { useState, useEffect } from 'react';
 import { resolveEntity, getPrimaryMeshFromEntity } from '../entity-manager';
+import { Entity, isEntity } from '../../types/entity';
 
 // Mode interface that all editor modes must implement
 export interface EditorMode {
@@ -107,7 +108,7 @@ export class EditorModeManager extends EventEmitter {
     const entity = resolveEntity(node);
     
     if (this.currentMode) {
-      // Pass the entity if found, otherwise the original node
+      // Pass the entity or node
       this.currentMode.handleEntitySelected(entity || node, scene);
     }
     
@@ -115,7 +116,7 @@ export class EditorModeManager extends EventEmitter {
     if (this.gizmoManager) {
       if (entity) {
         // Get the primary mesh to attach the gizmo to
-        const primaryMesh = getPrimaryMeshFromEntity(entity);
+        const primaryMesh = entity.primaryMesh;
         if (primaryMesh) {
           this.gizmoManager.attachToMesh(primaryMesh);
           // Store the entity reference on the gizmo manager
@@ -160,13 +161,13 @@ export class EditorModeManager extends EventEmitter {
     return this.gizmoManager;
   }
   
-  // Add a helper method to get the selected entity
-  getSelectedEntity(): BABYLON.TransformNode | null {
+  // Get the selected entity
+  getSelectedEntity(): Entity | null {
     if (!this.gizmoManager) return null;
     
     // First check if we have a stored entity reference
     if (this.gizmoManager.metadata?.selectedEntity) {
-      return this.gizmoManager.metadata.selectedEntity;
+      return this.gizmoManager.metadata.selectedEntity as Entity;
     }
     
     // Otherwise try to resolve from the attached mesh
@@ -182,7 +183,7 @@ export function useEditorMode(scene: BABYLON.Scene | null) {
   const [currentModeId, setCurrentModeId] = React.useState<string | null>(
     EditorModeManager.getInstance().getCurrentMode()?.id || null
   );
-  const [selectedEntity, setSelectedEntity] = useState<BABYLON.TransformNode | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
   
   React.useEffect(() => {
     const modeManager = EditorModeManager.getInstance();

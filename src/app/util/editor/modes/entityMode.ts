@@ -1,11 +1,12 @@
 import * as BABYLON from '@babylonjs/core';
 import { EditorMode } from '../modeManager';
 import { resolveEntity, getPrimaryMeshFromEntity } from '../../entity-manager';
+import { Entity, isEntity } from '../../../types/entity';
 
 export class EntityMode implements EditorMode {
   id = 'entity';
-  name = 'Entity';
-  private selectedMesh: BABYLON.AbstractMesh | null = null;
+  name = 'Entity Manipulation';
+  private selectedEntity: Entity | null = null;
   private gizmoManager: BABYLON.GizmoManager | null = null;
   
   onEnter(scene: BABYLON.Scene, previousModeId: string): void {
@@ -20,7 +21,7 @@ export class EntityMode implements EditorMode {
   }
   
   onExit(scene: BABYLON.Scene, nextModeId: string): void {
-    this.selectedMesh = null;
+    this.selectedEntity = null;
   }
   
   handleSceneClick(pickInfo: BABYLON.PickingInfo, scene: BABYLON.Scene): boolean {
@@ -51,10 +52,11 @@ export class EntityMode implements EditorMode {
     const entity = resolveEntity(node);
     
     if (entity) {
-      console.log("Entity mode: selected", entity.name);
+      console.log("Entity mode: Entity selected", entity.name);
+      this.selectedEntity = entity;
       
       // Get the primary mesh for gizmo attachment
-      const mesh = getPrimaryMeshFromEntity(entity);
+      const mesh = entity.primaryMesh;
       
       if (mesh && this.gizmoManager) {
         this.gizmoManager.attachToMesh(mesh);
@@ -68,11 +70,12 @@ export class EntityMode implements EditorMode {
     } else if (node instanceof BABYLON.AbstractMesh) {
       // Fall back to using the mesh directly
       console.log("Entity mode: Mesh selected", node.name);
+      this.selectedEntity = null;
       
       if (this.gizmoManager) {
         this.gizmoManager.attachToMesh(node);
         
-        // Clear entity reference
+        // Clear any stored entity
         if (this.gizmoManager.metadata) {
           delete this.gizmoManager.metadata.selectedEntity;
         }
@@ -82,8 +85,8 @@ export class EntityMode implements EditorMode {
   
   handleKeyDown(event: KeyboardEvent, scene: BABYLON.Scene): boolean {
     // Handle delete key to remove selected object
-    if ((event.key === 'Delete') && this.selectedMesh) {
-      // Logic to delete object would go here
+    if ((event.key === 'Delete') && this.selectedEntity) {
+      // Logic to delete entity would go here
       return true;
     }
     return false;
