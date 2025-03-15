@@ -117,7 +117,8 @@ export default function SceneViewer() {
       // Add pointer observer that uses our mode system
       scene.onPointerObservable.add((pointerInfo) => {
         if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-          if (pointerInfo.pickInfo) {
+          // if  is left click
+          if (pointerInfo.pickInfo && pointerInfo.event.button === 0) {
             // Let the mode manager handle this click
             EditorModeManager.getInstance().handleSceneClick(pointerInfo.pickInfo, scene);
           }
