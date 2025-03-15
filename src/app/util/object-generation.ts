@@ -1,5 +1,7 @@
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
+// Import GLB/GLTF loaders
+import "@babylonjs/loaders/glTF";
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;
@@ -419,14 +421,20 @@ export async function replaceWithModel(
                     onProgress?.({ message: 'Processing 3D model...' });
                     
                     if (meshes.length > 0) {
-                        const rootMesh = meshes[0];
+                        // Create a parent container mesh
+                        const container = new BABYLON.Mesh("container", scene);
+                        
+                        // Parent all imported meshes to the container
+                        for (const mesh of meshes) {
+                            mesh.parent = container;
+                        }
                         
                         // Apply the original mesh's transforms
-                        rootMesh.position = position;
-                        rootMesh.rotation = rotation;
-                        rootMesh.scaling = scaling;
-                        rootMesh.name = name;
-                        rootMesh.metadata = metadata;
+                        container.position = position;
+                        container.rotation = rotation;
+                        container.scaling = scaling;
+                        container.name = name;
+                        container.metadata = metadata;
                         
                         // Dispose the original mesh
                         currentMesh.dispose();
