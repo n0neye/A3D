@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorMode } from '../util/editor/modeManager';
+import { createEntity } from '../util/entity-manager';
+import { ImageRatio, ImageSize } from '../types/entity';
 
 interface GenerationMenuProps {
   scene: BABYLON.Scene | null;
@@ -10,87 +12,99 @@ interface GenerationMenuProps {
 const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) => {
   const { setMode } = useEditorMode(scene);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [ratio, setRatio] = useState<ImageRatio>('1:1');
+  const [imageSize, setImageSize] = useState<ImageSize>('medium');
   
-  // Create a plane facing the camera
-  const createPlaneForGeneration = () => {
-    if (!scene) return null;
+  // Create an entity
+  const handleCreateEntity = (type: 'aiObject' | 'character' | 'skybox' | 'background') => {
+    if (!scene) return;
     
-    // Get the active camera
+    console.log(`Creating ${type} entity`);
+    setIsGenerating(true);
+    
+    // Create entity facing camera
     const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
-    if (!camera) return null;
+    if (!camera) {
+      setIsGenerating(false);
+      return;
+    }
     
-    // Create a plane
-    const plane = BABYLON.MeshBuilder.CreatePlane("generation-canvas", { 
-      width: 2, 
-      height: 2 
-    }, scene);
-    
-    // Position the plane in front of the camera
+    // Calculate position in front of camera
     const distance = 3;
     const direction = camera.getTarget().subtract(camera.position).normalize();
     const position = camera.position.add(direction.scale(distance));
-    plane.position = position;
+    
+    // Create entity with the selected ratio and size
+    const entity = createEntity(scene, type, {
+      position,
+      ratio,
+      imageSize
+    });
     
     // Make it face the camera
-    plane.lookAt(camera.position);
-    
-    // Create a material for the plane
-    const material = new BABYLON.StandardMaterial("generation-material", scene);
-    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
-    material.alpha = 1;
-    material.backFaceCulling = false;
-
-    // Make the material unlit (not affected by scene lighting)
-    material.emissiveColor = new BABYLON.Color3(1, 1, 1); // Same as diffuse color
-    material.disableLighting = true; // Ignore scene lights
-
-    plane.material = material;
-    
-    // Add metadata for future features
-    plane.metadata = {
-      type: "generation",
-      excludeFromHierarchy: false
-    };
-    
-    return plane;
-  };
-  
-  // Handle object generation
-  const handleGenerateObject = () => {
-    if (!scene) return;
-    
-    console.log("Creating generation plane");
-    setIsGenerating(true);
-    
-    // Create a plane facing the camera
-    const plane = createPlaneForGeneration();
-    
-    // Select the newly created plane
-    if (plane && gizmoManager) {
-      gizmoManager.attachToMesh(plane);
+    const childMesh = entity.getChildren()[0] as BABYLON.Mesh;
+    if (childMesh) {
+      childMesh.lookAt(camera.position);
     }
     
-    // Enter object mode to manipulate it
+    // Select the entity
+    if (gizmoManager) {
+      gizmoManager.attachToMesh(entity as any);
+    }
+    
+    // Enter object mode
     setMode('object');
     
-    // Reset generating state
+    // Reset state
     setTimeout(() => {
       setIsGenerating(false);
     }, 500);
-  };
-  
-  // Handle character generation - we'll leave this empty for now
-  const handleGenerateCharacter = () => {
-    // Empty implementation
   };
   
   return (
     <div className="mb-6 pb-4 border-b border-gray-700">
       <h3 className="text-lg font-medium mb-3 text-white">Generate</h3>
       
+      {/* Ratio selection */}
+      <div className="mb-3">
+        <label className="block text-sm text-gray-400 mb-1">Aspect Ratio</label>
+        <div className="grid grid-cols-5 gap-1">
+          {(['1:1', '16:9', '9:16', '4:3', '3:4'] as ImageRatio[]).map(r => (
+            <button
+              key={r}
+              className={`py-1 px-2 text-xs rounded ${ratio === r 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+              onClick={() => setRatio(r)}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Size selection */}
+      <div className="mb-3">
+        <label className="block text-sm text-gray-400 mb-1">Image Size</label>
+        <div className="grid grid-cols-4 gap-1">
+          {(['small', 'medium', 'large', 'xl'] as ImageSize[]).map(size => (
+            <button
+              key={size}
+              className={`py-1 px-2 text-xs rounded ${imageSize === size 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+              onClick={() => setImageSize(size)}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Entity type buttons */}
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={handleGenerateObject}
+          onClick={() => handleCreateEntity('aiObject')}
           disabled={isGenerating}
           className="py-2 px-3 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm flex items-center justify-center"
         >
@@ -102,16 +116,32 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) 
               </svg>
               Creating...
             </span> 
-            : 'Canvas Plane'
+            : 'Object'
           }
         </button>
         
         <button
-          onClick={handleGenerateCharacter}
+          onClick={() => handleCreateEntity('character')}
           disabled={isGenerating}
           className="py-2 px-3 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm flex items-center justify-center"
         >
           Character
+        </button>
+        
+        <button
+          onClick={() => handleCreateEntity('background')}
+          disabled={isGenerating}
+          className="py-2 px-3 bg-green-600 hover:bg-green-700 rounded text-white text-sm flex items-center justify-center"
+        >
+          Background
+        </button>
+        
+        <button
+          onClick={() => handleCreateEntity('skybox')}
+          disabled={isGenerating}
+          className="py-2 px-3 bg-amber-600 hover:bg-amber-700 rounded text-white text-sm flex items-center justify-center"
+        >
+          Skybox
         </button>
       </div>
     </div>

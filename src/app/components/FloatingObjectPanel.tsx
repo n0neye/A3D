@@ -107,9 +107,11 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
     setIsGenerating(true);
     
     // Call the generation service
-    const result = await generateImage(prompt, (progress) => {
-      // Update progress in UI
-      setGenerationProgress(progress.message);
+    const result = await generateImage(prompt, {
+      entityType: objectType,
+      onProgress: (progress) => {
+        setGenerationProgress(progress.message);
+      }
     });
     
     if (result.success && result.imageUrl) {
@@ -152,8 +154,11 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
     setGenerationProgress('Starting 3D conversion...');
     
     // Call the 3D conversion service
-    const result = await convertImageTo3D(imageUrl, (progress) => {
-      setGenerationProgress(progress.message);
+    const result = await convertImageTo3D(imageUrl, {
+      entityType: objectType,
+      onProgress: (progress) => {
+        setGenerationProgress(progress.message);
+      }
     });
     
     if (result.success && result.modelUrl) {

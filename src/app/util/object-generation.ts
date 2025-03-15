@@ -2,6 +2,9 @@ import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 // Import GLB/GLTF loaders
 import "@babylonjs/loaders/glTF";
+// Import the entity manager functions
+import { createEntity, applyImageToEntity } from './entity-manager';
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize } from '../types/entity';
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;
@@ -12,6 +15,13 @@ export interface GenerationResult {
     success: boolean;
     imageUrl?: string;
     error?: string;
+}
+
+export interface PromptProps {
+    prompt: string;
+    negative_prompt?: string;
+    width?: number;
+    height?: number;
 }
 
 export type ProgressCallback = (progress: GenerationProgress) => void;
@@ -25,7 +35,7 @@ class ConnectionManager {
     
     // Queue system for handling requests one at a time
     private requestQueue: Array<{
-        prompt: string,
+        props: PromptProps,
         onProgress?: ProgressCallback,
         resolve: (result: GenerationResult) => void
     }> = [];
@@ -175,14 +185,16 @@ class ConnectionManager {
         
         // Notify progress
         this.currentRequest.onProgress?.({ message: 'Sending prompt to AI service...' });
+
         
         // Send the request
         try {
-            console.log("Sending prompt to AI service:", nextRequest.prompt);
+            console.log("Sending prompt to AI service:", nextRequest.props);
+            const size = nextRequest.props.width && nextRequest.props.height ? {width: nextRequest.props.width, height: nextRequest.props.height} : "square_hd";
             this.connection.send({
-                prompt: nextRequest.prompt,
-                negative_prompt: "cropped, out of frame",
-                image_size: "square_hd",
+                prompt: nextRequest.props.prompt,
+                negative_prompt: nextRequest.props.negative_prompt || "cropped, out of frame",
+                image_size: size,
                 sync_mode: false
             });
             
@@ -202,7 +214,7 @@ class ConnectionManager {
         }
     }
     
-    public async generateImage(prompt: string, onProgress?: ProgressCallback): Promise<GenerationResult> {
+    public async generateImage(props: PromptProps, onProgress?: ProgressCallback): Promise<GenerationResult> {
         // Initialize connection if needed
         if (!this.connection) {
             console.log("No connection, initializing");
@@ -218,7 +230,7 @@ class ConnectionManager {
         return new Promise((resolve) => {
             // Add to request queue
             this.requestQueue.push({
-                prompt: enhancedPrompt,
+                props,
                 onProgress,
                 resolve
             });
@@ -243,9 +255,58 @@ export function initializeImageGeneration(): void {
  */
 export async function generateImage(
     prompt: string,
-    onProgress?: ProgressCallback
+    options: {
+        ratio?: ImageRatio;
+        imageSize?: ImageSize;
+        entityType?: string;
+        negativePrompt?: string;
+        onProgress?: ProgressCallback;
+    } = {}
 ): Promise<GenerationResult> {
-    return ConnectionManager.getInstance().generateImage(prompt, onProgress);
+    // Use defaults if not provided
+    const ratio = options.ratio || '1:1';
+    const imageSize = options.imageSize || 'medium';
+    const entityType = options.entityType || 'aiObject';
+    const negativePrompt = options.negativePrompt || 'cropped, out of frame';
+    const onProgress = options.onProgress;
+    
+    // Determine dimensions
+    const ratioMultipliers = RATIO_MAP[ratio];
+    const baseSize = IMAGE_SIZE_MAP[imageSize];
+    
+    // Calculate width and height
+    let width, height;
+    if (ratioMultipliers.width > ratioMultipliers.height) {
+        width = baseSize;
+        height = Math.floor(baseSize * (ratioMultipliers.height / ratioMultipliers.width));
+    } else {
+        height = baseSize;
+        width = Math.floor(baseSize * (ratioMultipliers.width / ratioMultipliers.height));
+    }
+    
+    // Enhance prompt based on entity type
+    let enhancedPrompt = prompt;
+    if (entityType === 'character') {
+        enhancedPrompt = `full body character: ${prompt}, well-lit studio shot, detailed`;
+    } else if (entityType === 'object' || entityType === 'aiObject') {
+        enhancedPrompt = `${prompt} at the center of the frame, uncropped, solid black background, studio lighting`;
+    } else if (entityType === 'skybox') {
+        enhancedPrompt = `expansive panoramic view of ${prompt}, no people, no buildings`;
+    }
+    
+    // Update progress
+    onProgress?.({ message: `Generating ${width}x${height} image...` });
+    
+    // Get connection manager and generate the image
+    const connectionManager = ConnectionManager.getInstance();
+    
+    // Use the proper method (assuming it's called 'generateImage')
+    return connectionManager.generateImage({
+        prompt: enhancedPrompt,
+        negative_prompt: negativePrompt,
+        width,
+        height,
+    }, onProgress);
 }
 
 /**
@@ -308,40 +369,44 @@ export function applyImageToMesh(
  */
 export async function convertImageTo3D(
     imageUrl: string,
-    onProgress?: ProgressCallback
+    options: {
+        entityType?: string;
+        onProgress?: ProgressCallback;
+    } = {}
 ): Promise<{success: boolean, modelUrl?: string, error?: string}> {
+    const entityType = options.entityType || 'aiObject';
+    const onProgress = options.onProgress;
+    
     try {
-        onProgress?.({ message: 'Starting 3D conversion...' });
-        
-        // If the image is a blob URL, we need to convert it to base64 first
+        // Process image URL if it's a blob
         let processedImageUrl = imageUrl;
         if (imageUrl.startsWith('blob:')) {
             onProgress?.({ message: 'Converting image format...' });
             try {
-                // Fetch the blob and convert to base64
                 const response = await fetch(imageUrl);
                 const blob = await response.blob();
                 processedImageUrl = await blobToBase64(blob);
-                console.log("Converted blob URL to base64");
             } catch (error) {
-                console.error("Failed to convert blob URL:", error);
-                return {
-                    success: false,
-                    error: "Failed to prepare image for 3D conversion"
-                };
+                return { success: false, error: "Failed to prepare image" };
             }
         }
         
-        // Call the FAL AI Trellis API
+        // Set parameters based on entity type
+        const params: any = {
+            image_url: processedImageUrl,
+            mesh_simplify: 0.9,
+        };
+        
+        if (entityType === 'character') {
+            params.character = true;
+        }
+        
+        // Call the API
+        onProgress?.({ message: 'Sending to 3D conversion service...' });
         const startTime = performance.now();
-        onProgress?.({ message: 'Sending request to 3D conversion service...' });
         
         const result = await fal.subscribe("fal-ai/trellis", {
-            input: {
-                image_url: processedImageUrl,
-                mesh_simplify: 0.9,
-                // texture_size: "1024", //issue with fal api
-            },
+            input: params,
             logs: true,
             onQueueUpdate: (update) => {
                 if (update.status === "IN_PROGRESS") {
@@ -351,22 +416,19 @@ export async function convertImageTo3D(
             },
         });
         
-        // Log completion time
+        // Log time
         const elapsedTime = performance.now() - startTime;
         const seconds = (elapsedTime / 1000).toFixed(2);
         console.log("%c3D conversion completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
         
-        // Check if we have a valid model URL
-        if (result.data && result.data.model_mesh && result.data.model_mesh.url) {
+        // Return result
+        if (result.data?.model_mesh?.url) {
             return {
                 success: true,
                 modelUrl: result.data.model_mesh.url
             };
         } else {
-            return {
-                success: false,
-                error: 'No 3D model generated'
-            };
+            return { success: false, error: 'No 3D model generated' };
         }
     } catch (error) {
         console.error("3D conversion failed:", error);
@@ -399,7 +461,7 @@ function blobToBase64(blob: Blob): Promise<string> {
  * Load a 3D model and replace the current mesh
  */
 export async function replaceWithModel(
-    currentMesh: BABYLON.Mesh,
+    entity: BABYLON.TransformNode,
     modelUrl: string,
     scene: BABYLON.Scene,
     onProgress?: ProgressCallback
@@ -407,62 +469,54 @@ export async function replaceWithModel(
     try {
         onProgress?.({ message: 'Downloading 3D model...' });
         
-        // Store position, rotation, and scaling of the current mesh
-        const position = currentMesh.position.clone();
-        const rotation = currentMesh.rotation.clone();
-        const scaling = currentMesh.scaling.clone();
-        const name = currentMesh.name;
-        const metadata = {...currentMesh.metadata};
+        // Store transform info
+        const position = entity.position.clone();
+        const rotation = entity.rotation.clone();
+        const scaling = entity.scaling.clone();
         
-        // Load the 3D model
+        // Find and remove the child mesh
+        const childMesh = entity.getChildren().find(child => 
+            child instanceof BABYLON.Mesh
+        ) as BABYLON.Mesh;
+        
+        if (childMesh) {
+            childMesh.dispose();
+        }
+        
+        // Load the model as children of the entity node
         return new Promise((resolve) => {
             BABYLON.SceneLoader.ImportMesh("", modelUrl, "", scene, 
                 (meshes) => {
                     onProgress?.({ message: 'Processing 3D model...' });
                     
                     if (meshes.length > 0) {
-                        // Create a parent container mesh
-                        const container = new BABYLON.Mesh("container", scene);
-                        
-                        // Parent all imported meshes to the container
-                        for (const mesh of meshes) {
-                            mesh.parent = container;
-                        }
-                        
-                        // Apply the original mesh's transforms
-                        container.position = position;
-                        container.rotation = rotation;
-                        container.scaling = scaling;
-                        container.name = name;
-                        container.metadata = metadata;
-                        
-                        // Dispose the original mesh
-                        currentMesh.dispose();
+                        // Parent all meshes to our entity node
+                        meshes.forEach(mesh => {
+                            mesh.parent = entity;
+                        });
                         
                         onProgress?.({ message: '3D model loaded successfully!' });
                         resolve(true);
                     } else {
-                        onProgress?.({ message: 'Failed to load 3D model' });
+                        onProgress?.({ message: 'Failed to load model' });
                         resolve(false);
                     }
                 },
                 (evt) => {
-                    // Loading progress
                     if (evt.lengthComputable) {
                         const progress = (evt.loaded / evt.total * 100).toFixed(0);
                         onProgress?.({ message: `Downloading: ${progress}%` });
                     }
                 },
-                (scene, message) => {
-                    // Error
-                    onProgress?.({ message: `Error loading model: ${message}` });
+                (_, message) => {
+                    onProgress?.({ message: `Error: ${message}` });
                     resolve(false);
                 }
             );
         });
     } catch (error) {
-        console.error("Failed to replace with 3D model:", error);
-        onProgress?.({ message: 'Failed to replace with 3D model' });
+        console.error("Failed to replace with model:", error);
+        onProgress?.({ message: 'Failed to replace with model' });
         return false;
     }
 } 
