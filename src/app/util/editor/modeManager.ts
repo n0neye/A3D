@@ -166,6 +166,31 @@ export class EditorModeManager extends EventEmitter {
 
     return resolveEntity(mesh);
   }
+
+  // Add this method to the EditorModeManager class
+  setSelectedEntity(entity: EntityNode | null): void {
+    // If we have a gizmo manager, attach to the mesh  
+    if (this.gizmoManager) {
+      if (entity && entity.primaryMesh) {
+        this.gizmoManager.attachToMesh(entity.primaryMesh);
+        
+        // Store entity reference
+        this.gizmoManager.metadata = {
+          ...this.gizmoManager.metadata || {},
+          selectedEntity: entity
+        };
+      } else {
+        // Clear selection
+        this.gizmoManager.attachToMesh(null);
+        if (this.gizmoManager.metadata) {
+          delete this.gizmoManager.metadata.selectedEntity;
+        }
+      }
+    }
+    
+    // Emit an event so listeners can update
+    this.emit('selectionChanged', entity);
+  }
 }
 
 // React hook for using the editor mode

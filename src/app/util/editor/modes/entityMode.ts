@@ -1,17 +1,16 @@
 import * as BABYLON from '@babylonjs/core';
-import { EditorMode } from '../modeManager';
-import { resolveEntity, getPrimaryMeshFromEntity } from '../../entity-manager';
-import { EntityNode, isEntity } from '../../../types/entity';
+import { EditorMode, EditorModeManager } from '../modeManager';
+import { resolveEntity } from '../../entity-manager';
+import { EntityNode } from '../../../types/entity';
 
 export class EntityMode implements EditorMode {
   id = 'entity';
   name = 'Entity Manipulation';
-  private selectedEntity: EntityNode | null = null;
   private gizmoManager: BABYLON.GizmoManager | null = null;
 
   onEnter(scene: BABYLON.Scene, previousModeId: string): void {
     // Get the gizmo manager from mode manager
-    const modeManager = require('../modeManager').EditorModeManager.getInstance();
+    const modeManager = EditorModeManager.getInstance();
     this.gizmoManager = modeManager.getGizmoManager();
 
     // Configure gizmos if available
@@ -21,13 +20,15 @@ export class EntityMode implements EditorMode {
   }
 
   onExit(scene: BABYLON.Scene, nextModeId: string): void {
-    this.selectedEntity = null;
+    // Clear the selected entity
+    const modeManager = EditorModeManager.getInstance();
+    modeManager.setSelectedEntity(null)
   }
 
   handleSceneClick(pickInfo: BABYLON.PickingInfo, scene: BABYLON.Scene): boolean {
     // If clicked on nothing, return to default mode
     if (!pickInfo.hit || !pickInfo.pickedMesh) {
-      const modeManager = require('../modeManager').EditorModeManager.getInstance();
+      const modeManager = EditorModeManager.getInstance();
       modeManager.setMode('default', scene);
       return true;
     }
@@ -49,28 +50,27 @@ export class EntityMode implements EditorMode {
   }
 
   handleEntitySelected(entity: EntityNode, scene: BABYLON.Scene): void {
-    // Try to get the entity
-
     console.log("Entity mode: Entity selected", entity.name);
-    this.selectedEntity = entity;
 
-    // Get the primary mesh for gizmo attachment
-    const mesh = entity.primaryMesh;
+    // Get the ModeManager
+    const modeManager = EditorModeManager.getInstance();
 
-    if (mesh && this.gizmoManager) {
-      this.gizmoManager.attachToMesh(mesh);
+    // Let the manager handle selection - it will store the reference and notify listeners
+    modeManager.setSelectedEntity(entity);
 
-      // Store entity reference
-      this.gizmoManager.metadata = {
-        ...this.gizmoManager.metadata || {},
-        selectedEntity: entity
-      };
+    // Attach gizmos (this could also be handled by the manager)
+    if (this.gizmoManager && entity.primaryMesh) {
+      this.gizmoManager.attachToMesh(entity.primaryMesh);
     }
   }
 
   handleKeyDown(event: KeyboardEvent, scene: BABYLON.Scene): boolean {
+    // Use the manager to get the currently selected entity
+    const modeManager = EditorModeManager.getInstance();
+    const selectedEntity = modeManager.getSelectedEntity();
+
     // Handle delete key to remove selected object
-    if ((event.key === 'Delete') && this.selectedEntity) {
+    if ((event.key === 'Delete') && selectedEntity) {
       // Logic to delete entity would go here
       return true;
     }
