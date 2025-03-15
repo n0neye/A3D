@@ -2,8 +2,6 @@
 export enum EditModeEnum {
   Default = 'default',
   ObjectManipulation = 'object',
-  BoneEditing = 'bone',
-  IKPosing = 'ik'
 }
 
 // Helper function to get a friendly mode name
@@ -12,8 +10,6 @@ export const getModeName = (modeId: string | null): string => {
 
   switch (modeId) {
     case 'object': return 'Object Manipulation';
-    case 'bone': return 'Bone Editing';
-    case 'ik': return 'IK Posing';
     default: return 'Default';
   }
 };

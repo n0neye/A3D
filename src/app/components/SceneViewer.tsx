@@ -8,7 +8,6 @@ import HierarchyPanel from './HierarchyPanel';
 import { HistoryManager, Command } from './HistoryManager';
 import { TransformCommand, CreateMeshCommand, DeleteMeshCommand } from '../lib/commands';
 import PreviewPanel from './PreviewPanel';
-import CharacterPanel from './CharacterPanel';
 import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
 import { initializeEditorModes } from '../util/editor/initModes';
 import { EditModeEnum, getModeName } from '../util/scene-modes';
@@ -308,11 +307,6 @@ export default function SceneViewer() {
             onCreateObject={addObject}
           />
           
-          {/* <CharacterPanel
-            scene={sceneState}
-            onCreateCharacter={addObject}
-          /> */}
-
           <GenerationMenu 
             scene={sceneState} 
             gizmoManager={gizmoManagerState}
