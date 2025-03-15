@@ -3,7 +3,7 @@ import * as BABYLON from '@babylonjs/core';
 // Import GLB/GLTF loaders
 import "@babylonjs/loaders/glTF";
 // Import the entity manager functions
-import { createEntity, applyImageToEntity } from './entity-manager';
+import { createEntity, applyImageToEntity, getPrimaryMeshFromEntity } from './entity-manager';
 import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize } from '../types/entity';
 // Types for callbacks and results
 export interface GenerationProgress {
@@ -335,10 +335,21 @@ function estimateProgressFromLogs(logs: any[]): number | undefined {
  * Apply a generated image to a mesh in the scene
  */
 export function applyImageToMesh(
-    mesh: BABYLON.Mesh,
+    node: BABYLON.Node,
     imageUrl: string,
     scene: BABYLON.Scene
 ): void {
+    // Handle both entities and direct meshes
+    let mesh: BABYLON.AbstractMesh | null = null;
+    
+    if (node instanceof BABYLON.TransformNode) {
+        mesh = getPrimaryMeshFromEntity(node);
+    } else if (node instanceof BABYLON.AbstractMesh) {
+        mesh = node;
+    }
+    
+    if (!mesh) return;
+    
     // Get the existing material or create a new one
     let material = mesh.material as BABYLON.StandardMaterial;
     if (!material || !(material instanceof BABYLON.StandardMaterial)) {
@@ -469,30 +480,38 @@ export async function replaceWithModel(
     try {
         onProgress?.({ message: 'Downloading 3D model...' });
         
-        // Store transform info
+        // Store transform info from the entity
         const position = entity.position.clone();
         const rotation = entity.rotation.clone();
         const scaling = entity.scaling.clone();
         
-        // Find and remove the child mesh
-        const childMesh = entity.getChildren().find(child => 
-            child instanceof BABYLON.Mesh
-        ) as BABYLON.Mesh;
+        // Find all child meshes
+        const childMeshes = entity.getChildMeshes?.() || [];
         
-        if (childMesh) {
-            childMesh.dispose();
+        // Dispose all child meshes
+        for (const mesh of childMeshes) {
+            mesh.dispose();
         }
         
-        // Load the model as children of the entity node
+        // Load the model as children of the entity
         return new Promise((resolve) => {
             BABYLON.SceneLoader.ImportMesh("", modelUrl, "", scene, 
                 (meshes) => {
                     onProgress?.({ message: 'Processing 3D model...' });
                     
                     if (meshes.length > 0) {
-                        // Parent all meshes to our entity node
+                        // Parent all meshes to our entity
                         meshes.forEach(mesh => {
                             mesh.parent = entity;
+                            
+                            // Set up bidirectional references for the first mesh
+                            if (mesh === meshes[0]) {
+                                mesh.metadata = {
+                                    isEntityMesh: true,
+                                    parentEntity: entity
+                                };
+                                entity.metadata.primaryMesh = mesh;
+                            }
                         });
                         
                         onProgress?.({ message: '3D model loaded successfully!' });

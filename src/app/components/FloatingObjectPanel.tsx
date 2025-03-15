@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 // Import the generation service and 3D conversion
 import { generateImage, applyImageToMesh, convertImageTo3D, replaceWithModel } from '../util/object-generation';
+import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/entity-manager';
+import { useEditorMode } from '../util/editor/modeManager';
+import { EntityType } from '../types/entity';
 
 interface FloatingObjectPanelProps {
   scene: BABYLON.Scene | null;
@@ -9,10 +12,10 @@ interface FloatingObjectPanelProps {
 }
 
 const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoManager }) => {
+  const { selectedEntity } = useEditorMode(scene);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [visible, setVisible] = useState(false);
-  const [selectedMesh, setSelectedMesh] = useState<BABYLON.AbstractMesh | null>(null);
-  const [objectType, setObjectType] = useState<string>('default');
+  const [entityType, setEntityType] = useState<EntityType>('aiObject');
   
   // Add states for generation
   const [prompt, setPrompt] = useState('A rock');
@@ -22,32 +25,56 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
   // Add a new state for 3D conversion
   const [isConverting, setIsConverting] = useState(false);
   
+  // Update when selected entity changes
   useEffect(() => {
-    if (!scene || !gizmoManager) return;
+    if (selectedEntity) {
+      setEntityType(selectedEntity.getEntityType() || 'aiObject');
+      setVisible(true);
+    } else {
+      setVisible(false);
+    }
+  }, [selectedEntity]);
+  
+  // Update panel position
+  useEffect(() => {
+    if (!scene || !selectedEntity) return;
     
-    // Function to update panel position based on mesh position
     const updatePosition = () => {
-      const mesh = gizmoManager.gizmos.positionGizmo?.attachedMesh;
+      // Get the primary mesh for position/bounds
+      const childMesh = getPrimaryMeshFromEntity(selectedEntity);
       
-      if (mesh) {
-        // Update selected mesh when it changes
-        if (mesh !== selectedMesh) {
-          setSelectedMesh(mesh);
-          setObjectType(mesh.metadata?.type || 'default');
-          setVisible(true);
-        }
+      if (childMesh && scene.activeCamera) {
+        // Calculate position based on the mesh's bounds
+        childMesh.computeWorldMatrix(true);
+        const boundingInfo = childMesh.getBoundingInfo();
         
-        // Get the position in screen space
+        // Project to screen coordinates
+        const camera = scene.activeCamera;
+        const centerPosition = BABYLON.Vector3.Project(
+          childMesh.position,
+          BABYLON.Matrix.Identity(),
+          scene.getTransformMatrix(),
+          camera.viewport.toGlobal(
+            scene.getEngine().getRenderWidth(),
+            scene.getEngine().getRenderHeight()
+          )
+        );
+        
+        // Position the panel below the mesh
+        const objectHeight = boundingInfo ? boundingInfo.boundingSphere.radius * 2 : 0;
+        const screenScale = camera.fov / (Math.PI / 2); // Approximate screen scale factor
+        const screenHeight = objectHeight * screenScale * 100; // Convert to screen units
+        
+        setPosition({
+          left: centerPosition.x,
+          top: centerPosition.y + screenHeight / 2 + 30 // Add margin
+        });
+      } else {
+        // Fallback to entity position if no mesh
         const camera = scene.activeCamera;
         if (camera) {
-          // Get the mesh's bounding info
-          mesh.computeWorldMatrix(true);
-          const boundingInfo = mesh.getBoundingInfo();
-          const boundingBox = boundingInfo.boundingBox;
-          
-          // Project center position to screen coordinates
           const centerPosition = BABYLON.Vector3.Project(
-            mesh.position,
+            selectedEntity.position,
             BABYLON.Matrix.Identity(),
             scene.getTransformMatrix(),
             camera.viewport.toGlobal(
@@ -56,67 +83,44 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
             )
           );
           
-          // Project bottom position to screen coordinates
-          const bottomCenter = new BABYLON.Vector3(
-            mesh.position.x,
-            boundingBox.minimumWorld.y,
-            mesh.position.z
-          );
-          
-          const bottomPosition = BABYLON.Vector3.Project(
-            bottomCenter,
-            BABYLON.Matrix.Identity(),
-            scene.getTransformMatrix(),
-            camera.viewport.toGlobal(
-              scene.getEngine().getRenderWidth(),
-              scene.getEngine().getRenderHeight()
-            )
-          );
-          
-          // Calculate object height in screen space
-          const objectHeight = Math.abs(centerPosition.y - bottomPosition.y) * 2;
-          
-          // Position the panel below the object with a margin
-          const margin = 20;
           setPosition({
             left: centerPosition.x,
-            top: centerPosition.y + (objectHeight / 2) + margin
+            top: centerPosition.y + 50
           });
-        }
-      } else {
-        // No mesh selected
-        if (selectedMesh !== null) {
-          setSelectedMesh(null);
-          setVisible(false);
         }
       }
     };
     
-    // Update on each render
     const observer = scene.onBeforeRenderObservable.add(updatePosition);
     
     return () => {
       scene.onBeforeRenderObservable.remove(observer);
     };
-  }, [scene, gizmoManager, selectedMesh]);
+  }, [scene, selectedEntity]);
   
   // Handle image generation using the service
   const handleGenerate = async () => {
-    if (!selectedMesh || !prompt.trim() || !scene) return;
+    if (!selectedEntity || !prompt.trim() || !scene) return;
     
     setIsGenerating(true);
     
     // Call the generation service
     const result = await generateImage(prompt, {
-      entityType: objectType,
+      entityType: entityType,
       onProgress: (progress) => {
         setGenerationProgress(progress.message);
       }
     });
     
     if (result.success && result.imageUrl) {
-      // Apply the generated image to the mesh
-      applyImageToMesh(selectedMesh as BABYLON.Mesh, result.imageUrl, scene);
+      // Add to entity's generation history
+      selectedEntity.addGenerationToHistory(prompt, result.imageUrl, {
+        ratio: '1:1', // You might want to get this from a state
+        imageSize: 'medium'
+      });
+      
+      // Apply the generated image
+      applyImageToEntity(selectedEntity, result.imageUrl, scene);
     } else {
       // Handle error
       setGenerationProgress(result.error || 'Generation failed');
@@ -141,11 +145,11 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
   
   // Add a handler for 3D conversion
   const handleConvertTo3D = async () => {
-    if (!selectedMesh || !scene) return;
+    if (!selectedEntity || !scene) return;
     
-    // Check if the mesh has a generated image URL
-    const imageUrl = selectedMesh.metadata?.generatedImage;
-    if (!imageUrl) {
+    // Get current generation
+    const currentGen = selectedEntity.getCurrentGeneration();
+    if (!currentGen || currentGen.assetType !== 'image' || !currentGen.imageUrl) {
       alert('Please generate an image first');
       return;
     }
@@ -154,19 +158,20 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
     setGenerationProgress('Starting 3D conversion...');
     
     // Call the 3D conversion service
-    const result = await convertImageTo3D(imageUrl, {
-      entityType: objectType,
+    const result = await convertImageTo3D(currentGen.imageUrl, {
+      entityType: entityType,
       onProgress: (progress) => {
         setGenerationProgress(progress.message);
       }
     });
     
     if (result.success && result.modelUrl) {
-      setGenerationProgress('Loading 3D model...');
+      // Add to entity's history
+      selectedEntity.addModelToHistory(result.modelUrl, currentGen.id);
       
-      // Replace the current mesh with the 3D model
-      const success = await replaceWithModel(
-        selectedMesh as BABYLON.Mesh, 
+      // Replace with 3D model
+      await replaceWithModel(
+        selectedEntity, 
         result.modelUrl, 
         scene,
         (progress) => {
@@ -174,15 +179,10 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
         }
       );
       
-      if (success) {
-        setGenerationProgress('3D model loaded successfully!');
-        setTimeout(() => setGenerationProgress(''), 3000);
-      } else {
-        setGenerationProgress('Failed to load 3D model');
-      }
+      setGenerationProgress('3D model loaded successfully!');
+      setTimeout(() => setGenerationProgress(''), 3000);
     } else {
       setGenerationProgress(result.error || 'Conversion failed');
-      console.error("3D conversion failed:", result.error);
     }
     
     setIsConverting(false);
@@ -190,8 +190,8 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
   
   // UI content based on object type
   const renderContent = () => {
-    switch (objectType) {
-      case 'generation':
+    switch (entityType) {
+      case 'aiObject':
         return (
           <>
             <h3 className="text-sm font-medium mb-1">Generation Canvas</h3>
@@ -229,9 +229,9 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
                 </button>
                 
                 <button 
-                  className={`py-1 text-xs ${isConverting ? 'bg-gray-600' : selectedMesh?.metadata?.generatedImage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                  className={`py-1 text-xs ${isConverting ? 'bg-gray-600' : selectedEntity?.metadata?.generatedImage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
                   onClick={handleConvertTo3D}
-                  disabled={isGenerating || isConverting || !selectedMesh?.metadata?.generatedImage}
+                  disabled={isGenerating || isConverting || !selectedEntity?.metadata?.generatedImage}
                 >
                   {isConverting ? 'Converting...' : 'Convert to 3D'}
                 </button>

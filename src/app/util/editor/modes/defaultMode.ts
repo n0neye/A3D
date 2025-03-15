@@ -1,5 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { EditorMode } from '../modeManager';
+import { getEntityFromMesh, resolveEntity } from '../../entity-manager';
 
 export class DefaultMode implements EditorMode {
   id = 'default';
@@ -28,14 +29,17 @@ export class DefaultMode implements EditorMode {
         !mesh.name.includes("ik-target") &&
         !(mesh.metadata && mesh.metadata.excludeFromHierarchy === true)) {
       
-      console.log("Default mode: Object selected", mesh.name);
+      // Find the entity if this mesh belongs to one
+      const entity = getEntityFromMesh(mesh) || mesh;
       
-      // Switch to object manipulation mode and pass the selected mesh
+      console.log("Default mode: Object selected", entity.name, entity.metadata);
+      
+      // Switch to object manipulation mode and pass the selected entity
       const modeManager = require('../modeManager').EditorModeManager.getInstance();
       modeManager.setMode('object', scene);
       
       // After switching mode, have the object mode handle this object
-      modeManager.handleObjectSelected(mesh, scene);
+      modeManager.handleObjectSelected(entity, scene);
       
       return true;
     }
@@ -44,7 +48,7 @@ export class DefaultMode implements EditorMode {
     return false;
   }
   
-  handleObjectSelected(mesh: BABYLON.AbstractMesh, scene: BABYLON.Scene): void {
+  handleObjectSelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
     // When object is selected, switch to object manipulation mode
     const modeManager = require('../modeManager').EditorModeManager.getInstance();
     modeManager.setMode('object', scene);

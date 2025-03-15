@@ -1,13 +1,22 @@
 import * as BABYLON from '@babylonjs/core';
 import { EditorMode } from '../modeManager';
+import { resolveEntity, getPrimaryMeshFromEntity } from '../../entity-manager';
 
 export class ObjectManipulationMode implements EditorMode {
   id = 'object';
   name = 'Object Manipulation';
   private selectedMesh: BABYLON.AbstractMesh | null = null;
+  private gizmoManager: BABYLON.GizmoManager | null = null;
   
   onEnter(scene: BABYLON.Scene, previousModeId: string): void {
-    // Nothing specific to set up
+    // Get the gizmo manager from mode manager
+    const modeManager = require('../modeManager').EditorModeManager.getInstance();
+    this.gizmoManager = modeManager.getGizmoManager();
+    
+    // Configure gizmos if available
+    if (this.gizmoManager) {
+      this.configureGizmos(this.gizmoManager);
+    }
   }
   
   onExit(scene: BABYLON.Scene, nextModeId: string): void {
@@ -37,20 +46,37 @@ export class ObjectManipulationMode implements EditorMode {
     return false;
   }
   
-  handleObjectSelected(mesh: BABYLON.AbstractMesh, scene: BABYLON.Scene): void {
-    this.selectedMesh = mesh;
+  handleObjectSelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
+    // Try to get the entity
+    const entity = resolveEntity(node);
     
-    console.log("Object selected:", mesh.name);
-    
-    // Get the gizmo manager from the mode manager
-    const modeManager = require('../modeManager').EditorModeManager.getInstance();
-    const gizmoManager = modeManager.getGizmoManager();
-    
-    if (gizmoManager) {
-      this.configureGizmos(gizmoManager);
-      gizmoManager.attachToMesh(mesh);
-    } else {
-      console.error("No gizmo manager found");
+    if (entity) {
+      console.log("Object mode: Entity selected", entity.name);
+      
+      // Get the primary mesh for gizmo attachment
+      const mesh = getPrimaryMeshFromEntity(entity);
+      
+      if (mesh && this.gizmoManager) {
+        this.gizmoManager.attachToMesh(mesh);
+        
+        // Store entity reference
+        this.gizmoManager.metadata = {
+          ...this.gizmoManager.metadata || {},
+          selectedEntity: entity
+        };
+      }
+    } else if (node instanceof BABYLON.AbstractMesh) {
+      // Fall back to using the mesh directly
+      console.log("Object mode: Mesh selected", node.name);
+      
+      if (this.gizmoManager) {
+        this.gizmoManager.attachToMesh(node);
+        
+        // Clear entity reference
+        if (this.gizmoManager.metadata) {
+          delete this.gizmoManager.metadata.selectedEntity;
+        }
+      }
     }
   }
   

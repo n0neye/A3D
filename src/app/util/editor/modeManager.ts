@@ -1,6 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { EventEmitter } from 'events';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { resolveEntity, getPrimaryMeshFromEntity } from '../entity-manager';
 
 // Mode interface that all editor modes must implement
 export interface EditorMode {
@@ -101,9 +102,36 @@ export class EditorModeManager extends EventEmitter {
   }
   
   // Handle object selection
-  handleObjectSelected(mesh: BABYLON.AbstractMesh, scene: BABYLON.Scene): void {
+  handleObjectSelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
+    // First try to resolve to an entity
+    const entity = resolveEntity(node);
+    
     if (this.currentMode) {
-      this.currentMode.handleObjectSelected(mesh, scene);
+      // Pass the entity if found, otherwise the original node
+      this.currentMode.handleObjectSelected(entity || node, scene);
+    }
+    
+    // If we have a gizmo manager, attach to the mesh
+    if (this.gizmoManager) {
+      if (entity) {
+        // Get the primary mesh to attach the gizmo to
+        const primaryMesh = getPrimaryMeshFromEntity(entity);
+        if (primaryMesh) {
+          this.gizmoManager.attachToMesh(primaryMesh);
+          // Store the entity reference on the gizmo manager
+          this.gizmoManager.metadata = {
+            ...this.gizmoManager.metadata || {},
+            selectedEntity: entity
+          };
+        }
+      } else if (node instanceof BABYLON.AbstractMesh) {
+        // Fall back to attaching directly to the mesh
+        this.gizmoManager.attachToMesh(node);
+        // Clear any stored entity
+        if (this.gizmoManager.metadata) {
+          delete this.gizmoManager.metadata.selectedEntity;
+        }
+      }
     }
   }
   
@@ -131,6 +159,22 @@ export class EditorModeManager extends EventEmitter {
   getGizmoManager(): BABYLON.GizmoManager | null {
     return this.gizmoManager;
   }
+  
+  // Add a helper method to get the selected entity
+  getSelectedEntity(): BABYLON.TransformNode | null {
+    if (!this.gizmoManager) return null;
+    
+    // First check if we have a stored entity reference
+    if (this.gizmoManager.metadata?.selectedEntity) {
+      return this.gizmoManager.metadata.selectedEntity;
+    }
+    
+    // Otherwise try to resolve from the attached mesh
+    const mesh = this.gizmoManager.gizmos.positionGizmo?.attachedMesh;
+    if (!mesh) return null;
+    
+    return resolveEntity(mesh);
+  }
 }
 
 // React hook for using the editor mode
@@ -138,6 +182,7 @@ export function useEditorMode(scene: BABYLON.Scene | null) {
   const [currentModeId, setCurrentModeId] = React.useState<string | null>(
     EditorModeManager.getInstance().getCurrentMode()?.id || null
   );
+  const [selectedEntity, setSelectedEntity] = useState<BABYLON.TransformNode | null>(null);
   
   React.useEffect(() => {
     const modeManager = EditorModeManager.getInstance();
@@ -161,5 +206,24 @@ export function useEditorMode(scene: BABYLON.Scene | null) {
     return EditorModeManager.getInstance().isInMode(modeId);
   }, []);
   
-  return { currentModeId, setMode, isInMode };
+  useEffect(() => {
+    // Update the selected entity when the gizmo changes
+    if (!scene) return;
+    
+    const modeManager = EditorModeManager.getInstance();
+    
+    const updateSelection = () => {
+      const entity = modeManager.getSelectedEntity();
+      setSelectedEntity(entity);
+    };
+    
+    // Check on every frame
+    const observer = scene.onBeforeRenderObservable.add(updateSelection);
+    
+    return () => {
+      scene.onBeforeRenderObservable.remove(observer);
+    };
+  }, [scene]);
+  
+  return { currentModeId, setMode, isInMode, selectedEntity };
 } 

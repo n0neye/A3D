@@ -2,6 +2,27 @@ import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
 import { EntityType, EntityMetadata, ImageRatio, ImageSize } from '../types/entity';
 
+// Entity resolution functions
+export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): BABYLON.TransformNode | null {
+  return mesh?.metadata?.parentEntity || null;
+}
+
+export function getPrimaryMeshFromEntity(entity: BABYLON.TransformNode): BABYLON.AbstractMesh | null {
+  return entity?.metadata?.primaryMesh || 
+         (entity.getChildMeshes?.(false)[0] as BABYLON.AbstractMesh) || 
+         null;
+}
+
+export function resolveEntity(node: BABYLON.Node): BABYLON.TransformNode | null {
+  if (node instanceof BABYLON.AbstractMesh && node.metadata?.parentEntity) {
+    return node.metadata.parentEntity;
+  }
+  if (node instanceof BABYLON.TransformNode && node.metadata?.entityType) {
+    return node;
+  }
+  return null;
+}
+
 // Extend the BABYLON namespace to add our methods
 declare module '@babylonjs/core/Meshes/transformNode' {
   export interface TransformNode {
@@ -23,8 +44,26 @@ declare module '@babylonjs/core/Meshes/transformNode' {
     
     // Convert to 3D model
     addModelToHistory(modelUrl: string, derivedFromId: string): any;
+    
+    // Get primary display mesh
+    getDisplayMesh(): BABYLON.AbstractMesh | null;
+    
+    // Proxy methods that redirect to the primary mesh
+    getBoundingInfo(): BABYLON.BoundingInfo | null;
   }
 }
+
+// Implement proxy methods for TransformNode
+BABYLON.TransformNode.prototype.getDisplayMesh = function(): BABYLON.AbstractMesh | null {
+  return this.metadata?.primaryMesh || 
+         (this.getChildMeshes?.(false)[0] as BABYLON.AbstractMesh) || 
+         null;
+};
+
+BABYLON.TransformNode.prototype.getBoundingInfo = function(): BABYLON.BoundingInfo | null {
+  const mesh = this.getDisplayMesh();
+  return mesh ? mesh.getBoundingInfo() : null;
+};
 
 // Implement the extension methods
 BABYLON.TransformNode.prototype.isEntity = function(): boolean {
@@ -127,11 +166,10 @@ export function createEntity(
   scene: BABYLON.Scene, 
   type: EntityType = 'aiObject',
   options: {
-    name?: string;
     position?: BABYLON.Vector3;
     ratio?: ImageRatio;
     imageSize?: ImageSize;
-    tags?: string[];
+    name?: string;
   } = {}
 ): BABYLON.TransformNode {
   const name = options.name || `${type}-${uuidv4().substring(0, 8)}`;
@@ -148,7 +186,6 @@ export function createEntity(
   dummyNode.metadata = {
     entityType: type,
     displayName: name,
-    tags: options.tags || [],
     created: new Date()
   };
   
@@ -218,6 +255,14 @@ export function createEntity(
   // Parent the mesh to the dummy node
   childMesh.parent = dummyNode;
   
+  // Establish bidirectional references
+  childMesh.metadata = { 
+    isEntityMesh: true,
+    parentEntity: dummyNode 
+  };
+  
+  dummyNode.metadata.primaryMesh = childMesh;
+  
   return dummyNode;
 }
 
@@ -243,10 +288,8 @@ export function applyImageToEntity(
   imageUrl: string,
   scene: BABYLON.Scene
 ): void {
-  // Find the child mesh
-  const childMesh = entity.getChildren().find(child => 
-    child instanceof BABYLON.Mesh
-  ) as BABYLON.Mesh;
+  // Get the primary mesh
+  const childMesh = getPrimaryMeshFromEntity(entity);
   
   if (!childMesh) return;
   
