@@ -17,7 +17,7 @@ export type ProgressCallback = (progress: GenerationProgress) => void;
 // Singleton connection manager - updated to use a queue system
 class ConnectionManager {
     private static instance: ConnectionManager;
-    private connection: any = null;
+    private connection:  any = null;
     private isConnected: boolean = false;
     private isProcessing: boolean = false;
     
@@ -28,9 +28,11 @@ class ConnectionManager {
         resolve: (result: GenerationResult) => void
     }> = [];
     
+    // Add a timeStart property to track generation start time
     private currentRequest: {
         resolve: (result: GenerationResult) => void,
-        onProgress?: ProgressCallback
+        onProgress?: ProgressCallback,
+        timeStart?: number
     } | null = null;
     
     private constructor() { }
@@ -48,12 +50,19 @@ class ConnectionManager {
         console.log("Initializing WebSocket connection to FAL AI...");
         
         try {
-            this.connection = fal.realtime.connect("fal-ai/fast-turbo-diffusion", {
+            this.connection = fal.realtime.connect("fal-ai/fast-lcm-diffusion", {
                 onResult: (result) => {
                     console.log("Received result:", result);
                     
                     // Process the current request
                     if (this.currentRequest) {
+                        // Calculate elapsed time if we have a start time
+                        if (this.currentRequest.timeStart) {
+                            const elapsedTime = performance.now() - this.currentRequest.timeStart;
+                            const seconds = (elapsedTime / 1000).toFixed(2);
+                            console.log("%cGeneration completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
+                        }
+                        
                         // Check if result has images array with at least one item
                         if (result && result.images && Array.isArray(result.images) && result.images.length > 0) {
                             try {
@@ -153,10 +162,11 @@ class ConnectionManager {
         const nextRequest = this.requestQueue.shift();
         if (!nextRequest) return;
         
-        // Set as current request
+        // Set as current request with start time
         this.currentRequest = {
             resolve: nextRequest.resolve,
-            onProgress: nextRequest.onProgress
+            onProgress: nextRequest.onProgress,
+            timeStart: performance.now() // Store the start time
         };
         
         this.isProcessing = true;
@@ -170,7 +180,7 @@ class ConnectionManager {
             this.connection.send({
                 prompt: nextRequest.prompt,
                 negative_prompt: "cropped, out of frame",
-                image_size: "square",
+                image_size: "square_hd",
                 sync_mode: false
             });
             
@@ -201,7 +211,7 @@ class ConnectionManager {
         onProgress?.({ message: 'Starting generation...' });
         
         // Prepare the prompt
-        const enhancedPrompt = `image of a complete ${prompt} at the center of the frame, uncropped, and entirely visible. Render it against a solid black background, crisp edges, studio lighting`;
+        const enhancedPrompt = `${prompt} at the center of the frame, full-body shot, uncropped, 3d render, white light, ambient light, transparent black background, object separate from the background`;
         
         return new Promise((resolve) => {
             // Add to request queue
