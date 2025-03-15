@@ -257,8 +257,8 @@ export default function SceneViewer() {
     
     // Switch to object mode and attach gizmo to the new mesh
     if (mesh) {
-      // Set editor mode to object mode
-      setMode('object');
+      // Set editor mode to entity mode
+      setMode('entity');
       
       // Attach gizmo to the new mesh
       if (gizmoManagerRef.current) {

@@ -55,7 +55,7 @@ export class EditorModeManager extends EventEmitter {
     
     const targetMode = this.modes.get(modeId);
     if (!targetMode) {
-      console.error(`Mode ${modeId} not found`);
+      console.error(`Mode: ${modeId} not found`);
       return;
     }
     

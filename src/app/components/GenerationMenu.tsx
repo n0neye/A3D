@@ -52,8 +52,8 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) 
       gizmoManager.attachToMesh(entity as any);
     }
     
-    // Enter object mode
-    setMode('object');
+    // Enter entity mode
+    setMode('entity');
     
     // Reset state
     setTimeout(() => {
@@ -66,7 +66,7 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) 
       <h3 className="text-lg font-medium mb-3 text-white">Generate</h3>
       
       {/* Ratio selection */}
-      <div className="mb-3">
+      {/* <div className="mb-3">
         <label className="block text-sm text-gray-400 mb-1">Aspect Ratio</label>
         <div className="grid grid-cols-5 gap-1">
           {(['1:1', '16:9', '9:16', '4:3', '3:4'] as ImageRatio[]).map(r => (
@@ -81,10 +81,10 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) 
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
       
       {/* Size selection */}
-      <div className="mb-3">
+      {/* <div className="mb-3">
         <label className="block text-sm text-gray-400 mb-1">Image Size</label>
         <div className="grid grid-cols-4 gap-1">
           {(['small', 'medium', 'large', 'xl'] as ImageSize[]).map(size => (
@@ -99,7 +99,7 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) 
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
       
       {/* Entity type buttons */}
       <div className="grid grid-cols-2 gap-2">
