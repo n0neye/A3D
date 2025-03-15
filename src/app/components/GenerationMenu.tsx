@@ -35,9 +35,14 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
     
     // Create a material for the plane
     const material = new BABYLON.StandardMaterial("generation-material", scene);
-    material.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
     material.alpha = 1;
     material.backFaceCulling = false;
+
+    // Make the material unlit (not affected by scene lighting)
+    material.emissiveColor = new BABYLON.Color3(1, 1, 1); // Same as diffuse color
+    material.disableLighting = true; // Ignore scene lights
+
     plane.material = material;
     
     // Add metadata for future features

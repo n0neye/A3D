@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-// Import the FAL AI client
-import { fal } from "@fal-ai/client";
+// Import the generation service
+import { generateImage, applyImageToMesh } from '../util/object-generation';
 
 interface FloatingObjectPanelProps {
   scene: BABYLON.Scene | null;
@@ -97,57 +97,28 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
     };
   }, [scene, gizmoManager, selectedMesh]);
   
-  // Handle image generation
+  // Handle image generation using the service
   const handleGenerate = async () => {
     if (!selectedMesh || !prompt.trim() || !scene) return;
     
     setIsGenerating(true);
-    setGenerationProgress('Starting generation...');
     
-    try {
-      // Call the FAL AI API
-      const result = await fal.subscribe("fal-ai/fast-turbo-diffusion", {
-        input: {
-          prompt: prompt
-        },
-        logs: true,
-        onQueueUpdate: (update) => {
-          if (update.status === "IN_PROGRESS") {
-            const latestLog = update.logs[update.logs.length - 1]?.message || 'Processing...';
-            setGenerationProgress(latestLog);
-          }
-        },
-      });
-      
-      // When complete, apply the image to the mesh
-      if (result.data.images && result.data.images.length > 0) {
-        applyImageToMesh(selectedMesh as BABYLON.Mesh, result.data.images[0].url);
-      }
-    } catch (error) {
-      console.error("Generation failed:", error);
-      setGenerationProgress("Generation failed. Please try again.");
-    } finally {
-      setIsGenerating(false);
+    // Call the generation service
+    const result = await generateImage(prompt, (progress) => {
+      // Update progress in UI
+      setGenerationProgress(progress.message);
+    });
+    
+    if (result.success && result.imageUrl) {
+      // Apply the generated image to the mesh
+      applyImageToMesh(selectedMesh as BABYLON.Mesh, result.imageUrl, scene);
+    } else {
+      // Handle error
+      setGenerationProgress(result.error || 'Generation failed');
+      console.error("Generation failed:", result.error);
     }
-  };
-  
-  // Apply the generated image to the mesh
-  const applyImageToMesh = (mesh: BABYLON.Mesh, imageUrl: string) => {
-    // get the material of the mesh
-    const material = mesh.material as BABYLON.StandardMaterial;
     
-    // Create a texture from the image URL
-    const texture = new BABYLON.Texture(imageUrl, scene);
-    material.diffuseTexture = texture;
-    
-    // Apply the material to the mesh
-    mesh.material = material;
-    
-    // Update mesh metadata
-    mesh.metadata = {
-      ...mesh.metadata,
-      generatedImage: imageUrl
-    };
+    setIsGenerating(false);
   };
   
   // UI content based on object type
