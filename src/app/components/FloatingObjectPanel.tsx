@@ -30,8 +30,13 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
         // Get the position in screen space
         const camera = scene.activeCamera;
         if (camera) {
-          // Project the mesh position to screen coordinates
-          const projectedPosition = BABYLON.Vector3.Project(
+          // Get the mesh's bounding info
+          mesh.computeWorldMatrix(true);
+          const boundingInfo = mesh.getBoundingInfo();
+          const boundingBox = boundingInfo.boundingBox;
+          
+          // Project center position to screen coordinates
+          const centerPosition = BABYLON.Vector3.Project(
             mesh.position,
             BABYLON.Matrix.Identity(),
             scene.getTransformMatrix(),
@@ -41,11 +46,31 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
             )
           );
           
-          // Position the panel below the object
+          // Project bottom position to screen coordinates
+          const bottomCenter = new BABYLON.Vector3(
+            mesh.position.x,
+            boundingBox.minimumWorld.y,
+            mesh.position.z
+          );
+          
+          const bottomPosition = BABYLON.Vector3.Project(
+            bottomCenter,
+            BABYLON.Matrix.Identity(),
+            scene.getTransformMatrix(),
+            camera.viewport.toGlobal(
+              scene.getEngine().getRenderWidth(),
+              scene.getEngine().getRenderHeight()
+            )
+          );
+          
+          // Calculate object height in screen space
+          const objectHeight = Math.abs(centerPosition.y - bottomPosition.y) * 2;
+          
+          // Position the panel below the object with a margin
+          const margin = 20;
           setPosition({
-            left: projectedPosition.x,
-            // Position below the object with an offset
-            top: projectedPosition.y + 50
+            left: centerPosition.x,
+            top: centerPosition.y + (objectHeight / 2) + margin
           });
         }
       } else {
