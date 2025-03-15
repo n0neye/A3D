@@ -1,6 +1,6 @@
 import { EditorModeManager } from './modeManager';
 import { DefaultMode } from './modes/defaultMode';
-import { ObjectManipulationMode } from './modes/objectMode';
+import { EntityMode } from './modes/entityMode';
 
 // Initialize all editor modes
 export function initializeEditorModes(): void {
@@ -8,7 +8,7 @@ export function initializeEditorModes(): void {
   
   // Register all available modes
   modeManager.registerMode(new DefaultMode());
-  modeManager.registerMode(new ObjectManipulationMode());
+  modeManager.registerMode(new EntityMode());
   
   // Start in default mode
   console.log('Editor modes initialized');

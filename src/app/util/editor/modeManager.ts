@@ -14,7 +14,7 @@ export interface EditorMode {
   
   // Input handlers
   handleSceneClick(pickInfo: BABYLON.PickingInfo, scene: BABYLON.Scene): boolean;
-  handleObjectSelected(mesh: BABYLON.AbstractMesh, scene: BABYLON.Scene): void;
+  handleEntitySelected(node: BABYLON.Node, scene: BABYLON.Scene): void;
   handleKeyDown(event: KeyboardEvent, scene: BABYLON.Scene): boolean;
   
   // Gizmo management
@@ -101,14 +101,14 @@ export class EditorModeManager extends EventEmitter {
     return false;
   }
   
-  // Handle object selection
-  handleObjectSelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
+  // Handle entity selection
+  handleEntitySelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
     // First try to resolve to an entity
     const entity = resolveEntity(node);
     
     if (this.currentMode) {
       // Pass the entity if found, otherwise the original node
-      this.currentMode.handleObjectSelected(entity || node, scene);
+      this.currentMode.handleEntitySelected(entity || node, scene);
     }
     
     // If we have a gizmo manager, attach to the mesh

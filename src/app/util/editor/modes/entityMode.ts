@@ -2,9 +2,9 @@ import * as BABYLON from '@babylonjs/core';
 import { EditorMode } from '../modeManager';
 import { resolveEntity, getPrimaryMeshFromEntity } from '../../entity-manager';
 
-export class ObjectManipulationMode implements EditorMode {
-  id = 'object';
-  name = 'Object Manipulation';
+export class EntityMode implements EditorMode {
+  id = 'entity';
+  name = 'Entity';
   private selectedMesh: BABYLON.AbstractMesh | null = null;
   private gizmoManager: BABYLON.GizmoManager | null = null;
   
@@ -39,19 +39,19 @@ export class ObjectManipulationMode implements EditorMode {
         !mesh.name.includes("ik-target") &&
         !(mesh.metadata && mesh.metadata.excludeFromHierarchy === true)) {
       
-      this.handleObjectSelected(mesh, scene);
+      this.handleEntitySelected(mesh, scene);
       return true;
     }
     
     return false;
   }
   
-  handleObjectSelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
+  handleEntitySelected(node: BABYLON.Node, scene: BABYLON.Scene): void {
     // Try to get the entity
     const entity = resolveEntity(node);
     
     if (entity) {
-      console.log("Object mode: Entity selected", entity.name);
+      console.log("Entity mode: selected", entity.name);
       
       // Get the primary mesh for gizmo attachment
       const mesh = getPrimaryMeshFromEntity(entity);
@@ -67,7 +67,7 @@ export class ObjectManipulationMode implements EditorMode {
       }
     } else if (node instanceof BABYLON.AbstractMesh) {
       // Fall back to using the mesh directly
-      console.log("Object mode: Mesh selected", node.name);
+      console.log("Entity mode: Mesh selected", node.name);
       
       if (this.gizmoManager) {
         this.gizmoManager.attachToMesh(node);
