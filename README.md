@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Scene Builder - Design & Architecture
 
-## Getting Started
+## Core Architecture
 
-First, run the development server:
+This project implements a 3D scene editor built on Babylon.js with a custom entity system and mode-based interaction pattern.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Entity System
+
+The core of our architecture is the EntityNode class, which extends Babylon's TransformNode:
+
+```typescript
+export class EntityNode extends BABYLON.TransformNode {
+  public metadata: EntityMetadata;
+  private _primaryMesh: BABYLON.AbstractMesh | null = null;
+  
+  // Methods for managing entity state and behavior...
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This provides:
+- Strong typing with TypeScript
+- Clear ownership of meshes (primary mesh pattern)
+- Structured metadata storage
+- AI generation history tracking
+- Helper methods for entity operations
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Mode-Based Editing
+The editor uses a mode pattern for different interaction contexts:
+```typescript
+export interface EditorMode {
+  id: string;
+  name: string;
+  
+  // Lifecycle methods
+  onEnter(scene: BABYLON.Scene, previousModeId: string): void;
+  onExit(scene: BABYLON.Scene, nextModeId: string): void;
+  
+  // Input handlers
+  handleSceneClick(pickInfo: BABYLON.PickingInfo, scene: BABYLON.Scene): boolean;
+  handleEntitySelected(node: BABYLON.Node, scene: BABYLON.Scene): void;
+  // ...
+}
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Modes include:
+- Default Mode: Navigation and selection
+- Entity Mode: Manipulating selected entities (position, rotation, scale)
 
-## Learn More
+The EditorModeManager handles transitions between modes and routes input events.
 
-To learn more about Next.js, take a look at the following resources:
+### Selection & Manipulation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Objects are selected through:
+1. Scene raycast picking
+2. Entity resolution (mesh → entity)
+3. Gizmo attachment for manipulation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### AI Generation Integration
+The system integrates AI image and 3D model generation:
+- Entities store generation history
+- Support for text-to-image → image-to-3D pipeline
+- Versioning and preview of generated assets
 
-## Deploy on Vercel
+## Design Philosophy
+- Strong Type Safety: Custom entity classes with TypeScript over loose metadata
+- Single Responsibility: Each component has a clear, focused purpose
+- Extensibility: Mode system allows adding new interaction paradigms
+- Clean Boundaries: Clear separation between Babylon.js primitives and application logic
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Key Components
+- SceneViewer: Main 3D viewport
+- EntityPanel: Context-sensitive editing tools
+- ModeManager: Handles editing state and transitions
+- EntityManager: Creates and manages scene entities
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This architecture provides a flexible, maintainable foundation for building complex 3D editing experiences with AI-generated content.

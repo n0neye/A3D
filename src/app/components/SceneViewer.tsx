@@ -12,7 +12,7 @@ import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
 import { initializeEditorModes } from '../util/editor/initModes';
 import { EditModeEnum, getModeName } from '../util/scene-modes';
 import GenerationMenu from './GenerationMenu';
-import FloatingObjectPanel from './FloatingObjectPanel';
+import EntityPanel from './EntityPanel';
 import { initializeImageGeneration } from '../util/object-generation';
 
 // Mock AIService implementation for testing
@@ -330,8 +330,8 @@ export default function SceneViewer() {
             {getModeName(currentModeId)}
           </div>
           
-          {/* Floating object panel */}
-          <FloatingObjectPanel 
+          {/* EntityPanel */}
+          <EntityPanel 
             scene={sceneState} 
             gizmoManager={gizmoManagerState} 
           />

@@ -6,12 +6,12 @@ import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/entity-man
 import { useEditorMode } from '../util/editor/modeManager';
 import { EntityType } from '../types/entity';
 
-interface FloatingObjectPanelProps {
+interface EntityPanelProps {
   scene: BABYLON.Scene | null;
   gizmoManager: BABYLON.GizmoManager | null;
 }
 
-const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoManager }) => {
+const EntityPanel: React.FC<EntityPanelProps> = ({ scene, gizmoManager }) => {
   const { selectedEntity } = useEditorMode(scene);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [visible, setVisible] = useState(false);
@@ -274,4 +274,4 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
   );
 };
 
-export default FloatingObjectPanel; 
+export default EntityPanel; 
