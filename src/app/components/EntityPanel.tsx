@@ -30,6 +30,12 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene, gizmoManager }) => {
     if (selectedEntity) {
       setEntityType(selectedEntity.getEntityType() || 'aiObject');
       setVisible(true);
+      
+      // Get the current generation and set the prompt if available
+      const currentGen = selectedEntity.getCurrentGeneration();
+      if (currentGen && currentGen.prompt) {
+        setPrompt(currentGen.prompt);
+      }
     } else {
       setVisible(false);
     }
