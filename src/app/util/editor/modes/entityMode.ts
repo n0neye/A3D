@@ -1,12 +1,12 @@
 import * as BABYLON from '@babylonjs/core';
 import { EditorMode } from '../modeManager';
 import { resolveEntity, getPrimaryMeshFromEntity } from '../../entity-manager';
-import { Entity, isEntity } from '../../../types/entity';
+import { EntityNode, isEntity } from '../../../types/entity';
 
 export class EntityMode implements EditorMode {
   id = 'entity';
   name = 'Entity Manipulation';
-  private selectedEntity: Entity | null = null;
+  private selectedEntity: EntityNode | null = null;
   private gizmoManager: BABYLON.GizmoManager | null = null;
   
   onEnter(scene: BABYLON.Scene, previousModeId: string): void {

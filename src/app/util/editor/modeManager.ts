@@ -2,7 +2,7 @@ import * as BABYLON from '@babylonjs/core';
 import { EventEmitter } from 'events';
 import React, { useState, useEffect } from 'react';
 import { resolveEntity, getPrimaryMeshFromEntity } from '../entity-manager';
-import { Entity, isEntity } from '../../types/entity';
+import { EntityNode, isEntity } from '../../types/entity';
 
 // Mode interface that all editor modes must implement
 export interface EditorMode {
@@ -162,12 +162,12 @@ export class EditorModeManager extends EventEmitter {
   }
   
   // Get the selected entity
-  getSelectedEntity(): Entity | null {
+  getSelectedEntity(): EntityNode | null {
     if (!this.gizmoManager) return null;
     
     // First check if we have a stored entity reference
     if (this.gizmoManager.metadata?.selectedEntity) {
-      return this.gizmoManager.metadata.selectedEntity as Entity;
+      return this.gizmoManager.metadata.selectedEntity as EntityNode;
     }
     
     // Otherwise try to resolve from the attached mesh
@@ -183,7 +183,7 @@ export function useEditorMode(scene: BABYLON.Scene | null) {
   const [currentModeId, setCurrentModeId] = React.useState<string | null>(
     EditorModeManager.getInstance().getCurrentMode()?.id || null
   );
-  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<EntityNode | null>(null);
   
   React.useEffect(() => {
     const modeManager = EditorModeManager.getInstance();

@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { EditorMode, EditorModeManager } from '../modeManager';
 import { getEntityFromMesh, resolveEntity } from '../../entity-manager';
-import { Entity } from '../../../types/entity';
+import { EntityNode } from '../../../types/entity';
 
 export class DefaultMode implements EditorMode {
   id = 'default';

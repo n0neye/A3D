@@ -1,13 +1,13 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { Entity, EntityType, EntityMetadata, ImageRatio, ImageSize, isEntity } from '../types/entity';
+import { EntityNode, EntityType, EntityMetadata, ImageRatio, ImageSize, isEntity } from '../types/entity';
 
 // Entity resolution functions
-export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): Entity | null {
-  return mesh?.metadata?.parentEntity as Entity || null;
+export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): EntityNode | null {
+  return mesh?.metadata?.parentEntity as EntityNode || null;
 }
 
-export function getPrimaryMeshFromEntity(entity: Entity | BABYLON.TransformNode): BABYLON.AbstractMesh | null {
+export function getPrimaryMeshFromEntity(entity: EntityNode | BABYLON.TransformNode): BABYLON.AbstractMesh | null {
   if (isEntity(entity)) {
     return entity.primaryMesh;
   }
@@ -18,13 +18,13 @@ export function getPrimaryMeshFromEntity(entity: Entity | BABYLON.TransformNode)
          null;
 }
 
-export function resolveEntity(node: BABYLON.Node): Entity | null {
+export function resolveEntity(node: BABYLON.Node): EntityNode | null {
   if (isEntity(node)) {
     return node;
   }
   
   if (node instanceof BABYLON.AbstractMesh && node.metadata?.parentEntity) {
-    return node.metadata.parentEntity as Entity;
+    return node.metadata.parentEntity as EntityNode;
   }
   
   return null;
@@ -178,11 +178,11 @@ export function createEntity(
     imageSize?: ImageSize;
     name?: string;
   } = {}
-): Entity {
+): EntityNode {
   const name = options.name || `${type}-${uuidv4().substring(0, 8)}`;
   
   // Create entity object
-  const entity = new Entity(name, scene, type, options);
+  const entity = new EntityNode(name, scene, type, options);
   
   // Create child mesh based on entity type
   let childMesh: BABYLON.Mesh;
@@ -263,7 +263,7 @@ function getPlaneSize(ratio: ImageRatio): { width: number, height: number } {
 
 // Apply image to entity
 export function applyImageToEntity(
-  entity: Entity | BABYLON.TransformNode,
+  entity: EntityNode | BABYLON.TransformNode,
   imageUrl: string,
   scene: BABYLON.Scene
 ): void {

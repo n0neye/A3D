@@ -63,7 +63,7 @@ export interface EntityMetadata {
 }
 
 // Custom Entity Class that extends TransformNode
-export class Entity extends BABYLON.TransformNode {
+export class EntityNode extends BABYLON.TransformNode {
   public metadata: EntityMetadata;
   private _primaryMesh: BABYLON.AbstractMesh | null = null;
   
@@ -217,6 +217,6 @@ export class Entity extends BABYLON.TransformNode {
 }
 
 // Type guard function
-export function isEntity(node: BABYLON.Node): node is Entity {
-  return node instanceof Entity;
+export function isEntity(node: BABYLON.Node): node is EntityNode {
+  return node instanceof EntityNode;
 } 
