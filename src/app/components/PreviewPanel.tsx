@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { RenderEngine } from '../lib/renderEngine';
-import { generatePreviewImage, dataURLtoBlob } from '../util/image-api';
+import { generatePreviewImage, dataURLtoBlob } from '../util/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 
 interface PreviewPanelProps {
