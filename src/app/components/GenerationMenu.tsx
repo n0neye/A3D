@@ -35,10 +35,16 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
     
     // Create a material for the plane
     const material = new BABYLON.StandardMaterial("generation-material", scene);
-    material.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.3);
-    material.alpha = 0.8;
+    material.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+    material.alpha = 1;
     material.backFaceCulling = false;
     plane.material = material;
+    
+    // Add metadata for future features
+    plane.metadata = {
+      type: "generation",
+      excludeFromHierarchy: false
+    };
     
     return plane;
   };
