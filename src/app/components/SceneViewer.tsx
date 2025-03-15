@@ -12,6 +12,7 @@ import CharacterPanel from './CharacterPanel';
 import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
 import { initializeEditorModes } from '../util/editor/initModes';
 import { EditModeEnum, getModeName } from '../util/scene-modes';
+import GenerationMenu from './GenerationMenu';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -297,10 +298,14 @@ export default function SceneViewer() {
             onCreateObject={addObject}
           />
           
-          <CharacterPanel
+          {/* <CharacterPanel
             scene={sceneState}
             onCreateCharacter={addObject}
-          />
+          /> */}
+
+          <GenerationMenu scene={sceneState} />
+
+          
           
           <ObjectsPanel 
             scene={sceneState} 
