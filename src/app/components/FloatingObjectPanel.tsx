@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-// Import the generation service
-import { generateImage, applyImageToMesh } from '../util/object-generation';
+// Import the generation service and 3D conversion
+import { generateImage, applyImageToMesh, convertImageTo3D, replaceWithModel } from '../util/object-generation';
 
 interface FloatingObjectPanelProps {
   scene: BABYLON.Scene | null;
@@ -15,9 +15,12 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
   const [objectType, setObjectType] = useState<string>('default');
   
   // Add states for generation
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState('A rock');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState('');
+  
+  // Add a new state for 3D conversion
+  const [isConverting, setIsConverting] = useState(false);
   
   useEffect(() => {
     if (!scene || !gizmoManager) return;
@@ -134,6 +137,52 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
     }
   };
   
+  // Add a handler for 3D conversion
+  const handleConvertTo3D = async () => {
+    if (!selectedMesh || !scene) return;
+    
+    // Check if the mesh has a generated image URL
+    const imageUrl = selectedMesh.metadata?.generatedImage;
+    if (!imageUrl) {
+      alert('Please generate an image first');
+      return;
+    }
+    
+    setIsConverting(true);
+    setGenerationProgress('Starting 3D conversion...');
+    
+    // Call the 3D conversion service
+    const result = await convertImageTo3D(imageUrl, (progress) => {
+      setGenerationProgress(progress.message);
+    });
+    
+    if (result.success && result.modelUrl) {
+      setGenerationProgress('Loading 3D model...');
+      
+      // Replace the current mesh with the 3D model
+      const success = await replaceWithModel(
+        selectedMesh as BABYLON.Mesh, 
+        result.modelUrl, 
+        scene,
+        (progress) => {
+          setGenerationProgress(progress.message);
+        }
+      );
+      
+      if (success) {
+        setGenerationProgress('3D model loaded successfully!');
+        setTimeout(() => setGenerationProgress(''), 3000);
+      } else {
+        setGenerationProgress('Failed to load 3D model');
+      }
+    } else {
+      setGenerationProgress(result.error || 'Conversion failed');
+      console.error("3D conversion failed:", result.error);
+    }
+    
+    setIsConverting(false);
+  };
+  
   // UI content based on object type
   const renderContent = () => {
     switch (objectType) {
@@ -149,11 +198,11 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={isGenerating}
-                autoFocus // Auto focus the input when panel appears
+                disabled={isGenerating || isConverting}
+                autoFocus
               />
               
-              {isGenerating && (
+              {(isGenerating || isConverting) && (
                 <div className="text-xs text-gray-400 mt-1 mb-1">
                   <div className="flex items-center mb-1">
                     <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -165,13 +214,23 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
                 </div>
               )}
               
-              <button 
-                className={`w-full py-1 text-xs ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
-                onClick={handleGenerate}
-                disabled={isGenerating || !prompt.trim()}
-              >
-                {isGenerating ? 'Generating...' : 'Generate'}
-              </button>
+              <div className="grid grid-cols-2 gap-1">
+                <button 
+                  className={`py-1 text-xs ${isGenerating || isConverting ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
+                  onClick={handleGenerate}
+                  disabled={isGenerating || isConverting || !prompt.trim()}
+                >
+                  {isGenerating ? 'Generating...' : 'Generate'}
+                </button>
+                
+                <button 
+                  className={`py-1 text-xs ${isConverting ? 'bg-gray-600' : selectedMesh?.metadata?.generatedImage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                  onClick={handleConvertTo3D}
+                  disabled={isGenerating || isConverting || !selectedMesh?.metadata?.generatedImage}
+                >
+                  {isConverting ? 'Converting...' : 'Convert to 3D'}
+                </button>
+              </div>
             </div>
           </>
         );

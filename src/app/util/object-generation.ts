@@ -299,4 +299,162 @@ export function applyImageToMesh(
         ...mesh.metadata,
         generatedImage: imageUrl
     };
+}
+
+/**
+ * Generate a 3D model from an image using the FAL AI Trellis API
+ */
+export async function convertImageTo3D(
+    imageUrl: string,
+    onProgress?: ProgressCallback
+): Promise<{success: boolean, modelUrl?: string, error?: string}> {
+    try {
+        onProgress?.({ message: 'Starting 3D conversion...' });
+        
+        // If the image is a blob URL, we need to convert it to base64 first
+        let processedImageUrl = imageUrl;
+        if (imageUrl.startsWith('blob:')) {
+            onProgress?.({ message: 'Converting image format...' });
+            try {
+                // Fetch the blob and convert to base64
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                processedImageUrl = await blobToBase64(blob);
+                console.log("Converted blob URL to base64");
+            } catch (error) {
+                console.error("Failed to convert blob URL:", error);
+                return {
+                    success: false,
+                    error: "Failed to prepare image for 3D conversion"
+                };
+            }
+        }
+        
+        // Call the FAL AI Trellis API
+        const startTime = performance.now();
+        onProgress?.({ message: 'Sending request to 3D conversion service...' });
+        
+        const result = await fal.subscribe("fal-ai/trellis", {
+            input: {
+                image_url: processedImageUrl,
+                mesh_simplify: 0.9,
+                // texture_size: "1024", //issue with fal api
+            },
+            logs: true,
+            onQueueUpdate: (update) => {
+                if (update.status === "IN_PROGRESS") {
+                    const latestLog = update.logs[update.logs.length - 1]?.message || 'Processing...';
+                    onProgress?.({ message: latestLog });
+                }
+            },
+        });
+        
+        // Log completion time
+        const elapsedTime = performance.now() - startTime;
+        const seconds = (elapsedTime / 1000).toFixed(2);
+        console.log("%c3D conversion completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
+        
+        // Check if we have a valid model URL
+        if (result.data && result.data.model_mesh && result.data.model_mesh.url) {
+            return {
+                success: true,
+                modelUrl: result.data.model_mesh.url
+            };
+        } else {
+            return {
+                success: false,
+                error: 'No 3D model generated'
+            };
+        }
+    } catch (error) {
+        console.error("3D conversion failed:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Helper function to convert a Blob to a base64 data URL
+ */
+function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result);
+            } else {
+                reject(new Error('Failed to convert blob to base64'));
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * Load a 3D model and replace the current mesh
+ */
+export async function replaceWithModel(
+    currentMesh: BABYLON.Mesh,
+    modelUrl: string,
+    scene: BABYLON.Scene,
+    onProgress?: ProgressCallback
+): Promise<boolean> {
+    try {
+        onProgress?.({ message: 'Downloading 3D model...' });
+        
+        // Store position, rotation, and scaling of the current mesh
+        const position = currentMesh.position.clone();
+        const rotation = currentMesh.rotation.clone();
+        const scaling = currentMesh.scaling.clone();
+        const name = currentMesh.name;
+        const metadata = {...currentMesh.metadata};
+        
+        // Load the 3D model
+        return new Promise((resolve) => {
+            BABYLON.SceneLoader.ImportMesh("", modelUrl, "", scene, 
+                (meshes) => {
+                    onProgress?.({ message: 'Processing 3D model...' });
+                    
+                    if (meshes.length > 0) {
+                        const rootMesh = meshes[0];
+                        
+                        // Apply the original mesh's transforms
+                        rootMesh.position = position;
+                        rootMesh.rotation = rotation;
+                        rootMesh.scaling = scaling;
+                        rootMesh.name = name;
+                        rootMesh.metadata = metadata;
+                        
+                        // Dispose the original mesh
+                        currentMesh.dispose();
+                        
+                        onProgress?.({ message: '3D model loaded successfully!' });
+                        resolve(true);
+                    } else {
+                        onProgress?.({ message: 'Failed to load 3D model' });
+                        resolve(false);
+                    }
+                },
+                (evt) => {
+                    // Loading progress
+                    if (evt.lengthComputable) {
+                        const progress = (evt.loaded / evt.total * 100).toFixed(0);
+                        onProgress?.({ message: `Downloading: ${progress}%` });
+                    }
+                },
+                (scene, message) => {
+                    // Error
+                    onProgress?.({ message: `Error loading model: ${message}` });
+                    resolve(false);
+                }
+            );
+        });
+    } catch (error) {
+        console.error("Failed to replace with 3D model:", error);
+        onProgress?.({ message: 'Failed to replace with 3D model' });
+        return false;
+    }
 } 
