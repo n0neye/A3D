@@ -13,6 +13,7 @@ import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
 import { initializeEditorModes } from '../util/editor/initModes';
 import { EditModeEnum, getModeName } from '../util/scene-modes';
 import GenerationMenu from './GenerationMenu';
+import FloatingObjectPanel from './FloatingObjectPanel';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -322,6 +323,12 @@ export default function SceneViewer() {
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 rounded-full px-4 py-1.5 text-sm font-medium text-white pointer-events-none">
             {getModeName(currentModeId)}
           </div>
+          
+          {/* Floating object panel */}
+          <FloatingObjectPanel 
+            scene={sceneState} 
+            gizmoManager={gizmoManagerState} 
+          />
         </div>
         
         {/* Right panel for preview */}
