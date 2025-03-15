@@ -14,6 +14,7 @@ import { initializeEditorModes } from '../util/editor/initModes';
 import { EditModeEnum, getModeName } from '../util/scene-modes';
 import GenerationMenu from './GenerationMenu';
 import FloatingObjectPanel from './FloatingObjectPanel';
+import { initializeImageGeneration } from '../util/object-generation';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -286,6 +287,13 @@ export default function SceneViewer() {
     }
   };
 
+  // Initialize WebSocket connection on component mount
+  useEffect(() => {
+    // Initialize the WebSocket connection to the AI service
+    initializeImageGeneration();
+    
+    // Other initialization code...
+  }, []);
 
   return (
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200">
