@@ -121,6 +121,19 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
     setIsGenerating(false);
   };
   
+  // Add key handler for the input field
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Check if Enter/Return key is pressed
+    if (e.key === 'Enter' || e.key === 'Return') {
+      e.preventDefault();
+      
+      // Only trigger if not already generating and we have a prompt
+      if (!isGenerating && prompt.trim()) {
+        handleGenerate();
+      }
+    }
+  };
+  
   // UI content based on object type
   const renderContent = () => {
     switch (objectType) {
@@ -135,7 +148,9 @@ const FloatingObjectPanel: React.FC<FloatingObjectPanelProps> = ({ scene, gizmoM
                 className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handleKeyDown}
                 disabled={isGenerating}
+                autoFocus // Auto focus the input when panel appears
               />
               
               {isGenerating && (

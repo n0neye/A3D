@@ -211,8 +211,8 @@ export default function SceneViewer() {
         // Ctrl+Y = Redo
         event.preventDefault();
         historyManagerRef.current.redo();
-      } else if (event.key === 'Delete' || event.key === 'Backspace') {
-        // Delete/Backspace = Delete selected object
+      } else if (event.key === 'Delete') {
+        // Delete = Delete selected object
         const activeMesh = gizmoManagerState?.gizmos.positionGizmo?.attachedMesh as BABYLON.Mesh;
         if (activeMesh && sceneState) {
           deleteObject(activeMesh);
@@ -313,7 +313,10 @@ export default function SceneViewer() {
             onCreateCharacter={addObject}
           /> */}
 
-          <GenerationMenu scene={sceneState} />
+          <GenerationMenu 
+            scene={sceneState} 
+            gizmoManager={gizmoManagerState}
+          />
 
           
           

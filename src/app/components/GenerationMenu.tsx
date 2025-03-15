@@ -4,9 +4,10 @@ import { useEditorMode } from '../util/editor/modeManager';
 
 interface GenerationMenuProps {
   scene: BABYLON.Scene | null;
+  gizmoManager?: BABYLON.GizmoManager | null;
 }
 
-const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
+const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) => {
   const { setMode } = useEditorMode(scene);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -63,6 +64,11 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
     
     // Create a plane facing the camera
     const plane = createPlaneForGeneration();
+    
+    // Select the newly created plane
+    if (plane && gizmoManager) {
+      gizmoManager.attachToMesh(plane);
+    }
     
     // Enter object mode to manipulate it
     setMode('object');

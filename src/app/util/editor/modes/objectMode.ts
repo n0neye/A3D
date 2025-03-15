@@ -56,7 +56,7 @@ export class ObjectManipulationMode implements EditorMode {
   
   handleKeyDown(event: KeyboardEvent, scene: BABYLON.Scene): boolean {
     // Handle delete key to remove selected object
-    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedMesh) {
+    if ((event.key === 'Delete') && this.selectedMesh) {
       // Logic to delete object would go here
       return true;
     }
