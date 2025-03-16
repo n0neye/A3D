@@ -24,7 +24,6 @@ export interface PromptProps {
     height?: number;
 }
 
-const isSimulating = true;
 
 export type ProgressCallback = (progress: GenerationProgress) => void;
 

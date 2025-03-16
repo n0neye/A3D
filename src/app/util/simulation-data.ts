@@ -1,3 +1,27 @@
+import { Result } from "@fal-ai/client"
+import { TrellisOutput } from "@fal-ai/client/endpoints"
+
+export const isSimulating = true;
+
+export const  modelSimulationData: Result<TrellisOutput>[] = [
+    {
+        "data": {
+            "model_mesh": {
+                "url": "https://v3.fal.media/files/elephant/Epqn8JLaoHlxEvfJ_g3FV_model.glb",
+                "content_type": "application/octet-stream",
+                "file_name": "model.glb",
+                "file_size": 1775568
+            },
+            "timings": {
+                "prepare": 0.00000681169331073761,
+                "generation": 4.51186943333596,
+                "export": 19.238466400653124
+            }
+        },
+        "requestId": "eb0bf597-17cd-4eac-be05-38aa1aec1ef1"
+    }
+]
+
 export const imageSimulationData = [
     {
         "images": [

@@ -5,7 +5,8 @@ import "@babylonjs/loaders/glTF";
 // Import the entity manager functions
 import { createEntity, applyImageToEntity, getPrimaryMeshFromEntity } from './entity-manager';
 import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize } from '../types/entity';
-import { ProgressCallback } from "./generation-2d-realtim";
+import {  ProgressCallback } from "./generation-2d-realtim";
+import { modelSimulationData, isSimulating } from "./simulation-data";
 
 // Types for callbacks and results
 export interface GenerationProgress {
@@ -51,15 +52,28 @@ export async function convertImageTo3D(
         }
         
         // Call the API
-        onProgress?.({ message: 'Sending to 3D conversion service...' });
+        onProgress?.({ message: 'Starting 3D conversion...' });
         const startTime = performance.now();
+        if(isSimulating){
+            // Wait for 1 second
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const testData = modelSimulationData[0];
+            return {
+                success: true,
+                modelUrl: testData.data.model_mesh.url
+            }
+        }
         
         const result = await fal.subscribe("fal-ai/trellis", {
             input: params,
             logs: true,
             onQueueUpdate: (update) => {
                 if (update.status === "IN_PROGRESS") {
-                    const latestLog = update.logs[update.logs.length - 1]?.message || 'Processing...';
+                    // const latestLog = update.logs[update.logs.length - 1]?.message || 'Processing...';
+                    // Calculate estimated time remaining, min 30s
+                    const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
+                    const latestLog = `Processing... ${(estimatedTime/1000).toFixed(1)}s estimated`;
                     onProgress?.({ message: latestLog });
                 }
             },
@@ -69,6 +83,8 @@ export async function convertImageTo3D(
         const elapsedTime = performance.now() - startTime;
         const seconds = (elapsedTime / 1000).toFixed(2);
         console.log("%c3D conversion completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
+
+        console.log(result);
         
         // Return result
         if (result.data?.model_mesh?.url) {
