@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
+import { useEditorContext } from '../context/EditorContext';
 import { createEntity } from '../util/entity-manager';
 import { ImageRatio, ImageSize } from '../types/entity';
 
-interface GenerationMenuProps {
-  scene: BABYLON.Scene | null;
-}
-
-const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
-  const { setMode } = useEditorMode(scene);
+const GenerationMenu: React.FC = () => {
+  const { scene, setSelectedEntity } = useEditorContext();
   const [isGenerating, setIsGenerating] = useState(false);
   const [ratio, setRatio] = useState<ImageRatio>('1:1');
   const [imageSize, setImageSize] = useState<ImageSize>('medium');
@@ -41,8 +37,7 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
     });
     
     // Select the entity
-    const modeManager = EditorModeManager.getInstance();
-    modeManager.setSelectedEntity(entity);
+    setSelectedEntity(entity);
     
     // Reset state
     setTimeout(() => {
@@ -53,42 +48,6 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
   return (
     <div className="">
       <h3 className="text-lg font-medium mb-3 text-white">Add</h3>
-      
-      {/* Ratio selection */}
-      {/* <div className="mb-3">
-        <label className="block text-sm text-gray-400 mb-1">Aspect Ratio</label>
-        <div className="grid grid-cols-5 gap-1">
-          {(['1:1', '16:9', '9:16', '4:3', '3:4'] as ImageRatio[]).map(r => (
-            <button
-              key={r}
-              className={`py-1 px-2 text-xs rounded ${ratio === r 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-              onClick={() => setRatio(r)}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div> */}
-      
-      {/* Size selection */}
-      {/* <div className="mb-3">
-        <label className="block text-sm text-gray-400 mb-1">Image Size</label>
-        <div className="grid grid-cols-4 gap-1">
-          {(['small', 'medium', 'large', 'xl'] as ImageSize[]).map(size => (
-            <button
-              key={size}
-              className={`py-1 px-2 text-xs rounded ${imageSize === size 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-              onClick={() => setImageSize(size)}
-            >
-              {size}
-            </button>
-          ))}
-        </div>
-      </div> */}
       
       {/* Entity type buttons */}
       <div className="grid grid-cols-2 gap-2">

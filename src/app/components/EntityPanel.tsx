@@ -4,24 +4,17 @@ import * as BABYLON from '@babylonjs/core';
 import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-2d-realtime';
 import { convertImageTo3D } from '../util/generation-3d';
 import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/entity-manager';
-import { useEditorMode } from '../util/editor/modeManager';
+import { useEditorContext } from '../context/EditorContext';
 import { EntityType } from '../types/entity';
-import { isSimulating } from '../util/simulation-data';
-import { getImageSimulationData } from '../util/simulation-data';
+import { isSimulating, getImageSimulationData } from '../util/simulation-data';
 
-interface EntityPanelProps {
-  scene: BABYLON.Scene | null;
-}
-
-const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
-  const { selectedEntity } = useEditorMode(scene);
+const EntityPanel: React.FC = () => {
+  const { scene, selectedEntity } = useEditorContext();
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [entityType, setEntityType] = useState<EntityType>('aiObject');
-
-  // Add states for generation
   const [prompt, setPrompt] = useState('A rock');
-
-  // Add these computed values from entity
+  
+  // Get processing state from entity
   const processingState = selectedEntity?.getProcessingState() || {
     isGenerating: false,
     isConverting: false,
@@ -33,7 +26,7 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
   useEffect(() => {
     if (selectedEntity) {
       setEntityType(selectedEntity.getEntityType() || 'aiObject');
-
+      
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGeneration();
       if (currentGen && currentGen.prompt) {
@@ -105,12 +98,19 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
     };
   }, [scene, selectedEntity]);
 
-  // Handle image generation using the service
+  // Handle key events
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleGenerate();
+    }
+  };
+
+  // Handle image generation
   const handleGenerate = async () => {
     if (!selectedEntity || !prompt.trim() || !scene) return;
     const thisEntity = selectedEntity;
 
-    // Update entity state instead of local state
+    // Update entity state
     thisEntity.setGeneratingState(true, 'Starting generation...');
 
     // Call the generation service
@@ -121,7 +121,6 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
       result = await generateImage(prompt, {
         entityType: entityType,
         onProgress: (progress) => {
-          // Update the entity's progress message
           thisEntity.setGeneratingState(true, progress.message);
         }
       });
@@ -147,20 +146,7 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
     thisEntity.setGeneratingState(false);
   };
 
-  // Add key handler for the input field
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Check if Enter/Return key is pressed
-    if (e.key === 'Enter' || e.key === 'Return') {
-      e.preventDefault();
-
-      // Only trigger if not already generating and we have a prompt
-      if (!isGenerating && prompt.trim()) {
-        handleGenerate();
-      }
-    }
-  };
-
-  // Add a handler for 3D conversion
+  // Convert to 3D model
   const handleConvertTo3D = async () => {
     if (!selectedEntity || !scene) return;
 
@@ -279,7 +265,7 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
 
   return (
     <div
-      className="absolute z-10 bg-black bg-opacity-80 rounded-2xl  p-3 text-white shadow-2xl"
+      className="absolute z-10 bg-black bg-opacity-80 rounded-2xl p-3 text-white shadow-2xl"
       style={{
         left: `${position.left}px`,
         top: `${position.top}px`,

@@ -1,9 +1,12 @@
-import SceneViewer from './components/SceneViewer';
+'use client';
+
+import { EditorProvider } from './context/EditorContext';
+import EditorContainer from './components/EditorContainer';
 
 export default function Home() {
   return (
-    <main className="w-full h-screen overflow-hidden bg-gray-900">
-      <SceneViewer />
-    </main>
+    <EditorProvider>
+      <EditorContainer />
+    </EditorProvider>
   );
 }
