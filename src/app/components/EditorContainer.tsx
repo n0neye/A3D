@@ -2,12 +2,13 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import '@babylonjs/inspector';
+import { Inspector } from '@babylonjs/inspector';
 import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
-import { useEditorContext } from '../context/EditorContext'
+import { useEditorContext } from '../context/EditorContext';
 import { resolveEntity } from '../util/entity-manager';
 import { initializeImageGeneration } from '../util/generation-2d-realtime';
+import RenderPanel from './RenderPanel';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -153,18 +154,13 @@ export default function EditorContainer() {
           <canvas ref={canvasRef} className="w-full h-full" />
           <EntityPanel />
         </div>
+
+        {/* Render Panel */}
+        <div className='fixed z-50 right-4 bottom-4 w-64 bg-black bg-opacity-80 p-4 overflow-y-auto rounded-2xl shadow-xl'>
+          <RenderPanel />
+        </div>
       </div>
       
-      {/* Status bar */}
-      <div className="bg-gray-800 border-t border-gray-700 p-2 text-xs text-gray-400 flex justify-between">
-        <div>
-          <span className="mr-4">⌘Z / Ctrl+Z: Undo</span>
-          <span className="mr-4">Delete: Remove selected object</span>
-        </div>
-        <div>
-          <span className="mr-4">Ctrl+\: Toggle Inspector</span>
-        </div>
-      </div>
     </div>
   );
 } 

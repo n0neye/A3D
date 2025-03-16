@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { useEditorContext } from '../context/EditorContext';
+import { useEditorContext } from '../context/EditorContext';  
 import { createEntity } from '../util/entity-manager';
 import { ImageRatio, ImageSize } from '../types/entity';
 

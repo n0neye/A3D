@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { RenderEngine } from '../lib/renderEngine';
 import { generatePreviewImage, dataURLtoBlob } from '../util/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
+import { useEditorContext } from '../context/EditorContext';
+import * as BABYLON from '@babylonjs/core';
 
 interface RenderPanelProps {
-  renderEngine: RenderEngine | null;
 }
 
 type ModelType = 'fal-turbo' | 'fal-lcm' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm';
@@ -49,9 +49,9 @@ const availableModels: AIModel[] = [
   }
 ];
 
-const RenderPanel: React.FC<RenderPanelProps> = ({ 
-  renderEngine,
+const RenderPanel: React.FC<RenderPanelProps> = ({
 }) => {
+  const { scene, engine } = useEditorContext();
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -63,11 +63,24 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [model, setModel] = useState<ModelType>('fal-turbo');
 
+
+  const takeScreenshot = async () => {
+
+    if (!scene || !engine) throw new Error("Scene or engine not found");
+
+    // Prepare scene for screenshot - hide any UI elements if needed
+    // TODO: Hide gizmos
+    // Take the screenshot
+    const result = await BABYLON.Tools.CreateScreenshotAsync(engine, scene.activeCamera!, { precision: 1 });
+    if (!result) throw new Error("Failed to take screenshot");
+    return result;
+  };
+
   const generateDebugImage = async () => {
-    if (!renderEngine) return;
     try {
       // Force a fresh render
-      const screenshot = await renderEngine.generateScreenshot();
+      const screenshot = await takeScreenshot();
+
       console.log("Screenshot generated:", screenshot.substring(0, 100) + "...");
       setDebugImage(screenshot);
       // Apply noise to the screenshot if noiseStrength > 0
@@ -84,18 +97,17 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
 
   // Generate a preview using image-to-image API
   const handleGeneratePreview = async () => {
-    if (!renderEngine) return;
-    
+
     setIsLoading(true);
     setExecutionTime(null); // Reset execution time when starting new generation
-    
+
     try {
       // First, take a screenshot of the current scene
-      const screenshot = await renderEngine.generateScreenshot();
-      
+      const screenshot = await takeScreenshot();
+
       // Store the original screenshot
       setDebugImage(screenshot);
-      
+
       // Apply noise to the screenshot if noiseStrength > 0
       let processedImage = screenshot;
       if (noiseStrength > 0) {
@@ -104,16 +116,16 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
 
       // Update the debug image with the processed image
       setDebugImage(processedImage);
-      
+
       // Resize the image to 512x512 before sending to API
       const resizedImage = await resizeImage(processedImage, 512, 512);
-      
+
       // Convert the resized image to blob for API
       const imageBlob = dataURLtoBlob(resizedImage);
-      
+
       // Start measuring time
       const startTime = Date.now();
-      
+
       // Call the API with the selected model
       const result = await generatePreviewImage({
         imageUrl: imageBlob,
@@ -121,11 +133,11 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
         promptStrength: promptStrength,
         model: model,
       });
-      
+
       // Calculate execution time
       const endTime = Date.now();
       setExecutionTime(endTime - startTime);
-      
+
       // Update the preview with the generated image
       setPreviewUrl(result.imageUrl);
     } catch (error) {
@@ -139,7 +151,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
   // Download the current preview
   const handleDownloadPreview = () => {
     if (!previewUrl) return;
-    
+
     // Create a download link
     const link = document.createElement('a');
     link.href = previewUrl;
@@ -152,10 +164,10 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
   return (
     < >
       <h3 className="text-lg font-medium mb-3 text-white">Render</h3>
-      
+
       <div className="flex flex-col items-center">
         {/* Debug image */}
-        <button 
+        <button
           onClick={() => generateDebugImage()}
           className="mb-4 px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
         >
@@ -166,7 +178,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             <img src={debugImage} alt="Debug" className="w-full h-full object-contain" />
           </div>
         )}
-        
+
         {/* Preview image or placeholder */}
         <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
           {isLoading ? (
@@ -175,9 +187,9 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
               <p className="text-gray-400">Generating AI preview...</p>
             </div>
           ) : previewUrl ? (
-            <img 
-              src={previewUrl} 
-              alt="Scene Preview" 
+            <img
+              src={previewUrl}
+              alt="Scene Preview"
               className="w-full h-full object-contain"
             />
           ) : (
@@ -189,7 +201,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             </div>
           )}
         </div>
-        
+
         {/* Strength slider */}
         <div className="w-full mb-4">
           <div className="flex justify-between items-center">
@@ -210,7 +222,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             <span>More creative</span>
           </div>
         </div>
-        
+
         {/* Client-side noise slider */}
         <div className="w-full mb-4">
           <div className="flex justify-between items-center">
@@ -233,7 +245,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             <span>Noisy image</span>
           </div>
         </div>
-        
+
         {/* Prompt input */}
         <div className="w-full mb-4">
           <label className="block text-sm text-gray-400 mb-1">Prompt for AI generation</label>
@@ -245,7 +257,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             placeholder="Describe how you want the scene to look..."
           />
         </div>
-        
+
         {/* Execution time */}
         {executionTime && (
           <div className="w-full mb-4">
@@ -254,7 +266,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             </div>
           </div>
         )}
-        
+
         {/* Model selection */}
         <div className="w-full mb-4">
           <label className="block text-sm text-gray-400 mb-1">Model</label>
@@ -263,11 +275,10 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
               <button
                 key={aiModel.id}
                 onClick={() => setModel(aiModel.id)}
-                className={`py-2 px-3 text-sm rounded-md ${
-                  model === aiModel.id
-                    ? 'bg-blue-600 text-white' 
+                className={`py-2 px-3 text-sm rounded-md ${model === aiModel.id
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 {aiModel.name}
               </button>
@@ -277,7 +288,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             {availableModels.find(m => m.id === model)?.description}
           </div>
         </div>
-        
+
         {/* Action buttons */}
         <div className="flex gap-2 w-full">
           <button
@@ -287,7 +298,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
           >
             {isLoading ? 'Generating...' : 'Generate AI Preview'}
           </button>
-          
+
           {previewUrl && (
             <button
               onClick={handleDownloadPreview}
