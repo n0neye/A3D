@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { useEditorMode } from '../util/editor/modeManager';
+import { EditorModeManager, useEditorMode } from '../util/editor/modeManager';
 import { createEntity } from '../util/entity-manager';
 import { ImageRatio, ImageSize } from '../types/entity';
 
 interface GenerationMenuProps {
   scene: BABYLON.Scene | null;
-  gizmoManager?: BABYLON.GizmoManager | null;
 }
 
-const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) => {
+const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
   const { setMode } = useEditorMode(scene);
   const [isGenerating, setIsGenerating] = useState(false);
   const [ratio, setRatio] = useState<ImageRatio>('1:1');
@@ -41,16 +40,9 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) 
       imageSize
     });
     
-    // Make it face the camera
-    const childMesh = entity.getChildren()[0] as BABYLON.Mesh;
-    if (childMesh) {
-      childMesh.lookAt(camera.position);
-    }
-    
     // Select the entity
-    if (gizmoManager) {
-      gizmoManager.attachToMesh(entity as any);
-    }
+    const modeManager = EditorModeManager.getInstance();
+    modeManager.setSelectedEntity(entity);
     
     // Enter entity mode
     setMode('entity');
@@ -62,8 +54,8 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene, gizmoManager }) 
   };
   
   return (
-    <div className="mb-6 pb-4 border-b border-gray-700">
-      <h3 className="text-lg font-medium mb-3 text-white">Generate</h3>
+    <div className="">
+      <h3 className="text-lg font-medium mb-3 text-white">Add</h3>
       
       {/* Ratio selection */}
       {/* <div className="mb-3">

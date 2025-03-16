@@ -3,7 +3,7 @@ import { RenderEngine } from '../lib/renderEngine';
 import { generatePreviewImage, dataURLtoBlob } from '../util/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 
-interface PreviewPanelProps {
+interface RenderPanelProps {
   renderEngine: RenderEngine | null;
 }
 
@@ -49,7 +49,7 @@ const availableModels: AIModel[] = [
   }
 ];
 
-const PreviewPanel: React.FC<PreviewPanelProps> = ({ 
+const RenderPanel: React.FC<RenderPanelProps> = ({ 
   renderEngine,
 }) => {
   // State variables
@@ -150,8 +150,8 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   };
 
   return (
-    <div id='preview-panel' className={`p-4 bg-black bg-opacity-80 rounded-lg border border-gray-700 shadow-lg`}>
-      <h3 className="text-lg font-medium mb-3 text-white">Scene Preview</h3>
+    < >
+      <h3 className="text-lg font-medium mb-3 text-white">Render</h3>
       
       <div className="flex flex-col items-center">
         {/* Debug image */}
@@ -298,8 +298,8 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
-export default PreviewPanel; 
+export default RenderPanel; 

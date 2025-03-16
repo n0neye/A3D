@@ -27,12 +27,11 @@ export class DefaultMode implements EditorMode {
     // If clicked on a mesh, try to get the entity
     if (mesh) {
       const entity = resolveEntity(mesh);
-      console.log("Default mode: selected entity", entity);
-      console.log("Default mode: selected mesh", mesh);
+      console.log("Default mode: selected entity", entity?.name);
+      console.log("Default mode: selected mesh", mesh.name);
       if (entity) this.handleEntitySelected(entity, scene);
       return true;
     }
-
 
     // Background click does nothing in default mode
     return false;

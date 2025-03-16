@@ -238,6 +238,11 @@ export function createEntity(
   
   // Parent the mesh to the entity
   childMesh.parent = entity;
+
+  // Look at the camera
+  if(scene.activeCamera){
+    childMesh.lookAt(scene.activeCamera.position);
+  }
   
   // Set as primary mesh
   entity.primaryMesh = childMesh;
