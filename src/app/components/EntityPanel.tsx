@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 
-import { generateImage, replaceWithModel } from '../util/generation-2d-realtim';
+import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-2d-realtime';
 import { convertImageTo3D } from '../util/generation-3d';
 import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/entity-manager';
 import { useEditorMode } from '../util/editor/modeManager';
 import { EntityType } from '../types/entity';
+import { isSimulating } from '../util/simulation-data';
+import { getImageSimulationData } from '../util/simulation-data';
 
 interface EntityPanelProps {
   scene: BABYLON.Scene | null;
@@ -112,13 +114,19 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
     thisEntity.setGeneratingState(true, 'Starting generation...');
 
     // Call the generation service
-    const result = await generateImage(prompt, {
-      entityType: entityType,
-      onProgress: (progress) => {
-        // Update the entity's progress message
-        thisEntity.setGeneratingState(true, progress.message);
-      }
-    });
+    let result: Generation2DRealtimResult;
+    if (isSimulating) {
+      result = getImageSimulationData();
+    } else {
+      result = await generateImage(prompt, {
+        entityType: entityType,
+        onProgress: (progress) => {
+          // Update the entity's progress message
+          thisEntity.setGeneratingState(true, progress.message);
+        }
+      });
+    }
+    console.log("Generation result", result);
 
     if (result.success && result.imageUrl) {
       // Add to entity's generation history

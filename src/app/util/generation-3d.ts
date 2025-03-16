@@ -5,8 +5,8 @@ import "@babylonjs/loaders/glTF";
 // Import the entity manager functions
 import { createEntity, applyImageToEntity, getPrimaryMeshFromEntity } from './entity-manager';
 import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize } from '../types/entity';
-import {  ProgressCallback } from "./generation-2d-realtim";
-import { modelSimulationData, isSimulating } from "./simulation-data";
+import {  ProgressCallback } from "./generation-2d-realtime";
+import { get3DSimulationData, isSimulating } from "./simulation-data";
 
 // Types for callbacks and results
 export interface GenerationProgress {
@@ -56,9 +56,9 @@ export async function convertImageTo3D(
         const startTime = performance.now();
         if(isSimulating){
             // Wait for 1 second
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            const testData = modelSimulationData[0];
+            const testData = get3DSimulationData();
             return {
                 success: true,
                 modelUrl: testData.data.model_mesh.url

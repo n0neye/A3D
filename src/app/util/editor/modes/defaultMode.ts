@@ -27,7 +27,8 @@ export class DefaultMode implements EditorMode {
     // If clicked on a mesh, try to get the entity
     if (mesh) {
       const entity = resolveEntity(mesh);
-      console.log("Default mode: Entity selected", entity?.name, entity?.metadata);
+      console.log("Default mode: selected entity", entity);
+      console.log("Default mode: selected mesh", mesh);
       if (entity) this.handleEntitySelected(entity, scene);
       return true;
     }

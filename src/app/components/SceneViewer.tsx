@@ -13,7 +13,7 @@ import { initializeEditorModes } from '../util/editor/initModes';
 import { EditModeEnum, getModeName } from '../util/scene-modes';
 import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
-import { initializeImageGeneration } from '../util/generation-2d-realtim';
+import { initializeImageGeneration } from '../util/generation-2d-realtime';
 
 // Mock AIService implementation for testing
 class MockAIService {

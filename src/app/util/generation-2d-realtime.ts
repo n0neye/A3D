@@ -11,7 +11,7 @@ export interface GenerationProgress {
     progress?: number;
 }
 
-export interface GenerationResult {
+export interface Generation2DRealtimResult {
     success: boolean;
     imageUrl?: string;
     error?: string;
@@ -38,12 +38,12 @@ class ConnectionManager {
     private requestQueue: Array<{
         props: PromptProps,
         onProgress?: ProgressCallback,
-        resolve: (result: GenerationResult) => void
+        resolve: (result: Generation2DRealtimResult) => void
     }> = [];
     
     // Add a timeStart property to track generation start time
     private currentRequest: {
-        resolve: (result: GenerationResult) => void,
+        resolve: (result: Generation2DRealtimResult) => void,
         onProgress?: ProgressCallback,
         timeStart?: number
     } | null = null;
@@ -85,11 +85,16 @@ class ConnectionManager {
                                 // Handle binary content (Uint8Array)
                                 if (imageData.content && imageData.content instanceof Uint8Array) {
                                     // Convert Uint8Array to Blob
-                                    const blob = new Blob([imageData.content], { type: 'image/png' });
+                                    // const blob = new Blob([imageData.content], { type: 'image/png' });
                                     
-                                    // Create a URL for the blob
-                                    imageUrl = URL.createObjectURL(blob);
-                                    console.log("Created blob URL from binary data:", imageUrl);
+                                    // // Create a URL for the blob
+                                    // imageUrl = URL.createObjectURL(blob);
+                                    // console.log("Created blob URL from binary data:", imageUrl);
+
+                                    // Convert to base64
+                                    imageUrl = Buffer.from(imageData.content).toString('base64');
+                                    imageUrl = `data:image/png;base64,${imageUrl}`;
+                                    console.log("Generated base64 image:", imageUrl);
                                 } 
                                 // Handle URL if provided directly
                                 else if (imageData.url) {
@@ -215,7 +220,7 @@ class ConnectionManager {
         }
     }
     
-    public async generateImage(props: PromptProps, onProgress?: ProgressCallback): Promise<GenerationResult> {
+    public async generateImage(props: PromptProps, onProgress?: ProgressCallback): Promise<Generation2DRealtimResult> {
         // Initialize connection if needed
         if (!this.connection) {
             console.log("No connection, initializing");
@@ -263,7 +268,7 @@ export async function generateImage(
         negativePrompt?: string;
         onProgress?: ProgressCallback;
     } = {}
-): Promise<GenerationResult> {
+): Promise<Generation2DRealtimResult> {
     // Use defaults if not provided
     const ratio = options.ratio || '1:1';
     const imageSize = options.imageSize || 'medium';
