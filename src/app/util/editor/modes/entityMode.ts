@@ -33,14 +33,9 @@ export class EntityMode implements EditorMode {
       return true;
     }
 
-    // If clicked on a mesh that's not a utility object
+    // If clicked on a mesh, try to get the entity
     const mesh = pickInfo.pickedMesh;
-    if (mesh &&
-      !mesh.name.includes("gizmo") &&
-      !mesh.name.startsWith("__") &&
-      !mesh.name.includes("ik-target") &&
-      !(mesh.metadata && mesh.metadata.excludeFromHierarchy === true)) {
-
+    if (mesh) {
       const entity = resolveEntity(mesh);
       if (entity) this.handleEntitySelected(entity, scene);
       return true;

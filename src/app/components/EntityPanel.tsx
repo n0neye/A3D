@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-// Import the generation service and 3D conversion
-import { generateImage, convertImageTo3D, replaceWithModel } from '../util/object-generation';
+
+import { generateImage, replaceWithModel } from '../util/generation-2d-realtim';
+import { convertImageTo3D } from '../util/generation-3d';
 import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/entity-manager';
 import { useEditorMode } from '../util/editor/modeManager';
 import { EntityType } from '../types/entity';
@@ -204,7 +205,6 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
       case 'aiObject':
         return (
           <>
-            <h3 className="text-sm font-medium mb-1">Generation Canvas</h3>
             <div className="space-y-2">
               <input
                 type="text"
@@ -271,7 +271,7 @@ const EntityPanel: React.FC<EntityPanelProps> = ({ scene }) => {
 
   return (
     <div
-      className="absolute z-10 bg-black bg-opacity-80 rounded shadow-lg p-2 border border-gray-600 text-white"
+      className="absolute z-10 bg-black bg-opacity-80 rounded-2xl  p-3 text-white shadow-2xl"
       style={{
         left: `${position.left}px`,
         top: `${position.top}px`,
