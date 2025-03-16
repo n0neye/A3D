@@ -2,13 +2,13 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { Inspector } from '@babylonjs/inspector';
 import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
 import { resolveEntity } from '../util/editor/entityUtil';
 import { initializeImageGeneration } from '../util/generation-2d-realtime';
 import RenderPanel from './RenderPanel';
+import DebugLayer from './DebugLayer';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -20,6 +20,7 @@ export default function EditorContainer() {
     selectedEntity,
     getCurrentSelectedEntity,
     gizmoManager,
+    isDebugMode,
     scene
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
@@ -92,20 +93,6 @@ export default function EditorContainer() {
 
     // Handle keyboard shortcuts
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Toggle inspector with Ctrl+\
-      if (event.ctrlKey && event.key === '\\') {
-        event.preventDefault();
-        setShowInspector(prev => {
-          const newValue = !prev;
-          if (newValue) {
-            scene.debugLayer.show({ embedMode: true });
-          } else {
-            scene.debugLayer.hide();
-          }
-          return newValue;
-        });
-        return;
-      }
       
       // Delete selected entity - using getCurrentSelectedEntity to get the latest value
       if (event.key === 'Delete') {
@@ -173,7 +160,7 @@ export default function EditorContainer() {
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
       <div className="flex h-full">
         {/* Generation menu */}
-        <div className='fixed z-50 left-4 bottom-4 w-64 bg-black bg-opacity-80 p-4 overflow-y-auto rounded-2xl shadow-xl'>
+        <div className={`fixed z-50 left-4 bottom-4 w-64 bg-black bg-opacity-80 p-4 overflow-y-auto rounded-2xl shadow-xl ${isDebugMode ? '' : ''}`}>
           <GenerationMenu />
         </div>
 
@@ -184,11 +171,11 @@ export default function EditorContainer() {
         </div>
 
         {/* Render Panel */}
-        <div className='fixed z-50 right-4 bottom-4 w-64 bg-black bg-opacity-80 p-4 overflow-y-auto rounded-2xl shadow-xl'>
+        <div className={`fixed z-50 right-4 bottom-4 w-64 bg-black bg-opacity-80 p-4 overflow-y-auto rounded-2xl shadow-xl ${isDebugMode ? 'right-80' : ''}`}>
           <RenderPanel />
         </div>
       </div>
-      
+      <DebugLayer />
     </div>
   );
 } 

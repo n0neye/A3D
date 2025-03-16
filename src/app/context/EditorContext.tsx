@@ -12,6 +12,8 @@ interface EditorContextType {
   getCurrentSelectedEntity: () => EntityNode | null;
   gizmoManager: BABYLON.GizmoManager | null;
   setGizmoManager: (gizmoManager: BABYLON.GizmoManager | null) => void;
+  isDebugMode: boolean;
+  setIsDebugMode: (isDebugMode: boolean) => void;
 }
 
 const EditorContext = createContext<EditorContextType | null>(null);
@@ -21,6 +23,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [engine, setEngine] = useState<BABYLON.Engine | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<EntityNode | null>(null);
   const [gizmoManager, setGizmoManager] = useState<BABYLON.GizmoManager | null>(null);
+  const [isDebugMode, setIsDebugMode] = useState(false);
   
   // Use a ref to always track current selected entity
   const selectedEntityRef = useRef<EntityNode | null>(null);
@@ -35,22 +38,43 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   // Handle entity selection with gizmos
   useEffect(() => {
-    if (!gizmoManager) return;
+    if (!gizmoManager || !scene) return;
+
+    // Clean up previous selection
+    if (selectedEntityRef.current?.primaryMesh) {
+      selectedEntityRef.current.primaryMesh.showBoundingBox = false;
+    }
 
     if (selectedEntity) {
-
       // Attach gizmo to selected entity
       if (selectedEntity.primaryMesh) {
+        console.log("OnSelect mesh", selectedEntity.primaryMesh);
         gizmoManager.positionGizmoEnabled = true;
         gizmoManager.rotationGizmoEnabled = true;
         gizmoManager.scaleGizmoEnabled = true;
         gizmoManager.attachToMesh(selectedEntity.primaryMesh);
+        
+        // Make sure the mesh has computed its bounding box
+        selectedEntity.primaryMesh.computeWorldMatrix(true);
+        
+        // Set bounding box visibility and ensure it's visible
+        selectedEntity.primaryMesh.showBoundingBox = true;
+        
+        // If you want to customize the bounding box appearance
+        if (scene.getBoundingBoxRenderer()) {
+          scene.getBoundingBoxRenderer().frontColor = new BABYLON.Color3(1, 0, 0); // Red
+          scene.getBoundingBoxRenderer().backColor = new BABYLON.Color3(0.5, 0, 0); // Dark red
+          scene.getBoundingBoxRenderer().showBackLines = true;
+        }
 
         // Store reference to entity on gizmo
         gizmoManager.metadata = {
           ...gizmoManager.metadata || {},
           selectedEntity
         };
+        
+        // Force a render to show the bounding box
+        scene.render();
       }
     } else {
       gizmoManager.attachToMesh(null);
@@ -62,7 +86,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         gizmoManager.attachToMesh(null);
       }
     };
-  }, [selectedEntity, gizmoManager]);
+  }, [selectedEntity, gizmoManager, scene]);
 
   return (
     <EditorContext.Provider
@@ -75,7 +99,9 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setSelectedEntity,
         getCurrentSelectedEntity,
         gizmoManager,
-        setGizmoManager
+        setGizmoManager,
+        isDebugMode,
+        setIsDebugMode
       }}
     >
       {children}
