@@ -20,25 +20,30 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [engine, setEngine] = useState<BABYLON.Engine | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<EntityNode | null>(null);
   const [gizmoManager, setGizmoManager] = useState<BABYLON.GizmoManager | null>(null);
-  
+
   // Handle entity selection with gizmos
   useEffect(() => {
-    if (!gizmoManager || !selectedEntity) return;
-    
-    // Attach gizmo to selected entity
-    if (selectedEntity.primaryMesh) {
-      gizmoManager.positionGizmoEnabled = true;
-      gizmoManager.rotationGizmoEnabled = true;
-      gizmoManager.scaleGizmoEnabled = true;
-      gizmoManager.attachToMesh(selectedEntity.primaryMesh);
-      
-      // Store reference to entity on gizmo
-      gizmoManager.metadata = {
-        ...gizmoManager.metadata || {},
-        selectedEntity
-      };
+    if (!gizmoManager) return;
+
+    if (selectedEntity) {
+
+      // Attach gizmo to selected entity
+      if (selectedEntity.primaryMesh) {
+        gizmoManager.positionGizmoEnabled = true;
+        gizmoManager.rotationGizmoEnabled = true;
+        gizmoManager.scaleGizmoEnabled = true;
+        gizmoManager.attachToMesh(selectedEntity.primaryMesh);
+
+        // Store reference to entity on gizmo
+        gizmoManager.metadata = {
+          ...gizmoManager.metadata || {},
+          selectedEntity
+        };
+      }
+    } else {
+      gizmoManager.attachToMesh(null);
     }
-    
+
     return () => {
       // Clean up when selection changes
       if (gizmoManager) {
@@ -48,11 +53,11 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, [selectedEntity, gizmoManager]);
 
   return (
-    <EditorContext.Provider 
+    <EditorContext.Provider
       value={{
         scene,
         setScene,
-        engine, 
+        engine,
         setEngine,
         selectedEntity,
         setSelectedEntity,

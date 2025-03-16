@@ -17,6 +17,7 @@ export default function EditorContainer() {
     setEngine, 
     setGizmoManager, 
     setSelectedEntity,
+    selectedEntity,
     scene
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
@@ -82,11 +83,6 @@ export default function EditorContainer() {
           } else {
             // Clear selection when clicking on background
             setSelectedEntity(null);
-            
-            // Hide gizmos
-            gizmoManager.positionGizmoEnabled = false;
-            gizmoManager.rotationGizmoEnabled = false;
-            gizmoManager.scaleGizmoEnabled = false;
           }
         }
       }
@@ -111,7 +107,12 @@ export default function EditorContainer() {
       
       // Delete selected entity
       if (event.key === 'Delete') {
+        console.log("Deleting selected entity:", selectedEntity);
         // Handle delete in the future
+        if (selectedEntity) {
+          selectedEntity.dispose();
+          setSelectedEntity(null);
+        }
       }
     };
     
