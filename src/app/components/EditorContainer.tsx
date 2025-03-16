@@ -18,6 +18,8 @@ export default function EditorContainer() {
     setGizmoManager, 
     setSelectedEntity,
     selectedEntity,
+    getCurrentSelectedEntity,
+    gizmoManager,
     scene
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
@@ -105,13 +107,38 @@ export default function EditorContainer() {
         return;
       }
       
-      // Delete selected entity
+      // Delete selected entity - using getCurrentSelectedEntity to get the latest value
       if (event.key === 'Delete') {
-        console.log("Deleting selected entity:", selectedEntity);
-        // Handle delete in the future
-        if (selectedEntity) {
-          selectedEntity.dispose();
-          setSelectedEntity(null);
+        const currentEntity = getCurrentSelectedEntity();
+        if (!currentEntity) return;
+        
+        console.log("Deleting selected entity:", currentEntity.name);
+        
+        // First detach any gizmos
+        if (gizmoManager) {
+          gizmoManager.attachToMesh(null);
+        }
+        
+        // Get all child meshes to properly dispose them
+        const meshesToDispose = currentEntity.getChildMeshes();
+        
+        // Dispose each mesh properly
+        meshesToDispose.forEach(mesh => {
+          if (mesh.material) {
+            mesh.material.dispose(true, true);
+          }
+          mesh.dispose(false, true);
+        });
+        
+        // Dispose the entity itself
+        currentEntity.dispose();
+        
+        // Clear the selection state
+        setSelectedEntity(null);
+        
+        // Force scene update
+        if (scene) {
+          scene.render();
         }
       }
     };

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { EntityNode } from '../types/entity';
 
@@ -9,6 +9,7 @@ interface EditorContextType {
   setEngine: (engine: BABYLON.Engine | null) => void;
   selectedEntity: EntityNode | null;
   setSelectedEntity: (entity: EntityNode | null) => void;
+  getCurrentSelectedEntity: () => EntityNode | null;
   gizmoManager: BABYLON.GizmoManager | null;
   setGizmoManager: (gizmoManager: BABYLON.GizmoManager | null) => void;
 }
@@ -20,6 +21,17 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [engine, setEngine] = useState<BABYLON.Engine | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<EntityNode | null>(null);
   const [gizmoManager, setGizmoManager] = useState<BABYLON.GizmoManager | null>(null);
+  
+  // Use a ref to always track current selected entity
+  const selectedEntityRef = useRef<EntityNode | null>(null);
+  
+  // Keep the ref in sync with the state
+  useEffect(() => {
+    selectedEntityRef.current = selectedEntity;
+  }, [selectedEntity]);
+  
+  // Function to get current entity from the ref
+  const getCurrentSelectedEntity = () => selectedEntityRef.current;
 
   // Handle entity selection with gizmos
   useEffect(() => {
@@ -61,6 +73,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setEngine,
         selectedEntity,
         setSelectedEntity,
+        getCurrentSelectedEntity,
         gizmoManager,
         setGizmoManager
       }}
