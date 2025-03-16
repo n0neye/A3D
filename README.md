@@ -1,76 +1,93 @@
-# AI Scene Builder - Design & Architecture
+# 3D AI Scene Editor
 
-## Core Architecture
+This project is a browser-based 3D scene editor that leverages AI for content generation. It allows users to create, manipulate and render 3D scenes using Babylon.js with AI-assisted generation capabilities.
 
-This project implements a 3D scene editor built on Babylon.js with a custom entity system and mode-based interaction pattern.
+## System Architecture
 
-### Entity System
+The application follows a simplified architecture centered around React components and context-based state management:
 
-The core of our architecture is the EntityNode class, which extends Babylon's TransformNode:
-
-```typescript
-export class EntityNode extends BABYLON.TransformNode {
-  public metadata: EntityMetadata;
-  private _primaryMesh: BABYLON.AbstractMesh | null = null;
-  
-  // Methods for managing entity state and behavior...
-}
+```
+App
+├── EditorProvider (Context)
+└── EditorContainer
+    ├── Canvas (Babylon.js)
+    ├── GenerationMenu
+    ├── EntityPanel
+    └── RenderPanel
 ```
 
-This provides:
-- Strong typing with TypeScript
-- Clear ownership of meshes (primary mesh pattern)
-- Structured metadata storage
-- AI generation history tracking
-- Helper methods for entity operations
+### Key Components
 
-### Mode-Based Editing
-The editor uses a mode pattern for different interaction contexts:
+- **EditorContainer**: The main container that initializes the Babylon.js scene and handles core interactions
+- **GenerationMenu**: Creates AI-generated entities based on user input
+- **EntityPanel**: Displays and manages properties of the selected entity
+- **RenderPanel**: Handles scene rendering and image export functions
+
+## State Management
+
+We use React Context (`EditorContext`) as the central state management solution. This context provides:
+
+- Scene and engine references
+- Selected entity state
+- Gizmo manager for 3D manipulations
+- Entity selection utilities
+
+The context is accessible throughout the application using the `useEditorContext` hook.
+
+## Entity System
+
+The core of the application revolves around `EntityNode` objects, which are extensions of Babylon.js `TransformNode` with additional metadata and capabilities:
+
 ```typescript
-export interface EditorMode {
-  id: string;
-  name: string;
+// Basic entity structure
+interface EntityNode extends BABYLON.TransformNode {
+  metadata: EntityMetadata;
+  primaryMesh: BABYLON.AbstractMesh;
   
-  // Lifecycle methods
-  onEnter(scene: BABYLON.Scene, previousModeId: string): void;
-  onExit(scene: BABYLON.Scene, nextModeId: string): void;
-  
-  // Input handlers
-  handleSceneClick(pickInfo: BABYLON.PickingInfo, scene: BABYLON.Scene): boolean;
-  handleEntitySelected(node: BABYLON.Node, scene: BABYLON.Scene): void;
+  // Methods
+  getCurrentGeneration(): GenerationData;
+  getEntityType(): EntityType;
+  getProcessingState(): ProcessingState;
+  setGeneratingState(isGenerating: boolean, message?: string): void;
   // ...
 }
 ```
 
-Modes include:
-- Default Mode: Navigation and selection
-- Entity Mode: Manipulating selected entities (position, rotation, scale)
+Entities can be created, manipulated, and deleted through the UI. Each entity maintains its own generation history and metadata.
 
-The EditorModeManager handles transitions between modes and routes input events.
+## Interaction Flow
 
-### Selection & Manipulation
+1. **Creation**: Users create entities via the GenerationMenu
+2. **Selection**: Clicking on entities selects them and shows the EntityPanel
+3. **Manipulation**: Selected entities can be moved, rotated, and scaled using gizmos
+4. **Generation**: Entity appearances can be modified with AI-generated content
+5. **Rendering**: The scene can be rendered and exported using the RenderPanel
 
-Objects are selected through:
-1. Scene raycast picking
-2. Entity resolution (mesh → entity)
-3. Gizmo attachment for manipulation
+## Key Features
 
-### AI Generation Integration
-The system integrates AI image and 3D model generation:
-- Entities store generation history
-- Support for text-to-image → image-to-3D pipeline
-- Versioning and preview of generated assets
+- **AI Generation**: Create and modify 3D objects with AI-generated images
+- **3D Manipulation**: Move, rotate, and scale entities with intuitive controls
+- **Image-to-3D**: Convert 2D images to 3D models with depth estimation
+- **Scene Export**: Take screenshots and export rendered scenes
 
-## Design Philosophy
-- Strong Type Safety: Custom entity classes with TypeScript over loose metadata
-- Single Responsibility: Each component has a clear, focused purpose
-- Extensibility: Mode system allows adding new interaction paradigms
-- Clean Boundaries: Clear separation between Babylon.js primitives and application logic
+## Getting Started
 
-## Key Components
-- SceneViewer: Main 3D viewport
-- EntityPanel: Context-sensitive editing tools
-- ModeManager: Handles editing state and transitions
-- EntityManager: Creates and manages scene entities
+1. Install dependencies: `npm install`
+2. Run the development server: `npm run dev`
+3. Open your browser to `http://localhost:3000`
 
-This architecture provides a flexible, maintainable foundation for building complex 3D editing experiences with AI-generated content.
+## Usage
+
+- Click "Add" buttons to create new entities
+- Click on entities to select them
+- Use gizmos to move, rotate, and scale entities
+- Delete selected entities with the Delete key
+- Use the Render panel to take screenshots and generate AI variations
+
+## Development
+
+The project uses:
+- Next.js for the React framework
+- Babylon.js for 3D rendering
+- TailwindCSS for styling
+- Various AI services for content generation
