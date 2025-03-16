@@ -14,7 +14,7 @@ import { EditModeEnum, getModeName } from '../util/scene-modes';
 import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
 import { initializeImageGeneration } from '../util/generation-2d-realtime';
-import { Inspector } from '@babylonjs/inspector';
+// import { Inspector } from '@babylonjs/inspector';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -97,15 +97,7 @@ export default function SceneViewer() {
       gizmoManager.scaleGizmoEnabled = true;
       gizmoManager.attachableMeshes = [];
       gizmoManager.usePointerToAttachGizmos = true;
-
-
-      // Create a box
-      // const box = BABYLON.MeshBuilder.CreateBox("box", { size: 1 }, scene);
-      // const boxMaterial = new BABYLON.StandardMaterial("boxMaterial", scene);
-      // boxMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.6, 0.9);
-      // box.material = boxMaterial;
-      // gizmoManager.attachToMesh(box);
-
+      
       // Store gizmo manager in ref
       gizmoManagerRef.current = gizmoManager;
 
@@ -193,19 +185,19 @@ export default function SceneViewer() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Toggle inspector with Ctrl+\
-      if (event.ctrlKey && event.key === '\\') {
-        event.preventDefault();
-        setShowInspector(prev => {
-          const newValue = !prev;
-          if (newValue) {
-            Inspector.Show(sceneState, {});
-          } else {
-            Inspector.Hide();
-          }
-          return newValue;
-        });
-        return;
-      }
+      // if (event.ctrlKey && event.key === '\\') {
+      //   event.preventDefault();
+      //   setShowInspector(prev => {
+      //     const newValue = !prev;
+      //     if (newValue) {
+      //       Inspector.Show(sceneState, {});
+      //     } else {
+      //       Inspector.Hide();
+      //     }
+      //     return newValue;
+      //   });
+      //   return;
+      // }
 
       // Let mode manager try to handle key first
       if (EditorModeManager.getInstance().handleKeyDown(event, sceneState)) {
@@ -227,13 +219,7 @@ export default function SceneViewer() {
         // Ctrl+Y = Redo
         event.preventDefault();
         historyManagerRef.current.redo();
-      } else if (event.key === 'Delete') {
-        // Delete = Delete selected object
-        const activeMesh = gizmoManagerState?.gizmos.positionGizmo?.attachedMesh as BABYLON.Mesh;
-        if (activeMesh && sceneState) {
-          deleteObject(activeMesh);
-        }
-      }
+      } 
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -256,50 +242,6 @@ export default function SceneViewer() {
       activeTranformCommandRef.current.updateFinalState();
       historyManagerRef.current.executeCommand(activeTranformCommandRef.current);
       activeTranformCommandRef.current = null;
-    }
-  };
-
-  // Function to add a new object with history
-  const addObject = (createFn: () => BABYLON.Mesh) => {
-    if (!sceneState) return null;
-
-    // Create a command for this action
-    const command = new CreateMeshCommand(createFn, sceneState);
-
-    // Execute the command and add to history
-    historyManagerRef.current.executeCommand(command);
-
-    // Get the created mesh
-    const mesh = command.getMesh();
-
-    // Switch to object mode and attach gizmo to the new mesh
-    if (mesh) {
-      // Set editor mode to entity mode
-      setMode('entity');
-
-      // Attach gizmo to the new mesh
-      if (gizmoManagerRef.current) {
-        gizmoManagerRef.current.attachToMesh(mesh);
-      }
-    }
-
-    // Return the created mesh
-    return mesh;
-  };
-
-  // Function to delete an object with history
-  const deleteObject = (mesh: BABYLON.Mesh) => {
-    // Create a command for this action
-    const command = new DeleteMeshCommand(mesh, gizmoManagerRef.current);
-
-    // Execute the command and add to history
-    historyManagerRef.current.executeCommand(command);
-
-    // Force update the objects list
-    if (sceneState) {
-      // Trigger a custom event that HierarchyPanel can listen for
-      // TODO: This is a hack to force the objects list to update
-      sceneState.onNewMeshAddedObservable.notifyObservers(null as any);
     }
   };
 

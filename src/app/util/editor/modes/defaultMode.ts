@@ -6,14 +6,10 @@ import { EntityNode } from '../../../types/entity';
 export class DefaultMode implements EditorMode {
   id = 'default';
   name = 'Default Mode';
+  
+  private gizmoManager: BABYLON.GizmoManager | null = null;
 
   onEnter(scene: BABYLON.Scene, previousModeId: string): void {
-    // Clear any selections
-    scene.meshes.forEach(mesh => {
-      if (mesh.showBoundingBox) {
-        mesh.showBoundingBox = false;
-      }
-    });
   }
 
   onExit(scene: BABYLON.Scene, nextModeId: string): void {
@@ -33,27 +29,71 @@ export class DefaultMode implements EditorMode {
       return true;
     }
 
+    // Clear any gizmos
+    console.log("Default mode: no entity selected, clearing selection");
+    this.clearSelection(scene);
+
     // Background click does nothing in default mode
     return false;
   }
 
   handleEntitySelected(entity: EntityNode, scene: BABYLON.Scene): void {
+    console.log("Default mode: handleEntitySelected", entity);
+
     // When object is selected, switch to entity manipulation mode
     const modeManager = EditorModeManager.getInstance();
-    modeManager.setMode('entity', scene);
     modeManager.setSelectedEntity(entity);
+    
+    if (this.gizmoManager && entity.primaryMesh) {
+    // Enable gizmos
+      this.gizmoManager.positionGizmoEnabled = true;
+      this.gizmoManager.rotationGizmoEnabled = true;
+      this.gizmoManager.scaleGizmoEnabled = true;
+
+      // Attach the gizmo to the entity
+      this.gizmoManager.attachToMesh(entity.primaryMesh);
+    }
   }
 
   handleKeyDown(event: KeyboardEvent, scene: BABYLON.Scene): boolean {
-    // No special key handling in default mode
+    // Use the manager to get the currently selected entity
+    const modeManager = EditorModeManager.getInstance();
+    const selectedEntity = modeManager.getSelectedEntity();
+
+    // Handle delete key to remove selected object
+    if ((event.key === 'Delete') && selectedEntity) {
+      // Logic to delete entity would go here
+      // TODO: Implement delete entity
+      console.log("Default mode: delete entity", selectedEntity);
+      return true;
+    }
+
     return false;
   }
 
   configureGizmos(gizmoManager: BABYLON.GizmoManager): void {
     // Hide all gizmos
-    gizmoManager.positionGizmoEnabled = false;
-    gizmoManager.rotationGizmoEnabled = false;
-    gizmoManager.scaleGizmoEnabled = false;
-    gizmoManager.attachToMesh(null);
+    this.gizmoManager = gizmoManager;
+
+  }
+
+
+
+  // Helper functions
+  clearSelection(scene: BABYLON.Scene): void {
+    // Clear any selections
+    scene.meshes.forEach(mesh => {
+      if (mesh.showBoundingBox) {
+        mesh.showBoundingBox = false;
+      }
+    });
+
+    // Clear any gizmos
+    if (this.gizmoManager) {
+      this.gizmoManager.positionGizmoEnabled = false;
+      this.gizmoManager.rotationGizmoEnabled = false;
+      this.gizmoManager.scaleGizmoEnabled = false;
+      this.gizmoManager.attachToMesh(null);
+    }
   }
 } 

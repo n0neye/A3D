@@ -104,25 +104,12 @@ export class EditorModeManager extends EventEmitter {
 
   // Handle entity selection
   handleEntitySelected(entity: EntityNode, scene: BABYLON.Scene): void {
+    console.log("modeManager: handleEntitySelected", entity);
     // First try to resolve to an entity
 
     if (this.currentMode && entity) {
       // Pass the entity or node
       this.currentMode.handleEntitySelected(entity, scene);
-    }
-
-    // If we have a gizmo manager, attach to the mesh
-    if (this.gizmoManager) {
-      // Get the primary mesh to attach the gizmo to
-      const primaryMesh = entity.primaryMesh;
-      if (primaryMesh) {
-        this.gizmoManager.attachToMesh(primaryMesh);
-        // Store the entity reference on the gizmo manager
-        this.gizmoManager.metadata = {
-          ...this.gizmoManager.metadata || {},
-          selectedEntity: entity
-        };
-      }
     }
   }
 
@@ -169,25 +156,7 @@ export class EditorModeManager extends EventEmitter {
 
   // Add this method to the EditorModeManager class
   setSelectedEntity(entity: EntityNode | null): void {
-    // If we have a gizmo manager, attach to the mesh  
-    if (this.gizmoManager) {
-      if (entity && entity.primaryMesh) {
-        this.gizmoManager.attachToMesh(entity.primaryMesh);
-        
-        // Store entity reference
-        this.gizmoManager.metadata = {
-          ...this.gizmoManager.metadata || {},
-          selectedEntity: entity
-        };
-      } else {
-        // Clear selection
-        this.gizmoManager.attachToMesh(null);
-        if (this.gizmoManager.metadata) {
-          delete this.gizmoManager.metadata.selectedEntity;
-        }
-      }
-    }
-    
+    console.log("modeManager: setSelectedEntity", entity);
     // Emit an event so listeners can update
     this.emit('selectionChanged', entity);
   }
@@ -208,7 +177,6 @@ export function useEditorMode(scene: BABYLON.Scene | null) {
     };
 
     modeManager.on('modeChanged', handleModeChange);
-
     return () => {
       modeManager.off('modeChanged', handleModeChange);
     };
@@ -241,5 +209,5 @@ export function useEditorMode(scene: BABYLON.Scene | null) {
     };
   }, [scene]);
 
-  return { currentModeId, setMode, isInMode, selectedEntity };
+  return { currentModeId, setMode, isInMode, selectedEntity, setSelectedEntity };
 } 

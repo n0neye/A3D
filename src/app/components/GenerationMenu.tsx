@@ -44,9 +44,6 @@ const GenerationMenu: React.FC<GenerationMenuProps> = ({ scene }) => {
     const modeManager = EditorModeManager.getInstance();
     modeManager.setSelectedEntity(entity);
     
-    // Enter entity mode
-    setMode('entity');
-    
     // Reset state
     setTimeout(() => {
       setIsGenerating(false);
