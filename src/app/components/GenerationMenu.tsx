@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';  
-import { createEntity } from '../util/entity-manager';
+import { createEntity } from '../util/editor/entityUtil';
 import { ImageRatio, ImageSize } from '../types/entity';
 
 const GenerationMenu: React.FC = () => {

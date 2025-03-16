@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { EntityNode, EntityType, EntityMetadata, ImageRatio, ImageSize, isEntity } from '../types/entity';
+import { EntityNode, EntityType, EntityMetadata, ImageRatio, ImageSize, isEntity } from '../../types/entity';
 
 // Entity resolution functions
 export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): EntityNode | null {

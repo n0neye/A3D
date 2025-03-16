@@ -3,7 +3,7 @@ import * as BABYLON from '@babylonjs/core';
 
 import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-2d-realtime';
 import { convertImageTo3D } from '../util/generation-3d';
-import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/entity-manager';
+import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/editor/entityUtil';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityType } from '../types/entity';
 import { isSimulating, getImageSimulationData } from '../util/simulation-data';

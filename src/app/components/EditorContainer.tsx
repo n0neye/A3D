@@ -6,7 +6,7 @@ import { Inspector } from '@babylonjs/inspector';
 import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
-import { resolveEntity } from '../util/entity-manager';
+import { resolveEntity } from '../util/editor/entityUtil';
 import { initializeImageGeneration } from '../util/generation-2d-realtime';
 import RenderPanel from './RenderPanel';
 

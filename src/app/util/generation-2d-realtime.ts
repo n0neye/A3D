@@ -3,7 +3,7 @@ import * as BABYLON from '@babylonjs/core';
 // Import GLB/GLTF loaders
 import "@babylonjs/loaders/glTF";
 // Import the entity manager functions
-import { getPrimaryMeshFromEntity } from './entity-manager';
+import { getPrimaryMeshFromEntity } from './editor/entityUtil';
 import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize } from '../types/entity';
 // Types for callbacks and results
 export interface GenerationProgress {
