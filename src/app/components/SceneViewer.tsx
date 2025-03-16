@@ -14,6 +14,7 @@ import { EditModeEnum, getModeName } from '../util/scene-modes';
 import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
 import { initializeImageGeneration } from '../util/generation-2d-realtime';
+import { Inspector } from '@babylonjs/inspector';
 
 // Mock AIService implementation for testing
 class MockAIService {
@@ -44,6 +45,7 @@ export default function SceneViewer() {
   const [sceneState, setSceneState] = useState<BABYLON.Scene | null>(null);
   const [gizmoManagerState, setGizmoManagerState] = useState<BABYLON.GizmoManager | null>(null);
   const { currentModeId, setMode, isInMode } = useEditorMode(sceneRef.current);
+  const [showInspector, setShowInspector] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -190,6 +192,21 @@ export default function SceneViewer() {
     if (!sceneState) return;
     
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Toggle inspector with Ctrl+\
+      if (event.ctrlKey && event.key === '\\') {
+        event.preventDefault();
+        setShowInspector(prev => {
+          const newValue = !prev;
+          if (newValue) {
+            Inspector.Show(sceneState, {});
+          } else {
+            Inspector.Hide();
+          }
+          return newValue;
+        });
+        return;
+      }
+      
       // Let mode manager try to handle key first
       if (EditorModeManager.getInstance().handleKeyDown(event, sceneState)) {
         return;
@@ -354,7 +371,8 @@ export default function SceneViewer() {
           <span>Delete: Remove selected object</span>
         </div>
         <div>
-          Press G to toggle gizmo modes
+          <span className="mr-4">Press G to toggle gizmo modes</span>
+          <span>Ctrl+\: Toggle Inspector</span>
         </div>
       </div>
     </div>
