@@ -12,7 +12,7 @@ const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [entityType, setEntityType] = useState<EntityType>('aiObject');
-  const [prompt, setPrompt] = useState('A rock');
+  const [prompt, setPrompt] = useState('_');
 
   // Get processing state from entity
   const processingState = selectedEntity?.getProcessingState() || {
@@ -101,7 +101,7 @@ const EntityPanel: React.FC = () => {
 
     // Call the generation service
     let result: Generation2DRealtimResult;
-    if (isSimulating) {
+    if (prompt === "_") {
       result = getImageSimulationData();
     } else {
       result = await generateImage(prompt, {
@@ -120,8 +120,11 @@ const EntityPanel: React.FC = () => {
         imageSize: 'medium'
       });
 
-      // Apply the generated image
+      // Apply the generated image - this will replace any existing 3D model
       applyImageToEntity(thisEntity, result.imageUrl, scene);
+
+      // Make sure to update entity type if needed
+      setEntityType('aiObject');
     } else {
       // Handle error
       thisEntity.setGeneratingState(true, result.error || 'Generation failed');
@@ -148,6 +151,7 @@ const EntityPanel: React.FC = () => {
 
     // Call the 3D conversion service
     const result = await generate3DModel(currentGen.imageUrl, {
+      prompt: prompt,
       entityType: entityType,
       onProgress: (progress) => {
         selectedEntity.setConvertingState(true, progress.message);
@@ -247,6 +251,7 @@ const EntityPanel: React.FC = () => {
         );
     }
   };
+
 
   if (!selectedEntity) return null;
 

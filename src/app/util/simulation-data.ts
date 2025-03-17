@@ -24,6 +24,22 @@ const modelSimulationData: Result<TrellisOutput>[] = [
             }
         },
         "requestId": "eb0bf597-17cd-4eac-be05-38aa1aec1ef1"
+    },
+    {
+        "data": {
+            "model_mesh": {
+                "url": "https://v3.fal.media/files/koala/Xco9WS9x-B7lKNCC_55du_model.glb",
+                "content_type": "application/octet-stream",
+                "file_name": "model.glb",
+                "file_size": 1613116
+            },
+            "timings": {
+                "prepare": 0.000009780284017324448,
+                "generation": 4.259151943959296,
+                "export": 13.910563554149121
+            }
+        },
+        "requestId": "d357daa6-e615-42f9-bbe1-1e38b723a850"
     }
 ]
 

@@ -112,7 +112,10 @@ export class EntityNode extends BABYLON.TransformNode {
   
   // Getters and Setters
   public get primaryMesh(): BABYLON.AbstractMesh | null {
-    return this._primaryMesh;
+    if (this.displayMode === '3d' && this.modelMesh) {
+        return this.modelMesh;
+      }
+      return this.planeMesh;
   }
   
   public set primaryMesh(mesh: BABYLON.AbstractMesh | null) {

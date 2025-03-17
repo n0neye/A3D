@@ -92,7 +92,6 @@ class RealtimeConnectionManager {
                                     // Convert to base64
                                     imageUrl = Buffer.from(imageData.content).toString('base64');
                                     imageUrl = `data:image/png;base64,${imageUrl}`;
-                                    console.log("Generated base64 image:", imageUrl);
                                 }
                                 // Handle URL if provided directly
                                 else if (imageData.url) {
@@ -271,7 +270,7 @@ export async function generateImage(
     const ratio = options.ratio || '1:1';
     const imageSize = options.imageSize || 'medium';
     const entityType = options.entityType || 'aiObject';
-    const negativePrompt = options.negativePrompt || 'cropped, out of frame';
+    const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
     const onProgress = options.onProgress;
 
     // Determine dimensions
@@ -326,14 +325,14 @@ export async function replaceWithModel(
     try {
         onProgress?.({ message: 'Downloading 3D model...' });
 
-        // Load the model as children of the entity
+        // Load the model
         return new Promise((resolve) => {
             BABYLON.SceneLoader.ImportMesh("", modelUrl, "", scene,
                 (meshes) => {
-                    // Find and delete all previous nodes
-                    const childNodes = entity.getChildren?.() || [];
-                    for (const node of childNodes) {
-                        node.dispose();
+                    // If there's an existing model mesh, dispose it
+                    if (entity.modelMesh) {
+                        entity.modelMesh.dispose();
+                        entity.modelMesh = null;
                     }
 
                     onProgress?.({ message: 'Processing 3D model...' });
@@ -341,30 +340,42 @@ export async function replaceWithModel(
 
                     if (meshes.length > 0) {
                         console.log("meshes length", meshes.length);
-                        meshes.forEach((mesh, index) => {
-
-                            // Parent first mesh to our entity
-                            if (index === 0) {
-                                mesh.parent = entity;
-                            }
-
-                            // Link mesh to entity
+                        
+                        // Create a root container mesh if needed
+                        let rootModelMesh: BABYLON.Mesh;
+                        
+                        if (meshes.length === 1) {
+                            rootModelMesh = meshes[0] as BABYLON.Mesh;
+                        } else {
+                            // Create a dummy mesh as the container
+                            rootModelMesh = new BABYLON.Mesh(`${entity.name}-model-root`, scene);
+                            
+                            meshes.forEach((mesh) => {
+                                mesh.parent = rootModelMesh;
+                            });
+                        }
+                        
+                        // Parent the root model to the entity
+                        rootModelMesh.parent = entity;
+                        
+                        // Set up the model mesh in the entity
+                        entity.modelMesh = rootModelMesh;
+                        
+                        // Set metadata on all meshes
+                        meshes.forEach((mesh) => {
                             mesh.metadata = {
+                                ...mesh.metadata,
                                 rootEntity: entity
                             };
-
-                            // Find primary mesh
-                            // TODO: better way to find primary mesh
-                            if (mesh.name != '__root__') {
-                                entity.primaryMesh = mesh;
-                                console.log("set primary mesh to entity", entity.name, mesh.name, mesh);
-
-                                // Attach gizmo to mesh
-                                if (gizmoManager) {
-                                    gizmoManager.attachToMesh(mesh);
-                                }
-                            }
                         });
+
+                        // Switch to 3D display mode
+                        entity.setDisplayMode('3d');
+                        
+                        // Attach gizmo to model
+                        if (gizmoManager) {
+                            gizmoManager.attachToMesh(rootModelMesh);
+                        }
 
                         onProgress?.({ message: '3D model loaded successfully!' });
                         resolve(true);
@@ -390,7 +401,7 @@ export async function replaceWithModel(
         onProgress?.({ message: 'Failed to replace with model' });
         return false;
     }
-} 
+}
 
 /**
  * Generate a 3D model from an image using the FAL AI Trellis API
@@ -398,6 +409,7 @@ export async function replaceWithModel(
 export async function generate3DModel(
     imageUrl: string,
     options: {
+        prompt?: string;
         entityType?: string;
         onProgress?: ProgressCallback;
     } = {}
@@ -432,7 +444,7 @@ export async function generate3DModel(
         // Call the API
         onProgress?.({ message: 'Starting 3D conversion...' });
         const startTime = performance.now();
-        if(isSimulating){
+        if(options.prompt ==="_"){
             // Wait for 1 second
             await new Promise(resolve => setTimeout(resolve, 500));
 

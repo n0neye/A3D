@@ -7,7 +7,6 @@ export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): EntityNode | null
   return mesh?.metadata?.rootEntity as EntityNode || null;
 }
 
-
 export function resolveEntity(node: BABYLON.Node): EntityNode | null {
   if (isEntity(node)) {
     return node;
@@ -28,6 +27,17 @@ declare module '@babylonjs/core/Meshes/transformNode' {
     getEntityType(): EntityType | null;
     getEntityMetadata(): EntityMetadata | null;
 
+    // Entity mesh properties
+    planeMesh: BABYLON.AbstractMesh | null;
+    modelMesh: BABYLON.AbstractMesh | null;
+    displayMode: '2d' | '3d';
+    
+    // Get primary mesh based on current display mode
+    getPrimaryMesh(): BABYLON.AbstractMesh | null;
+    
+    // Toggle between 2D and 3D modes
+    setDisplayMode(mode: '2d' | '3d'): void;
+    
     // For AI entities
     getAIData(): EntityMetadata['aiData'] | null;
     getCurrentGeneration(): any | null;
@@ -52,13 +62,33 @@ declare module '@babylonjs/core/Meshes/transformNode' {
 
 // Implement proxy methods for TransformNode
 BABYLON.TransformNode.prototype.getDisplayMesh = function (): BABYLON.AbstractMesh | null {
-  return this.metadata?.primaryMesh ||
-    (this.getChildMeshes?.(false)[0] as BABYLON.AbstractMesh) ||
-    null;
+  return this.getPrimaryMesh();
+};
+
+BABYLON.TransformNode.prototype.getPrimaryMesh = function (): BABYLON.AbstractMesh | null {
+  if (this.displayMode === '3d' && this.modelMesh) {
+    return this.modelMesh;
+  }
+  return this.planeMesh;
+};
+
+BABYLON.TransformNode.prototype.setDisplayMode = function (mode: '2d' | '3d'): void {
+  if (!this.isEntity()) return;
+  
+  this.displayMode = mode;
+  
+  // Set visibility based on mode
+  if (this.planeMesh) {
+    this.planeMesh.setEnabled(mode === '2d');
+  }
+  
+  if (this.modelMesh) {
+    this.modelMesh.setEnabled(mode === '3d');
+  }
 };
 
 BABYLON.TransformNode.prototype.getBoundingInfo = function (): BABYLON.BoundingInfo | null {
-  const mesh = this.getDisplayMesh();
+  const mesh = this.getPrimaryMesh();
   return mesh ? mesh.getBoundingInfo() : null;
 };
 
@@ -126,6 +156,9 @@ BABYLON.TransformNode.prototype.addGenerationToHistory = function (
   this.metadata.aiData.stage = 'image';
   this.metadata.aiData.ratio = options.ratio;
   this.metadata.aiData.imageSize = options.imageSize;
+  
+  // Switch to 2D mode when a new image is added
+  this.setDisplayMode('2d');
 
   return newGeneration;
 };
@@ -154,6 +187,9 @@ BABYLON.TransformNode.prototype.addModelToHistory = function (modelUrl: string, 
   this.metadata.aiData.generationHistory.push(newGeneration);
   this.metadata.aiData.currentStateId = newGeneration.id;
   this.metadata.aiData.stage = '3dModel';
+  
+  // Switch to 3D mode when a new model is added
+  this.setDisplayMode('3d');
 
   return newGeneration;
 };
@@ -173,20 +209,24 @@ export function createEntity(
 
   // Create entity object
   const entity = new EntityNode(name, scene, type, options);
+  
+  // Initialize display mode as 2D
+  entity.displayMode = '2d';
+  entity.modelMesh = null;
 
   // Create child mesh based on entity type
-  let childMesh: BABYLON.Mesh;
+  let planeMesh: BABYLON.Mesh;
 
   switch (type) {
     case 'character':
-      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-placeholder`, {
+      planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
         width: 1,
         height: 2
       }, scene);
       break;
 
     case 'skybox':
-      childMesh = BABYLON.MeshBuilder.CreateSphere(`${name}-placeholder`, {
+      planeMesh = BABYLON.MeshBuilder.CreateSphere(`${name}-plane`, {
         diameter: 1000,
         segments: 32,
         sideOrientation: BABYLON.Mesh.BACKSIDE
@@ -194,14 +234,14 @@ export function createEntity(
       break;
 
     case 'background':
-      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-placeholder`, {
+      planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
         width: 10,
         height: 5
       }, scene);
       break;
 
     case 'terrain':
-      childMesh = BABYLON.MeshBuilder.CreateGround(`${name}-placeholder`, {
+      planeMesh = BABYLON.MeshBuilder.CreateGround(`${name}-plane`, {
         width: 10,
         height: 10,
         subdivisions: 32
@@ -213,7 +253,7 @@ export function createEntity(
       const ratio = options.ratio || '1:1';
       const { width, height } = getPlaneSize(ratio);
 
-      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-placeholder`, {
+      planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
         width,
         height
       }, scene);
@@ -224,19 +264,24 @@ export function createEntity(
   material.diffuseColor = new BABYLON.Color3(1, 1, 1);
   material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
   material.backFaceCulling = false;
-  childMesh.material = material;
+  planeMesh.material = material;
 
   // Parent the mesh to the entity
-  childMesh.parent = entity;
+  planeMesh.parent = entity;
 
   // Look at the camera
   if (scene.activeCamera) {
-    childMesh.lookAt(scene.activeCamera.position);
+    planeMesh.lookAt(scene.activeCamera.position);
   }
 
-  // Set as primary mesh
-  entity.primaryMesh = childMesh;
+  // Set entity metadata on the mesh
+  planeMesh.metadata = {
+    rootEntity: entity
+  };
 
+  // Set up plane mesh
+  entity.planeMesh = planeMesh;
+  
   return entity;
 }
 
@@ -262,13 +307,13 @@ export function applyImageToEntity(
   imageUrl: string,
   scene: BABYLON.Scene
 ): void {
-  // Get the primary mesh
-  const childMesh = entity.primaryMesh;
+  // Get the plane mesh
+  const planeMesh = entity.planeMesh;
 
-  if (!childMesh) return;
+  if (!planeMesh) return;
 
   // Get or create material
-  let material = childMesh.material as BABYLON.StandardMaterial;
+  let material = planeMesh.material as BABYLON.StandardMaterial;
   if (!material || !(material instanceof BABYLON.StandardMaterial)) {
     material = new BABYLON.StandardMaterial(`${entity.name}-material`, scene);
     material.backFaceCulling = false;
@@ -287,10 +332,13 @@ export function applyImageToEntity(
   material.emissiveTexture = texture;
 
   // Apply material
-  childMesh.material = material;
+  planeMesh.material = material;
 
   // Update metadata
   if (entityMetadata) {
     entityMetadata.lastImageUrl = imageUrl;
   }
+  
+  // Switch to 2D display mode
+  entity.setDisplayMode('2d');
 } 
