@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import * as BABYLON from '@babylonjs/core';
 
 import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-util';
@@ -16,6 +16,7 @@ const EntityPanel: React.FC = () => {
   const [entityType, setEntityType] = useState<EntityType>('aiObject');
   const [prompt, setPrompt] = useState('_');
   const inputBoxRef = useRef<HTMLInputElement>(null);
+  const focusAttempts = useRef(0);
 
   // Get processing state from entity
   const processingState = selectedEntity?.getProcessingState() || {
@@ -25,32 +26,57 @@ const EntityPanel: React.FC = () => {
   };
   const { isGenerating, isConverting, progressMessage } = processingState;
 
+  // Create a dedicated focus function that can be called multiple times
+  const focusInput = useCallback(() => {
+    if (inputBoxRef.current) {
+      // Try to focus and check if successful
+      inputBoxRef.current.focus();
+      console.log("Attempting to focus input", focusAttempts.current);
+      
+      // // If we didn't reach max attempts, try again
+      if (document.activeElement !== inputBoxRef.current && focusAttempts.current < 5) {
+        focusAttempts.current++;
+        setTimeout(focusInput, 50);  // Increasing delay with each attempt
+      } else if (document.activeElement === inputBoxRef.current) {
+        console.log("Focus successful after", focusAttempts.current, "attempts");
+        focusAttempts.current = 0;
+      } else {
+        console.log("Failed to focus after multiple attempts");
+        focusAttempts.current = 0;
+      }
+    }
+  }, []);
+
   // Update when selected entity changes
   useEffect(() => {
     if (selectedEntity) {
-      prevEntity = selectedEntity;
       setEntityType(selectedEntity.getEntityType() || 'aiObject');
-
+      
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGeneration();
       setPrompt(selectedEntity.tempPrompt || currentGen?.prompt || "");
       
-      // Use setTimeout to move focus operation to the next event loop tick
-      // This gives React time to complete the render with the input field
-      setTimeout(() => {
-        if (inputBoxRef.current) {
-          inputBoxRef.current.focus();
-          console.log("Focus applied to input box in setTimeout");
-        }
-      }, 0);
-    }else{
+      // Reset focus attempts counter
+      focusAttempts.current = 0;
+      // Start focus attempts
+      // setTimeout(focusInput, 10);
+
+      prevEntity = selectedEntity;
+    } else {
       // Deselect the entity
       // Store the prompt
       if (prevEntity) {
         prevEntity.tempPrompt = prompt;
       }
     }
-  }, [selectedEntity]);
+  }, [selectedEntity, focusInput]);
+
+  // Additional effect to handle the input field mounting
+  useEffect(() => {
+    if (selectedEntity && inputBoxRef.current) {
+      focusInput();
+    }
+  }, [selectedEntity, inputBoxRef]);
 
   // Update panel position
   // useEffect(() => {
@@ -217,7 +243,6 @@ const EntityPanel: React.FC = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isGenerating || isConverting}
-                autoFocus
               />
 
               {(isGenerating || isConverting) && (
