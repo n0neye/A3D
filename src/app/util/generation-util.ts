@@ -1,9 +1,7 @@
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
-// Import GLB/GLTF loaders
 import "@babylonjs/loaders/glTF";
-// Import the entity manager functions
-import { getPrimaryMeshFromEntity } from './editor/entityUtil';
+import { get3DSimulationData, isSimulating } from "./simulation-data";
 import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode } from '../types/entity';
 // Types for callbacks and results
 export interface GenerationProgress {
@@ -28,8 +26,8 @@ export interface PromptProps {
 export type ProgressCallback = (progress: GenerationProgress) => void;
 
 // Singleton connection manager - updated to use a queue system
-class ConnectionManager {
-    private static instance: ConnectionManager;
+class RealtimeConnectionManager {
+    private static instance: RealtimeConnectionManager;
     private connection: any = null;
     private isConnected: boolean = false;
     private isProcessing: boolean = false;
@@ -50,11 +48,11 @@ class ConnectionManager {
 
     private constructor() { }
 
-    public static getInstance(): ConnectionManager {
-        if (!ConnectionManager.instance) {
-            ConnectionManager.instance = new ConnectionManager();
+    public static getInstance(): RealtimeConnectionManager {
+        if (!RealtimeConnectionManager.instance) {
+            RealtimeConnectionManager.instance = new RealtimeConnectionManager();
         }
-        return ConnectionManager.instance;
+        return RealtimeConnectionManager.instance;
     }
 
     public initialize() {
@@ -252,8 +250,8 @@ class ConnectionManager {
 }
 
 // Initialize the connection on module load
-export function initializeImageGeneration(): void {
-    ConnectionManager.getInstance().initialize();
+export function initializeRealtimeConnection(): void {
+    RealtimeConnectionManager.getInstance().initialize();
 }
 
 /**
@@ -304,7 +302,7 @@ export async function generateImage(
     onProgress?.({ message: `Generating ${width}x${height} image...` });
 
     // Get connection manager and generate the image
-    const connectionManager = ConnectionManager.getInstance();
+    const connectionManager = RealtimeConnectionManager.getInstance();
 
     // Use the proper method (assuming it's called 'generateImage')
     return connectionManager.generateImage({
@@ -314,75 +312,6 @@ export async function generateImage(
         height,
     }, onProgress);
 }
-
-/**
- * Estimate progress percentage from logs (simplified implementation)
- */
-function estimateProgressFromLogs(logs: any[]): number | undefined {
-    if (!logs || logs.length === 0) return undefined;
-
-    // Look for step information in logs
-    for (let i = logs.length - 1; i >= 0; i--) {
-        const log = logs[i];
-        if (log.message && typeof log.message === 'string') {
-            // Try to extract step information like "Step 15/50"
-            const stepMatch = log.message.match(/Step (\d+)\/(\d+)/i);
-            if (stepMatch && stepMatch.length === 3) {
-                const [_, current, total] = stepMatch;
-                return (parseInt(current) / parseInt(total)) * 100;
-            }
-        }
-    }
-
-    return undefined;
-}
-
-/**
- * Apply a generated image to a mesh in the scene
- */
-export function applyImageToMesh(
-    node: BABYLON.Node,
-    imageUrl: string,
-    scene: BABYLON.Scene
-): void {
-    // Handle both entities and direct meshes
-    let mesh: BABYLON.AbstractMesh | null = null;
-
-    if (node instanceof BABYLON.TransformNode) {
-        mesh = getPrimaryMeshFromEntity(node);
-    } else if (node instanceof BABYLON.AbstractMesh) {
-        mesh = node;
-    }
-
-    if (!mesh) return;
-
-    // Get the existing material or create a new one
-    let material = mesh.material as BABYLON.StandardMaterial;
-    if (!material || !(material instanceof BABYLON.StandardMaterial)) {
-        material = new BABYLON.StandardMaterial("generatedMaterial", scene);
-    }
-
-    // Check if we need to revoke previous object URL
-    if (mesh.metadata?.generatedImage && mesh.metadata.generatedImage.startsWith('blob:')) {
-        URL.revokeObjectURL(mesh.metadata.generatedImage);
-    }
-
-    // Create a texture from the image URL
-    const texture = new BABYLON.Texture(imageUrl, scene);
-    material.diffuseTexture = texture;
-
-    // Apply the material to the mesh
-    mesh.material = material;
-
-    // Update mesh metadata
-    mesh.metadata = {
-        ...mesh.metadata,
-        generatedImage: imageUrl
-    };
-}
-
-
-
 
 /**
  * Load a 3D model and replace the current mesh
@@ -462,3 +391,111 @@ export async function replaceWithModel(
         return false;
     }
 } 
+
+/**
+ * Generate a 3D model from an image using the FAL AI Trellis API
+ */
+export async function generate3DModel(
+    imageUrl: string,
+    options: {
+        entityType?: string;
+        onProgress?: ProgressCallback;
+    } = {}
+): Promise<{success: boolean, modelUrl?: string, error?: string}> {
+    const entityType = options.entityType || 'aiObject';
+    const onProgress = options.onProgress;
+    
+    try {
+        // Process image URL if it's a blob
+        let processedImageUrl = imageUrl;
+        if (imageUrl.startsWith('blob:')) {
+            onProgress?.({ message: 'Converting image format...' });
+            try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                processedImageUrl = await blobToBase64(blob);
+            } catch (error) {
+                return { success: false, error: "Failed to prepare image" };
+            }
+        }
+        
+        // Set parameters based on entity type
+        const params: any = {
+            image_url: processedImageUrl,
+            mesh_simplify: 0.9,
+        };
+        
+        if (entityType === 'character') {
+            params.character = true;
+        }
+        
+        // Call the API
+        onProgress?.({ message: 'Starting 3D conversion...' });
+        const startTime = performance.now();
+        if(isSimulating){
+            // Wait for 1 second
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const testData = get3DSimulationData();
+            return {
+                success: true,
+                modelUrl: testData.data.model_mesh.url
+            }
+        }
+        
+        const result = await fal.subscribe("fal-ai/trellis", {
+            input: params,
+            logs: true,
+            onQueueUpdate: (update) => {
+                if (update.status === "IN_PROGRESS") {
+                    // const latestLog = update.logs[update.logs.length - 1]?.message || 'Processing...';
+                    // Calculate estimated time remaining, min 30s
+                    const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
+                    const latestLog = `Processing... ${(estimatedTime/1000).toFixed(1)}s estimated`;
+                    onProgress?.({ message: latestLog });
+                }
+            },
+        });
+        
+        // Log time
+        const elapsedTime = performance.now() - startTime;
+        const seconds = (elapsedTime / 1000).toFixed(2);
+        console.log("%c3D conversion completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
+
+        console.log(result);
+        
+        // Return result
+        if (result.data?.model_mesh?.url) {
+            return {
+                success: true,
+                modelUrl: result.data.model_mesh.url
+            };
+        } else {
+            return { success: false, error: 'No 3D model generated' };
+        }
+    } catch (error) {
+        console.error("3D conversion failed:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Helper function to convert a Blob to a base64 data URL
+ */
+function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result);
+            } else {
+                reject(new Error('Failed to convert blob to base64'));
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}

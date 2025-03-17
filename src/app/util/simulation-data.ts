@@ -1,6 +1,6 @@
 import { Result } from "@fal-ai/client"
 import { TrellisOutput } from "@fal-ai/client/endpoints"
-import { Generation2DRealtimResult } from "./generation-2d-realtime";
+import { Generation2DRealtimResult } from "./generation-util";
 
 export const isSimulating = true;
 

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 
-import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-2d-realtime';
-import { convertImageTo3D } from '../util/generation-3d';
-import { applyImageToEntity, getPrimaryMeshFromEntity } from '../util/editor/entityUtil';
+import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-util';
+import { generate3DModel } from '../util/generation-util';
+import { applyImageToEntity } from '../util/editor/entityUtil';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityType } from '../types/entity';
 import { isSimulating, getImageSimulationData } from '../util/simulation-data';
@@ -147,7 +147,7 @@ const EntityPanel: React.FC = () => {
     selectedEntity.setConvertingState(true, 'Starting 3D conversion...');
 
     // Call the 3D conversion service
-    const result = await convertImageTo3D(currentGen.imageUrl, {
+    const result = await generate3DModel(currentGen.imageUrl, {
       entityType: entityType,
       onProgress: (progress) => {
         selectedEntity.setConvertingState(true, progress.message);
@@ -216,7 +216,7 @@ const EntityPanel: React.FC = () => {
                   onClick={handleGenerate}
                   disabled={isGenerating || isConverting || !prompt.trim()}
                 >
-                  {isGenerating ? 'Generating...' : 'Generate'}
+                  {isGenerating ? 'Generating...' : 'Generate Image'}
                 </button>
 
                 <button

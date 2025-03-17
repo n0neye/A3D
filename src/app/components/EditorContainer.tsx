@@ -6,7 +6,7 @@ import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
 import { resolveEntity } from '../util/editor/entityUtil';
-import { initializeImageGeneration } from '../util/generation-2d-realtime';
+import { initializeRealtimeConnection } from '../util/generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
 
@@ -146,7 +146,7 @@ export default function EditorContainer() {
     window.addEventListener('resize', handleResize);
 
     // Initialize API connection
-    initializeImageGeneration();
+    initializeRealtimeConnection();
 
     // Cleanup
     return () => {
