@@ -72,8 +72,9 @@ export interface EntityMetadata {
 // Custom Entity Class that extends TransformNode
 export class EntityNode extends BABYLON.TransformNode {
   public metadata: EntityMetadata;
+  public tempPrompt: string = "";
   private _primaryMesh: BABYLON.AbstractMesh | null = null;
-  
+
   constructor(
     name: string, 
     scene: BABYLON.Scene, 

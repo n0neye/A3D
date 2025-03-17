@@ -5,8 +5,10 @@ import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../u
 import { generate3DModel } from '../util/generation-util';
 import { applyImageToEntity } from '../util/editor/entityUtil';
 import { useEditorContext } from '../context/EditorContext';
-import { EntityType } from '../types/entity';
+import { EntityNode, EntityType } from '../types/entity';
 import { getImageSimulationData } from '../util/simulation-data';
+
+let prevEntity:EntityNode | null = null;
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
@@ -26,16 +28,26 @@ const EntityPanel: React.FC = () => {
   // Update when selected entity changes
   useEffect(() => {
     if (selectedEntity) {
+      prevEntity = selectedEntity;
       setEntityType(selectedEntity.getEntityType() || 'aiObject');
 
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGeneration();
-      inputBoxRef.current?.focus();
-      console.log("Focusing on input box", inputBoxRef.current);
-      if (currentGen && currentGen.prompt) {
-        setPrompt(currentGen.prompt);
-      } else {
-        setPrompt("");
+      setPrompt(selectedEntity.tempPrompt || currentGen?.prompt || "");
+      
+      // Use setTimeout to move focus operation to the next event loop tick
+      // This gives React time to complete the render with the input field
+      setTimeout(() => {
+        if (inputBoxRef.current) {
+          inputBoxRef.current.focus();
+          console.log("Focus applied to input box in setTimeout");
+        }
+      }, 0);
+    }else{
+      // Deselect the entity
+      // Store the prompt
+      if (prevEntity) {
+        prevEntity.tempPrompt = prompt;
       }
     }
   }, [selectedEntity]);
