@@ -4,7 +4,7 @@ import { EntityNode, EntityType, EntityMetadata, ImageRatio, ImageSize, isEntity
 
 // Entity resolution functions
 export function getEntityFromMesh(mesh: BABYLON.AbstractMesh): EntityNode | null {
-  return mesh?.metadata?.parentEntity as EntityNode || null;
+  return mesh?.metadata?.rootEntity as EntityNode || null;
 }
 
 export function getPrimaryMeshFromEntity(entity: EntityNode | BABYLON.TransformNode): BABYLON.AbstractMesh | null {
@@ -23,8 +23,8 @@ export function resolveEntity(node: BABYLON.Node): EntityNode | null {
     return node;
   }
   
-  if (node instanceof BABYLON.AbstractMesh && node.metadata?.parentEntity) {
-    return node.metadata.parentEntity as EntityNode;
+  if (node instanceof BABYLON.AbstractMesh && node.metadata?.rootEntity) {
+    return node.metadata.rootEntity as EntityNode;
   }
   
   return null;
@@ -189,14 +189,14 @@ export function createEntity(
   
   switch (type) {
     case 'character':
-      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-mesh`, { 
+      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-placeholder`, { 
         width: 1, 
         height: 2 
       }, scene);
       break;
     
     case 'skybox':
-      childMesh = BABYLON.MeshBuilder.CreateSphere(`${name}-mesh`, { 
+      childMesh = BABYLON.MeshBuilder.CreateSphere(`${name}-placeholder`, { 
         diameter: 1000,
         segments: 32,
         sideOrientation: BABYLON.Mesh.BACKSIDE
@@ -204,14 +204,14 @@ export function createEntity(
       break;
     
     case 'background':
-      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-mesh`, { 
+      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-placeholder`, { 
         width: 10, 
         height: 5 
       }, scene);
       break;
     
     case 'terrain':
-      childMesh = BABYLON.MeshBuilder.CreateGround(`${name}-mesh`, {
+      childMesh = BABYLON.MeshBuilder.CreateGround(`${name}-placeholder`, {
         width: 10,
         height: 10,
         subdivisions: 32
@@ -223,7 +223,7 @@ export function createEntity(
       const ratio = options.ratio || '1:1';
       const { width, height } = getPlaneSize(ratio);
       
-      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-mesh`, { 
+      childMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-placeholder`, { 
         width, 
         height 
       }, scene);

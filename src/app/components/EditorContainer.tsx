@@ -81,6 +81,7 @@ export default function EditorContainer() {
               !mesh.name.startsWith("__")) {
             // Find entity from mesh
             const entity = resolveEntity(mesh);
+            console.log("OnClick mesh", mesh.name, mesh);
             console.log("Selected entity:", entity?.name);
             setSelectedEntity(entity);
           } else {
@@ -175,7 +176,7 @@ export default function EditorContainer() {
           <RenderPanel />
         </div>
       </div>
-      <DebugLayer />
+      {/* <DebugLayer /> */}
     </div>
   );
 } 

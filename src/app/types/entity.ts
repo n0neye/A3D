@@ -120,8 +120,7 @@ export class EntityNode extends BABYLON.TransformNode {
     if (mesh) {
       mesh.metadata = {
         ...mesh.metadata,
-        isEntityMesh: true,
-        parentEntity: this
+        rootEntity: this
       };
     }
   }

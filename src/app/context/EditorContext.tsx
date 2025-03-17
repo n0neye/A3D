@@ -48,7 +48,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (selectedEntity) {
       // Attach gizmo to selected entity
       if (selectedEntity.primaryMesh) {
-        console.log("OnSelect mesh", selectedEntity.primaryMesh);
+        console.log("OnSelect mesh", selectedEntity.primaryMesh.name);
         gizmoManager.positionGizmoEnabled = true;
         gizmoManager.rotationGizmoEnabled = true;
         gizmoManager.scaleGizmoEnabled = true;

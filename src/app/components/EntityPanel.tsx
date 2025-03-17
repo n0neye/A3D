@@ -9,7 +9,7 @@ import { EntityType } from '../types/entity';
 import { isSimulating, getImageSimulationData } from '../util/simulation-data';
 
 const EntityPanel: React.FC = () => {
-  const { scene, selectedEntity } = useEditorContext();
+  const { scene, selectedEntity, gizmoManager } = useEditorContext();
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [entityType, setEntityType] = useState<EntityType>('aiObject');
   const [prompt, setPrompt] = useState('A rock');
@@ -40,41 +40,22 @@ const EntityPanel: React.FC = () => {
     if (!scene || !selectedEntity) return;
 
     const updatePosition = () => {
-      // Get the primary mesh for position/bounds
-      const childMesh = getPrimaryMeshFromEntity(selectedEntity);
-
-      if (childMesh && scene.activeCamera) {
-        // Calculate position based on the mesh's bounds
-        childMesh.computeWorldMatrix(true);
-        const boundingInfo = childMesh.getBoundingInfo();
-
-        // Project to screen coordinates
-        const camera = scene.activeCamera;
-        const centerPosition = BABYLON.Vector3.Project(
-          childMesh.position,
-          BABYLON.Matrix.Identity(),
-          scene.getTransformMatrix(),
-          camera.viewport.toGlobal(
-            scene.getEngine().getRenderWidth(),
-            scene.getEngine().getRenderHeight()
-          )
-        );
-
-        // Position the panel below the mesh
-        const objectHeight = boundingInfo ? boundingInfo.boundingSphere.radius * 2 : 0;
-        const screenScale = camera.fov / (Math.PI / 2); // Approximate screen scale factor
-        const screenHeight = objectHeight * screenScale * 100; // Convert to screen units
-
-        setPosition({
-          left: centerPosition.x,
-          top: centerPosition.y + screenHeight / 2 + 30 // Add margin
-        });
-      } else {
-        // Fallback to entity position if no mesh
+      const mesh = selectedEntity.primaryMesh;
+      
+        // Update selected mesh when it changes
+        if (!mesh) return;
+        
+        // Get the position in screen space
         const camera = scene.activeCamera;
         if (camera) {
+          // Get the mesh's bounding info
+          mesh.computeWorldMatrix(true);
+          const boundingInfo = mesh.getBoundingInfo();
+          const boundingBox = boundingInfo.boundingBox;
+          
+          // Project center position to screen coordinates
           const centerPosition = BABYLON.Vector3.Project(
-            selectedEntity.position,
+            mesh.position,
             BABYLON.Matrix.Identity(),
             scene.getTransformMatrix(),
             camera.viewport.toGlobal(
@@ -82,13 +63,34 @@ const EntityPanel: React.FC = () => {
               scene.getEngine().getRenderHeight()
             )
           );
-
+          
+          // Project bottom position to screen coordinates
+          const bottomCenter = new BABYLON.Vector3(
+            mesh.position.x,
+            boundingBox.minimumWorld.y,
+            mesh.position.z
+          );
+          
+          const bottomPosition = BABYLON.Vector3.Project(
+            bottomCenter,
+            BABYLON.Matrix.Identity(),
+            scene.getTransformMatrix(),
+            camera.viewport.toGlobal(
+              scene.getEngine().getRenderWidth(),
+              scene.getEngine().getRenderHeight()
+            )
+          );
+          
+          // Calculate object height in screen space
+          const objectHeight = Math.abs(centerPosition.y - bottomPosition.y) * 2;
+          
+          // Position the panel below the object with a margin
+          const margin = 20;
           setPosition({
             left: centerPosition.x,
-            top: centerPosition.y + 50
+            top: centerPosition.y + (objectHeight / 2) + margin
           });
         }
-      }
     };
 
     const observer = scene.onBeforeRenderObservable.add(updatePosition);
@@ -177,6 +179,7 @@ const EntityPanel: React.FC = () => {
         selectedEntity,
         result.modelUrl,
         scene,
+        gizmoManager,
         (progress) => {
           selectedEntity.setConvertingState(true, progress.message);
         }

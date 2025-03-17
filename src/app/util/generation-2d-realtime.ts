@@ -4,7 +4,7 @@ import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 // Import the entity manager functions
 import { getPrimaryMeshFromEntity } from './editor/entityUtil';
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize } from '../types/entity';
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode } from '../types/entity';
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;
@@ -388,43 +388,53 @@ export function applyImageToMesh(
  * Load a 3D model and replace the current mesh
  */
 export async function replaceWithModel(
-    entity: BABYLON.TransformNode,
+    entity: EntityNode,
     modelUrl: string,
     scene: BABYLON.Scene,
+    gizmoManager: BABYLON.GizmoManager | null,
     onProgress?: ProgressCallback
 ): Promise<boolean> {
     try {
         onProgress?.({ message: 'Downloading 3D model...' });
 
-
-        // Find all child meshes
-        const childMeshes = entity.getChildMeshes?.() || [];
-
-        // Dispose all child meshes
-        for (const mesh of childMeshes) {
-            mesh.dispose();
-        }
-
         // Load the model as children of the entity
         return new Promise((resolve) => {
             BABYLON.SceneLoader.ImportMesh("", modelUrl, "", scene,
                 (meshes) => {
+                    // Find and delete all previous nodes
+                    const childNodes = entity.getChildren?.() || [];
+                    for (const node of childNodes) {
+                        node.dispose();
+                    }
+
                     onProgress?.({ message: 'Processing 3D model...' });
-                    console.log("meshes", meshes);
+                    console.log("replaceWithModel. meshes", meshes);
 
                     if (meshes.length > 0) {
                         console.log("meshes length", meshes.length);
-                        // Parent all meshes to our entity
-                        meshes.forEach(mesh => {
-                            mesh.parent = entity;
+                        meshes.forEach((mesh, index) => {
 
-                            // Set up bidirectional references for the all sub meshes
+                            // Parent first mesh to our entity
+                            if (index === 0) {
+                                mesh.parent = entity;
+                            }
+
+                            // Link mesh to entity
                             mesh.metadata = {
-                                isEntityMesh: true,
-                                parentEntity: entity
+                                rootEntity: entity
                             };
-                            entity.metadata.primaryMesh = mesh;
-                            console.log("added metadata to mesh", mesh);
+
+                            // Find primary mesh
+                            // TODO: better way to find primary mesh
+                            if (mesh.name != '__root__') {
+                                entity.primaryMesh = mesh;
+                                console.log("set primary mesh to entity", entity.name, mesh.name, mesh);
+
+                                // Attach gizmo to mesh
+                                if (gizmoManager) {
+                                    gizmoManager.attachToMesh(mesh);
+                                }
+                            }
                         });
 
                         onProgress?.({ message: '3D model loaded successfully!' });
