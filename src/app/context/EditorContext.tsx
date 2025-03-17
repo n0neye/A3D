@@ -48,7 +48,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (selectedEntity) {
       // Attach gizmo to selected entity
       if (selectedEntity.primaryMesh) {
-        console.log("OnSelect mesh", selectedEntity.primaryMesh.name);
+        console.log("OnSelect mesh", selectedEntity.primaryMesh);
         gizmoManager.positionGizmoEnabled = true;
         gizmoManager.rotationGizmoEnabled = true;
         gizmoManager.scaleGizmoEnabled = true;
@@ -58,15 +58,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         selectedEntity.primaryMesh.computeWorldMatrix(true);
         
         // Set bounding box visibility and ensure it's visible
-        selectedEntity.primaryMesh.showBoundingBox = true;
+        // selectedEntity.primaryMesh.showBoundingBox = true;
         
-        // If you want to customize the bounding box appearance
-        if (scene.getBoundingBoxRenderer()) {
-          scene.getBoundingBoxRenderer().frontColor = new BABYLON.Color3(1, 0, 0); // Red
-          scene.getBoundingBoxRenderer().backColor = new BABYLON.Color3(0.5, 0, 0); // Dark red
-          scene.getBoundingBoxRenderer().showBackLines = true;
-        }
-
         // Store reference to entity on gizmo
         gizmoManager.metadata = {
           ...gizmoManager.metadata || {},

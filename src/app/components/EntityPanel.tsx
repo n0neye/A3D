@@ -13,7 +13,7 @@ const EntityPanel: React.FC = () => {
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [entityType, setEntityType] = useState<EntityType>('aiObject');
   const [prompt, setPrompt] = useState('A rock');
-  
+
   // Get processing state from entity
   const processingState = selectedEntity?.getProcessingState() || {
     isGenerating: false,
@@ -26,7 +26,7 @@ const EntityPanel: React.FC = () => {
   useEffect(() => {
     if (selectedEntity) {
       setEntityType(selectedEntity.getEntityType() || 'aiObject');
-      
+
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGeneration();
       if (currentGen && currentGen.prompt) {
@@ -37,60 +37,44 @@ const EntityPanel: React.FC = () => {
 
   // Update panel position
   useEffect(() => {
-    if (!scene || !selectedEntity) return;
+    if (!scene || !selectedEntity) {
+      return;
+    }
 
     const updatePosition = () => {
       const mesh = selectedEntity.primaryMesh;
-      
-        // Update selected mesh when it changes
-        if (!mesh) return;
-        
-        // Get the position in screen space
-        const camera = scene.activeCamera;
-        if (camera) {
-          // Get the mesh's bounding info
-          mesh.computeWorldMatrix(true);
-          const boundingInfo = mesh.getBoundingInfo();
-          const boundingBox = boundingInfo.boundingBox;
-          
-          // Project center position to screen coordinates
-          const centerPosition = BABYLON.Vector3.Project(
-            mesh.position,
-            BABYLON.Matrix.Identity(),
-            scene.getTransformMatrix(),
-            camera.viewport.toGlobal(
-              scene.getEngine().getRenderWidth(),
-              scene.getEngine().getRenderHeight()
-            )
-          );
-          
-          // Project bottom position to screen coordinates
-          const bottomCenter = new BABYLON.Vector3(
-            mesh.position.x,
-            boundingBox.minimumWorld.y,
-            mesh.position.z
-          );
-          
-          const bottomPosition = BABYLON.Vector3.Project(
-            bottomCenter,
-            BABYLON.Matrix.Identity(),
-            scene.getTransformMatrix(),
-            camera.viewport.toGlobal(
-              scene.getEngine().getRenderWidth(),
-              scene.getEngine().getRenderHeight()
-            )
-          );
-          
-          // Calculate object height in screen space
-          const objectHeight = Math.abs(centerPosition.y - bottomPosition.y) * 2;
-          
-          // Position the panel below the object with a margin
-          const margin = 20;
-          setPosition({
-            left: centerPosition.x,
-            top: centerPosition.y + (objectHeight / 2) + margin
-          });
-        }
+      const camera = scene.activeCamera;
+      if (!mesh || !camera) return;
+
+      // Get the mesh's bounding info
+      mesh.computeWorldMatrix(true);
+      const boundingInfo = mesh.getBoundingInfo();
+      const boundingBox = boundingInfo.boundingBox;
+
+      // Project bottom position to screen coordinates
+      const meshBottomCenterWorld = new BABYLON.Vector3(
+        mesh.position.x,
+        boundingBox.minimumWorld.y,
+        mesh.position.z
+      );
+
+      const meshBottomScreenPosition = BABYLON.Vector3.Project(
+        meshBottomCenterWorld,
+        BABYLON.Matrix.Identity(),
+        scene.getTransformMatrix(),
+        camera.viewport.toGlobal(
+          scene.getEngine().getRenderWidth(),
+          scene.getEngine().getRenderHeight()
+        )
+      );
+
+      // Position the panel below the object with a margin
+      const margin = 20;
+      setPosition({
+        left: meshBottomScreenPosition.x,
+        top: meshBottomScreenPosition.y + margin
+      });
+
     };
 
     const observer = scene.onBeforeRenderObservable.add(updatePosition);
