@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
 
 import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-util';
@@ -6,13 +6,14 @@ import { generate3DModel } from '../util/generation-util';
 import { applyImageToEntity } from '../util/editor/entityUtil';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityType } from '../types/entity';
-import { isSimulating, getImageSimulationData } from '../util/simulation-data';
+import { getImageSimulationData } from '../util/simulation-data';
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [entityType, setEntityType] = useState<EntityType>('aiObject');
   const [prompt, setPrompt] = useState('_');
+  const inputBoxRef = useRef<HTMLInputElement>(null);
 
   // Get processing state from entity
   const processingState = selectedEntity?.getProcessingState() || {
@@ -29,60 +30,64 @@ const EntityPanel: React.FC = () => {
 
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGeneration();
+      inputBoxRef.current?.focus();
+      console.log("Focusing on input box", inputBoxRef.current);
       if (currentGen && currentGen.prompt) {
         setPrompt(currentGen.prompt);
+      } else {
+        setPrompt("");
       }
     }
   }, [selectedEntity]);
 
   // Update panel position
-  useEffect(() => {
-    if (!scene || !selectedEntity) {
-      return;
-    }
+  // useEffect(() => {
+  //   if (!scene || !selectedEntity) {
+  //     return;
+  //   }
 
-    const updatePosition = () => {
-      const mesh = selectedEntity.primaryMesh;
-      const camera = scene.activeCamera;
-      if (!mesh || !camera) return;
+  //   const updatePosition = () => {
+  //     const mesh = selectedEntity.primaryMesh;
+  //     const camera = scene.activeCamera;
+  //     if (!mesh || !camera) return;
 
-      // Get the mesh's bounding info
-      mesh.computeWorldMatrix(true);
-      const boundingInfo = mesh.getBoundingInfo();
-      const boundingBox = boundingInfo.boundingBox;
+  //     // Get the mesh's bounding info
+  //     mesh.computeWorldMatrix(true);
+  //     const boundingInfo = mesh.getBoundingInfo();
+  //     const boundingBox = boundingInfo.boundingBox;
 
-      // Project bottom position to screen coordinates
-      const meshBottomCenterWorld = new BABYLON.Vector3(
-        mesh.position.x,
-        boundingBox.minimumWorld.y,
-        mesh.position.z
-      );
+  //     // Project bottom position to screen coordinates
+  //     const meshBottomCenterWorld = new BABYLON.Vector3(
+  //       mesh.position.x,
+  //       boundingBox.minimumWorld.y,
+  //       mesh.position.z
+  //     );
 
-      const meshBottomScreenPosition = BABYLON.Vector3.Project(
-        meshBottomCenterWorld,
-        BABYLON.Matrix.Identity(),
-        scene.getTransformMatrix(),
-        camera.viewport.toGlobal(
-          scene.getEngine().getRenderWidth(),
-          scene.getEngine().getRenderHeight()
-        )
-      );
+  //     const meshBottomScreenPosition = BABYLON.Vector3.Project(
+  //       meshBottomCenterWorld,
+  //       BABYLON.Matrix.Identity(),
+  //       scene.getTransformMatrix(),
+  //       camera.viewport.toGlobal(
+  //         scene.getEngine().getRenderWidth(),
+  //         scene.getEngine().getRenderHeight()
+  //       )
+  //     );
 
-      // Position the panel below the object with a margin
-      const margin = 20;
-      setPosition({
-        left: meshBottomScreenPosition.x,
-        top: meshBottomScreenPosition.y + margin
-      });
+  //     // Position the panel below the object with a margin
+  //     const margin = 20;
+  //     setPosition({
+  //       left: meshBottomScreenPosition.x,
+  //       top: meshBottomScreenPosition.y + margin
+  //     });
 
-    };
+  //   };
 
-    const observer = scene.onBeforeRenderObservable.add(updatePosition);
+  //   const observer = scene.onBeforeRenderObservable.add(updatePosition);
 
-    return () => {
-      scene.onBeforeRenderObservable.remove(observer);
-    };
-  }, [scene, selectedEntity]);
+  //   return () => {
+  //     scene.onBeforeRenderObservable.remove(observer);
+  //   };
+  // }, [scene, selectedEntity]);
 
   // Handle key events
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -193,6 +198,7 @@ const EntityPanel: React.FC = () => {
             <div className="space-y-2">
               <input
                 type="text"
+                ref={inputBoxRef}
                 placeholder="Enter prompt..."
                 className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded"
                 value={prompt}
@@ -257,10 +263,10 @@ const EntityPanel: React.FC = () => {
 
   return (
     <div
-      className="absolute z-10 bg-black bg-opacity-80 rounded-2xl p-3 text-white shadow-2xl"
+      className="fixed z-10 bg-black bg-opacity-80 rounded-2xl p-4 text-white shadow-2xl left-1/2 bottom-4 w-80"
       style={{
-        left: `${position.left}px`,
-        top: `${position.top}px`,
+        // left: `${position.left}px`,
+        // top: `${position.top}px`,
         transform: 'translateX(-50%)', // Center horizontally
         minWidth: '150px',
       }}
