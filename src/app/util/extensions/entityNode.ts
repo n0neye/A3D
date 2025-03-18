@@ -1,9 +1,10 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
+import { create2DBackground } from '../editor/editor-util';
 
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
-export type AiObjectType = "object" | "background" | "character";
+export type AiObjectType = "object" | "background";
 
 export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
@@ -139,7 +140,7 @@ export class EntityNode extends BABYLON.TransformNode {
         };
 
         // Add AI data for AI entities
-        if (type === 'aiObject' ) {
+        if (type === 'aiObject') {
             this.metadata.aiData = {
                 aiObjectType: "object",
                 currentStateId: null,
@@ -346,20 +347,36 @@ export function createEntity(
         ratio?: ImageRatio;
         imageSize?: ImageSize;
         name?: string;
+        imageUrl?: string;
     } = {}
 ): EntityNode {
     const name = options.name || `${type}-${uuidv4().substring(0, 8)}`;
+    const aiObjectType = options.aiObjectType || "object";
 
     // Create entity object
     const entity = new EntityNode(name, scene, type, options);
 
-    // Create child mesh based on entity type
-    let planeMesh: BABYLON.Mesh;
+    // Set the AI object type in metadata
+    if (entity.metadata.aiData) {
+        entity.metadata.aiData.aiObjectType = aiObjectType;
+    }
 
-    switch (type) {
 
-        default: // aiObject
-            // Create a plane with the right aspect ratio
+    if (type === 'aiObject') {
+        // Create child mesh based on entity type and aiObjectType
+        let planeMesh: BABYLON.Mesh;
+        if (aiObjectType === 'background') {
+            // Create a background that fills the screen
+            // A placeholder texture for the background until a real one is provided
+            const placeholderUrl = options.imageUrl || "https://playground.babylonjs.com/textures/equirectangular.jpg";
+
+            // Create the background mesh
+            planeMesh = create2DBackground(scene, placeholderUrl);
+
+            // Set special properties for backgrounds
+            planeMesh.renderingGroupId = 0; // Ensure it renders behind everything
+        } else {
+            // Default object - create a plane with the right aspect ratio
             const ratio = options.ratio || '1:1';
             const { width, height } = getPlaneSize(ratio);
 
@@ -367,30 +384,38 @@ export function createEntity(
                 width,
                 height
             }, scene);
+
+            // Create default material
+            const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
+            material.diffuseColor = new BABYLON.Color3(1, 1, 1);
+            material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+            material.backFaceCulling = false;
+
+
+            // Apply material to mesh
+            planeMesh.material = material;
+
+
+            // Look at the camera for non-background objects
+            if (scene.activeCamera) {
+                planeMesh.lookAt(scene.activeCamera.position);
+            }
+        }
+
+        // Parent the mesh to the entity
+        planeMesh.parent = entity;
+
+        // Set up plane mesh
+        entity.planeMesh = planeMesh;
+
+        planeMesh.metadata = {
+            rootEntity: entity
+        };
+    } else {
+        // Handle other entity types (like lights, etc.) 
+        // TODO
     }
 
-    // Create default material
-    const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
-    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
-    material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-    material.backFaceCulling = false;
-    planeMesh.material = material;
-
-    // Parent the mesh to the entity
-    planeMesh.parent = entity;
-
-    // Look at the camera
-    if (scene.activeCamera) {
-        planeMesh.lookAt(scene.activeCamera.position);
-    }
-
-    // Set entity metadata on the mesh
-    planeMesh.metadata = {
-        rootEntity: entity
-    };
-
-    // Set up plane mesh
-    entity.planeMesh = planeMesh;
 
     return entity;
 }
@@ -403,35 +428,60 @@ export function applyImageToEntity(
 ): void {
     // Get the plane mesh
     const planeMesh = entity.planeMesh;
-
     if (!planeMesh) return;
 
-    // Get or create material
-    let material = planeMesh.material as BABYLON.StandardMaterial;
-    if (!material || !(material instanceof BABYLON.StandardMaterial)) {
-        material = new BABYLON.StandardMaterial(`${entity.name}-material`, scene);
-        material.backFaceCulling = false;
-        material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+    // Check if this is a background
+    const isBackground = entity.metadata.aiData?.aiObjectType === 'background';
+
+    if (isBackground) {
+        // For backgrounds, we'll replace the entire mesh
+        const oldMesh = entity.planeMesh;
+
+        // Create a new background with the new image
+        const newBackground = create2DBackground(scene, imageUrl);
+        newBackground.parent = entity;
+
+        // Set metadata
+        newBackground.metadata = { rootEntity: entity };
+
+        // Replace the reference
+        entity.planeMesh = newBackground;
+
+        // Dispose the old mesh
+        if (oldMesh) {
+            oldMesh.dispose();
+        }
+
+        // Update metadata
+        entity.metadata.lastImageUrl = imageUrl;
+    } else {
+        // Standard object - just update the texture
+        let material = planeMesh.material as BABYLON.StandardMaterial;
+        if (!material || !(material instanceof BABYLON.StandardMaterial)) {
+            material = new BABYLON.StandardMaterial(`${entity.name}-material`, scene);
+            material.backFaceCulling = false;
+            material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+        }
+
+        // Check if we need to revoke previous blob URL
+        const entityMetadata = entity.getEntityMetadata();
+        if (entityMetadata?.lastImageUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(entityMetadata.lastImageUrl);
+        }
+
+        // Create texture
+        const texture = new BABYLON.Texture(imageUrl, scene);
+        material.diffuseTexture = texture;
+        material.emissiveTexture = texture;
+
+        // Apply material
+        planeMesh.material = material;
+
+        // Update metadata
+        entity.metadata.lastImageUrl = imageUrl;
     }
-
-    // Check if we need to revoke previous blob URL
-    const entityMetadata = entity.getEntityMetadata();
-    if (entityMetadata?.lastImageUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(entityMetadata.lastImageUrl);
-    }
-
-    // Create texture
-    const texture = new BABYLON.Texture(imageUrl, scene);
-    material.diffuseTexture = texture;
-    material.emissiveTexture = texture;
-
-    // Apply material
-    planeMesh.material = material;
-
-    // Update metadata
-    entity.metadata.lastImageUrl = imageUrl;
 
     // Switch to 2D display mode
     entity.setDisplayMode('2d');
-} 
+}
 

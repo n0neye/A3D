@@ -49,26 +49,29 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (selectedEntity) {
+      console.log("EditorContext: selectedEntity", selectedEntity);
       // Get the primary mesh for this entity
       const primaryMesh = selectedEntity.getPrimaryMesh();
       
       if (primaryMesh) {
         // Setup gizmo
-        gizmoManager.positionGizmoEnabled = true;
-        gizmoManager.rotationGizmoEnabled = true;
-        gizmoManager.scaleGizmoEnabled = true;
-        gizmoManager.attachToMesh(primaryMesh);
+        if(selectedEntity.getEntityType() === 'aiObject' && selectedEntity.metadata.aiData?.aiObjectType === 'object') {
+          gizmoManager.positionGizmoEnabled = true;
+          gizmoManager.rotationGizmoEnabled = true;
+          gizmoManager.scaleGizmoEnabled = true;
+          gizmoManager.attachToMesh(primaryMesh);
+          // Store reference to entity on gizmo
+          gizmoManager.metadata = {
+            ...gizmoManager.metadata || {},
+            selectedEntity
+          };
+        }
         
         // Setup bounding box if needed
         if (isDebugMode) {
           primaryMesh.showBoundingBox = true;
         }
         
-        // Store reference to entity on gizmo
-        gizmoManager.metadata = {
-          ...gizmoManager.metadata || {},
-          selectedEntity
-        };
         
         // Force a render
         scene.render();

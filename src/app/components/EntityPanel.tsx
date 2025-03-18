@@ -275,7 +275,7 @@ const EntityPanel: React.FC = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-1">
+              {selectedEntity.metadata.aiData?.aiObjectType === 'object' && <div className="grid grid-cols-2 gap-1">
                 <button
                   className={`py-1 text-xs ${isGenerating2D || isGenerating3D ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
                   onClick={handleGenerate2D}
@@ -291,7 +291,7 @@ const EntityPanel: React.FC = () => {
                 >
                   {isGenerating3D ? 'Converting...' : 'Convert to 3D'}
                 </button>
-              </div>
+              </div>}
             </div>
           </>
         );

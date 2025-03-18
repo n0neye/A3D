@@ -1,4 +1,5 @@
 import * as BABYLON from "@babylonjs/core";
+import { createEntity } from "../extensions/entityNode";
 
 export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
@@ -31,6 +32,11 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
     // createEquirectangularSkybox(scene, "./demoAssets/skybox/sunsetforest.webp");
     // create2DBackground(scene, "./demoAssets/skybox/sunsetforest.webp");
+
+    createEntity(scene, "aiObject", {
+        aiObjectType: "background",
+        imageUrl: "./demoAssets/skybox/sunsetforest.webp"
+    });
 }
 
 

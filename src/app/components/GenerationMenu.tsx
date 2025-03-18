@@ -66,15 +66,6 @@ const GenerationMenu: React.FC = () => {
             : 'Object'
           }
         </button>
-        
-        <button
-          onClick={() => handleCreateEntity('aiObject', 'character')}
-          disabled={isGenerating}
-          className="py-2 px-3 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm flex items-center justify-center"
-        >
-          Character
-        </button>
-        
       </div>
     </div>
   );

@@ -34,6 +34,7 @@ export default function EditorContainer() {
         const mesh = pickInfo.pickedMesh;
 
         if (mesh) {
+          console.log("onPointerObservable mesh", mesh);
           // Find entity from mesh
           const entity = resolveEntity(mesh);
           setSelectedEntity(entity);
