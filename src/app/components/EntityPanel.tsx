@@ -53,13 +53,12 @@ const EntityPanel: React.FC = () => {
   useEffect(() => {
     if (selectedEntity && inputElementRef.current) {
       inputElementRef.current.focus();
+      setTimeout(() => {
+        inputElementRef.current?.focus();
+        console.log("Focused input");
+      }, 50);
     }
   }, [selectedEntity, inputElementRef]);
-
-
-  useEffect(() => {
-    console.log("Scene changed", scene, selectedEntity);
-  }, [scene, selectedEntity]);
 
 
   // Update panel position
