@@ -315,7 +315,7 @@ export async function generateImage(
 /**
  * Load a 3D model and replace the current mesh
  */
-export async function replaceWithModel(
+export async function loadModel(
     entity: EntityNode,
     modelUrl: string,
     scene: BABYLON.Scene,

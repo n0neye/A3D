@@ -1,29 +1,30 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import * as BABYLON from '@babylonjs/core';
 
-import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-util';
+import { generateImage, Generation2DRealtimResult, loadModel } from '../util/generation-util';
 import { generate3DModel } from '../util/generation-util';
 import { useEditorContext } from '../context/EditorContext';
-import { EntityNode, EntityType, applyImageToEntity } from '../util/extensions/entityNode';
+import { EntityNode, EntityProcessingState, EntityType, applyImageToEntity } from '../util/extensions/entityNode';
 import { getImageSimulationData } from '../util/simulation-data';
 
 let prevEntity: EntityNode | null = null;
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
-  const [position, setPosition] = useState({ left: 0, top: 0 });
   const [entityType, setEntityType] = useState<EntityType>('aiObject');
   const [prompt, setPrompt] = useState('_');
   const inputBoxRef = useRef<HTMLInputElement>(null);
   const focusAttempts = useRef(0);
 
-  // Get processing state from entity
-  const processingState = selectedEntity?.getProcessingState() || {
-    isGenerating: false,
-    isConverting: false,
-    progressMessage: ''
-  };
-  const { isGenerating, isConverting, progressMessage } = processingState;
+  // State for processing
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
+  const [progressMessage, setProgressMessage] = useState('');
+  const onProgress = (progress: EntityProcessingState) => {
+    setIsGenerating(progress.isGenerating2D);
+    setIsConverting(progress.isGenerating3D);
+    setProgressMessage(progress.progressMessage);
+  }
 
   // Create a dedicated focus function that can be called multiple times
   const focusInput = useCallback(() => {
@@ -57,8 +58,6 @@ const EntityPanel: React.FC = () => {
 
       // Reset focus attempts counter
       focusAttempts.current = 0;
-      // Start focus attempts
-      // setTimeout(focusInput, 10);
 
       prevEntity = selectedEntity;
     } else {
@@ -81,6 +80,8 @@ const EntityPanel: React.FC = () => {
   useEffect(() => {
     console.log("Scene changed", scene, selectedEntity);
   }, [scene, selectedEntity]);
+
+
   // Update panel position
   // useEffect(() => {
   //   if (!scene || !selectedEntity) {
@@ -133,17 +134,21 @@ const EntityPanel: React.FC = () => {
   // Handle key events
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleGenerate();
+      handleGenerate2D();
     }
   };
 
   // Handle image generation
-  const handleGenerate = async () => {
+  const handleGenerate2D = async () => {
     if (!selectedEntity || !prompt.trim() || !scene) return;
     const thisEntity = selectedEntity;
 
     // Update entity state
-    thisEntity.setGeneratingState(true, 'Starting generation...');
+    thisEntity.setProcessingState({
+      isGenerating2D: true,
+      isGenerating3D: false,
+      progressMessage: 'Starting generation...'
+    });
 
     // Call the generation service
     let result: Generation2DRealtimResult;
@@ -153,7 +158,11 @@ const EntityPanel: React.FC = () => {
       result = await generateImage(prompt, {
         entityType: entityType,
         onProgress: (progress) => {
-          thisEntity.setGeneratingState(true, progress.message);
+          thisEntity.setProcessingState({
+            isGenerating2D: true,
+            isGenerating3D: false,
+            progressMessage: progress.message
+          });
         }
       });
     }
@@ -173,16 +182,24 @@ const EntityPanel: React.FC = () => {
       setEntityType('aiObject');
     } else {
       // Handle error
-      thisEntity.setGeneratingState(true, result.error || 'Generation failed');
+      thisEntity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: false,
+        progressMessage: result.error || "Failed",
+      })
       console.error("Generation failed:", result.error);
     }
 
     // Reset generation state
-    thisEntity.setGeneratingState(false);
+    thisEntity.setProcessingState({
+      isGenerating2D: false,
+      isGenerating3D: false,
+      progressMessage: ''
+    });
   };
 
   // Convert to 3D model
-  const handleConvertTo3D = async () => {
+  const handleGenerate3D = async () => {
     if (!selectedEntity || !scene) return;
 
     // Get current generation
@@ -193,14 +210,22 @@ const EntityPanel: React.FC = () => {
     }
 
     // Update entity state
-    selectedEntity.setConvertingState(true, 'Starting 3D conversion...');
+    selectedEntity.setProcessingState({
+      isGenerating2D: false,
+      isGenerating3D: true,
+      progressMessage: 'Starting 3D conversion...'
+    });
 
     // Call the 3D conversion service
     const result = await generate3DModel(currentGen.imageUrl, {
       prompt: prompt,
       entityType: entityType,
       onProgress: (progress) => {
-        selectedEntity.setConvertingState(true, progress.message);
+        selectedEntity.setProcessingState({
+          isGenerating2D: false,
+          isGenerating3D: true,
+          progressMessage: progress.message
+        });
       }
     });
 
@@ -209,25 +234,39 @@ const EntityPanel: React.FC = () => {
       selectedEntity.addModelToHistory(result.modelUrl, currentGen.id);
 
       // Replace with 3D model
-      await replaceWithModel(
+      await loadModel(
         selectedEntity,
         result.modelUrl,
         scene,
         gizmoManager,
         (progress) => {
-          selectedEntity.setConvertingState(true, progress.message);
+          selectedEntity.setProcessingState({
+            isGenerating2D: false,
+            isGenerating3D: true,
+            progressMessage: progress.message
+          });
         }
       );
 
-      selectedEntity.setConvertingState(true, '3D model loaded successfully!');
-      setTimeout(() => selectedEntity.setConvertingState(false), 3000);
+      selectedEntity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: false,
+        progressMessage: ''
+      });
     } else {
-      selectedEntity.setConvertingState(true, result.error || 'Conversion failed');
-      setTimeout(() => selectedEntity.setConvertingState(false), 3000);
+      selectedEntity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: true,
+        progressMessage: result.error || 'Conversion failed'
+      });
     }
 
     // Reset conversion state
-    selectedEntity.setConvertingState(false);
+    selectedEntity.setProcessingState({
+      isGenerating2D: false,
+      isGenerating3D: false,
+      progressMessage: ''
+    });
   };
 
   // UI content based on object type
@@ -263,7 +302,7 @@ const EntityPanel: React.FC = () => {
               <div className="grid grid-cols-2 gap-1">
                 <button
                   className={`py-1 text-xs ${isGenerating || isConverting ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
-                  onClick={handleGenerate}
+                  onClick={handleGenerate2D}
                   disabled={isGenerating || isConverting || !prompt.trim()}
                 >
                   {isGenerating ? 'Generating...' : 'Generate Image'}
@@ -271,7 +310,7 @@ const EntityPanel: React.FC = () => {
 
                 <button
                   className={`py-1 text-xs ${isConverting ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
-                  onClick={handleConvertTo3D}
+                  onClick={handleGenerate3D}
                   disabled={isGenerating || isConverting || !selectedEntity?.getCurrentGeneration()?.imageUrl}
                 >
                   {isConverting ? 'Converting...' : 'Convert to 3D'}

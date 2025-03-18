@@ -47,8 +47,8 @@ interface EntityNode extends BABYLON.TransformNode {
   // Methods
   getCurrentGeneration(): GenerationData;
   getEntityType(): EntityType;
-  getProcessingState(): ProcessingState;
-  setGeneratingState(isGenerating: boolean, message?: string): void;
+  getProcessingState(): EntityProcessingState;
+  setProcessingState(state: EntityProcessingState): void;
   // ...
 }
 ```

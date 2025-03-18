@@ -23,19 +23,20 @@ export const RATIO_MAP = {
     '3:4': { width: 3, height: 4 }
 };
 
+export interface EntityProcessingState {
+    isGenerating2D: boolean;
+    isGenerating3D: boolean;
+    progressMessage: string;
+}
+
 // Entity metadata structure
 export interface EntityMetadata {
     entityType: EntityType;
-    displayName?: string;
     created: Date;
     lastImageUrl?: string;
 
     // Add progress tracking
-    processingState?: {
-        isGenerating: boolean;
-        isConverting: boolean;
-        progressMessage: string;
-    };
+    processingState?: EntityProcessingState;
 
     // For AI generated entities
     aiData?: {
@@ -102,7 +103,6 @@ export class EntityNode extends BABYLON.TransformNode {
         // Initialize metadata
         this.metadata = {
             entityType: type,
-            displayName: name,
             created: new Date()
         };
 
@@ -254,39 +254,15 @@ export class EntityNode extends BABYLON.TransformNode {
         return mesh ? mesh.getBoundingInfo() : null;
     }
 
-    // Set the generating state
-    public setGeneratingState(isGenerating: boolean, message: string = ''): void {
-        if (!this.metadata.processingState) {
-            this.metadata.processingState = {
-                isGenerating: false,
-                isConverting: false,
-                progressMessage: ''
-            };
-        }
-
-        this.metadata.processingState.isGenerating = isGenerating;
-        this.metadata.processingState.progressMessage = message;
-    }
-
-    // Set the converting state
-    public setConvertingState(isConverting: boolean, message: string = ''): void {
-        if (!this.metadata.processingState) {
-            this.metadata.processingState = {
-                isGenerating: false,
-                isConverting: false,
-                progressMessage: ''
-            };
-        }
-
-        this.metadata.processingState.isConverting = isConverting;
-        this.metadata.processingState.progressMessage = message;
+    public setProcessingState(state: EntityProcessingState): void {
+        this.metadata.processingState = state;
     }
 
     // Get the processing state
-    public getProcessingState(): { isGenerating: boolean; isConverting: boolean; progressMessage: string } {
+    public getProcessingState(): { isGenerating2D: boolean; isGenerating3D: boolean; progressMessage: string } {
         return this.metadata.processingState || {
-            isGenerating: false,
-            isConverting: false,
+            isGenerating2D: false,
+            isGenerating3D: false,
             progressMessage: ''
         };
     }
