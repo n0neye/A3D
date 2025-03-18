@@ -9,6 +9,7 @@ import { resolveEntity } from '../util/extensions/entityNode';
 import { initializeRealtimeConnection } from '../util/generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
+import { initScene } from '../util/editor/editor-util';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,13 +33,9 @@ export default function EditorContainer() {
         const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
         const mesh = pickInfo.pickedMesh;
 
-        if (mesh &&
-          !mesh.name.includes("gizmo") &&
-          !mesh.name.startsWith("__")) {
+        if (mesh) {
           // Find entity from mesh
           const entity = resolveEntity(mesh);
-          console.log("OnClick mesh", mesh.name, mesh);
-          console.log("Selected entity:", entity?.name);
           setSelectedEntity(entity);
         } else {
           // Clear selection when clicking on background
@@ -55,8 +52,6 @@ export default function EditorContainer() {
     if (event.key === 'Delete') {
       const currentEntity = getCurrentSelectedEntity();
       if (!currentEntity) return;
-
-      console.log("Deleting selected entity:", currentEntity.name);
 
       // First detach any gizmos
       if (gizmoManager) {
@@ -99,31 +94,7 @@ export default function EditorContainer() {
     // Update context
     setEngine(engine);
     setScene(scene);
-
-    // Camera
-    const camera = new BABYLON.ArcRotateCamera(
-      "camera",
-      -Math.PI / 2,
-      Math.PI / 2.5,
-      3,
-      new BABYLON.Vector3(0, 1, 0),
-      scene
-    );
-    camera.wheelPrecision = 40;
-    camera.panningSensibility = 1000;
-    camera.angularSensibilityX = 500;
-    camera.angularSensibilityY = 500;
-    camera.lowerRadiusLimit = 1;
-    camera.upperRadiusLimit = 20;
-    camera.attachControl(canvasRef.current, true);
-
-    // Light
-    const light = new BABYLON.HemisphericLight(
-      "light",
-      new BABYLON.Vector3(0, 1, 0),
-      scene
-    );
-    light.intensity = 0.7;
+    initScene(canvasRef.current, scene);
 
     // Set up gizmo manager
     const gizmoManager = new BABYLON.GizmoManager(scene);
