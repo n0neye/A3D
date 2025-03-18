@@ -63,77 +63,6 @@ const EnvironmentPanel: React.FC = () => {
     }
   };
 
-  // Update sun orientation (horizontal angle)
-  const handleSunOrientationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    updateSunDirection(value, sunTilt);
-    setSunOrientation(value);
-  };
-
-  // Update sun tilt (vertical angle)
-  const handleSunTiltChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    updateSunDirection(sunOrientation, value);
-    setSunTilt(value);
-  };
-
-  // Update the sun's direction based on orientation and tilt angles
-  const updateSunDirection = (orientation: number, tilt: number) => {
-    const env = getEnvironmentObjects();
-    if (env.sun) {
-      // Convert angles to radians
-      const orientationRad = orientation * (Math.PI / 180);
-      const tiltRad = tilt * (Math.PI / 180);
-
-      // Calculate the direction vector
-      // X = sin(orientation) * cos(tilt)
-      // Y = -sin(tilt)
-      // Z = cos(orientation) * cos(tilt)
-      const x = Math.sin(orientationRad) * Math.cos(tiltRad);
-      const y = -Math.sin(tiltRad); // Negative because we want positive tilt to move the sun up
-      const z = Math.cos(orientationRad) * Math.cos(tiltRad);
-
-      // Update the light direction
-      env.sun.direction = new BABYLON.Vector3(x, y, z).normalize();
-      
-      // Find and update the arrow rotation
-      const sunArrow = scene?.getMeshByName('sunArrow');
-      if (sunArrow) {
-        // Calculate rotation quaternion from the direction vector
-        // We need to point the arrow in the opposite direction of the light
-        const up = new BABYLON.Vector3(0, 1, 0); // Default up vector
-        
-        // First create a rotation that aligns with the Y axis
-        const baseRotation = BABYLON.Quaternion.RotationAxis(
-          new BABYLON.Vector3(1, 0, 0), // X axis
-          Math.PI // 180 degrees to point down initially
-        );
-        
-        // Now rotate to match the light direction
-        const targetDir = env.sun.direction.scale(-1); // Opposite direction
-        
-        // Create a rotation from the default direction (negative Y) to the target direction
-        // Default arrow points in negative Y direction after base rotation
-        const defaultDir = new BABYLON.Vector3(0, -1, 0);
-        const rotationMatrix = BABYLON.Matrix.Zero();
-        BABYLON.Matrix.LookAtLHToRef(
-          BABYLON.Vector3.Zero(), 
-          targetDir,
-          new BABYLON.Vector3(0, 0, 1), // Up vector
-          rotationMatrix
-        );
-        // Get quaternion from the matrix
-        const rotationToTarget = BABYLON.Quaternion.FromRotationMatrix(rotationMatrix);
-        
-        // Combine rotations: first the base rotation, then the target rotation
-        const finalRotation = baseRotation.multiply(rotationToTarget);
-        
-        // Apply rotation
-        sunArrow.rotationQuaternion = finalRotation;
-      }
-    }
-  };
-
   // Update ambient light intensity
   const handleAmbientIntensityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -153,6 +82,23 @@ const EnvironmentPanel: React.FC = () => {
       env.ambientLight.diffuse = hexToColor3(value);
     }
   };
+
+  const handleSunSelect = () => {
+    // Select the sun
+    const env = getEnvironmentObjects();
+    const sunTransform = env.sunTransform;
+    if (sunTransform && gizmoManager) {
+      gizmoManager.attachToNode(sunTransform);
+      gizmoManager.positionGizmoEnabled = false;
+      gizmoManager.rotationGizmoEnabled = true;
+      gizmoManager.scaleGizmoEnabled = false;
+    }
+    // Show arrow
+    const sunArrow = env.sunArrow;
+    if (sunArrow) {
+      sunArrow.isVisible = true;
+    }
+  }
 
   // Helper function to convert Color3 to hex string
   const colorToHex = (color: BABYLON.Color3): string => {
@@ -200,33 +146,9 @@ const EnvironmentPanel: React.FC = () => {
           <span className="text-xs">{sunColor}</span>
         </div>
 
-        {/* Sun Direction Controls */}
-        <div className="flex items-center mb-1">
-          <span className="text-xs w-16 text-gray-400">Orient</span>
-          <input
-            type="range"
-            min="0"
-            max="360"
-            step="1"
-            value={sunOrientation}
-            onChange={handleSunOrientationChange}
-            className="w-32"
-          />
-          <span className="text-xs ml-2">{sunOrientation}°</span>
-        </div>
-        <div className="flex items-center mb-1">
-          <span className="text-xs w-16 text-gray-400">Tilt</span>
-          <input
-            type="range"
-            min="-90"
-            max="90"
-            step="1"
-            value={sunTilt}
-            onChange={handleSunTiltChange}
-            className="w-32"
-          />
-          <span className="text-xs ml-2">{sunTilt.toFixed(0)}°</span>
-        </div>
+        <button
+          className="w-full bg-blue-500 text-white text-xs p-2 rounded hover:bg-blue-600 h-8"
+          onClick={handleSunSelect}>Select Sun</button>
       </div>
 
       <div className="mb-3 flex flex-col space-y-4">

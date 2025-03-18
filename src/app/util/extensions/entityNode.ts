@@ -351,73 +351,161 @@ export function createEntity(
     } = {}
 ): EntityNode {
     const name = options.name || `${type}-${uuidv4().substring(0, 8)}`;
-    const aiObjectType = options.aiObjectType || "object";
 
     // Create entity object
     const entity = new EntityNode(name, scene, type, options);
-
-    // Set the AI object type in metadata
-    if (entity.metadata.aiData) {
-        entity.metadata.aiData.aiObjectType = aiObjectType;
-    }
-
-
     if (type === 'aiObject') {
-        // Create child mesh based on entity type and aiObjectType
-        let planeMesh: BABYLON.Mesh;
-        if (aiObjectType === 'background') {
-            // Create a background that fills the screen
-            // A placeholder texture for the background until a real one is provided
-            const placeholderUrl = options.imageUrl || "https://playground.babylonjs.com/textures/equirectangular.jpg";
-
-            // Create the background mesh
-            planeMesh = create2DBackground(scene, placeholderUrl);
-
-            // Set special properties for backgrounds
-            planeMesh.renderingGroupId = 0; // Ensure it renders behind everything
-        } else {
-            // Default object - create a plane with the right aspect ratio
-            const ratio = options.ratio || '1:1';
-            const { width, height } = getPlaneSize(ratio);
-
-            planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
-                width,
-                height
-            }, scene);
-
-            // Create default material
-            const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
-            material.diffuseColor = new BABYLON.Color3(1, 1, 1);
-            material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-            material.backFaceCulling = false;
-
-
-            // Apply material to mesh
-            planeMesh.material = material;
-
-
-            // Look at the camera for non-background objects
-            if (scene.activeCamera) {
-                planeMesh.lookAt(scene.activeCamera.position);
-            }
-        }
-
-        // Parent the mesh to the entity
-        planeMesh.parent = entity;
-
-        // Set up plane mesh
-        entity.planeMesh = planeMesh;
-
-        planeMesh.metadata = {
-            rootEntity: entity
-        };
+        createAiObject(scene, name, entity, options);
     } else {
         // Handle other entity types (like lights, etc.) 
         // TODO
     }
-
-
     return entity;
+}
+
+// Create an arrow to visualize direction
+const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON.Mesh => {
+    // Create a custom arrow shape
+    const arrowMesh = new BABYLON.Mesh("sunArrow", scene);
+    
+    // Create the arrow shaft (cylinder)
+    const shaft = BABYLON.MeshBuilder.CreateCylinder(
+      "sunArrow-shaft", 
+      { 
+        height: size * 0.8, 
+        diameter: size * 0.1,
+        tessellation: 8
+      }, 
+      scene
+    );
+    
+    // Create the arrowhead (cone)
+    const head = BABYLON.MeshBuilder.CreateCylinder(
+      "sunArrow-head", 
+      { 
+        height: size * 0.2, 
+        diameterTop: 0, 
+        diameterBottom: size * 0.2,
+        tessellation: 8
+      }, 
+      scene
+    );
+    
+    // Position the arrowhead at the end of the shaft
+    head.position.y = size * 0.5; // Half of shaft height + half of cone height
+    
+    // Parent the parts to the main mesh
+    shaft.parent = arrowMesh;
+    head.parent = arrowMesh;
+    
+    // Create the material for the arrow
+    const arrowMaterial = new BABYLON.StandardMaterial("sunArrow-material", scene);
+    arrowMaterial.emissiveColor = new BABYLON.Color3(1, 0.8, 0);
+    arrowMaterial.disableLighting = true;
+    
+    // Apply the material to the parts
+    shaft.material = arrowMaterial;
+    head.material = arrowMaterial;
+    
+    // Rotate to align with the direction of the light
+    // The arrow will point in the opposite direction of the light
+    // (since light goes from source to target, but we want to show direction)
+    arrowMesh.rotation.x = Math.PI;
+    
+    return arrowMesh;
+  };
+
+
+export const createSunEntity = (scene: BABYLON.Scene, )=>{
+    // Create a transform node to group the sun and arrow
+    const sunTransform = new EntityNode("sunTransform", scene, "light");
+    // Position the transform at an offset from the origin
+    sunTransform.position = new BABYLON.Vector3(0, 0.5, 0);
+
+    // Create a sun (directional light)
+    const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
+    sunLight.intensity = 1;
+    sunLight.diffuse = new BABYLON.Color3(1, 0.8, 0.5); // Warm sunlight color
+    // Parent the light to the transform node
+    sunLight.parent = sunTransform;
+
+    // Create directional arrow for sun visualization
+    const sunArrow = createDirectionalArrow(scene, 1);
+    sunArrow.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+    // Parent the arrow to the transform node
+    sunArrow.parent = sunTransform;
+
+    return {
+        sunLight,
+        sunTransform,
+        sunArrow
+    }
+
+}
+
+const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, options: {
+    position?: BABYLON.Vector3;
+    ratio?: ImageRatio;
+    imageSize?: ImageSize;
+    imageUrl?: string;
+    aiObjectType?: AiObjectType;
+}) => {
+    if (!options.aiObjectType) {
+        throw new Error('aiObjectType is required');
+    }
+
+    if (entity.metadata.aiData) {
+        entity.metadata.aiData.aiObjectType = options.aiObjectType;
+    }
+
+    // Create child mesh based on entity type and aiObjectType
+    let planeMesh: BABYLON.Mesh;
+    if (options.aiObjectType === 'background') {
+        // Create a background that fills the screen
+        // A placeholder texture for the background until a real one is provided
+        const placeholderUrl = options.imageUrl || "https://playground.babylonjs.com/textures/equirectangular.jpg";
+
+        // Create the background mesh
+        planeMesh = create2DBackground(scene, placeholderUrl);
+
+        // Set special properties for backgrounds
+        planeMesh.renderingGroupId = 0; // Ensure it renders behind everything
+    } else {
+        // Default object - create a plane with the right aspect ratio
+        const ratio = options.ratio || '1:1';
+        const { width, height } = getPlaneSize(ratio);
+
+        planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
+            width,
+            height
+        }, scene);
+
+        // Create default material
+        const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
+        material.diffuseColor = new BABYLON.Color3(1, 1, 1);
+        material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+        material.backFaceCulling = false;
+
+
+        // Apply material to mesh
+        planeMesh.material = material;
+
+
+        // Look at the camera for non-background objects
+        if (scene.activeCamera) {
+            planeMesh.lookAt(scene.activeCamera.position);
+        }
+    }
+
+    // Parent the mesh to the entity
+    planeMesh.parent = entity;
+
+    // Set up plane mesh
+    entity.planeMesh = planeMesh;
+
+    planeMesh.metadata = {
+        rootEntity: entity
+    };
 }
 
 // Apply image to entity

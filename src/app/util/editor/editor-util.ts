@@ -1,9 +1,11 @@
 import * as BABYLON from "@babylonjs/core";
-import { createEntity } from "../extensions/entityNode";
+import { createEntity, createSunEntity } from "../extensions/entityNode";
 
 // Store environment objects
 export interface EnvironmentObjects {
   sun?: BABYLON.DirectionalLight;
+  sunTransform?: BABYLON.TransformNode;
+  sunArrow?: BABYLON.Mesh;
   ambientLight?: BABYLON.HemisphericLight;
   skybox?: BABYLON.Mesh;
   background?: BABYLON.Mesh;
@@ -16,57 +18,6 @@ export const getEnvironmentObjects = (): EnvironmentObjects => {
   return environmentObjects;
 };
 
-// Create an arrow to visualize direction
-const createDirectionalArrow = (scene: BABYLON.Scene, name: string, size: number = 1): BABYLON.Mesh => {
-  // Create a custom arrow shape
-  const arrowMesh = new BABYLON.Mesh(name, scene);
-  
-  // Create the arrow shaft (cylinder)
-  const shaft = BABYLON.MeshBuilder.CreateCylinder(
-    `${name}-shaft`, 
-    { 
-      height: size * 0.8, 
-      diameter: size * 0.1,
-      tessellation: 8
-    }, 
-    scene
-  );
-  
-  // Create the arrowhead (cone)
-  const head = BABYLON.MeshBuilder.CreateCylinder(
-    `${name}-head`, 
-    { 
-      height: size * 0.2, 
-      diameterTop: 0, 
-      diameterBottom: size * 0.2,
-      tessellation: 8
-    }, 
-    scene
-  );
-  
-  // Position the arrowhead at the end of the shaft
-  head.position.y = size * 0.5; // Half of shaft height + half of cone height
-  
-  // Parent the parts to the main mesh
-  shaft.parent = arrowMesh;
-  head.parent = arrowMesh;
-  
-  // Create the material for the arrow
-  const arrowMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
-  arrowMaterial.emissiveColor = new BABYLON.Color3(1, 0.8, 0);
-  arrowMaterial.disableLighting = true;
-  
-  // Apply the material to the parts
-  shaft.material = arrowMaterial;
-  head.material = arrowMaterial;
-  
-  // Rotate to align with the direction of the light
-  // The arrow will point in the opposite direction of the light
-  // (since light goes from source to target, but we want to show direction)
-  arrowMesh.rotation.x = Math.PI;
-  
-  return arrowMesh;
-};
 
 export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     // Camera
@@ -95,25 +46,12 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     ambientLight.intensity = 0.5;
     environmentObjects.ambientLight = ambientLight;
 
-    // Create a sun (directional light)
-    const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
-    sunLight.position = new BABYLON.Vector3(0,0,0);
-    sunLight.intensity = 0.7;
-    sunLight.diffuse = new BABYLON.Color3(1, 0.8, 0.5); // Warm sunlight color
-    
-    // Create directional arrow for sun visualization
-    const sunArrow = createDirectionalArrow(scene, "sunArrow", 1);
-    sunArrow.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
-    
-    // Position the arrow at an offset from the origin
-    sunLight.position = new BABYLON.Vector3(0, 0.5, 0);
-    
-    // Make the arrow a child of the light so it follows the light's transformations
-    sunArrow.parent = sunLight;
-    
-    // Store the sun reference
+    // Sun
+    const { sunLight, sunTransform, sunArrow } = createSunEntity(scene);
     environmentObjects.sun = sunLight;
-    
+    environmentObjects.sunTransform = sunTransform;
+    environmentObjects.sunArrow = sunArrow;
+
     // Create a background entity
     // createEquirectangularSkybox(scene, "./demoAssets/skybox/sunsetforest.webp");
     // create2DBackground(scene, "./demoAssets/skybox/sunsetforest.webp");
