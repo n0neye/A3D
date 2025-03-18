@@ -57,6 +57,23 @@ const modelSimulationData: Result<TrellisOutput>[] = [
             }
         },
         "requestId": "59ad9fc0-7876-432a-b353-810412f9f58a"
+    },
+    // Flying bird
+    {
+        "data": {
+            "model_mesh": {
+                "url": "https://v3.fal.media/files/monkey/GRbpPEhnNPNDwotZIO3oO_model.glb",
+                "content_type": "application/octet-stream",
+                "file_name": "model.glb",
+                "file_size": 1564444
+            },
+            "timings": {
+                "prepare": 0.00000827014446258545,
+                "generation": 4.223750759847462,
+                "export": 12.920591826550663
+            }
+        },
+        "requestId": "75aa0d7c-9361-4ef4-a12e-fb30ecad0f73"
     }
 ]
 

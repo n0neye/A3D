@@ -355,6 +355,70 @@ export async function generateRealtimeImage(
 }
 
 /**
+ * Generate an image using the FAL AI API with persistent WebSocket connection
+ */
+export async function generateBackground(
+    prompt: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
+    options: {
+        imageSize?: ImageSize;
+        negativePrompt?: string;
+    } = {}
+): Promise<boolean> {
+    // Use defaults if not provided
+    const imageSize = options.imageSize || 'medium';
+    const entityType = entity.getEntityType();
+    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
+    const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
+    // Update entity state
+    entity.setProcessingState({
+        isGenerating2D: true,
+        isGenerating3D: false,
+        progressMessage: 'Starting generation...'
+    });
+
+    const result = await fal.subscribe("fal-ai/flux/dev", {
+        input: {
+          prompt: prompt,
+          image_size:{
+            width: 1280,
+            height: 720
+          }
+          // Flux Dev might have different parameters than the other models
+          // so we're just using the basic ones for now
+        },
+        logs: true,
+        onQueueUpdate: (update) => {
+          if (update.status === "IN_PROGRESS") {
+            console.log("Flux generation in progress...");
+            update.logs?.map((log) => log.message).forEach(console.log);
+          }
+        },
+      });
+  
+
+    const success = result.data.images.length > 0;
+    if (success && result.data.images[0].url) {
+        applyImageToEntity(entity, result.data.images[0].url, scene);
+
+        // Add to history
+        entity.addGenerationToHistory(prompt, result.data.images[0].url, {
+            ratio: '16:9',
+            imageSize: 'medium'
+        });
+    }
+
+    entity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: false,
+        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
+    });
+
+    return success;
+
+}
+/**
  * Load a 3D model and replace the current mesh
  */
 export async function loadModel(

@@ -45,7 +45,7 @@ export default function EditorContainer() {
       }
     }
   }
-  
+
   // Handle keyboard shortcuts
   const handleKeyDown = (event: KeyboardEvent) => {
 
@@ -82,7 +82,7 @@ export default function EditorContainer() {
       }
     }
   };
-  
+
 
   // Initialize BabylonJS engine and scene
   useEffect(() => {
@@ -136,9 +136,7 @@ export default function EditorContainer() {
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
       <div className="flex h-full">
         {/* Generation menu */}
-        <div className={`fixed z-50 left-4 bottom-4 w-64 bg-black bg-opacity-80 p-4 overflow-y-auto rounded-2xl shadow-xl ${isDebugMode ? '' : ''}`}>
-          <GenerationMenu />
-        </div>
+        <GenerationMenu />
 
         {/* Main 3D canvas */}
         <div className="flex-1 relative">
@@ -147,7 +145,7 @@ export default function EditorContainer() {
         </div>
 
         {/* Render Panel */}
-        <div className={`fixed z-50 right-4 bottom-4 w-64 bg-black bg-opacity-80 p-4 overflow-y-auto rounded-2xl shadow-xl ${isDebugMode ? 'right-80' : ''}`}>
+        <div className={`fixed z-50 right-4 bottom-4 w-64 panel overflow-y-auto ${isDebugMode ? 'right-80' : ''}`}>
           <RenderPanel />
         </div>
       </div>

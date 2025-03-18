@@ -296,17 +296,10 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             disabled={isLoading}
             className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Generating...' : 'Generate AI Preview'}
+            {isLoading ? 'Rendering...' : 'Render'}
+            <span className="mx-1 text-xs opacity-50">Ctrl+⏎</span>
           </button>
 
-          {previewUrl && (
-            <button
-              onClick={handleDownloadPreview}
-              className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Download
-            </button>
-          )}
         </div>
       </div>
     </>

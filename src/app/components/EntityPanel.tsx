@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import * as BABYLON from '@babylonjs/core';
 
-import { generateRealtimeImage, Generation2DRealtimResult, loadModel } from '../util/generation-util';
+import { generateBackground, generateRealtimeImage, Generation2DRealtimResult, loadModel } from '../util/generation-util';
 import { generate3DModel } from '../util/generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, EntityType, applyImageToEntity } from '../util/extensions/entityNode';
@@ -120,7 +120,11 @@ const EntityPanel: React.FC = () => {
   // Handle image generation
   const handleGenerate2D = async () => {
     if (!selectedEntity || !promptInput.trim() || !scene) return;
-    await generateRealtimeImage(promptInput, selectedEntity, scene);
+    if (selectedEntity.metadata.aiData?.aiObjectType === 'background') {
+      await generateBackground(promptInput, selectedEntity, scene);
+    } else {
+      await generateRealtimeImage(promptInput, selectedEntity, scene);
+    }
   };
 
   // Convert to 3D model
@@ -139,6 +143,18 @@ const EntityPanel: React.FC = () => {
       prompt: promptInput,
     });
 
+  };
+
+  const renderSpinner = (message?: string) => {
+    return (
+      <>
+        <svg className=" animate-spin mb-1 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {message && <span className="text-xs text-white">{message}</span>}
+      </>
+    );
   };
 
   // UI content based on object type
@@ -173,25 +189,28 @@ const EntityPanel: React.FC = () => {
 
                 <div className="flex flex-row space-x-1">
                   <button
-                    className={`py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
+                    className={`relative py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
                     onClick={handleGenerate2D}
                     disabled={isGenerating || !promptInput.trim()}
                   >
-                    {isGenerating2D ? 'Generating...' : 'Generate ' + (isBackground ? 'Background' : 'Image')+" (⏎)"}
+                    {isGenerating2D && renderSpinner('Generating')}
+                    {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxs opacity-50 ">⏎</span></>}
                   </button>
 
                   {isObject && <button
-                    className={`py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                    className={`relative py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
                     onClick={handleGenerate3D}
                     disabled={isGenerating || !selectedEntity?.getCurrentGeneration()?.imageUrl}
                   >
-                    {isGenerating3D ? 'Converting...' : 'Convert to 3D'}
+                    {isGenerating3D ? renderSpinner('Converting') : 'Convert to 3D'}
+                    {isGenerating3D && 
+                  <span>{progressMessage}</span>}
                   </button>}
                 </div>
 
               </div>
 
-              {(isGenerating) && (
+              {/* {(isGenerating) && (
                 <div className="text-xs text-gray-400 mt-1 flex flex-row items-center px-2">
                   <svg className="animate-spin mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -199,7 +218,7 @@ const EntityPanel: React.FC = () => {
                   </svg>
                   <span>{progressMessage}</span>
                 </div>
-              )}
+              )} */}
             </div>
           </>
         );
@@ -226,7 +245,7 @@ const EntityPanel: React.FC = () => {
 
   return (
     <div
-      className="fixed z-10 bg-black bg-opacity-30 backdrop-blur-2xl rounded-2xl p-4 text-white shadow-2xl left-1/2 bottom-4 "
+      className="fixed z-10 panel left-1/2 bottom-4 "
       style={{
         // left: `${position.left}px`,
         // top: `${position.top}px`,
