@@ -28,7 +28,9 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     );
     light.intensity = 0.7;
 
-    //   Create a sun
+    //   Create a sun (directional light)
+    const sun = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(1, 1, 0), scene);
+    sun.intensity = 0.7;
 
     // createEquirectangularSkybox(scene, "./demoAssets/skybox/sunsetforest.webp");
     // create2DBackground(scene, "./demoAssets/skybox/sunsetforest.webp");

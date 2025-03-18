@@ -163,7 +163,7 @@ const EntityPanel: React.FC = () => {
                 <textarea
                   ref={inputElementRef}
                   placeholder="Enter prompt..."
-                  className="w-96 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded m-0 mr-2 border-none focus:outline-none"
+                  className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
                   value={promptInput}
                   onChange={(e) => setPromptInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -177,7 +177,7 @@ const EntityPanel: React.FC = () => {
                     onClick={handleGenerate2D}
                     disabled={isGenerating || !promptInput.trim()}
                   >
-                    {isGenerating2D ? 'Generating...' : 'Generate Image'}
+                    {isGenerating2D ? 'Generating...' : 'Generate ' + (isBackground ? 'Background' : 'Image')+" (⏎)"}
                   </button>
 
                   {isObject && <button

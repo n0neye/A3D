@@ -489,8 +489,26 @@ export async function generate3DModel(
         if (options.prompt === "_") {
             // Wait for 1 second
             await new Promise(resolve => setTimeout(resolve, 500));
-
             const testData = get3DSimulationData();
+
+            await loadModel(
+                entity,
+                testData.data.model_mesh.url,
+                scene,
+                gizmoManager,
+                (progress) => {
+                    entity.setProcessingState({
+                        isGenerating2D: false,
+                        isGenerating3D: true,
+                        progressMessage: progress.message
+                    });
+                }
+            );
+            entity.setProcessingState({
+                isGenerating2D: false,
+                isGenerating3D: false,
+                progressMessage: '3D model generated successfully!'
+            });
             return {
                 success: true,
                 modelUrl: testData.data.model_mesh.url
