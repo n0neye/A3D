@@ -27,4 +27,50 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
       );
       light.intensity = 0.7;
 
+      createEquirectangularSkybox(scene, "./demoAssets/skybox/sunsetforest.webp");
 }
+
+/**
+ * Creates an equirectangular skybox (more suitable for 21:9 panoramic images)
+ * @param scene The Babylon.js scene 
+ * @param url URL to the equirectangular image
+ * @returns The created skybox dome
+ */
+export const createEquirectangularSkybox = (
+  scene: BABYLON.Scene,
+  url: string = "https://playground.babylonjs.com/textures/equirectangular.jpg"
+): BABYLON.Mesh => {
+  // Create a large dome for the skybox
+  const skyDome = BABYLON.MeshBuilder.CreateSphere(
+    "skyDome", 
+    { 
+      diameter: 1000, 
+      segments: 32, 
+      sideOrientation: BABYLON.Mesh.BACKSIDE 
+    }, 
+    scene
+  );
+
+  skyDome.rotation.x = Math.PI;
+  
+  // Create material
+  const skyMaterial = new BABYLON.StandardMaterial("skyMaterial", scene);
+  skyMaterial.backFaceCulling = false;
+  skyMaterial.disableLighting = true;
+  
+  // Create texture
+  const skyTexture = new BABYLON.Texture(url, scene);
+  skyMaterial.emissiveTexture = skyTexture;
+  
+  // Apply material
+  skyDome.material = skyMaterial;
+  
+  // Move the skybox with the camera
+  scene.onBeforeRenderObservable.add(() => {
+    if (scene.activeCamera) {
+      skyDome.position.copyFrom(scene.activeCamera.position);
+    }
+  });
+  
+  return skyDome;
+};
