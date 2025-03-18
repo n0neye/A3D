@@ -30,8 +30,9 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     //   Create a sun
 
     // createEquirectangularSkybox(scene, "./demoAssets/skybox/sunsetforest.webp");
-    create2DBackground(scene, "./demoAssets/skybox/sunsetforest.webp");
+    // create2DBackground(scene, "./demoAssets/skybox/sunsetforest.webp");
 }
+
 
 /**
  * Creates an equirectangular skybox (more suitable for 21:9 panoramic images)

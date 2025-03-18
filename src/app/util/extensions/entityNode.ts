@@ -2,9 +2,12 @@ import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
 
 // Entity types and metadata structures
-export type EntityType = 'aiObject' | 'character' | 'light' | 'skybox' | 'background' | 'terrain';
+export type EntityType = 'aiObject' | 'light';
+export type AiObjectType = "object" | "background" | "character";
+
 export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
+
 
 // Progress event handling
 export type ProgressListener = (state: EntityProcessingState) => void;
@@ -61,10 +64,10 @@ export interface EntityMetadata {
 
     // For AI generated entities
     aiData?: {
-        stage: 'image' | '3dModel';
         currentStateId: string | null;
         ratio: ImageRatio;
         imageSize: ImageSize;
+        aiObjectType: AiObjectType;
 
         generationHistory: Array<{
             id: string;
@@ -103,7 +106,7 @@ export class EntityNode extends BABYLON.TransformNode {
 
     // Temporary storage for the prompt
     public tempPrompt: string | null = null;
-    
+
     // Progress event - public event handler
     public readonly onProgress = new EventHandler<EntityProcessingState>();
 
@@ -136,9 +139,9 @@ export class EntityNode extends BABYLON.TransformNode {
         };
 
         // Add AI data for AI entities
-        if (['aiObject', 'character', 'skybox', 'background'].includes(type)) {
+        if (type === 'aiObject' ) {
             this.metadata.aiData = {
-                stage: 'image',
+                aiObjectType: "object",
                 currentStateId: null,
                 ratio: options.ratio || '1:1',
                 imageSize: options.imageSize || 'medium',
@@ -146,12 +149,12 @@ export class EntityNode extends BABYLON.TransformNode {
             };
         }
     }
-    
+
     // Set the processing state and notify listeners
     public setProcessingState(state: EntityProcessingState): void {
         // Update the state
         this.metadata.processingState = state;
-        
+
         // Notify all listeners
         this.onProgress.trigger(state);
     }
@@ -229,7 +232,7 @@ export class EntityNode extends BABYLON.TransformNode {
         // Create AI data if it doesn't exist
         if (!this.metadata.aiData) {
             this.metadata.aiData = {
-                stage: 'image',
+                aiObjectType: "object",
                 currentStateId: null,
                 ratio: options.ratio,
                 imageSize: options.imageSize,
@@ -252,7 +255,6 @@ export class EntityNode extends BABYLON.TransformNode {
         // Add to history
         this.metadata.aiData.generationHistory.push(newGeneration);
         this.metadata.aiData.currentStateId = newGeneration.id;
-        this.metadata.aiData.stage = 'image';
         this.metadata.aiData.ratio = options.ratio;
         this.metadata.aiData.imageSize = options.imageSize;
 
@@ -287,7 +289,6 @@ export class EntityNode extends BABYLON.TransformNode {
         // Add to history
         aiData.generationHistory.push(newGeneration);
         aiData.currentStateId = newGeneration.id;
-        aiData.stage = '3dModel';
 
         // Switch to 3D mode when a new model is added
         this.setDisplayMode('3d');
@@ -340,6 +341,7 @@ export function createEntity(
     scene: BABYLON.Scene,
     type: EntityType = 'aiObject',
     options: {
+        aiObjectType?: AiObjectType;
         position?: BABYLON.Vector3;
         ratio?: ImageRatio;
         imageSize?: ImageSize;
@@ -355,35 +357,6 @@ export function createEntity(
     let planeMesh: BABYLON.Mesh;
 
     switch (type) {
-        case 'character':
-            planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
-                width: 1,
-                height: 2
-            }, scene);
-            break;
-
-        case 'skybox':
-            planeMesh = BABYLON.MeshBuilder.CreateSphere(`${name}-plane`, {
-                diameter: 1000,
-                segments: 32,
-                sideOrientation: BABYLON.Mesh.BACKSIDE
-            }, scene);
-            break;
-
-        case 'background':
-            planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
-                width: 10,
-                height: 5
-            }, scene);
-            break;
-
-        case 'terrain':
-            planeMesh = BABYLON.MeshBuilder.CreateGround(`${name}-plane`, {
-                width: 10,
-                height: 10,
-                subdivisions: 32
-            }, scene);
-            break;
 
         default: // aiObject
             // Create a plane with the right aspect ratio
@@ -461,3 +434,4 @@ export function applyImageToEntity(
     // Switch to 2D display mode
     entity.setDisplayMode('2d');
 } 
+

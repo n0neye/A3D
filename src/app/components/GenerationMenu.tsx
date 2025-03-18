@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';  
-import { createEntity } from '../util/extensions/entityNode';
+import { AiObjectType, createEntity, EntityType } from '../util/extensions/entityNode';
 import { ImageRatio, ImageSize } from '../util/extensions/entityNode';
 
 const GenerationMenu: React.FC = () => {
   const { scene, setSelectedEntity } = useEditorContext();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [ratio, setRatio] = useState<ImageRatio>('1:1');
   const [imageSize, setImageSize] = useState<ImageSize>('medium');
   
   // Create an entity
-  const handleCreateEntity = (type: 'aiObject' | 'character' | 'skybox' | 'background') => {
+  const handleCreateEntity = (entityType: EntityType, aiObjectType: AiObjectType) => {
     if (!scene) return;
     
-    console.log(`Creating ${type} entity`);
+    console.log(`Creating ${entityType} entity`);
     setIsGenerating(true);
     
     // Create entity facing camera
@@ -30,9 +29,9 @@ const GenerationMenu: React.FC = () => {
     const position = camera.position.add(direction.scale(distance));
     
     // Create entity with the selected ratio and size
-    const entity = createEntity(scene, type, {
+    const entity = createEntity(scene, entityType, {
+      aiObjectType,
       position,
-      ratio,
       imageSize
     });
     
@@ -52,7 +51,7 @@ const GenerationMenu: React.FC = () => {
       {/* Entity type buttons */}
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => handleCreateEntity('aiObject')}
+          onClick={() => handleCreateEntity('aiObject', 'object')}
           disabled={isGenerating}
           className="py-2 px-3 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm flex items-center justify-center"
         >
@@ -69,28 +68,13 @@ const GenerationMenu: React.FC = () => {
         </button>
         
         <button
-          onClick={() => handleCreateEntity('character')}
+          onClick={() => handleCreateEntity('aiObject', 'character')}
           disabled={isGenerating}
           className="py-2 px-3 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm flex items-center justify-center"
         >
           Character
         </button>
         
-        <button
-          onClick={() => handleCreateEntity('background')}
-          disabled={isGenerating}
-          className="py-2 px-3 bg-green-600 hover:bg-green-700 rounded text-white text-sm flex items-center justify-center"
-        >
-          Background
-        </button>
-        
-        <button
-          onClick={() => handleCreateEntity('skybox')}
-          disabled={isGenerating}
-          className="py-2 px-3 bg-amber-600 hover:bg-amber-700 rounded text-white text-sm flex items-center justify-center"
-        >
-          Skybox
-        </button>
       </div>
     </div>
   );

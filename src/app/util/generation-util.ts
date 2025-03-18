@@ -2,7 +2,7 @@ import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, isSimulating } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode } from './extensions/entityNode';
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode, AiObjectType } from './extensions/entityNode';
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;
@@ -259,7 +259,7 @@ export function initializeRealtimeConnection(): void {
 export async function generateImage(
     prompt: string,
     options: {
-        ratio?: ImageRatio;
+        aiObjectType?: AiObjectType;
         imageSize?: ImageSize;
         entityType?: string;
         negativePrompt?: string;
@@ -267,7 +267,7 @@ export async function generateImage(
     } = {}
 ): Promise<Generation2DRealtimResult> {
     // Use defaults if not provided
-    const ratio = options.ratio || '1:1';
+    const ratio = '1:1';
     const imageSize = options.imageSize || 'medium';
     const entityType = options.entityType || 'aiObject';
     const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
