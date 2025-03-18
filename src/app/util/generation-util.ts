@@ -1,8 +1,8 @@
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
-import { get3DSimulationData, isSimulating } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode, AiObjectType } from './extensions/entityNode';
+import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode, AiObjectType, EntityType, applyImageToEntity } from './extensions/entityNode';
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;
@@ -256,12 +256,12 @@ export function initializeRealtimeConnection(): void {
 /**
  * Generate an image using the FAL AI API with persistent WebSocket connection
  */
-export async function generateImage(
+export async function generateRealtimeImage(
     prompt: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
     options: {
-        aiObjectType?: AiObjectType;
         imageSize?: ImageSize;
-        entityType?: string;
         negativePrompt?: string;
         onProgress?: ProgressCallback;
     } = {}
@@ -269,9 +269,15 @@ export async function generateImage(
     // Use defaults if not provided
     const ratio = '1:1';
     const imageSize = options.imageSize || 'medium';
-    const entityType = options.entityType || 'aiObject';
+    const entityType = entity.getEntityType();
+    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
     const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
-    const onProgress = options.onProgress;
+    // Update entity state
+    entity.setProcessingState({
+        isGenerating2D: true,
+        isGenerating3D: false,
+        progressMessage: 'Starting generation...'
+    });
 
     // Determine dimensions
     const ratioMultipliers = RATIO_MAP[ratio];
@@ -289,27 +295,58 @@ export async function generateImage(
 
     // Enhance prompt based on entity type
     let enhancedPrompt = prompt;
-    if (entityType === 'character') {
-        enhancedPrompt = `full body character: ${prompt}, well-lit studio shot, detailed`;
-    } else if (entityType === 'object' || entityType === 'aiObject') {
-        enhancedPrompt = `${prompt} at the center of the frame, uncropped, solid black background, studio lighting`;
-    } else if (entityType === 'skybox') {
-        enhancedPrompt = `expansive panoramic view of ${prompt}, no people, no buildings`;
+    if (aiObjectType === 'object' || entityType === 'aiObject') {
+        enhancedPrompt = `${prompt} at the center of the frame, uncropped, solid black background`;
+    } else if (aiObjectType === 'background') {
+        enhancedPrompt = `expansive panoramic view of ${prompt}`;
     }
+    // if (aiObjectType === 'character') {
+    //     enhancedPrompt = `full body character: ${prompt}, well-lit studio shot, detailed`;
+    // } 
 
-    // Update progress
-    onProgress?.({ message: `Generating ${width}x${height} image...` });
+    // If the prompt is "_", use the test data
+    if (prompt === "_") {
+        const testData = getImageSimulationData();
+        if (testData.imageUrl) {
+            applyImageToEntity(entity, testData.imageUrl, scene);
+        }
+        return testData;
+    }
 
     // Get connection manager and generate the image
     const connectionManager = RealtimeConnectionManager.getInstance();
-
-    // Use the proper method (assuming it's called 'generateImage')
-    return connectionManager.generateImage({
+    const result = await connectionManager.generateImage({
         prompt: enhancedPrompt,
         negative_prompt: negativePrompt,
         width,
         height,
-    }, onProgress);
+    }, ({ message }: { message: string }) => {
+        entity.setProcessingState({
+            isGenerating2D: true,
+            isGenerating3D: false,
+            progressMessage: message
+        });
+    });
+
+    const success = result.success && result.imageUrl;
+    if (success && result.imageUrl) {
+        applyImageToEntity(entity, result.imageUrl, scene);
+
+        // Add to history
+        entity.addGenerationToHistory(prompt, result.imageUrl, {
+            ratio: '1:1',
+            imageSize: 'medium'
+        });
+    }
+
+    entity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: false,
+        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
+    });
+
+    return result;
+
 }
 
 /**
@@ -340,27 +377,27 @@ export async function loadModel(
 
                     if (meshes.length > 0) {
                         console.log("meshes length", meshes.length);
-                        
+
                         // Create a root container mesh if needed
                         let rootModelMesh: BABYLON.Mesh;
-                        
+
                         if (meshes.length === 1) {
                             rootModelMesh = meshes[0] as BABYLON.Mesh;
                         } else {
                             // Create a dummy mesh as the container
                             rootModelMesh = new BABYLON.Mesh(`${entity.name}-model-root`, scene);
-                            
+
                             meshes.forEach((mesh) => {
                                 mesh.parent = rootModelMesh;
                             });
                         }
-                        
+
                         // Parent the root model to the entity
                         rootModelMesh.parent = entity;
-                        
+
                         // Set up the model mesh in the entity
                         entity.modelMesh = rootModelMesh;
-                        
+
                         // Set metadata on all meshes
                         meshes.forEach((mesh) => {
                             mesh.metadata = {
@@ -371,7 +408,7 @@ export async function loadModel(
 
                         // Switch to 3D display mode
                         entity.setDisplayMode('3d');
-                        
+
                         // Attach gizmo to model
                         if (gizmoManager) {
                             gizmoManager.attachToMesh(rootModelMesh);
@@ -413,10 +450,10 @@ export async function generate3DModel(
         entityType?: string;
         onProgress?: ProgressCallback;
     } = {}
-): Promise<{success: boolean, modelUrl?: string, error?: string}> {
+): Promise<{ success: boolean, modelUrl?: string, error?: string }> {
     const entityType = options.entityType || 'aiObject';
     const onProgress = options.onProgress;
-    
+
     try {
         // Process image URL if it's a blob
         let processedImageUrl = imageUrl;
@@ -430,21 +467,21 @@ export async function generate3DModel(
                 return { success: false, error: "Failed to prepare image" };
             }
         }
-        
+
         // Set parameters based on entity type
         const params: any = {
             image_url: processedImageUrl,
             mesh_simplify: 0.9,
         };
-        
+
         if (entityType === 'character') {
             params.character = true;
         }
-        
+
         // Call the API
         onProgress?.({ message: 'Starting 3D conversion...' });
         const startTime = performance.now();
-        if(options.prompt ==="_"){
+        if (options.prompt === "_") {
             // Wait for 1 second
             await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -454,7 +491,7 @@ export async function generate3DModel(
                 modelUrl: testData.data.model_mesh.url
             }
         }
-        
+
         const result = await fal.subscribe("fal-ai/trellis", {
             input: params,
             logs: true,
@@ -463,19 +500,19 @@ export async function generate3DModel(
                     // const latestLog = update.logs[update.logs.length - 1]?.message || 'Processing...';
                     // Calculate estimated time remaining, min 30s
                     const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
-                    const latestLog = `Processing... ${(estimatedTime/1000).toFixed(1)}s estimated`;
+                    const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s estimated`;
                     onProgress?.({ message: latestLog });
                 }
             },
         });
-        
+
         // Log time
         const elapsedTime = performance.now() - startTime;
         const seconds = (elapsedTime / 1000).toFixed(2);
         console.log("%c3D conversion completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
 
         console.log(result);
-        
+
         // Return result
         if (result.data?.model_mesh?.url) {
             return {
