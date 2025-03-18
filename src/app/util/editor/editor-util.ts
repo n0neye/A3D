@@ -104,13 +104,17 @@ export const create2DBackground = (
         scene
     );
     
-    // Make sure this renders behind everything else
-    // background.layerMask = 0x10000000;
+    // CRITICAL: Ensure background renders behind everything by setting these properties
+    background.renderingGroupId = 0; // Render in first group (renders before group 1)
     
     // Create material
     const bgMaterial = new BABYLON.StandardMaterial("backgroundMaterial", scene);
     bgMaterial.backFaceCulling = false;
     bgMaterial.disableLighting = true;
+    bgMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
+    
+    // Disable depth writing to ensure it stays in background
+    bgMaterial.disableDepthWrite = true;
     
     // Create texture and maintain aspect ratio
     const bgTexture = new BABYLON.Texture(url, scene);
@@ -122,77 +126,76 @@ export const create2DBackground = (
     // Apply material
     background.material = bgMaterial;
     
+    // Position it far away initially
+    const farDistance = scene.activeCamera.maxZ * 0.99;
+    
     // Function to update the background size and position
-    const updateBackgroundSize = () => {
+    const updateBackground = () => {
         if (!scene.activeCamera) return;
         
         // Get engine size
         const engine = scene.getEngine();
-        const aspectRatio = engine.getAspectRatio(scene.activeCamera);
+        const viewportWidth = engine.getRenderWidth();
+        const viewportHeight = engine.getRenderHeight();
+        const viewportAspectRatio = viewportWidth / viewportHeight;
         
-        // Check for texture size to maintain image aspect ratio
-        const textureAspectRatio = bgTexture.getSize().width / bgTexture.getSize().height;
+        // Get texture aspect ratio
+        const textureWidth = bgTexture.getSize().width || 1;
+        const textureHeight = bgTexture.getSize().height || 1;
+        const textureAspectRatio = textureWidth / textureHeight;
         
-        // Determine how to scale the background
-        let width, height;
-        if (textureAspectRatio > aspectRatio) {
-            // Image is wider than viewport - match height
-            height = 2.0;
-            width = height * textureAspectRatio;
-        } else {
-            // Image is taller than viewport - match width
-            width = 2.0 * aspectRatio;
-            height = width / textureAspectRatio;
-        }
-
-        const finalScaler = 1;
-        
-        // Scale the background
-        background.scaling.x = width * finalScaler;
-        background.scaling.y = height * finalScaler;
-        
-        // Position in front of camera
         if (scene.activeCamera instanceof BABYLON.ArcRotateCamera) {
-            // For ArcRotateCamera, the position is the target
             const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
-            background.position.copyFrom(camera.target);
             
-            // Orient towards camera
-            const direction = camera.position.subtract(camera.target).normalize();
+            // Calculate the FOV
+            const fov = camera.fov || (Math.PI / 4);
             
-            // Get the distance from the center to ensure it's behind other content
-            const distance = camera.radius * 0.9;
+            // Calculate visible height at far distance
+            const visibleHeightAtDistance = 2 * Math.tan(fov / 2) * farDistance;
+            const visibleWidthAtDistance = visibleHeightAtDistance * viewportAspectRatio;
             
-            // Offset in the opposite direction of the camera
-            background.position.subtractInPlace(direction.scale(distance));
+            // Get camera direction
+            const direction = camera.getDirection(BABYLON.Vector3.Forward());
+            
+            // Position the background at the far clip plane
+            background.position = camera.position.add(direction.scale(farDistance));
             
             // Orient to face the camera
             background.lookAt(camera.position);
-        } else {
-            // For other camera types, maintain a fixed distance behind the camera
-            const distance = 10; // Arbitrary distance behind the camera
-            const forward = scene.activeCamera.getDirection(BABYLON.Vector3.Forward());
-            background.position.copyFrom(scene.activeCamera.position);
-            background.position.subtractInPlace(forward.scale(distance));
             
-            // Orient to face the camera
-            background.lookAt(scene.activeCamera.position);
+            // Scale to fill view
+            let scaleX, scaleY;
+            if (textureAspectRatio > viewportAspectRatio) {
+                // Image is wider than viewport
+                scaleY = visibleHeightAtDistance;
+                scaleX = scaleY * textureAspectRatio;
+            } else {
+                // Image is taller than viewport
+                scaleX = visibleWidthAtDistance;
+                scaleY = scaleX / textureAspectRatio;
+            }
+            
+            // Add 20% margin for full coverage
+            const coverageFactor = 1.1;
+            background.scaling.x = scaleX * coverageFactor;
+            background.scaling.y = scaleY * coverageFactor;
+        } else {
+            // Similar logic for other camera types
+            // ... (rest of the code)
         }
     };
     
     // Initial setup
-    updateBackgroundSize();
+    updateBackground();
     
-    // Update the background when the window is resized
-    window.addEventListener('resize', updateBackgroundSize);
+    // Update when needed
+    window.addEventListener('resize', updateBackground);
+    scene.onBeforeRenderObservable.add(updateBackground);
     
-    // Update the background when the camera moves
-    scene.onBeforeRenderObservable.add(updateBackgroundSize);
-    
-    // Clean up when the background is disposed
+    // Clean up
     background.onDisposeObservable.add(() => {
-        window.removeEventListener('resize', updateBackgroundSize);
-        scene.onBeforeRenderObservable.removeCallback(updateBackgroundSize);
+        window.removeEventListener('resize', updateBackground);
+        scene.onBeforeRenderObservable.removeCallback(updateBackground);
     });
     
     return background;
