@@ -21,9 +21,12 @@ const GenerationMenu: React.FC = () => {
     }
     
     // Calculate position in front of camera
-    const distance = 3;
-    const direction = camera.getTarget().subtract(camera.position).normalize();
-    const position = camera.position.add(direction.scale(distance));
+    // const distance = 3;
+    // const direction = camera.getTarget().subtract(camera.position).normalize();
+    // const position = camera.position.add(direction.scale(distance));
+
+    const position = new BABYLON.Vector3(0, 0, 0);
+    const rotation = new BABYLON.Vector3(0, 0, 0);
     
     // Create entity with the selected ratio and size
     const entity = createEntity(scene, entityType, {

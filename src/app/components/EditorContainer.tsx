@@ -153,7 +153,7 @@ export default function EditorContainer() {
         {/* Environment Panel */}
           <EnvironmentPanel />
       </div>
-      {/* <DebugLayer /> */}
+      <DebugLayer />
     </div>
   );
 } 
