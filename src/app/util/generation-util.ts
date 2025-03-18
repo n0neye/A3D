@@ -263,7 +263,6 @@ export async function generateRealtimeImage(
     options: {
         imageSize?: ImageSize;
         negativePrompt?: string;
-        onProgress?: ProgressCallback;
     } = {}
 ): Promise<Generation2DRealtimResult> {
     // Use defaults if not provided
@@ -300,15 +299,21 @@ export async function generateRealtimeImage(
     } else if (aiObjectType === 'background') {
         enhancedPrompt = `expansive panoramic view of ${prompt}`;
     }
-    // if (aiObjectType === 'character') {
-    //     enhancedPrompt = `full body character: ${prompt}, well-lit studio shot, detailed`;
-    // } 
 
     // If the prompt is "_", use the test data
     if (prompt === "_") {
         const testData = getImageSimulationData();
         if (testData.imageUrl) {
             applyImageToEntity(entity, testData.imageUrl, scene);
+            entity.addGenerationToHistory(prompt, testData.imageUrl, {
+                ratio: '1:1',
+                imageSize: 'medium'
+            });
+            entity.setProcessingState({
+                isGenerating2D: false,
+                isGenerating3D: false,
+                progressMessage: 'Image generated successfully!'
+            });
         }
         return testData;
     }
@@ -445,20 +450,19 @@ export async function loadModel(
  */
 export async function generate3DModel(
     imageUrl: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
+    gizmoManager: BABYLON.GizmoManager | null,
     options: {
         prompt?: string;
-        entityType?: string;
-        onProgress?: ProgressCallback;
     } = {}
 ): Promise<{ success: boolean, modelUrl?: string, error?: string }> {
-    const entityType = options.entityType || 'aiObject';
-    const onProgress = options.onProgress;
+    const entityType = entity.getEntityType();
 
     try {
         // Process image URL if it's a blob
         let processedImageUrl = imageUrl;
         if (imageUrl.startsWith('blob:')) {
-            onProgress?.({ message: 'Converting image format...' });
             try {
                 const response = await fetch(imageUrl);
                 const blob = await response.blob();
@@ -474,12 +478,13 @@ export async function generate3DModel(
             mesh_simplify: 0.9,
         };
 
-        if (entityType === 'character') {
-            params.character = true;
-        }
-
         // Call the API
-        onProgress?.({ message: 'Starting 3D conversion...' });
+        entity.setProcessingState({
+            isGenerating2D: false,
+            isGenerating3D: true,
+            progressMessage: 'Starting 3D conversion...'
+        });
+
         const startTime = performance.now();
         if (options.prompt === "_") {
             // Wait for 1 second
@@ -497,11 +502,13 @@ export async function generate3DModel(
             logs: true,
             onQueueUpdate: (update) => {
                 if (update.status === "IN_PROGRESS") {
-                    // const latestLog = update.logs[update.logs.length - 1]?.message || 'Processing...';
-                    // Calculate estimated time remaining, min 30s
                     const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
                     const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s estimated`;
-                    onProgress?.({ message: latestLog });
+                    entity.setProcessingState({
+                        isGenerating2D: false,
+                        isGenerating3D: true,
+                        progressMessage: latestLog
+                    });
                 }
             },
         });
@@ -515,15 +522,40 @@ export async function generate3DModel(
 
         // Return result
         if (result.data?.model_mesh?.url) {
-            return {
-                success: true,
-                modelUrl: result.data.model_mesh.url
-            };
+
+            await loadModel(
+                entity,
+                result.data.model_mesh.url,
+                scene,
+                gizmoManager,
+                (progress) => {
+                    entity.setProcessingState({
+                        isGenerating2D: false,
+                        isGenerating3D: true,
+                        progressMessage: progress.message
+                    });
+                }
+            );
+
+            entity.addModelToHistory(result.data.model_mesh.url, entity.getCurrentGeneration()?.id);
+
+            entity.setProcessingState({
+                isGenerating2D: false,
+                isGenerating3D: false,
+                progressMessage: ''
+            });
+
+            return { success: true, modelUrl: result.data.model_mesh.url };
         } else {
             return { success: false, error: 'No 3D model generated' };
         }
     } catch (error) {
         console.error("3D conversion failed:", error);
+        entity.setProcessingState({
+            isGenerating2D: false,
+            isGenerating3D: false,
+            progressMessage: 'Failed to generate 3D model'
+        });
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'

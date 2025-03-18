@@ -134,73 +134,31 @@ const EntityPanel: React.FC = () => {
       return;
     }
 
-    // Update entity state
-    selectedEntity.setProcessingState({
-      isGenerating2D: false,
-      isGenerating3D: true,
-      progressMessage: 'Starting 3D conversion...'
-    });
-
     // Call the 3D conversion service
-    const result = await generate3DModel(currentGen.imageUrl, {
+    await generate3DModel(currentGen.imageUrl, selectedEntity, scene, gizmoManager, {
       prompt: promptInput,
-      entityType: selectedEntity.getEntityType(),
-      onProgress: (progress) => {
-        selectedEntity.setProcessingState({
-          isGenerating2D: false,
-          isGenerating3D: true,
-          progressMessage: progress.message
-        });
-      }
     });
 
-    if (result.success && result.modelUrl) {
-      // Add to entity's history
-      selectedEntity.addModelToHistory(result.modelUrl, currentGen.id);
-
-      // Replace with 3D model
-      await loadModel(
-        selectedEntity,
-        result.modelUrl,
-        scene,
-        gizmoManager,
-        (progress) => {
-          selectedEntity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: true,
-            progressMessage: progress.message
-          });
-        }
-      );
-
-      selectedEntity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: false,
-        progressMessage: ''
-      });
-    } else {
-      selectedEntity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: true,
-        progressMessage: result.error || 'Conversion failed'
-      });
-    }
-
-    // Reset conversion state
-    selectedEntity.setProcessingState({
-      isGenerating2D: false,
-      isGenerating3D: false,
-      progressMessage: ''
-    });
   };
 
   // UI content based on object type
   const renderContent = () => {
+    const isGenerating = isGenerating2D || isGenerating3D;
+    const isObject = selectedEntity?.metadata.aiData?.aiObjectType === 'object';
+    const isBackground = selectedEntity?.metadata.aiData?.aiObjectType === 'background';
+
     switch (selectedEntity?.getEntityType()) {
       case 'aiObject':
         return (
           <>
-            <div className="flex flex-col  space-x-2">
+            <div className="flex flex-col space-y-2">
+
+              {/* Object type */}
+              {/* <div className="text-xs text-gray-400">
+                <span className='text-xs uppercase'> {selectedEntity?.metadata.aiData?.aiObjectType}</span>
+              </div> */}
+
+              {/* Prompt */}
               <div className="space-y-2 flex flex-row space-x-2">
                 <textarea
                   ref={inputElementRef}
@@ -209,23 +167,23 @@ const EntityPanel: React.FC = () => {
                   value={promptInput}
                   onChange={(e) => setPromptInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  disabled={isGenerating2D || isGenerating3D}
+                  disabled={isGenerating}
                   rows={3}
                 />
 
                 <div className="flex flex-row space-x-1">
                   <button
-                    className={`py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating2D || isGenerating3D ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
+                    className={`py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
                     onClick={handleGenerate2D}
-                    disabled={isGenerating2D || isGenerating3D || !promptInput.trim()}
+                    disabled={isGenerating || !promptInput.trim()}
                   >
                     {isGenerating2D ? 'Generating...' : 'Generate Image'}
                   </button>
 
-                  {selectedEntity.metadata.aiData?.aiObjectType === 'object' && <button
+                  {isObject && <button
                     className={`py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
                     onClick={handleGenerate3D}
-                    disabled={isGenerating2D || isGenerating3D || !selectedEntity?.getCurrentGeneration()?.imageUrl}
+                    disabled={isGenerating || !selectedEntity?.getCurrentGeneration()?.imageUrl}
                   >
                     {isGenerating3D ? 'Converting...' : 'Convert to 3D'}
                   </button>}
@@ -233,7 +191,7 @@ const EntityPanel: React.FC = () => {
 
               </div>
 
-              {(isGenerating2D || isGenerating3D) && (
+              {(isGenerating) && (
                 <div className="text-xs text-gray-400 mt-1 flex flex-row items-center px-2">
                   <svg className="animate-spin mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
