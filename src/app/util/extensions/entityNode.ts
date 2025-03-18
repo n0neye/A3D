@@ -6,6 +6,33 @@ export type EntityType = 'aiObject' | 'character' | 'light' | 'skybox' | 'backgr
 export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
 
+// Progress event handling
+export type ProgressListener = (state: EntityProcessingState) => void;
+
+// Event handler class to provide add/remove interface
+export class EventHandler<T> {
+    private handlers: Set<(data: T) => void> = new Set();
+
+    public add(handler: (data: T) => void): void {
+        this.handlers.add(handler);
+    }
+
+    public remove(handler: (data: T) => void): void {
+        this.handlers.delete(handler);
+    }
+
+    public trigger(data: T): void {
+        this.handlers.forEach(handler => handler(data));
+    }
+}
+
+// Processing state interface
+export interface EntityProcessingState {
+    isGenerating2D: boolean;
+    isGenerating3D: boolean;
+    progressMessage: string;
+}
+
 // Map of image sizes to actual dimensions
 export const IMAGE_SIZE_MAP = {
     small: 512,
@@ -22,12 +49,6 @@ export const RATIO_MAP = {
     '4:3': { width: 4, height: 3 },
     '3:4': { width: 3, height: 4 }
 };
-
-export interface EntityProcessingState {
-    isGenerating2D: boolean;
-    isGenerating3D: boolean;
-    progressMessage: string;
-}
 
 // Entity metadata structure
 export interface EntityMetadata {
@@ -82,6 +103,9 @@ export class EntityNode extends BABYLON.TransformNode {
 
     // Temporary storage for the prompt
     public tempPrompt: string | null = null;
+    
+    // Progress event - public event handler
+    public readonly onProgress = new EventHandler<EntityProcessingState>();
 
     constructor(
         name: string,
@@ -103,7 +127,12 @@ export class EntityNode extends BABYLON.TransformNode {
         // Initialize metadata
         this.metadata = {
             entityType: type,
-            created: new Date()
+            created: new Date(),
+            processingState: {
+                isGenerating2D: false,
+                isGenerating3D: false,
+                progressMessage: ''
+            }
         };
 
         // Add AI data for AI entities
@@ -116,6 +145,24 @@ export class EntityNode extends BABYLON.TransformNode {
                 generationHistory: []
             };
         }
+    }
+    
+    // Set the processing state and notify listeners
+    public setProcessingState(state: EntityProcessingState): void {
+        // Update the state
+        this.metadata.processingState = state;
+        
+        // Notify all listeners
+        this.onProgress.trigger(state);
+    }
+
+    // Get the processing state
+    public getProcessingState(): EntityProcessingState {
+        return this.metadata.processingState || {
+            isGenerating2D: false,
+            isGenerating3D: false,
+            progressMessage: ''
+        };
     }
 
     // Get the primary mesh based on current display mode
@@ -253,26 +300,12 @@ export class EntityNode extends BABYLON.TransformNode {
         const mesh = this.getPrimaryMesh();
         return mesh ? mesh.getBoundingInfo() : null;
     }
-
-    public setProcessingState(state: EntityProcessingState): void {
-        this.metadata.processingState = state;
-    }
-
-    // Get the processing state
-    public getProcessingState(): { isGenerating2D: boolean; isGenerating3D: boolean; progressMessage: string } {
-        return this.metadata.processingState || {
-            isGenerating2D: false,
-            isGenerating3D: false,
-            progressMessage: ''
-        };
-    }
 }
 
 // Type guard function
 export function isEntity(node: BABYLON.Node): node is EntityNode {
     return node instanceof EntityNode;
 }
-
 
 export function resolveEntity(node: BABYLON.Node): EntityNode | null {
     if (isEntity(node)) {
@@ -285,8 +318,6 @@ export function resolveEntity(node: BABYLON.Node): EntityNode | null {
 
     return null;
 }
-
-
 
 // Helper function to get size based on ratio
 function getPlaneSize(ratio: ImageRatio): { width: number, height: number } {

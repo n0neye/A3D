@@ -11,70 +11,50 @@ let prevEntity: EntityNode | null = null;
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
-  const [entityType, setEntityType] = useState<EntityType>('aiObject');
-  const [prompt, setPrompt] = useState('_');
-  const inputBoxRef = useRef<HTMLInputElement>(null);
-  const focusAttempts = useRef(0);
+  const [promptInput, setPromptInput] = useState('_');
+  const inputElementRef = useRef<HTMLInputElement>(null);
 
   // State for processing
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isConverting, setIsConverting] = useState(false);
+  const [isGenerating2D, setIsGenerating2D] = useState(false);
+  const [isGenerating3D, setIsGenerating3D] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
-  const onProgress = (progress: EntityProcessingState) => {
-    setIsGenerating(progress.isGenerating2D);
-    setIsConverting(progress.isGenerating3D);
+
+  // Create progress handler
+  const handleProgress = useCallback((progress: EntityProcessingState) => {
+    setIsGenerating2D(progress.isGenerating2D);
+    setIsGenerating3D(progress.isGenerating3D);
     setProgressMessage(progress.progressMessage);
-  }
-
-  // Create a dedicated focus function that can be called multiple times
-  const focusInput = useCallback(() => {
-    if (inputBoxRef.current) {
-      // Try to focus and check if successful
-      inputBoxRef.current.focus();
-      console.log("Attempting to focus input", focusAttempts.current);
-
-      // // If we didn't reach max attempts, try again
-      if (document.activeElement !== inputBoxRef.current && focusAttempts.current < 5) {
-        focusAttempts.current++;
-        setTimeout(focusInput, 50);  // Increasing delay with each attempt
-      } else if (document.activeElement === inputBoxRef.current) {
-        console.log("Focus successful after", focusAttempts.current, "attempts");
-        focusAttempts.current = 0;
-      } else {
-        console.log("Failed to focus after multiple attempts");
-        focusAttempts.current = 0;
-      }
-    }
   }, []);
+
 
   // Update when selected entity changes
   useEffect(() => {
+
+    if (prevEntity) {
+      prevEntity.tempPrompt = promptInput;
+      prevEntity.onProgress.remove(handleProgress);
+    }
+    prevEntity = selectedEntity;
+
     if (selectedEntity) {
-      setEntityType(selectedEntity.getEntityType() || 'aiObject');
+      // Initial state update
+      handleProgress(selectedEntity.getProcessingState());
+      // Add event handler
+      selectedEntity.onProgress.add(handleProgress);
 
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGeneration();
-      setPrompt(selectedEntity.tempPrompt || currentGen?.prompt || "");
+      setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
 
-      // Reset focus attempts counter
-      focusAttempts.current = 0;
-
-      prevEntity = selectedEntity;
-    } else {
-      // Deselect the entity
-      // Store the prompt
-      if (prevEntity) {
-        prevEntity.tempPrompt = prompt;
-      }
     }
-  }, [selectedEntity, focusInput]);
+  }, [selectedEntity]);
 
   // Additional effect to handle the input field mounting
   useEffect(() => {
-    if (selectedEntity && inputBoxRef.current) {
-      focusInput();
+    if (selectedEntity && inputElementRef.current) {
+      inputElementRef.current.focus();
     }
-  }, [selectedEntity, inputBoxRef]);
+  }, [selectedEntity, inputElementRef]);
 
 
   useEffect(() => {
@@ -140,7 +120,7 @@ const EntityPanel: React.FC = () => {
 
   // Handle image generation
   const handleGenerate2D = async () => {
-    if (!selectedEntity || !prompt.trim() || !scene) return;
+    if (!selectedEntity || !promptInput.trim() || !scene) return;
     const thisEntity = selectedEntity;
 
     // Update entity state
@@ -152,11 +132,11 @@ const EntityPanel: React.FC = () => {
 
     // Call the generation service
     let result: Generation2DRealtimResult;
-    if (prompt === "_") {
+    if (promptInput === "_") {
       result = getImageSimulationData();
     } else {
-      result = await generateImage(prompt, {
-        entityType: entityType,
+      result = await generateImage(promptInput, {
+        entityType: thisEntity.getEntityType(),
         onProgress: (progress) => {
           thisEntity.setProcessingState({
             isGenerating2D: true,
@@ -170,16 +150,13 @@ const EntityPanel: React.FC = () => {
 
     if (result.success && result.imageUrl) {
       // Add to entity's generation history
-      thisEntity.addGenerationToHistory(prompt, result.imageUrl, {
+      thisEntity.addGenerationToHistory(promptInput, result.imageUrl, {
         ratio: '1:1',
         imageSize: 'medium'
       });
 
       // Apply the generated image - this will replace any existing 3D model
       applyImageToEntity(thisEntity, result.imageUrl, scene);
-
-      // Make sure to update entity type if needed
-      setEntityType('aiObject');
     } else {
       // Handle error
       thisEntity.setProcessingState({
@@ -218,8 +195,8 @@ const EntityPanel: React.FC = () => {
 
     // Call the 3D conversion service
     const result = await generate3DModel(currentGen.imageUrl, {
-      prompt: prompt,
-      entityType: entityType,
+      prompt: promptInput,
+      entityType: selectedEntity.getEntityType(),
       onProgress: (progress) => {
         selectedEntity.setProcessingState({
           isGenerating2D: false,
@@ -271,23 +248,23 @@ const EntityPanel: React.FC = () => {
 
   // UI content based on object type
   const renderContent = () => {
-    switch (entityType) {
+    switch (selectedEntity?.getEntityType()) {
       case 'aiObject':
         return (
           <>
             <div className="space-y-2">
               <input
                 type="text"
-                ref={inputBoxRef}
+                ref={inputElementRef}
                 placeholder="Enter prompt..."
                 className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={isGenerating || isConverting}
+                disabled={isGenerating2D || isGenerating3D}
               />
 
-              {(isGenerating || isConverting) && (
+              {(isGenerating2D || isGenerating3D) && (
                 <div className="text-xs text-gray-400 mt-1 mb-1">
                   <div className="flex items-center mb-1 p-2">
                     <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -301,19 +278,19 @@ const EntityPanel: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-1">
                 <button
-                  className={`py-1 text-xs ${isGenerating || isConverting ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
+                  className={`py-1 text-xs ${isGenerating2D || isGenerating3D ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
                   onClick={handleGenerate2D}
-                  disabled={isGenerating || isConverting || !prompt.trim()}
+                  disabled={isGenerating2D || isGenerating3D || !promptInput.trim()}
                 >
-                  {isGenerating ? 'Generating...' : 'Generate Image'}
+                  {isGenerating2D ? 'Generating...' : 'Generate Image'}
                 </button>
 
                 <button
-                  className={`py-1 text-xs ${isConverting ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                  className={`py-1 text-xs ${isGenerating3D ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
                   onClick={handleGenerate3D}
-                  disabled={isGenerating || isConverting || !selectedEntity?.getCurrentGeneration()?.imageUrl}
+                  disabled={isGenerating2D || isGenerating3D || !selectedEntity?.getCurrentGeneration()?.imageUrl}
                 >
-                  {isConverting ? 'Converting...' : 'Convert to 3D'}
+                  {isGenerating3D ? 'Converting...' : 'Convert to 3D'}
                 </button>
               </div>
             </div>
