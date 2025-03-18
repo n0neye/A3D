@@ -2,7 +2,7 @@ import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, isSimulating } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode } from '../types/entity';
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode } from './extensions/entityNode';
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;

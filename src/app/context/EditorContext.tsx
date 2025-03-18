@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { EntityNode } from '../types/entity';
+import { EntityNode } from '../util/extensions/entityNode';
 
 interface EditorContextType {
   scene: BABYLON.Scene | null;
@@ -41,24 +41,28 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (!gizmoManager || !scene) return;
 
     // Clean up previous selection
-    if (selectedEntityRef.current?.primaryMesh) {
-      selectedEntityRef.current.primaryMesh.showBoundingBox = false;
+    if (selectedEntityRef.current) {
+      const prevMesh = selectedEntityRef.current.getPrimaryMesh();
+      if (prevMesh) {
+        prevMesh.showBoundingBox = false;
+      }
     }
 
     if (selectedEntity) {
-      // Attach gizmo to selected entity
-      if (selectedEntity.primaryMesh) {
-        console.log("OnSelect mesh", selectedEntity.primaryMesh);
+      // Get the primary mesh for this entity
+      const primaryMesh = selectedEntity.getPrimaryMesh();
+      
+      if (primaryMesh) {
+        // Setup gizmo
         gizmoManager.positionGizmoEnabled = true;
         gizmoManager.rotationGizmoEnabled = true;
         gizmoManager.scaleGizmoEnabled = true;
-        gizmoManager.attachToMesh(selectedEntity.primaryMesh);
+        gizmoManager.attachToMesh(primaryMesh);
         
-        // Make sure the mesh has computed its bounding box
-        selectedEntity.primaryMesh.computeWorldMatrix(true);
-        
-        // Set bounding box visibility and ensure it's visible
-        // selectedEntity.primaryMesh.showBoundingBox = true;
+        // Setup bounding box if needed
+        if (isDebugMode) {
+          primaryMesh.showBoundingBox = true;
+        }
         
         // Store reference to entity on gizmo
         gizmoManager.metadata = {
@@ -66,7 +70,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           selectedEntity
         };
         
-        // Force a render to show the bounding box
+        // Force a render
         scene.render();
       }
     } else {
@@ -74,12 +78,11 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
-      // Clean up when selection changes
       if (gizmoManager) {
         gizmoManager.attachToMesh(null);
       }
     };
-  }, [selectedEntity, gizmoManager, scene]);
+  }, [selectedEntity, gizmoManager, scene, isDebugMode]);
 
   return (
     <EditorContext.Provider

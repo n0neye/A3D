@@ -3,12 +3,11 @@ import * as BABYLON from '@babylonjs/core';
 
 import { generateImage, Generation2DRealtimResult, replaceWithModel } from '../util/generation-util';
 import { generate3DModel } from '../util/generation-util';
-import { applyImageToEntity } from '../util/editor/entityUtil';
 import { useEditorContext } from '../context/EditorContext';
-import { EntityNode, EntityType } from '../types/entity';
+import { EntityNode, EntityType, applyImageToEntity } from '../util/extensions/entityNode';
 import { getImageSimulationData } from '../util/simulation-data';
 
-let prevEntity:EntityNode | null = null;
+let prevEntity: EntityNode | null = null;
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
@@ -32,7 +31,7 @@ const EntityPanel: React.FC = () => {
       // Try to focus and check if successful
       inputBoxRef.current.focus();
       console.log("Attempting to focus input", focusAttempts.current);
-      
+
       // // If we didn't reach max attempts, try again
       if (document.activeElement !== inputBoxRef.current && focusAttempts.current < 5) {
         focusAttempts.current++;
@@ -51,11 +50,11 @@ const EntityPanel: React.FC = () => {
   useEffect(() => {
     if (selectedEntity) {
       setEntityType(selectedEntity.getEntityType() || 'aiObject');
-      
+
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGeneration();
       setPrompt(selectedEntity.tempPrompt || currentGen?.prompt || "");
-      
+
       // Reset focus attempts counter
       focusAttempts.current = 0;
       // Start focus attempts
@@ -78,6 +77,10 @@ const EntityPanel: React.FC = () => {
     }
   }, [selectedEntity, inputBoxRef]);
 
+
+  useEffect(() => {
+    console.log("Scene changed", scene, selectedEntity);
+  }, [scene, selectedEntity]);
   // Update panel position
   // useEffect(() => {
   //   if (!scene || !selectedEntity) {

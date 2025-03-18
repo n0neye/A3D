@@ -40,6 +40,23 @@ const modelSimulationData: Result<TrellisOutput>[] = [
             }
         },
         "requestId": "d357daa6-e615-42f9-bbe1-1e38b723a850"
+    },
+    // Owl
+    {
+        "data": {
+            "model_mesh": {
+                "url": "https://v3.fal.media/files/zebra/-YbDsazHj-sqCBQirbrkS_model.glb",
+                "content_type": "application/octet-stream",
+                "file_name": "model.glb",
+                "file_size": 2256040
+            },
+            "timings": {
+                "prepare": 0.000010450370609760284,
+                "generation": 4.7261548400856555,
+                "export": 31.396583002060652
+            }
+        },
+        "requestId": "59ad9fc0-7876-432a-b353-810412f9f58a"
     }
 ]
 

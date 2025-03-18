@@ -5,17 +5,17 @@ import * as BABYLON from '@babylonjs/core';
 import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
-import { resolveEntity } from '../util/editor/entityUtil';
+import { resolveEntity } from '../util/extensions/entityNode';
 import { initializeRealtimeConnection } from '../util/generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { 
-    setScene, 
-    setEngine, 
-    setGizmoManager, 
+  const {
+    setScene,
+    setEngine,
+    setGizmoManager,
     setSelectedEntity,
     selectedEntity,
     getCurrentSelectedEntity,
@@ -25,13 +25,77 @@ export default function EditorContainer() {
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
 
+
+  const onPointerObservable = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
+    if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+      if (pointerInfo.event.button === 0) {  // Left click
+        const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+        const mesh = pickInfo.pickedMesh;
+
+        if (mesh &&
+          !mesh.name.includes("gizmo") &&
+          !mesh.name.startsWith("__")) {
+          // Find entity from mesh
+          const entity = resolveEntity(mesh);
+          console.log("OnClick mesh", mesh.name, mesh);
+          console.log("Selected entity:", entity?.name);
+          setSelectedEntity(entity);
+        } else {
+          // Clear selection when clicking on background
+          setSelectedEntity(null);
+        }
+      }
+    }
+  }
+  
+  // Handle keyboard shortcuts
+  const handleKeyDown = (event: KeyboardEvent) => {
+
+    // Delete selected entity - using getCurrentSelectedEntity to get the latest value
+    if (event.key === 'Delete') {
+      const currentEntity = getCurrentSelectedEntity();
+      if (!currentEntity) return;
+
+      console.log("Deleting selected entity:", currentEntity.name);
+
+      // First detach any gizmos
+      if (gizmoManager) {
+        gizmoManager.attachToMesh(null);
+      }
+
+      // Get all child meshes to properly dispose them
+      const meshesToDispose = currentEntity.getChildMeshes();
+
+      // Dispose each mesh properly
+      meshesToDispose.forEach(mesh => {
+        if (mesh.material) {
+          mesh.material.dispose(true, true);
+        }
+        mesh.dispose(false, true);
+      });
+
+      // Dispose the entity itself
+      currentEntity.dispose();
+
+      // Clear the selection state
+      setSelectedEntity(null);
+
+      // Force scene update
+      if (scene) {
+        scene.render();
+      }
+    }
+  };
+  
+
+  // Initialize BabylonJS engine and scene
   useEffect(() => {
     if (!canvasRef.current) return;
 
     // Initialize BabylonJS engine and scene
     const engine = new BABYLON.Engine(canvasRef.current, true);
     const scene = new BABYLON.Scene(engine);
-    
+
     // Update context
     setEngine(engine);
     setScene(scene);
@@ -69,70 +133,6 @@ export default function EditorContainer() {
     gizmoManager.usePointerToAttachGizmos = false;
     setGizmoManager(gizmoManager);
 
-    // Handle selection
-    scene.onPointerObservable.add((pointerInfo) => {
-      if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-        if (pointerInfo.event.button === 0) {  // Left click
-          const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-          const mesh = pickInfo.pickedMesh;
-          
-          if (mesh && 
-              !mesh.name.includes("gizmo") && 
-              !mesh.name.startsWith("__")) {
-            // Find entity from mesh
-            const entity = resolveEntity(mesh);
-            console.log("OnClick mesh", mesh.name, mesh);
-            console.log("Selected entity:", entity?.name);
-            setSelectedEntity(entity);
-          } else {
-            // Clear selection when clicking on background
-            setSelectedEntity(null);
-          }
-        }
-      }
-    });
-
-    // Handle keyboard shortcuts
-    const handleKeyDown = (event: KeyboardEvent) => {
-      
-      // Delete selected entity - using getCurrentSelectedEntity to get the latest value
-      if (event.key === 'Delete') {
-        const currentEntity = getCurrentSelectedEntity();
-        if (!currentEntity) return;
-        
-        console.log("Deleting selected entity:", currentEntity.name);
-        
-        // First detach any gizmos
-        if (gizmoManager) {
-          gizmoManager.attachToMesh(null);
-        }
-        
-        // Get all child meshes to properly dispose them
-        const meshesToDispose = currentEntity.getChildMeshes();
-        
-        // Dispose each mesh properly
-        meshesToDispose.forEach(mesh => {
-          if (mesh.material) {
-            mesh.material.dispose(true, true);
-          }
-          mesh.dispose(false, true);
-        });
-        
-        // Dispose the entity itself
-        currentEntity.dispose();
-        
-        // Clear the selection state
-        setSelectedEntity(null);
-        
-        // Force scene update
-        if (scene) {
-          scene.render();
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-
     // Start the render loop
     engine.runRenderLoop(() => {
       scene.render();
@@ -143,6 +143,9 @@ export default function EditorContainer() {
       engine.resize();
     };
 
+    // Listeners
+    scene.onPointerObservable.add((pointerInfo) => onPointerObservable(pointerInfo, scene));
+    window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
 
     // Initialize API connection
