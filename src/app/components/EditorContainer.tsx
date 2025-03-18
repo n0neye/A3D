@@ -10,6 +10,7 @@ import { initializeRealtimeConnection } from '../util/generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
 import { initScene } from '../util/editor/editor-util';
+import EnvironmentPanel from './EnvironmentPanel';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -148,6 +149,9 @@ export default function EditorContainer() {
         <div className={`fixed z-50 right-4 bottom-4 w-64 panel overflow-y-auto ${isDebugMode ? 'right-80' : ''}`}>
           <RenderPanel />
         </div>
+
+        {/* Environment Panel */}
+          <EnvironmentPanel />
       </div>
       {/* <DebugLayer /> */}
     </div>

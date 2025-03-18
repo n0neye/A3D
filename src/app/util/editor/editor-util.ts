@@ -1,6 +1,21 @@
 import * as BABYLON from "@babylonjs/core";
 import { createEntity } from "../extensions/entityNode";
 
+// Store environment objects
+export interface EnvironmentObjects {
+  sun?: BABYLON.DirectionalLight;
+  ambientLight?: BABYLON.HemisphericLight;
+  skybox?: BABYLON.Mesh;
+  background?: BABYLON.Mesh;
+}
+
+// Global environment reference
+const environmentObjects: EnvironmentObjects = {};
+
+export const getEnvironmentObjects = (): EnvironmentObjects => {
+  return environmentObjects;
+};
+
 export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
     // Camera
@@ -21,16 +36,32 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     camera.attachControl(canvas, true);
 
     // Light
-    const light = new BABYLON.HemisphericLight(
-        "light",
+    const ambientLight = new BABYLON.HemisphericLight(
+        "ambientLight",
         new BABYLON.Vector3(0, 1, 0),
         scene
     );
-    light.intensity = 0.7;
+    ambientLight.intensity = 0.5;
+    environmentObjects.ambientLight = ambientLight;
 
-    //   Create a sun (directional light)
-    const sun = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(1, 1, 0), scene);
-    sun.intensity = 0.7;
+    // Create a sun (directional light)
+    const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
+    sunLight.intensity = 0.7;
+    sunLight.diffuse = new BABYLON.Color3(1, 0.8, 0.5); // Warm sunlight color
+    
+    // // Create a small sphere to visualize the sun position
+    // const sunSphere = BABYLON.MeshBuilder.CreateSphere("sunSphere", { diameter: 0.3 }, scene);
+    // sunSphere.position = new BABYLON.Vector3(5, 5, -5);
+    // const sunMaterial = new BABYLON.StandardMaterial("sunMaterial", scene);
+    // sunMaterial.emissiveColor = new BABYLON.Color3(1, 0.8, 0.2);
+    // sunMaterial.disableLighting = true;
+    // sunSphere.material = sunMaterial;
+    
+    // // Parent the sphere to the sun for easier manipulation
+    // sunSphere.parent = sun;
+    
+    // Store the sun reference
+    environmentObjects.sun = sunLight;
 
     // createEquirectangularSkybox(scene, "./demoAssets/skybox/sunsetforest.webp");
     // create2DBackground(scene, "./demoAssets/skybox/sunsetforest.webp");
