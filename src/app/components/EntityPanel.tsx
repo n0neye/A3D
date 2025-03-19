@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 
 import { generateBackground, generate3DModel } from '../util/generation-util';
-import { generateRealtimeImage, generateRealtimeImageRunware } from '../util/realtime-generation-util';
+import { generateRealtimeImage } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
-import { EntityNode, EntityProcessingState, EntityType, applyImageToEntity } from '../util/extensions/entityNode';
+import { EntityNode, EntityProcessingState } from '../util/extensions/entityNode';
 
 let prevEntity: EntityNode | null = null;
 
@@ -121,7 +121,7 @@ const EntityPanel: React.FC = () => {
     if (selectedEntity.metadata.aiData?.aiObjectType === 'background') {
       await generateBackground(promptInput, selectedEntity, scene);
     } else {
-      await generateRealtimeImageRunware(promptInput, selectedEntity, scene);
+      await generateRealtimeImage(promptInput, selectedEntity, scene);
     }
   };
 

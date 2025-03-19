@@ -5,17 +5,183 @@ import { getImageSimulationData, } from "./simulation-data";
 import { IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, EntityNode, applyImageToEntity } from './extensions/entityNode';
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
-// Types for callbacks and results
 
+// Types for callbacks and results
 export interface Generation2DRealtimResult {
     success: boolean;
     imageUrl?: string;
     error?: string;
 }
 
+
+// Initialize the connection on module load
+export function initializeRealtimeConnection(): void {
+    // FalConnectionManager.getInstance().initialize();
+    initRunwareClient();
+}
+
+export async function generateRealtimeImage(
+    prompt: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
+    options: {
+        imageSize?: ImageSize;
+        negativePrompt?: string;
+    } = {}
+): Promise<Generation2DRealtimResult> {
+    const startTime = performance.now();
+    // Use defaults if not provided
+    const ratio = '1:1';
+    const imageSize = options.imageSize || 'medium';
+    const entityType = entity.getEntityType();
+    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
+    const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
+    // Update entity state
+    entity.setProcessingState({
+        isGenerating2D: true,
+        isGenerating3D: false,
+        progressMessage: 'Starting generation...'
+    });
+
+    // Determine dimensions
+    const ratioMultipliers = RATIO_MAP[ratio];
+    const baseSize = IMAGE_SIZE_MAP[imageSize];
+
+    // Calculate width and height
+    let width, height;
+    if (ratioMultipliers.width > ratioMultipliers.height) {
+        width = baseSize;
+        height = Math.floor(baseSize * (ratioMultipliers.height / ratioMultipliers.width));
+    } else {
+        height = baseSize;
+        width = Math.floor(baseSize * (ratioMultipliers.width / ratioMultipliers.height));
+    }
+
+    // Enhance prompt based on entity type
+    let enhancedPrompt = prompt;
+    if (aiObjectType === 'object' || entityType === 'aiObject') {
+        enhancedPrompt = `${prompt} at the center of the frame, close up, focused on the object, uncropped, solid black background`;
+    } else if (aiObjectType === 'background') {
+        enhancedPrompt = `expansive panoramic view of ${prompt}`;
+    }
+
+    // If the prompt is "_", use the test data
+    if (prompt === "_") {
+        const testData = getImageSimulationData();
+        if (testData.imageUrl) {
+            applyImageToEntity(entity, testData.imageUrl, scene);
+            entity.addGenerationToHistory(prompt, testData.imageUrl, {
+                ratio: '1:1',
+                imageSize: 'medium'
+            });
+            entity.setProcessingState({
+                isGenerating2D: false,
+                isGenerating3D: false,
+                progressMessage: 'Image generated successfully!'
+            });
+        }
+        return testData;
+    }
+
+    const result = await generateRealtimeImageRunware(prompt, {
+        imageSize: imageSize,
+        negativePrompt: negativePrompt
+    });
+    // const result = await generateRealtimeImageFal(prompt, {
+    //     width: width,
+    //     height: height,
+    //     negativePrompt: negativePrompt
+    // });
+
+    const success = result.success && result.imageUrl;
+    if (success && result.imageUrl) {
+        console.log(`%cImage generation took ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
+
+        // Add to history
+        entity.addGenerationToHistory(prompt, result.imageUrl, {
+            ratio: '1:1',
+            imageSize: 'medium'
+        });
+
+        await applyImageToEntity(entity, result.imageUrl, scene);
+
+        console.log(`%cTask completed in ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
+    }
+
+    entity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: false,
+        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
+    });
+
+    return result;
+
+}
+
+/**
+ * Generate an image using the FAL AI API with persistent WebSocket connection
+ */
+async function generateRealtimeImageFal(
+    prompt: string,
+    options: {
+        width?: number;
+        height?: number;
+        negativePrompt?: string;
+    } = {}
+): Promise<Generation2DRealtimResult> {
+    // Get connection manager and generate the image
+    const connectionManager = FalConnectionManager.getInstance();
+    const result = await connectionManager.generateImage({
+        prompt,
+        negative_prompt: options.negativePrompt,
+        width: options.width,
+        height: options.height
+    });
+    return result;
+}
+
+let runwareClient: RunwareClient | null = null;
+const RUNWARE_API_KEY = "hVH7hCVr32kVuQGbJVjUiziJ7a9lXWbZ";
+const initRunwareClient = async () => {
+    runwareClient = new Runware({ apiKey: RUNWARE_API_KEY });
+    await runwareClient.ensureConnection();
+}
+
+async function generateRealtimeImageRunware(
+    prompt: string,
+    options: {
+        imageSize?: ImageSize;
+        negativePrompt?: string;
+    } = {}
+): Promise<Generation2DRealtimResult> {
+    if (!runwareClient) {
+        await initRunwareClient();
+    }
+    if (!runwareClient) {
+        throw new Error("Runware client not initialized");
+    }
+    const runwareResult = await runwareClient.requestImages({
+        positivePrompt: prompt,
+        negativePrompt: options.negativePrompt,
+        width: 1024,
+        height: 1024,
+        model: "runware:100@1",
+        numberResults: 1,
+        outputType: "URL",
+        outputFormat: "WEBP",
+        checkNSFW: false,
+    })
+
+    return {
+        success: runwareResult?.[0]?.imageURL ? true : false,
+        imageUrl: runwareResult?.[0]?.imageURL || undefined
+    };
+}
+
+
 // Singleton connection manager - updated to use a queue system
-class RealtimeConnectionManager {
-    private static instance: RealtimeConnectionManager;
+class FalConnectionManager {
+    private static instance: FalConnectionManager;
     private connection: any = null;
     private isConnected: boolean = false;
     private isProcessing: boolean = false;
@@ -36,11 +202,11 @@ class RealtimeConnectionManager {
 
     private constructor() { }
 
-    public static getInstance(): RealtimeConnectionManager {
-        if (!RealtimeConnectionManager.instance) {
-            RealtimeConnectionManager.instance = new RealtimeConnectionManager();
+    public static getInstance(): FalConnectionManager {
+        if (!FalConnectionManager.instance) {
+            FalConnectionManager.instance = new FalConnectionManager();
         }
-        return RealtimeConnectionManager.instance;
+        return FalConnectionManager.instance;
     }
 
     private falConnection = fal.realtime.connect("fal-ai/fast-lcm-diffusion", {
@@ -51,9 +217,7 @@ class RealtimeConnectionManager {
             if (this.currentRequest) {
                 // Calculate elapsed time if we have a start time
                 if (this.currentRequest.timeStart) {
-                    const elapsedTime = performance.now() - this.currentRequest.timeStart;
-                    const seconds = (elapsedTime / 1000).toFixed(2);
-                    console.log("%cGeneration completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
+                    console.log("%cGeneration completed in " + ((performance.now() - this.currentRequest.timeStart) / 1000).toFixed(2) + "s", "color: #4CAF50; font-weight: bold;");
                 }
 
                 // Check if result has images array with at least one item
@@ -217,9 +381,6 @@ class RealtimeConnectionManager {
         // Progress update
         onProgress?.({ message: 'Starting generation...' });
 
-        // Prepare the prompt
-        const enhancedPrompt = `${prompt} at the center of the frame, full-body shot, uncropped, 3d render, white light, ambient light, transparent black background, object separate from the background`;
-
         return new Promise((resolve) => {
             // Add to request queue
             this.requestQueue.push({
@@ -236,231 +397,4 @@ class RealtimeConnectionManager {
     public isInitialized(): boolean {
         return this.connection !== null;
     }
-}
-
-// Initialize the connection on module load
-export function initializeRealtimeConnection(): void {
-    // RealtimeConnectionManager.getInstance().initialize();
-    // const runware = new RunwareServer({ apiKey: "API_KEY" });
-    initRunwareClient();
-}
-
-
-/**
- * Generate an image using the FAL AI API with persistent WebSocket connection
- */
-export async function generateRealtimeImage(
-    prompt: string,
-    entity: EntityNode,
-    scene: BABYLON.Scene,
-    options: {
-        imageSize?: ImageSize;
-        negativePrompt?: string;
-    } = {}
-): Promise<Generation2DRealtimResult> {
-    // Use defaults if not provided
-    const ratio = '1:1';
-    const imageSize = options.imageSize || 'medium';
-    const entityType = entity.getEntityType();
-    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
-    const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
-    // Update entity state
-    entity.setProcessingState({
-        isGenerating2D: true,
-        isGenerating3D: false,
-        progressMessage: 'Starting generation...'
-    });
-
-    // Determine dimensions
-    const ratioMultipliers = RATIO_MAP[ratio];
-    const baseSize = IMAGE_SIZE_MAP[imageSize];
-
-    // Calculate width and height
-    let width, height;
-    if (ratioMultipliers.width > ratioMultipliers.height) {
-        width = baseSize;
-        height = Math.floor(baseSize * (ratioMultipliers.height / ratioMultipliers.width));
-    } else {
-        height = baseSize;
-        width = Math.floor(baseSize * (ratioMultipliers.width / ratioMultipliers.height));
-    }
-
-    // Enhance prompt based on entity type
-    let enhancedPrompt = prompt;
-    if (aiObjectType === 'object' || entityType === 'aiObject') {
-        enhancedPrompt = `${prompt} at the center of the frame, uncropped, solid black background`;
-    } else if (aiObjectType === 'background') {
-        enhancedPrompt = `expansive panoramic view of ${prompt}`;
-    }
-
-    // If the prompt is "_", use the test data
-    if (prompt === "_") {
-        const testData = getImageSimulationData();
-        if (testData.imageUrl) {
-            applyImageToEntity(entity, testData.imageUrl, scene);
-            entity.addGenerationToHistory(prompt, testData.imageUrl, {
-                ratio: '1:1',
-                imageSize: 'medium'
-            });
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: false,
-                progressMessage: 'Image generated successfully!'
-            });
-        }
-        return testData;
-    }
-
-    // Get connection manager and generate the image
-    const connectionManager = RealtimeConnectionManager.getInstance();
-    const result = await connectionManager.generateImage({
-        prompt: enhancedPrompt,
-        negative_prompt: negativePrompt,
-        width,
-        height,
-    }, ({ message }: { message: string }) => {
-        entity.setProcessingState({
-            isGenerating2D: true,
-            isGenerating3D: false,
-            progressMessage: message
-        });
-    });
-
-    const success = result.success && result.imageUrl;
-    if (success && result.imageUrl) {
-        applyImageToEntity(entity, result.imageUrl, scene);
-
-        // Add to history
-        entity.addGenerationToHistory(prompt, result.imageUrl, {
-            ratio: '1:1',
-            imageSize: 'medium'
-        });
-    }
-
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: false,
-        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
-    });
-
-    return result;
-
-}
-
-
-let runwareClient: RunwareClient | null = null;
-const RUNWARE_API_KEY = "hVH7hCVr32kVuQGbJVjUiziJ7a9lXWbZ";
-const initRunwareClient = async () => {
-    runwareClient = new Runware({ apiKey: RUNWARE_API_KEY });
-    await runwareClient.ensureConnection();
-}
-
-export async function generateRealtimeImageRunware(
-    prompt: string,
-    entity: EntityNode,
-    scene: BABYLON.Scene,
-    options: {
-        imageSize?: ImageSize;
-        negativePrompt?: string;
-    } = {}
-): Promise<Generation2DRealtimResult> {
-    const startTime = performance.now();
-    // Use defaults if not provided
-    const ratio = '1:1';
-    const imageSize = options.imageSize || 'medium';
-    const entityType = entity.getEntityType();
-    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
-    const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
-    // Update entity state
-    entity.setProcessingState({
-        isGenerating2D: true,
-        isGenerating3D: false,
-        progressMessage: 'Starting generation...'
-    });
-
-    // Determine dimensions
-    const ratioMultipliers = RATIO_MAP[ratio];
-    const baseSize = IMAGE_SIZE_MAP[imageSize];
-
-    // Calculate width and height
-    let width, height;
-    if (ratioMultipliers.width > ratioMultipliers.height) {
-        width = baseSize;
-        height = Math.floor(baseSize * (ratioMultipliers.height / ratioMultipliers.width));
-    } else {
-        height = baseSize;
-        width = Math.floor(baseSize * (ratioMultipliers.width / ratioMultipliers.height));
-    }
-
-    // Enhance prompt based on entity type
-    let enhancedPrompt = prompt;
-    if (aiObjectType === 'object' || entityType === 'aiObject') {
-        enhancedPrompt = `${prompt} at the center of the frame, close up, focused on the object, uncropped, solid black background`;
-    } else if (aiObjectType === 'background') {
-        enhancedPrompt = `expansive panoramic view of ${prompt}`;
-    }
-
-    // If the prompt is "_", use the test data
-    if (prompt === "_") {
-        const testData = getImageSimulationData();
-        if (testData.imageUrl) {
-            applyImageToEntity(entity, testData.imageUrl, scene);
-            entity.addGenerationToHistory(prompt, testData.imageUrl, {
-                ratio: '1:1',
-                imageSize: 'medium'
-            });
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: false,
-                progressMessage: 'Image generated successfully!'
-            });
-        }
-        return testData;
-    }
-
-    if (!runwareClient) {
-        await initRunwareClient();
-    }
-    if (!runwareClient) {
-        throw new Error("Runware client not initialized");
-    }
-
-
-    const result = await runwareClient.requestImages({
-        positivePrompt: enhancedPrompt,
-        negativePrompt: negativePrompt,
-        width: 1024,
-        height: 1024,
-        model: "runware:100@1",
-        numberResults: 1,
-        outputType: "URL",
-        outputFormat: "WEBP",
-        checkNSFW: false,
-    })
-
-    const success = result && result.length > 0;
-    if (success && result[0].imageURL) {
-        applyImageToEntity(entity, result[0].imageURL, scene);
-
-        // Add to history
-        entity.addGenerationToHistory(prompt, result[0].imageURL, {
-            ratio: '1:1',
-            imageSize: 'medium'
-        });
-        const endTime = performance.now();
-        const duration = endTime - startTime;
-        console.log(`%cImage generation took ${(duration / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
-    }
-
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: false,
-        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
-    });
-
-    return {
-        success: success || false,
-        imageUrl: result?.[0]?.imageURL || undefined
-    };
-
 }
