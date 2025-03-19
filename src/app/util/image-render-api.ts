@@ -5,6 +5,7 @@ fal.config({
   proxyUrl: "/api/fal/proxy",
 });
 
+export type ModelType = 'fal-turbo' | 'fal-lcm' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm';
 export interface ImageToImageParams {
   imageUrl: string | Blob;
   prompt: string;
@@ -12,8 +13,49 @@ export interface ImageToImageParams {
   promptStrength?: number;
   guidanceScale?: number;
   numInferenceSteps?: number;
-  model?: 'fal-turbo' | 'fal-lcm' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm';
+  model?: ModelType;
 }
+
+
+export interface AIModel {
+  id: ModelType;
+  name: string;
+  description: string;
+}
+
+// Model definitions with descriptions
+export const availableModels: AIModel[] = [
+  // {
+  //   id: 'fal-turbo',
+  //   name: 'Fal Turbo',
+  //   description: 'Fast general-purpose image-to-image model with good quality'
+  // },
+  // {
+  //   id: 'fal-lcm',
+  //   name: 'Fal LCM',
+  //   description: 'Very fast Latent Consistency Model, fewer steps needed'
+  // },
+  // {
+  //   id: 'flux-dev',
+  //   name: 'Flux Dev',
+  //   description: 'Experimental Flux model with creative results'
+  // },
+  {
+    id: 'flux-lora-depth',
+    name: 'Flux Dev LoRA Depth',
+    description: 'With style transformations'
+  },
+  {
+    id: 'flux-pro-depth',
+    name: 'Flux Pro Depth',
+    description: 'Heighest quality'
+  },
+  // {
+  //   id: 'replicate-lcm',
+  //   name: 'Replicate LCM',
+  //   description: 'Alternative LCM implementation via Replicate API'
+  // }
+];
 
 export interface ImageToImageResult {
   imageUrl: string;
@@ -238,6 +280,7 @@ async function generateFluxProDepthImage(params: ImageToImageParams): Promise<Im
       input: {
         prompt: params.prompt,
         control_image_url: params.imageUrl, // This model uses control_image_url instead of image_url
+        image_size: "landscape_16_9"
       },
       logs: true,
       onQueueUpdate: (update) => {

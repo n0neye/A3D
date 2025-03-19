@@ -3,19 +3,19 @@ import { createEntity, createSunEntity } from "../extensions/entityNode";
 
 // Store environment objects
 export interface EnvironmentObjects {
-  sun?: BABYLON.DirectionalLight;
-  sunTransform?: BABYLON.TransformNode;
-  sunArrow?: BABYLON.Mesh;
-  ambientLight?: BABYLON.HemisphericLight;
-  skybox?: BABYLON.Mesh;
-  background?: BABYLON.Mesh;
+    sun?: BABYLON.DirectionalLight;
+    sunTransform?: BABYLON.TransformNode;
+    sunArrow?: BABYLON.Mesh;
+    ambientLight?: BABYLON.HemisphericLight;
+    skybox?: BABYLON.Mesh;
+    background?: BABYLON.Mesh;
 }
 
 // Global environment reference
 const environmentObjects: EnvironmentObjects = {};
 
 export const getEnvironmentObjects = (): EnvironmentObjects => {
-  return environmentObjects;
+    return environmentObjects;
 };
 
 
@@ -37,14 +37,8 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     camera.upperRadiusLimit = 20;
     camera.attachControl(canvas, true);
 
-    // Light
-    const ambientLight = new BABYLON.HemisphericLight(
-        "ambientLight",
-        new BABYLON.Vector3(0, 1, 0),
-        scene
-    );
-    ambientLight.intensity = 0.5;
-    environmentObjects.ambientLight = ambientLight;
+    // Ambient Light
+    scene.ambientColor = new BABYLON.Color3(1, 1, 1);
 
     // Sun
     const { sunLight, sunTransform, sunArrow } = createSunEntity(scene);
@@ -121,77 +115,77 @@ export const create2DBackground = (
     if (!scene.activeCamera) {
         throw new Error("Scene must have an active camera");
     }
-    
+
     // Create a large plane for the background
     const background = BABYLON.MeshBuilder.CreatePlane(
         "background",
-        { 
-            width: 1, 
+        {
+            width: 1,
             height: 1,
-            sideOrientation: BABYLON.Mesh.FRONTSIDE 
+            sideOrientation: BABYLON.Mesh.FRONTSIDE
         },
         scene
     );
-    
+
     // CRITICAL: Ensure background renders behind everything by setting these properties
     background.renderingGroupId = 0; // Render in first group (renders before group 1)
-    
+
     // Create material
     const bgMaterial = new BABYLON.StandardMaterial("backgroundMaterial", scene);
     bgMaterial.backFaceCulling = false;
     bgMaterial.disableLighting = true;
     bgMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
-    
+
     // Disable depth writing to ensure it stays in background
     bgMaterial.disableDepthWrite = true;
-    
+
     // Create texture and maintain aspect ratio
     const bgTexture = new BABYLON.Texture(url, scene);
     bgTexture.hasAlpha = true;
     bgMaterial.diffuseTexture = bgTexture;
     bgMaterial.emissiveTexture = bgTexture;
     bgMaterial.useAlphaFromDiffuseTexture = true;
-    
+
     // Apply material
     background.material = bgMaterial;
-    
+
     // Position it far away initially
     const farDistance = scene.activeCamera.maxZ * 0.99;
-    
+
     // Function to update the background size and position
     const updateBackground = () => {
         if (!scene.activeCamera) return;
-        
+
         // Get engine size
         const engine = scene.getEngine();
         const viewportWidth = engine.getRenderWidth();
         const viewportHeight = engine.getRenderHeight();
         const viewportAspectRatio = viewportWidth / viewportHeight;
-        
+
         // Get texture aspect ratio
         const textureWidth = bgTexture.getSize().width || 1;
         const textureHeight = bgTexture.getSize().height || 1;
         const textureAspectRatio = textureWidth / textureHeight;
-        
+
         if (scene.activeCamera instanceof BABYLON.ArcRotateCamera) {
             const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
-            
+
             // Calculate the FOV
             const fov = camera.fov || (Math.PI / 4);
-            
+
             // Calculate visible height at far distance
             const visibleHeightAtDistance = 2 * Math.tan(fov / 2) * farDistance;
             const visibleWidthAtDistance = visibleHeightAtDistance * viewportAspectRatio;
-            
+
             // Get camera direction
             const direction = camera.getDirection(BABYLON.Vector3.Forward());
-            
+
             // Position the background at the far clip plane
             background.position = camera.position.add(direction.scale(farDistance));
-            
+
             // Orient to face the camera
             background.lookAt(camera.position);
-            
+
             // Scale to fill view
             let scaleX, scaleY;
             if (textureAspectRatio > viewportAspectRatio) {
@@ -203,7 +197,7 @@ export const create2DBackground = (
                 scaleX = visibleWidthAtDistance;
                 scaleY = scaleX / textureAspectRatio;
             }
-            
+
             // Add 20% margin for full coverage
             const coverageFactor = 1.1;
             background.scaling.x = scaleX * coverageFactor;
@@ -213,19 +207,19 @@ export const create2DBackground = (
             // ... (rest of the code)
         }
     };
-    
+
     // Initial setup
     updateBackground();
-    
+
     // Update when needed
     window.addEventListener('resize', updateBackground);
     scene.onBeforeRenderObservable.add(updateBackground);
-    
+
     // Clean up
     background.onDisposeObservable.add(() => {
         window.removeEventListener('resize', updateBackground);
         scene.onBeforeRenderObservable.removeCallback(updateBackground);
     });
-    
+
     return background;
 };

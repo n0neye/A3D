@@ -380,23 +380,23 @@ export async function generateBackground(
 
     const result = await fal.subscribe("fal-ai/flux/dev", {
         input: {
-          prompt: prompt,
-          image_size:{
-            width: 1280,
-            height: 720
-          }
-          // Flux Dev might have different parameters than the other models
-          // so we're just using the basic ones for now
+            prompt: prompt,
+            image_size: {
+                width: 1280,
+                height: 720
+            }
+            // Flux Dev might have different parameters than the other models
+            // so we're just using the basic ones for now
         },
         logs: true,
         onQueueUpdate: (update) => {
-          if (update.status === "IN_PROGRESS") {
-            console.log("Flux generation in progress...");
-            update.logs?.map((log) => log.message).forEach(console.log);
-          }
+            if (update.status === "IN_PROGRESS") {
+                console.log("Flux generation in progress...");
+                update.logs?.map((log) => log.message).forEach(console.log);
+            }
         },
-      });
-  
+    });
+
 
     const success = result.data.images.length > 0;
     if (success && result.data.images[0].url) {
@@ -474,6 +474,20 @@ export async function loadModel(
                                 rootEntity: entity
                             };
                         });
+
+                        // Find all materials
+                        meshes.forEach((mesh) => {
+                            if (mesh.material) {
+                                // if PBRMaterial, set emissive 
+                                if (mesh.material instanceof BABYLON.PBRMaterial) {
+                                    const newPbrMaterial = mesh.material as BABYLON.PBRMaterial;
+                                    newPbrMaterial.emissiveColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+                                    newPbrMaterial.emissiveTexture = newPbrMaterial.albedoTexture;
+                                    mesh.material = newPbrMaterial;
+                                }
+                            }
+                        });
+
 
                         // Switch to 3D display mode
                         entity.setDisplayMode('3d');

@@ -1,55 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { generatePreviewImage, dataURLtoBlob } from '../util/image-render-api';
+import React, { useState, useRef, useEffect } from 'react';
+import { generatePreviewImage, dataURLtoBlob, ModelType, availableModels } from '../util/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
 
-interface RenderPanelProps {
-}
 
-type ModelType = 'fal-turbo' | 'fal-lcm' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm';
-
-interface AIModel {
-  id: ModelType;
-  name: string;
-  description: string;
-}
-
-// Model definitions with descriptions
-const availableModels: AIModel[] = [
-  {
-    id: 'fal-turbo',
-    name: 'Fal Turbo',
-    description: 'Fast general-purpose image-to-image model with good quality'
-  },
-  {
-    id: 'fal-lcm',
-    name: 'Fal LCM',
-    description: 'Very fast Latent Consistency Model, fewer steps needed'
-  },
-  {
-    id: 'flux-dev',
-    name: 'Flux Dev',
-    description: 'Experimental Flux model with creative results'
-  },
-  {
-    id: 'flux-pro-depth',
-    name: 'Flux Pro Depth',
-    description: 'Uses depth information to create dramatic depth effects'
-  },
-  {
-    id: 'flux-lora-depth',
-    name: 'Flux LoRA Depth',
-    description: 'Uses LoRA fine-tuning with depth maps for targeted style transformations'
-  },
-  {
-    id: 'replicate-lcm',
-    name: 'Replicate LCM',
-    description: 'Alternative LCM implementation via Replicate API'
-  }
-];
-
-const RenderPanel: React.FC<RenderPanelProps> = ({
+const RenderPanel = ({
 }) => {
   const { scene, engine } = useEditorContext();
   // State variables
@@ -61,8 +17,26 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
   const [debugImage, setDebugImage] = useState<string | null>(null);
   const [noiseStrength, setNoiseStrength] = useState<number>(0.6); // Default to 0 (no noise)
   const [executionTime, setExecutionTime] = useState<number | null>(null);
-  const [model, setModel] = useState<ModelType>('fal-turbo');
+  const [model, setModel] = useState<ModelType>('flux-lora-depth');
 
+  // Add keyboard shortcut for Ctrl/Cmd+Enter
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl/Cmd + Enter
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault(); // Prevent default browser behavior
+        handleRender();
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [prompt, promptStrength, noiseStrength, model]); // Re-create handler when these dependencies change
 
   const takeScreenshot = async () => {
 
@@ -96,7 +70,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
   };
 
   // Generate a preview using image-to-image API
-  const handleGeneratePreview = async () => {
+  const handleRender = async () => {
 
     setIsLoading(true);
     setExecutionTime(null); // Reset execution time when starting new generation
@@ -115,7 +89,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
       }
 
       // Update the debug image with the processed image
-      setDebugImage(processedImage);
+      setPreviewUrl(processedImage);
 
       // Resize the image to 512x512 before sending to API
       const resizedImage = await resizeImage(processedImage, 512, 512);
@@ -148,18 +122,6 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
     }
   };
 
-  // Download the current preview
-  const handleDownloadPreview = () => {
-    if (!previewUrl) return;
-
-    // Create a download link
-    const link = document.createElement('a');
-    link.href = previewUrl;
-    link.download = `scene-preview-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     < >
@@ -167,17 +129,17 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
 
       <div className="flex flex-col items-center">
         {/* Debug image */}
-        <button
+        {/* <button
           onClick={() => generateDebugImage()}
           className="mb-4 px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
         >
           Generate Debug Image
-        </button>
-        {debugImage && (
+        </button> */}
+        {/* {debugImage && (
           <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
             <img src={debugImage} alt="Debug" className="w-full h-full object-contain" />
           </div>
-        )}
+        )} */}
 
         {/* Preview image or placeholder */}
         <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
@@ -205,8 +167,8 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
         {/* Strength slider */}
         <div className="w-full mb-4">
           <div className="flex justify-between items-center">
-            <label className="block text-sm text-gray-400 mb-1">PromptStrength: {promptStrength.toFixed(2)}</label>
-            <span className="text-xs text-gray-500">{promptStrength < 0.4 ? 'More accurate' : promptStrength > 0.7 ? 'More creative' : 'Balanced'}</span>
+            <label className="block text-sm text-gray-400 mb-1">Creativity</label> <span className="text-xs text-gray-200"> {promptStrength.toFixed(2)}</span>
+            {/* <span className="text-xs text-gray-500">{promptStrength < 0.4 ? 'More accurate' : promptStrength > 0.7 ? 'More creative' : 'Balanced'}</span> */}
           </div>
           <input
             type="range"
@@ -218,13 +180,13 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Closer to source</span>
-            <span>More creative</span>
+            <span>Source</span>
+            <span>creative</span>
           </div>
         </div>
 
         {/* Client-side noise slider */}
-        <div className="w-full mb-4">
+        {/* <div className="w-full mb-4">
           <div className="flex justify-between items-center">
             <label className="block text-sm text-gray-400 mb-1">Image Noise: {noiseStrength.toFixed(2)}</label>
             <span className="text-xs text-gray-500">
@@ -244,15 +206,15 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
             <span>Clean image</span>
             <span>Noisy image</span>
           </div>
-        </div>
+        </div> */}
 
         {/* Prompt input */}
         <div className="w-full mb-4">
-          <label className="block text-sm text-gray-400 mb-1">Prompt for AI generation</label>
+          <label className="block text-sm text-gray-400 mb-1">Render Prompt </label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm"
+            className="w-full p-2 border-b-2 border-gray-600 text-white text-sm focus:outline-none focus:bg-gray-700"
             rows={3}
             placeholder="Describe how you want the scene to look..."
           />
@@ -275,7 +237,7 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
               <button
                 key={aiModel.id}
                 onClick={() => setModel(aiModel.id)}
-                className={`py-2 px-3 text-sm rounded-md ${model === aiModel.id
+                className={`py-2 px-3 text-xs rounded-md ${model === aiModel.id
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
@@ -284,15 +246,12 @@ const RenderPanel: React.FC<RenderPanelProps> = ({
               </button>
             ))}
           </div>
-          <div className="mt-1 text-xs text-gray-400">
-            {availableModels.find(m => m.id === model)?.description}
-          </div>
         </div>
 
         {/* Action buttons */}
         <div className="flex gap-2 w-full">
           <button
-            onClick={handleGeneratePreview}
+            onClick={handleRender}
             disabled={isLoading}
             className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >

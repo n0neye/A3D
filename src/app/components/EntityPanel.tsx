@@ -202,7 +202,7 @@ const EntityPanel: React.FC = () => {
                     onClick={handleGenerate3D}
                     disabled={isGenerating || !selectedEntity?.getCurrentGeneration()?.imageUrl}
                   >
-                    {isGenerating3D ? renderSpinner('Converting') : 'Convert to 3D'}
+                    {isGenerating3D ? renderSpinner('') : 'Convert to 3D'}
                     {isGenerating3D && 
                   <span>{progressMessage}</span>}
                   </button>}
