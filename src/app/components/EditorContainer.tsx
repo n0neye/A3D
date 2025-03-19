@@ -6,7 +6,7 @@ import GenerationMenu from './GenerationMenu';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
 import { resolveEntity } from '../util/extensions/entityNode';
-import { initializeRealtimeConnection } from '../util/generation-util';
+import { initializeRealtimeConnection } from '../util/realtime-generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
 import { initScene } from '../util/editor/editor-util';

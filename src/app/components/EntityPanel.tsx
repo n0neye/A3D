@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import * as BABYLON from '@babylonjs/core';
 
-import { generateBackground, generateRealtimeImage, Generation2DRealtimResult, loadModel } from '../util/generation-util';
-import { generate3DModel } from '../util/generation-util';
+import { generateBackground, generate3DModel } from '../util/generation-util';
+import { generateRealtimeImage } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, EntityType, applyImageToEntity } from '../util/extensions/entityNode';
-import { getImageSimulationData } from '../util/simulation-data';
 
 let prevEntity: EntityNode | null = null;
 
