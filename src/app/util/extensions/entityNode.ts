@@ -509,11 +509,11 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
 }
 
 // Apply image to entity
-export function applyImageToEntity(
+export const applyImageToEntity = async(
     entity: EntityNode,
     imageUrl: string,
     scene: BABYLON.Scene
-): void {
+): Promise<void> => {
     // Get the plane mesh
     const planeMesh = entity.planeMesh;
     if (!planeMesh) return;
@@ -521,12 +521,19 @@ export function applyImageToEntity(
     // Check if this is a background
     const isBackground = entity.metadata.aiData?.aiObjectType === 'background';
 
+    // Download the image
+    const image = await fetch(imageUrl);
+    
+    // convert to blob data url
+    const imageBlob = await image.blob();
+    const imageDataUrl = URL.createObjectURL(imageBlob);
+
     if (isBackground) {
         // For backgrounds, we'll replace the entire mesh
         const oldMesh = entity.planeMesh;
 
         // Create a new background with the new image
-        const newBackground = create2DBackground(scene, imageUrl);
+        const newBackground = create2DBackground(scene, imageDataUrl);
         newBackground.parent = entity;
 
         // Set metadata
@@ -541,7 +548,7 @@ export function applyImageToEntity(
         }
 
         // Update metadata
-        entity.metadata.lastImageUrl = imageUrl;
+        entity.metadata.lastImageUrl = imageDataUrl;
     } else {
         // Standard object - just update the texture
         let material = planeMesh.material as BABYLON.StandardMaterial;
@@ -558,7 +565,7 @@ export function applyImageToEntity(
         }
 
         // Create texture
-        const texture = new BABYLON.Texture(imageUrl, scene);
+        const texture = new BABYLON.Texture(imageDataUrl, scene);
         material.diffuseTexture = texture;
         material.emissiveTexture = texture;
 
@@ -566,7 +573,7 @@ export function applyImageToEntity(
         planeMesh.material = material;
 
         // Update metadata
-        entity.metadata.lastImageUrl = imageUrl;
+        entity.metadata.lastImageUrl = imageDataUrl;
     }
 
     // Switch to 2D display mode

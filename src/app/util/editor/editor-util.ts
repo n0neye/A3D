@@ -110,7 +110,7 @@ export const createEquirectangularSkybox = (
  */
 export const create2DBackground = (
     scene: BABYLON.Scene,
-    url: string
+    url: string,
 ): BABYLON.Mesh => {
     if (!scene.activeCamera) {
         throw new Error("Scene must have an active camera");

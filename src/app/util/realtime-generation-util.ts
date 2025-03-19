@@ -1,11 +1,10 @@
 import { ProgressCallback } from "./generation-util";
-
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
-import "@babylonjs/loaders/glTF";
-import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode, AiObjectType, EntityType, applyImageToEntity } from './extensions/entityNode';
+import { getImageSimulationData, } from "./simulation-data";
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, EntityNode, applyImageToEntity } from './extensions/entityNode';
 import { PromptProps } from "./generation-util";
+import { Runware, RunwareClient } from "@runware/sdk-js";
 // Types for callbacks and results
 
 export interface Generation2DRealtimResult {
@@ -44,103 +43,105 @@ class RealtimeConnectionManager {
         return RealtimeConnectionManager.instance;
     }
 
+    private falConnection = fal.realtime.connect("fal-ai/fast-lcm-diffusion", {
+        onResult: (result) => {
+            console.log("Received result:", result);
+
+            // Process the current request
+            if (this.currentRequest) {
+                // Calculate elapsed time if we have a start time
+                if (this.currentRequest.timeStart) {
+                    const elapsedTime = performance.now() - this.currentRequest.timeStart;
+                    const seconds = (elapsedTime / 1000).toFixed(2);
+                    console.log("%cGeneration completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
+                }
+
+                // Check if result has images array with at least one item
+                if (result && result.images && Array.isArray(result.images) && result.images.length > 0) {
+                    try {
+                        let imageUrl;
+                        const imageData = result.images[0];
+
+                        // Handle binary content (Uint8Array)
+                        if (imageData.content && imageData.content instanceof Uint8Array) {
+                            // Convert Uint8Array to Blob
+                            // const blob = new Blob([imageData.content], { type: 'image/png' });
+
+                            // // Create a URL for the blob
+                            // imageUrl = URL.createObjectURL(blob);
+                            // console.log("Created blob URL from binary data:", imageUrl);
+
+                            // Convert to base64
+                            imageUrl = Buffer.from(imageData.content).toString('base64');
+                            imageUrl = `data:image/png;base64,${imageUrl}`;
+                        }
+                        // Handle URL if provided directly
+                        else if (imageData.url) {
+                            imageUrl = imageData.url;
+                        }
+
+                        if (imageUrl) {
+                            this.currentRequest.resolve({
+                                success: true,
+                                imageUrl: imageUrl
+                            });
+                        } else {
+                            throw new Error("No valid image data found");
+                        }
+                    } catch (error) {
+                        console.error("Error processing image data:", error);
+                        this.currentRequest.resolve({
+                            success: false,
+                            error: "Failed to process image data"
+                        });
+                    }
+                } else {
+                    this.currentRequest.resolve({
+                        success: false,
+                        error: 'No images generated'
+                    });
+                }
+
+                // Clear current request
+                this.currentRequest = null;
+                this.isProcessing = false;
+
+                // Process next request in queue if any
+                this.processNextRequest();
+            }
+        },
+        onError: (error) => {
+            console.error("WebSocket error:", error);
+
+            // Resolve current request with error
+            if (this.currentRequest) {
+                this.currentRequest.resolve({
+                    success: false,
+                    error: error instanceof Error ? error.message : 'WebSocket connection error'
+                });
+
+                // Clear current request
+                this.currentRequest = null;
+                this.isProcessing = false;
+            }
+
+            // Reconnect
+            this.connection = null;
+            this.isConnected = false;
+            this.initialize();
+
+            // Process next request after reconnecting
+            setTimeout(() => this.processNextRequest(), 1000);
+        }
+    });
+
     public initialize() {
         if (this.connection) return;
 
         console.log("Initializing WebSocket connection to FAL AI...");
 
         try {
-            this.connection = fal.realtime.connect("fal-ai/fast-lcm-diffusion", {
-                onResult: (result) => {
-                    console.log("Received result:", result);
-
-                    // Process the current request
-                    if (this.currentRequest) {
-                        // Calculate elapsed time if we have a start time
-                        if (this.currentRequest.timeStart) {
-                            const elapsedTime = performance.now() - this.currentRequest.timeStart;
-                            const seconds = (elapsedTime / 1000).toFixed(2);
-                            console.log("%cGeneration completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
-                        }
-
-                        // Check if result has images array with at least one item
-                        if (result && result.images && Array.isArray(result.images) && result.images.length > 0) {
-                            try {
-                                let imageUrl;
-                                const imageData = result.images[0];
-
-                                // Handle binary content (Uint8Array)
-                                if (imageData.content && imageData.content instanceof Uint8Array) {
-                                    // Convert Uint8Array to Blob
-                                    // const blob = new Blob([imageData.content], { type: 'image/png' });
-
-                                    // // Create a URL for the blob
-                                    // imageUrl = URL.createObjectURL(blob);
-                                    // console.log("Created blob URL from binary data:", imageUrl);
-
-                                    // Convert to base64
-                                    imageUrl = Buffer.from(imageData.content).toString('base64');
-                                    imageUrl = `data:image/png;base64,${imageUrl}`;
-                                }
-                                // Handle URL if provided directly
-                                else if (imageData.url) {
-                                    imageUrl = imageData.url;
-                                }
-
-                                if (imageUrl) {
-                                    this.currentRequest.resolve({
-                                        success: true,
-                                        imageUrl: imageUrl
-                                    });
-                                } else {
-                                    throw new Error("No valid image data found");
-                                }
-                            } catch (error) {
-                                console.error("Error processing image data:", error);
-                                this.currentRequest.resolve({
-                                    success: false,
-                                    error: "Failed to process image data"
-                                });
-                            }
-                        } else {
-                            this.currentRequest.resolve({
-                                success: false,
-                                error: 'No images generated'
-                            });
-                        }
-
-                        // Clear current request
-                        this.currentRequest = null;
-                        this.isProcessing = false;
-
-                        // Process next request in queue if any
-                        this.processNextRequest();
-                    }
-                },
-                onError: (error) => {
-                    console.error("WebSocket error:", error);
-
-                    // Resolve current request with error
-                    if (this.currentRequest) {
-                        this.currentRequest.resolve({
-                            success: false,
-                            error: error instanceof Error ? error.message : 'WebSocket connection error'
-                        });
-
-                        // Clear current request
-                        this.currentRequest = null;
-                        this.isProcessing = false;
-                    }
-
-                    // Reconnect
-                    this.connection = null;
-                    this.isConnected = false;
-                    this.initialize();
-
-                    // Process next request after reconnecting
-                    setTimeout(() => this.processNextRequest(), 1000);
-                }
-            });
+            this.connection = this.falConnection;
 
             // Assume connection is successful immediately after creation
             this.isConnected = true;
@@ -239,9 +240,10 @@ class RealtimeConnectionManager {
 
 // Initialize the connection on module load
 export function initializeRealtimeConnection(): void {
-    RealtimeConnectionManager.getInstance().initialize();
+    // RealtimeConnectionManager.getInstance().initialize();
+    // const runware = new RunwareServer({ apiKey: "API_KEY" });
+    initRunwareClient();
 }
-
 
 
 /**
@@ -342,5 +344,123 @@ export async function generateRealtimeImage(
     });
 
     return result;
+
+}
+
+
+let runwareClient: RunwareClient | null = null;
+const RUNWARE_API_KEY = "hVH7hCVr32kVuQGbJVjUiziJ7a9lXWbZ";
+const initRunwareClient = async () => {
+    runwareClient = new Runware({ apiKey: RUNWARE_API_KEY });
+    await runwareClient.ensureConnection();
+}
+
+export async function generateRealtimeImageRunware(
+    prompt: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
+    options: {
+        imageSize?: ImageSize;
+        negativePrompt?: string;
+    } = {}
+): Promise<Generation2DRealtimResult> {
+    const startTime = performance.now();
+    // Use defaults if not provided
+    const ratio = '1:1';
+    const imageSize = options.imageSize || 'medium';
+    const entityType = entity.getEntityType();
+    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
+    const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
+    // Update entity state
+    entity.setProcessingState({
+        isGenerating2D: true,
+        isGenerating3D: false,
+        progressMessage: 'Starting generation...'
+    });
+
+    // Determine dimensions
+    const ratioMultipliers = RATIO_MAP[ratio];
+    const baseSize = IMAGE_SIZE_MAP[imageSize];
+
+    // Calculate width and height
+    let width, height;
+    if (ratioMultipliers.width > ratioMultipliers.height) {
+        width = baseSize;
+        height = Math.floor(baseSize * (ratioMultipliers.height / ratioMultipliers.width));
+    } else {
+        height = baseSize;
+        width = Math.floor(baseSize * (ratioMultipliers.width / ratioMultipliers.height));
+    }
+
+    // Enhance prompt based on entity type
+    let enhancedPrompt = prompt;
+    if (aiObjectType === 'object' || entityType === 'aiObject') {
+        enhancedPrompt = `${prompt} at the center of the frame, close up, focused on the object, uncropped, solid black background`;
+    } else if (aiObjectType === 'background') {
+        enhancedPrompt = `expansive panoramic view of ${prompt}`;
+    }
+
+    // If the prompt is "_", use the test data
+    if (prompt === "_") {
+        const testData = getImageSimulationData();
+        if (testData.imageUrl) {
+            applyImageToEntity(entity, testData.imageUrl, scene);
+            entity.addGenerationToHistory(prompt, testData.imageUrl, {
+                ratio: '1:1',
+                imageSize: 'medium'
+            });
+            entity.setProcessingState({
+                isGenerating2D: false,
+                isGenerating3D: false,
+                progressMessage: 'Image generated successfully!'
+            });
+        }
+        return testData;
+    }
+
+    if (!runwareClient) {
+        await initRunwareClient();
+    }
+    if (!runwareClient) {
+        throw new Error("Runware client not initialized");
+    }
+
+
+    const result = await runwareClient.requestImages({
+        positivePrompt: enhancedPrompt,
+        negativePrompt: negativePrompt,
+        width: 1024,
+        height: 1024,
+        model: "runware:100@1",
+        numberResults: 1,
+        outputType: "URL",
+        outputFormat: "WEBP",
+        checkNSFW: false,
+    })
+
+    const success = result && result.length > 0;
+    if (success && result[0].imageURL) {
+        applyImageToEntity(entity, result[0].imageURL, scene);
+
+        // Add to history
+        entity.addGenerationToHistory(prompt, result[0].imageURL, {
+            ratio: '1:1',
+            imageSize: 'medium'
+        });
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        console.log(`%cImage generation took ${(duration / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
+    }
+
+    entity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: false,
+        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
+    });
+
+    return {
+        success: success || false,
+        imageUrl: result?.[0]?.imageURL || undefined
+    };
 
 }

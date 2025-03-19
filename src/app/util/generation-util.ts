@@ -34,6 +34,7 @@ export async function generateBackground(
     } = {}
 ): Promise<boolean> {
     // Use defaults if not provided
+    const startTime = performance.now();
     const imageSize = options.imageSize || 'medium';
     const entityType = entity.getEntityType();
     const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
@@ -74,6 +75,9 @@ export async function generateBackground(
             ratio: '16:9',
             imageSize: 'medium'
         });
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        console.log(`%cBackground generation took ${(duration / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
     }
 
     entity.setProcessingState({
