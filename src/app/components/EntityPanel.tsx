@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { IconArrowLeft, IconArrowRight, IconCornerDownLeft } from '@tabler/icons-react';
 
 import { generateBackground, generate3DModel } from '../util/generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
@@ -11,6 +12,8 @@ const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
   const [promptInput, setPromptInput] = useState('_');
   const [currentGenLog, setCurrentGenLog] = useState<GenerationLog | null>(null);
+  const [generationHistory, setGenerationHistory] = useState<GenerationLog[]>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);
 
   // State for processing
@@ -44,11 +47,21 @@ const EntityPanel: React.FC = () => {
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGenerationLog();
       setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
-
       setCurrentGenLog(currentGen);
 
+      // Load generation history
+      const history = selectedEntity.getGenerationHistory ? selectedEntity.getGenerationHistory() : [];
+      setGenerationHistory(history);
+
+      // Set current index to the latest generation
+      if (currentGen && history.length > 0) {
+        const index = history.findIndex(log => log.id === currentGen.id);
+        setCurrentHistoryIndex(index !== -1 ? index : history.length - 1);
+      } else {
+        setCurrentHistoryIndex(-1);
+      }
     }
-  }, [selectedEntity]);
+  }, [selectedEntity, handleProgress]);
 
   // Additional effect to handle the input field mounting
   useEffect(() => {
@@ -61,6 +74,39 @@ const EntityPanel: React.FC = () => {
     }
   }, [selectedEntity, inputElementRef]);
 
+  // Add keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyboardShortcuts = (e: KeyboardEvent) => {
+      // Only process if we have a selected entity and generations to navigate
+      if (!selectedEntity || generationHistory.length <= 1 || isGenerating2D || isGenerating3D) {
+        return;
+      }
+
+      // Check for Ctrl + Left Arrow (previous generation)
+      if (e.ctrlKey && e.key === "ArrowLeft") {
+        e.preventDefault(); // Prevent browser navigation
+        if (currentHistoryIndex > 0) {
+          goToPreviousGeneration();
+        }
+      }
+
+      // Check for Ctrl + Right Arrow (next generation)
+      if (e.ctrlKey && e.key === "ArrowRight") {
+        e.preventDefault(); // Prevent browser navigation
+        if (currentHistoryIndex < generationHistory.length - 1) {
+          goToNextGeneration();
+        }
+      }
+    };
+
+    // Add the event listener
+    document.addEventListener("keydown", handleKeyboardShortcuts);
+
+    // Clean up the event listener when component unmounts
+    return () => {
+      document.removeEventListener("keydown", handleKeyboardShortcuts);
+    };
+  }, [selectedEntity, currentHistoryIndex, generationHistory.length, isGenerating2D, isGenerating3D]);
 
   // Update panel position
   // useEffect(() => {
@@ -129,7 +175,7 @@ const EntityPanel: React.FC = () => {
     }
 
     if (result.success && result.generationLog) {
-      setCurrentGenLog(result.generationLog);
+      onNewGeneration(result.generationLog);
     }
   };
 
@@ -150,7 +196,45 @@ const EntityPanel: React.FC = () => {
     });
 
     if (result.success && result.generationLog) {
-      setCurrentGenLog(result.generationLog);
+      onNewGeneration(result.generationLog);
+    }
+  };
+
+  const onNewGeneration = (log: GenerationLog) => {
+    setGenerationHistory(selectedEntity?.getGenerationHistory() || []);
+    setCurrentGenLog(log);
+    setPromptInput(log.prompt || "");
+    setCurrentHistoryIndex(generationHistory.findIndex(l => l.id === log.id));
+  }
+
+  // Handle navigation through generation history
+  const goToPreviousGeneration = () => {
+    if (currentHistoryIndex > 0 && generationHistory.length > 0) {
+      const newIndex = currentHistoryIndex - 1;
+      const prevLog = generationHistory[newIndex];
+      setCurrentHistoryIndex(newIndex);
+      setCurrentGenLog(prevLog);
+      setPromptInput(prevLog.prompt || "");
+
+      // Apply the generation if needed
+      if (selectedEntity && prevLog) {
+        selectedEntity.applyGenerationLog(prevLog);
+      }
+    }
+  };
+
+  const goToNextGeneration = () => {
+    if (currentHistoryIndex < generationHistory.length - 1) {
+      const newIndex = currentHistoryIndex + 1;
+      const nextLog = generationHistory[newIndex];
+      setCurrentHistoryIndex(newIndex);
+      setCurrentGenLog(nextLog);
+      setPromptInput(nextLog.prompt || "");
+
+      // Apply the generation if needed
+      if (selectedEntity && nextLog) {
+        selectedEntity.applyGenerationLog(nextLog);
+      }
     }
   };
 
@@ -172,6 +256,9 @@ const EntityPanel: React.FC = () => {
     const isObject = selectedEntity?.metadata.aiData?.aiObjectType === 'object';
     const isBackground = selectedEntity?.metadata.aiData?.aiObjectType === 'background';
 
+    const hasPreviousGeneration = currentHistoryIndex > 0;
+    const hasNextGeneration = currentHistoryIndex < generationHistory.length - 1;
+
     switch (selectedEntity?.getEntityType()) {
       case 'aiObject':
         return (
@@ -185,35 +272,65 @@ const EntityPanel: React.FC = () => {
 
               {/* Prompt */}
               <div className="space-y-2 flex flex-row space-x-2">
-                <textarea
-                  ref={inputElementRef}
-                  placeholder="Enter prompt..."
-                  className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
-                  value={promptInput}
-                  onChange={(e) => setPromptInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  disabled={isGenerating}
-                  rows={3}
-                />
+                <div className="flex flex-col">
+                  <textarea
+                    ref={inputElementRef}
+                    placeholder="Enter prompt..."
+                    className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={isGenerating}
+                    rows={3}
+                  />
+
+                  {/* Bottom row */}
+                  <div className="flex justify-start mt-1 space-x-1 h-4">
+                    {/* History navigation buttons */}
+                    {generationHistory.length > 1 && (
+                      <>
+                        <button
+                          className={`p-1 rounded ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                          onClick={goToPreviousGeneration}
+                          disabled={!hasPreviousGeneration || isGenerating}
+                          title="Previous generation (Ctrl + ←)"
+                        >
+                          <IconArrowLeft size={16} />
+                        </button>
+                        <button
+                          className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                          onClick={goToNextGeneration}
+                          disabled={!hasNextGeneration || isGenerating}
+                          title="Next generation (Ctrl + →)"
+                        >
+                          <IconArrowRight size={16} />
+                        </button>
+                        <span className="text-xs text-gray-400 self-center">
+                          {currentHistoryIndex + 1}/{generationHistory.length}
+                        </span></>
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex flex-row space-x-1">
                   <button
-                    className={`relative py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
+                    className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
                     onClick={handleGenerate2D}
                     disabled={isGenerating || !promptInput.trim()}
                   >
                     {isGenerating2D && renderSpinner('Generating')}
-                    {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxs opacity-50 ">⏎</span></>}
+                    {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={12} className='inline' /></span></>}
                   </button>
 
                   {isObject && <button
-                    className={`relative py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : currentGenLog?.assetType === 'image' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                    className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : currentGenLog?.assetType === 'image' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
                     onClick={handleGenerate3D}
                     disabled={isGenerating || !currentGenLog || currentGenLog.assetType !== 'image'}
                   >
-                    {isGenerating3D ? renderSpinner('') : 'Convert to 3D'}
-                    {isGenerating3D && 
-                  <span>{progressMessage}</span>}
+                    {isGenerating3D && renderSpinner('')}
+                    {!isGenerating3D && <>Convert to 3D<span className="mx-1 text-xxs opacity-50 block">Shift+<IconCornerDownLeft size={12} className='inline' /></span></>}
+                    {isGenerating3D &&
+                      <span>{progressMessage}</span>}
                   </button>}
                 </div>
 

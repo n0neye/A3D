@@ -294,6 +294,24 @@ export class EntityNode extends BABYLON.TransformNode {
         const mesh = this.getPrimaryMesh();
         return mesh ? mesh.getBoundingInfo() : null;
     }
+
+    // Apply a specific generation log 
+    public applyGenerationLog(log: GenerationLog): void {
+        if (!log || !this.metadata.aiData) return;
+        
+        // Set as current state
+        this.metadata.aiData.currentStateId = log.id;
+        
+        // Apply based on asset type
+        if (log.assetType === 'image' && log.fileUrl) {
+            // For image assets, apply the image to the entity
+            applyImageToEntity(this, log.fileUrl, this.getScene());
+        } else if (log.assetType === 'model' && log.fileUrl) {
+            // For model assets, we need to set 3D display mode
+            // (Assuming the model is already loaded and attached to this entity)
+            this.setDisplayMode('3d');
+        }
+    }
 }
 
 // Type guard function
