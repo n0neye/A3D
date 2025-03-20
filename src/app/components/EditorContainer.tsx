@@ -146,9 +146,7 @@ export default function EditorContainer() {
         </div>
 
         {/* Render Panel */}
-        <div className={`fixed z-50 right-4 bottom-4 w-64 panel overflow-y-auto ${isDebugMode ? 'right-80' : ''}`}>
-          <RenderPanel />
-        </div>
+        <RenderPanel isDebugMode={isDebugMode} />
 
         {/* Environment Panel */}
         {/* <EnvironmentPanel /> */}
