@@ -3,10 +3,9 @@ import { generatePreviewImage, dataURLtoBlob, ModelType, availableModels } from 
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
+import StylePanel, { SelectedLora } from './StylePanel';
 
-
-const RenderPanel = ({
-}) => {
+const RenderPanel = ({}) => {
   const { scene, engine } = useEditorContext();
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -18,6 +17,9 @@ const RenderPanel = ({
   const [noiseStrength, setNoiseStrength] = useState<number>(0.6); // Default to 0 (no noise)
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [model, setModel] = useState<ModelType>('flux-lora-depth');
+  
+  // Style panel state
+  const [selectedLoras, setSelectedLoras] = useState<SelectedLora[]>([]);
 
   // Add keyboard shortcut for Ctrl/Cmd+Enter
   useEffect(() => {
@@ -36,10 +38,26 @@ const RenderPanel = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [prompt, promptStrength, noiseStrength, model]); // Re-create handler when these dependencies change
+  }, [prompt, promptStrength, noiseStrength, model, selectedLoras]); // Re-create handler when these dependencies change
+
+  // Style panel handlers
+  const handleSelectLora = (lora: SelectedLora) => {
+    setSelectedLoras([...selectedLoras, lora]);
+  };
+
+  const handleRemoveLora = (id: string) => {
+    setSelectedLoras(selectedLoras.filter(lora => lora.id !== id));
+  };
+
+  const handleUpdateLoraStrength = (id: string, strength: number) => {
+    setSelectedLoras(
+      selectedLoras.map(lora => 
+        lora.id === id ? { ...lora, strength } : lora
+      )
+    );
+  };
 
   const takeScreenshot = async () => {
-
     if (!scene || !engine) throw new Error("Scene or engine not found");
 
     // Prepare scene for screenshot - hide any UI elements if needed
@@ -69,9 +87,7 @@ const RenderPanel = ({
     }
   };
 
-  // Generate a preview using image-to-image API
   const handleRender = async () => {
-
     setIsLoading(true);
     setExecutionTime(null); // Reset execution time when starting new generation
 
@@ -106,6 +122,11 @@ const RenderPanel = ({
         prompt: prompt,
         promptStrength: promptStrength,
         model: model,
+        loras: selectedLoras.map(lora => ({
+          id: lora.id,
+          modelUrl: lora.modelUrl,
+          strength: lora.strength,
+        })),
       });
 
       // Calculate execution time
@@ -122,9 +143,8 @@ const RenderPanel = ({
     }
   };
 
-
   return (
-    < >
+    <>
       <h3 className="text-lg font-medium mb-3 text-white">Render</h3>
 
       <div className="flex flex-col items-center">
@@ -163,6 +183,14 @@ const RenderPanel = ({
             </div>
           )}
         </div>
+
+        {/* Styles section */}
+          <StylePanel
+            selectedLoras={selectedLoras}
+            onSelectLora={handleSelectLora}
+            onRemoveLora={handleRemoveLora}
+            onUpdateStrength={handleUpdateLoraStrength}
+          />
 
         {/* Strength slider */}
         <div className="w-full mb-4">

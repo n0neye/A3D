@@ -14,6 +14,13 @@ export interface ImageToImageParams {
   guidanceScale?: number;
   numInferenceSteps?: number;
   model?: ModelType;
+  loras?: loraConfig[];
+}
+
+export interface loraConfig {
+  id: string;
+  modelUrl: string;
+  strength: number;
 }
 
 
