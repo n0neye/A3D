@@ -151,7 +151,7 @@ export default function EditorContainer() {
         </div>
 
         {/* Environment Panel */}
-          <EnvironmentPanel />
+        {/* <EnvironmentPanel /> */}
       </div>
       {/* <DebugLayer /> */}
     </div>

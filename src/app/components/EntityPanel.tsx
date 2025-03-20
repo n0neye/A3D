@@ -72,36 +72,45 @@ const EntityPanel: React.FC = () => {
         console.log("Focused input");
       }, 50);
     }
-  }, [selectedEntity, inputElementRef]);
+  }, [selectedEntity, inputElementRef, generationHistory]);
+
 
   // Add keyboard shortcut handler
   useEffect(() => {
     const handleKeyboardShortcuts = (e: KeyboardEvent) => {
-      // Only process if we have a selected entity and generations to navigate
-      if (!selectedEntity || generationHistory.length <= 1 || isGenerating2D || isGenerating3D) {
+
+      if (!selectedEntity) return;
+
+      // Shift + Enter
+      if (e.shiftKey && e.key === "Enter" && !e.ctrlKey) {
+        e.preventDefault();
+        handleGenerate3D();
         return;
       }
-
-      // Check for Ctrl + Left Arrow (previous generation)
-      if (e.ctrlKey && e.key === "ArrowLeft") {
-        e.preventDefault(); // Prevent browser navigation
-        if (currentHistoryIndex > 0) {
-          goToPreviousGeneration();
-        }
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+        handleGenerate2D();
       }
 
-      // Check for Ctrl + Right Arrow (next generation)
-      if (e.ctrlKey && e.key === "ArrowRight") {
-        e.preventDefault(); // Prevent browser navigation
-        if (currentHistoryIndex < generationHistory.length - 1) {
-          goToNextGeneration();
+      // Only process if we have a selected entity and generations to navigate
+      if (generationHistory.length > 1 && !isGenerating2D && !isGenerating3D) {
+        if (e.shiftKey && e.key === "ArrowLeft") {
+          e.preventDefault();
+          if (currentHistoryIndex > 0) {
+            goToPreviousGeneration();
+          }
+        }
+
+        if (e.shiftKey && e.key === "ArrowRight") {
+          e.preventDefault();
+          if (currentHistoryIndex < generationHistory.length - 1) {
+            goToNextGeneration();
+          }
         }
       }
     };
 
     // Add the event listener
     document.addEventListener("keydown", handleKeyboardShortcuts);
-
     // Clean up the event listener when component unmounts
     return () => {
       document.removeEventListener("keydown", handleKeyboardShortcuts);
@@ -158,11 +167,7 @@ const EntityPanel: React.FC = () => {
   // }, [scene, selectedEntity]);
 
   // Handle key events
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleGenerate2D();
-    }
-  };
+
 
   // Handle image generation
   const handleGenerate2D = async () => {
@@ -181,7 +186,9 @@ const EntityPanel: React.FC = () => {
 
   // Convert to 3D model
   const handleGenerate3D = async () => {
+    console.log('handleGenerate3D');
     if (!selectedEntity || !scene) return;
+
 
     // Get current generation
     const currentGen = selectedEntity.getCurrentGenerationLog();
@@ -279,7 +286,6 @@ const EntityPanel: React.FC = () => {
                     className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
                     value={promptInput}
                     onChange={(e) => setPromptInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
                     disabled={isGenerating}
                     rows={3}
                   />
@@ -293,7 +299,7 @@ const EntityPanel: React.FC = () => {
                           className={`p-1 rounded ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
                           onClick={goToPreviousGeneration}
                           disabled={!hasPreviousGeneration || isGenerating}
-                          title="Previous generation (Ctrl + ←)"
+                          title="Previous generation (Shift + ←)"
                         >
                           <IconArrowLeft size={16} />
                         </button>
@@ -301,7 +307,7 @@ const EntityPanel: React.FC = () => {
                           className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
                           onClick={goToNextGeneration}
                           disabled={!hasNextGeneration || isGenerating}
-                          title="Next generation (Ctrl + →)"
+                          title="Next generation (Shift + →)"
                         >
                           <IconArrowRight size={16} />
                         </button>
