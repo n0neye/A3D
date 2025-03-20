@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { CivitaiResponse, getAllLoraInfo } from '../util/lora';
+import { CivitaiResponse, customLoras, getAllLoraInfo } from '../util/lora';
 
 // Define SelectedLora interface
 export interface SelectedLora {
@@ -29,11 +29,12 @@ const StylePanel: React.FC<StylePanelProps> = ({
 
   // Load available styles
   useEffect(() => {
-    if (isOpen && availableStyles.length === 0) {
+    if (availableStyles.length === 0) {
       const loadStyles = async () => {
         try {
           setIsLoading(true);
-          const loraInfo = await getAllLoraInfo();
+          let loraInfo = await getAllLoraInfo();
+          loraInfo = [...customLoras, ...loraInfo, ];
           setAvailableStyles(loraInfo);
         } catch (error) {
           console.error("Error loading LoRA styles:", error);
@@ -44,7 +45,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
       
       loadStyles();
     }
-  }, [isOpen, availableStyles.length]);
+  }, []);
 
   // Handle clicking outside to close
   useEffect(() => {
@@ -73,7 +74,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
       id: style.id.toString(),
       name: style.name,
       thumbUrl: image.url,
-      strength: 0.7, // Default strength
+      strength: 1, // Default strength
       modelUrl: style.modelVersions[0].downloadUrl,
     };
     

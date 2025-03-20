@@ -1,4 +1,5 @@
 import { fal } from "@fal-ai/client";
+import { LoraWeight } from "@fal-ai/client/endpoints";
 
 // Configure fal.ai client to use the proxy
 fal.config({
@@ -75,7 +76,7 @@ export interface ImageToImageResult {
 export async function generatePreviewImage(params: ImageToImageParams): Promise<ImageToImageResult> {
   // Select the appropriate API based on the model parameter
   const model = params.model || 'fal-turbo';
-  
+
   switch (model) {
     case 'fal-turbo':
       return generateFalTurboImage(params);
@@ -187,7 +188,7 @@ async function generateReplicateLcmImage(params: ImageToImageParams): Promise<Im
     });
 
     const prediction = await createResponse.json();
-    
+
     if (prediction.error) {
       throw new Error(`Replicate API error: ${prediction.error}`);
     }
@@ -195,16 +196,16 @@ async function generateReplicateLcmImage(params: ImageToImageParams): Promise<Im
     // Poll until the prediction is complete
     const pollInterval = 1000; // 1 second
     let result;
-    
+
     while (true) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
-      
+
       const pollResponse = await fetch(`/api/replicate/proxy?id=${prediction.id}`, {
         method: 'GET',
       });
-      
+
       result = await pollResponse.json();
-      
+
       if (result.status === 'succeeded') {
         break;
       } else if (result.status === 'failed') {
@@ -241,12 +242,12 @@ export function dataURLtoBlob(dataUrl: string): Blob {
   const bstr = atob(arr[1]);
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
-  
-  while(n--){
-      u8arr[n] = bstr.charCodeAt(n);
+
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
   }
-  
-  return new Blob([u8arr], {type: mime});
+
+  return new Blob([u8arr], { type: mime });
 }
 
 // Add a new function for Flux Dev
@@ -283,11 +284,17 @@ async function generateFluxDevImage(params: ImageToImageParams): Promise<ImageTo
 // Add a new function for Flux Pro Depth
 async function generateFluxProDepthImage(params: ImageToImageParams): Promise<ImageToImageResult> {
   try {
+
+    console.log('generateFluxProDepthImage', params.prompt, params.imageUrl);
+    
     const result = await fal.subscribe("fal-ai/flux-pro/v1/depth", {
       input: {
         prompt: params.prompt,
         control_image_url: params.imageUrl, // This model uses control_image_url instead of image_url
-        image_size: "landscape_16_9"
+        image_size: {
+          width: 1280,
+          height: 720
+        }
       },
       logs: true,
       onQueueUpdate: (update) => {
@@ -309,15 +316,28 @@ async function generateFluxProDepthImage(params: ImageToImageParams): Promise<Im
     throw error;
   }
 }
-
 // Add a new function for Flux LoRA Depth
 async function generateFluxLoraDepthImage(params: ImageToImageParams): Promise<ImageToImageResult> {
   try {
+
+    const loras: LoraWeight[] = params.loras?.map((lora) => ({
+      path: lora.modelUrl,
+      scale: lora.strength * 2,
+      force: true,
+    })) || [];
+
+    console.log('generateFluxLoraDepthImage', params.prompt, loras);
+
     const result = await fal.subscribe("fal-ai/flux-lora-depth", {
       input: {
         prompt: params.prompt,
         image_url: params.imageUrl, // This model uses image_url like the standard
         num_inference_steps: 20,
+        image_size: {
+          width: 1280,
+          height: 720
+        },
+        loras: loras
       },
       logs: true,
       onQueueUpdate: (update) => {

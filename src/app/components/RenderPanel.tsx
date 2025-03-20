@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { generatePreviewImage, dataURLtoBlob, ModelType, availableModels } from '../util/image-render-api';
+import { generatePreviewImage as generateRenderImage, dataURLtoBlob, ModelType, availableModels } from '../util/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
@@ -10,7 +10,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState<string>('a brutalism architecture in the forest, photorealistic');
+  const [prompt, setPrompt] = useState<string>('flooded office, fire, dark night, a female warrior with a spear');
   const [promptStrength, setPromptStrength] = useState<number>(0.9); // Default to 0.7 strength
   const previewImageRef = useRef<HTMLImageElement | null>(null);
   const [debugImage, setDebugImage] = useState<string | null>(null);
@@ -77,9 +77,9 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     return (
       <div className="space-y-3">
         {selectedLoras.map(lora => (
-          <div key={lora.id} className="bg-gray-700 rounded-md p-2 flex flex-row">
+          <div key={lora.id} className="bg-gray-700 rounded-md p-1 flex flex-row">
 
-            <div className="h-20 w-14 mr-2 overflow-hidden rounded">
+            <div className="h-14 w-14 mr-2 overflow-hidden rounded">
               <img
                 src={lora.thumbUrl}
                 alt={lora.name}
@@ -90,7 +90,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
             <div className="flex flex-col max-w-[140px]">
 
               {/* Title and remove button */}
-              <div className="flex items-center mb-2">
+              <div className="flex items-center mb-2 h-6">
                 <div className="flex-grow">
                   <h5 className="text-white text-sm font-medium truncate max-w-[120px] text-ellipsis">{lora.name}</h5>
                 </div>
@@ -114,7 +114,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                   onChange={(e) => handleUpdateStyleStrength(lora.id, parseFloat(e.target.value))}
                   className="flex-grow h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer max-w-[115px]"
                 />
-                <span className="text-xs text-gray-300 w-8 text-right">{lora.strength.toFixed(1)}</span>
+                <span className="text-xs text-gray-300 w-8 text-right">{lora.strength.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -190,7 +190,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       const startTime = Date.now();
 
       // Call the API with the selected model
-      const result = await generatePreviewImage({
+      const result = await generateRenderImage({
         imageUrl: imageBlob,
         prompt: prompt,
         promptStrength: promptStrength,

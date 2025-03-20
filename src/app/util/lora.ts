@@ -1,27 +1,12 @@
-
-// interface Loras {
-//     [key: string]: {
-//         name: string;
-//         description?: string;
-//         modelUrl: string;
-//         thumbUrl: string;
-//         linkUrl: string;
-//         author: string;
-//         authorLinkUrl: string;
-//     }
-// }
-
-
-// export const fluxDevLoras: Loras = {
-//     "anime-art": {
-//         name: "Anime art",
-//         modelUrl: "https://civitai.com/api/download/models/1376386?type=Model&format=SafeTensor",
-//         thumbUrl: "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/ca345b80-ab9b-4889-bde6-0074fbf78201/anim=false,width=450/AAV3_00020_.jpeg",
-//         linkUrl: "https://civitai.com/models/832858/anime-art",
-//         author: "Adel_AI",
-//         authorLinkUrl: "https://civitai.com/user/Adel_AI"
-//     }
-// }
+interface LoraInfo {
+    name: string;
+    description?: string;
+    modelUrl: string;
+    thumbUrl: string;
+    linkUrl: string;
+    author: string;
+    authorLinkUrl: string;
+}
 
 export const fluxDevLoraIds: string[] = [
     "832858", // Anime art
@@ -46,6 +31,29 @@ export const fluxDevLoraIds: string[] = [
     "915918"
 ]
 
+export const customLoras: CivitaiResponse[] = [
+    {
+        id: 1,
+        name: "nontech",
+        description: "",
+        creator: {
+            username: "nontech",
+            image: "",
+        },
+        modelVersions: [
+            {
+                id: 1,
+                downloadUrl: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
+                images: [
+                    {
+                        url: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
+                    }
+                ]
+            }
+        ]
+    }
+]
+
 export const getAllLoraInfo = async () => {
     const loraInfos = await Promise.all(fluxDevLoraIds.map(getLoraInfo))
     return loraInfos
@@ -61,21 +69,21 @@ export interface CivitaiResponse {
     id: number
     name: string
     description: string
-    allowNoCredit: boolean
-    allowCommercialUse: string[]
-    allowDerivatives: boolean
-    allowDifferentLicense: boolean
-    type: string
-    minor: boolean
-    poi: boolean
-    nsfw: boolean
-    nsfwLevel: number
-    availability: string
-    cosmetic: any
-    supportsGeneration: boolean
-    stats: Stats
+    allowNoCredit?: boolean
+    allowCommercialUse?: string[]
+    allowDerivatives?: boolean
+    allowDifferentLicense?: boolean
+    type?: string
+    minor?: boolean
+    poi?: boolean
+    nsfw?: boolean
+    nsfwLevel?: number
+    availability?: string
+    cosmetic?: any
+    supportsGeneration?: boolean
+    stats?: Stats
     creator: Creator
-    tags: string[]
+    tags?: string[]
     modelVersions: ModelVersion[]
 }
 
@@ -96,20 +104,20 @@ export interface Creator {
 }
 
 export interface ModelVersion {
-    id: number
-    index: number
-    name: string
-    baseModel: string
-    createdAt: string
-    publishedAt: string
-    status: string
-    availability: string
-    nsfwLevel: number
+    id?: number
+    index?: number
+    name?: string
+    baseModel?: string
+    createdAt?: string
+    publishedAt?: string
+    status?: string
+    availability?: string
+    nsfwLevel?: number
     description?: string
     trainedWords?: string[]
-    covered: boolean
-    stats: Stats2
-    files: File[]
+    covered?: boolean
+    stats?: Stats2
+    files?: File[]
     images: Image[]
     downloadUrl: string
 }
@@ -153,13 +161,13 @@ export interface Hashes {
 
 export interface Image {
     url: string
-    nsfwLevel: number
-    width: number
-    height: number
-    hash: string
-    type: string
-    hasMeta: boolean
-    hasPositivePrompt: boolean
-    onSite: boolean
-    remixOfId: any
+    nsfwLevel?: number
+    width?: number
+    height?: number
+    hash?: string
+    type?: string
+    hasMeta?: boolean
+    hasPositivePrompt?: boolean
+    onSite?: boolean
+    remixOfId?: any
 }

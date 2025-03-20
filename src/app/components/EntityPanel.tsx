@@ -22,15 +22,21 @@ const EntityPanel: React.FC = () => {
   const [progressMessage, setProgressMessage] = useState('');
 
   // Create progress handler
-  const handleProgress = useCallback((progress: EntityProcessingState) => {
-    setIsGenerating2D(progress.isGenerating2D);
-    setIsGenerating3D(progress.isGenerating3D);
-    setProgressMessage(progress.progressMessage);
-  }, []);
+  // const handleProgress = useCallback((progress: EntityProcessingState) => {
+  //   setIsGenerating2D(progress.isGenerating2D);
+  //   setIsGenerating3D(progress.isGenerating3D);
+  //   setProgressMessage(progress.progressMessage);
+  // }, []);
 
 
   // Update when selected entity changes
   useEffect(() => {
+
+    const handleProgress = (progress: EntityProcessingState) => {
+      setIsGenerating2D(progress.isGenerating2D);
+      setIsGenerating3D(progress.isGenerating3D);
+      setProgressMessage(progress.progressMessage);
+    }
 
     if (prevEntity) {
       prevEntity.tempPrompt = promptInput;
@@ -46,7 +52,8 @@ const EntityPanel: React.FC = () => {
 
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGenerationLog();
-      setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
+      // setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
+      trySetPrompt('onEntityChange', selectedEntity.tempPrompt || currentGen?.prompt || "");
       setCurrentGenLog(currentGen);
 
       // Load generation history
@@ -61,7 +68,7 @@ const EntityPanel: React.FC = () => {
         setCurrentHistoryIndex(-1);
       }
     }
-  }, [selectedEntity, handleProgress]);
+  }, [selectedEntity]);
 
   // Additional effect to handle the input field mounting
   useEffect(() => {
@@ -81,15 +88,6 @@ const EntityPanel: React.FC = () => {
 
       if (!selectedEntity) return;
 
-      // Shift + Enter
-      if (e.shiftKey && e.key === "Enter" && !e.ctrlKey) {
-        e.preventDefault();
-        handleGenerate3D();
-        return;
-      }
-      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-        handleGenerate2D();
-      }
 
       // Only process if we have a selected entity and generations to navigate
       if (generationHistory.length > 1 && !isGenerating2D && !isGenerating3D) {
@@ -108,14 +106,25 @@ const EntityPanel: React.FC = () => {
         }
       }
     };
-
     // Add the event listener
     document.addEventListener("keydown", handleKeyboardShortcuts);
     // Clean up the event listener when component unmounts
     return () => {
       document.removeEventListener("keydown", handleKeyboardShortcuts);
     };
-  }, [selectedEntity, currentHistoryIndex, generationHistory.length, isGenerating2D, isGenerating3D]);
+  }, [selectedEntity, currentHistoryIndex, generationHistory.length, isGenerating2D, isGenerating3D, promptInput]);
+
+  const handleInputFieldKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Shift + Enter
+    if (e.shiftKey && e.key === "Enter" && !e.ctrlKey) {
+      e.preventDefault();
+      handleGenerate3D();
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+      handleGenerate2D();
+    }
+  }
 
   // Update panel position
   // useEffect(() => {
@@ -171,6 +180,7 @@ const EntityPanel: React.FC = () => {
 
   // Handle image generation
   const handleGenerate2D = async () => {
+    console.log('handleGenerate2D', promptInput);
     if (!selectedEntity || !promptInput.trim() || !scene) return;
     let result: GenerationResult;
     if (selectedEntity.metadata.aiData?.aiObjectType === 'background') {
@@ -208,20 +218,22 @@ const EntityPanel: React.FC = () => {
   };
 
   const onNewGeneration = (log: GenerationLog) => {
+    console.log('onNewGeneration', log);
     setGenerationHistory(selectedEntity?.getGenerationHistory() || []);
     setCurrentGenLog(log);
-    setPromptInput(log.prompt || "");
+    trySetPrompt('onNewGeneration', log.prompt || "");
     setCurrentHistoryIndex(generationHistory.findIndex(l => l.id === log.id));
   }
 
   // Handle navigation through generation history
   const goToPreviousGeneration = () => {
     if (currentHistoryIndex > 0 && generationHistory.length > 0) {
+      console.log('goToPreviousGeneration', currentHistoryIndex);
       const newIndex = currentHistoryIndex - 1;
       const prevLog = generationHistory[newIndex];
       setCurrentHistoryIndex(newIndex);
       setCurrentGenLog(prevLog);
-      setPromptInput(prevLog.prompt || "");
+      trySetPrompt('previous', prevLog.prompt || "");
 
       // Apply the generation if needed
       if (selectedEntity && prevLog) {
@@ -232,11 +244,12 @@ const EntityPanel: React.FC = () => {
 
   const goToNextGeneration = () => {
     if (currentHistoryIndex < generationHistory.length - 1) {
+      console.log('goToNextGeneration', currentHistoryIndex);
       const newIndex = currentHistoryIndex + 1;
       const nextLog = generationHistory[newIndex];
       setCurrentHistoryIndex(newIndex);
       setCurrentGenLog(nextLog);
-      setPromptInput(nextLog.prompt || "");
+      trySetPrompt('next', nextLog.prompt || "");
 
       // Apply the generation if needed
       if (selectedEntity && nextLog) {
@@ -256,6 +269,11 @@ const EntityPanel: React.FC = () => {
       </>
     );
   };
+
+  const trySetPrompt = (by: string, prompt: string) => {
+    console.log('trySetPrompt', by, prompt);
+    setPromptInput(prompt);
+  }
 
   // UI content based on object type
   const renderContent = () => {
@@ -285,6 +303,7 @@ const EntityPanel: React.FC = () => {
                     placeholder="Enter prompt..."
                     className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
                     value={promptInput}
+                    onKeyDown={handleInputFieldKeyDown}
                     onChange={(e) => setPromptInput(e.target.value)}
                     disabled={isGenerating}
                     rows={3}
