@@ -8,6 +8,24 @@ export type AiObjectType = "object" | "background";
 
 export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
+export type AssetType = 'image' | 'model';
+
+// Map of image sizes to actual dimensions
+export const IMAGE_SIZE_MAP = {
+    small: 512,
+    medium: 768,
+    large: 1024,
+    xl: 1536
+};
+
+// Map of ratios to width/height multipliers
+export const RATIO_MAP = {
+    '1:1': { width: 1, height: 1 },
+    '16:9': { width: 16, height: 9 },
+    '9:16': { width: 9, height: 16 },
+    '4:3': { width: 4, height: 3 },
+    '3:4': { width: 3, height: 4 }
+};
 
 
 // Progress event handling
@@ -37,22 +55,25 @@ export interface EntityProcessingState {
     progressMessage: string;
 }
 
-// Map of image sizes to actual dimensions
-export const IMAGE_SIZE_MAP = {
-    small: 512,
-    medium: 768,
-    large: 1024,
-    xl: 1536
-};
-
-// Map of ratios to width/height multipliers
-export const RATIO_MAP = {
-    '1:1': { width: 1, height: 1 },
-    '16:9': { width: 16, height: 9 },
-    '9:16': { width: 9, height: 16 },
-    '4:3': { width: 4, height: 3 },
-    '3:4': { width: 3, height: 4 }
-};
+export interface GenerationLog {
+    id: string;
+    timestamp: number;
+    prompt: string;
+    
+    // Asset type and URLs
+    assetType: AssetType;
+    fileUrl?: string;
+    
+    // If model is derived from image
+    derivedFromId?: string;
+    
+    // Generation parameters
+    imageParams?: {
+        negativePrompt?: string;
+        ratio: ImageRatio;
+        imageSize: ImageSize;
+    }
+}
 
 // Entity metadata structure
 export interface EntityMetadata {
@@ -70,28 +91,7 @@ export interface EntityMetadata {
         imageSize: ImageSize;
         aiObjectType: AiObjectType;
 
-        generationHistory: Array<{
-            id: string;
-            timestamp: number;
-            prompt: string;
-
-            // Asset type and URLs
-            assetType: 'image' | 'model';
-            imageUrl?: string;
-            modelUrl?: string;
-
-            // If model is derived from image
-            derivedFromId?: string;
-
-            // Generation parameters
-            ratio: ImageRatio;
-            imageSize: ImageSize;
-            generationParams?: Record<string, any>;
-
-            // User metadata
-            notes?: string;
-            favorite?: boolean;
-        }>;
+        generationLogs: Array<GenerationLog>;
     };
 }
 
@@ -146,7 +146,7 @@ export class EntityNode extends BABYLON.TransformNode {
                 currentStateId: null,
                 ratio: options.ratio || '1:1',
                 imageSize: options.imageSize || 'medium',
-                generationHistory: []
+                generationLogs: []
             };
         }
     }
@@ -207,29 +207,28 @@ export class EntityNode extends BABYLON.TransformNode {
     }
 
     // Get the current generation
-    public getCurrentGeneration(): any | null {
+    public getCurrentGenerationLog(): GenerationLog | null {
         const aiData = this.getAIData();
         if (!aiData || !aiData.currentStateId) return null;
-
-        return aiData.generationHistory.find(gen => gen.id === aiData.currentStateId) || null;
+        return aiData.generationLogs.find(gen => gen.id === aiData.currentStateId) || null;
     }
 
     // Get all generation history
     public getGenerationHistory(): any[] {
         const aiData = this.getAIData();
-        return aiData?.generationHistory || [];
+        return aiData?.generationLogs || [];
     }
 
     // Add a new image generation to history
-    public addGenerationToHistory(
+    public addImageGenerationLog(
         prompt: string,
-        imageUrl: string,
+        fileUrl: string,
         options: {
+            negativePrompt?: string,
             ratio: ImageRatio;
             imageSize: ImageSize;
-            generationParams?: any;
         }
-    ): any {
+    ): GenerationLog {
         // Create AI data if it doesn't exist
         if (!this.metadata.aiData) {
             this.metadata.aiData = {
@@ -237,62 +236,55 @@ export class EntityNode extends BABYLON.TransformNode {
                 currentStateId: null,
                 ratio: options.ratio,
                 imageSize: options.imageSize,
-                generationHistory: []
+                generationLogs: []
             };
         }
 
         // Create new generation entry with explicit 'image' literal type
-        const newGeneration = {
+        const newGeneration: GenerationLog = {
             id: uuidv4(),
             timestamp: Date.now(),
             prompt,
-            assetType: 'image' as const,
-            imageUrl,
-            ratio: options.ratio,
-            imageSize: options.imageSize,
-            generationParams: options.generationParams || {}
+            assetType: 'image',
+            fileUrl,
+            imageParams: {
+                negativePrompt: options.negativePrompt,
+                ratio: options.ratio,
+                imageSize: options.imageSize,
+            }
         };
 
         // Add to history
-        this.metadata.aiData.generationHistory.push(newGeneration);
+        this.metadata.aiData.generationLogs.push(newGeneration);
         this.metadata.aiData.currentStateId = newGeneration.id;
         this.metadata.aiData.ratio = options.ratio;
         this.metadata.aiData.imageSize = options.imageSize;
-
-        // Switch to 2D mode when a new image is added
-        this.setDisplayMode('2d');
 
         return newGeneration;
     }
 
     // Add a 3D model to history
-    public addModelToHistory(modelUrl: string, derivedFromId: string): any {
+    public addModelGenerationLog(modelUrl: string, derivedFromId: string): GenerationLog | null {
         const aiData = this.getAIData();
         if (!aiData) return null;
 
         // Find the source generation
-        const sourceGen = aiData.generationHistory.find(gen => gen.id === derivedFromId);
+        const sourceGen = aiData.generationLogs.find(gen => gen.id === derivedFromId);
         if (!sourceGen) return null;
 
         // Create new model generation entry
-        const newGeneration = {
+        const newGeneration: GenerationLog = {
             id: uuidv4(),
             timestamp: Date.now(),
             prompt: sourceGen.prompt,
-            assetType: 'model' as const,
-            modelUrl,
+            assetType: 'model',
+            fileUrl: modelUrl,
             derivedFromId,
-            ratio: sourceGen.ratio,
-            imageSize: sourceGen.imageSize,
-            generationParams: sourceGen.generationParams
         };
 
         // Add to history
-        aiData.generationHistory.push(newGeneration);
+        aiData.generationLogs.push(newGeneration);
         aiData.currentStateId = newGeneration.id;
-
-        // Switch to 3D mode when a new model is added
-        this.setDisplayMode('3d');
 
         return newGeneration;
     }

@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 
 import { generateBackground, generate3DModel } from '../util/generation-util';
-import { generateRealtimeImage } from '../util/realtime-generation-util';
+import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
-import { EntityNode, EntityProcessingState } from '../util/extensions/entityNode';
+import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
 
 let prevEntity: EntityNode | null = null;
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
   const [promptInput, setPromptInput] = useState('_');
+  const [currentGenLog, setCurrentGenLog] = useState<GenerationLog | null>(null);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);
 
   // State for processing
@@ -41,8 +42,10 @@ const EntityPanel: React.FC = () => {
       selectedEntity.onProgress.add(handleProgress);
 
       // Get the current generation and set the prompt if available
-      const currentGen = selectedEntity.getCurrentGeneration();
+      const currentGen = selectedEntity.getCurrentGenerationLog();
       setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
+
+      setCurrentGenLog(currentGen);
 
     }
   }, [selectedEntity]);
@@ -118,10 +121,15 @@ const EntityPanel: React.FC = () => {
   // Handle image generation
   const handleGenerate2D = async () => {
     if (!selectedEntity || !promptInput.trim() || !scene) return;
+    let result: GenerationResult;
     if (selectedEntity.metadata.aiData?.aiObjectType === 'background') {
-      await generateBackground(promptInput, selectedEntity, scene);
+      result = await generateBackground(promptInput, selectedEntity, scene);
     } else {
-      await generateRealtimeImage(promptInput, selectedEntity, scene);
+      result = await generateRealtimeImage(promptInput, selectedEntity, scene);
+    }
+
+    if (result.success && result.generationLog) {
+      setCurrentGenLog(result.generationLog);
     }
   };
 
@@ -130,17 +138,20 @@ const EntityPanel: React.FC = () => {
     if (!selectedEntity || !scene) return;
 
     // Get current generation
-    const currentGen = selectedEntity.getCurrentGeneration();
-    if (!currentGen || currentGen.assetType !== 'image' || !currentGen.imageUrl) {
+    const currentGen = selectedEntity.getCurrentGenerationLog();
+    if (!currentGen || currentGen.assetType !== 'image' || !currentGen.fileUrl) {
       alert('Please generate an image first');
       return;
     }
 
     // Call the 3D conversion service
-    await generate3DModel(currentGen.imageUrl, selectedEntity, scene, gizmoManager, {
+    const result = await generate3DModel(currentGen.fileUrl, selectedEntity, scene, gizmoManager, currentGen.id, {
       prompt: promptInput,
     });
 
+    if (result.success && result.generationLog) {
+      setCurrentGenLog(result.generationLog);
+    }
   };
 
   const renderSpinner = (message?: string) => {
@@ -196,9 +207,9 @@ const EntityPanel: React.FC = () => {
                   </button>
 
                   {isObject && <button
-                    className={`relative py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : selectedEntity?.getCurrentGeneration()?.imageUrl ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                    className={`relative py-1 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : currentGenLog?.assetType === 'image' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
                     onClick={handleGenerate3D}
-                    disabled={isGenerating || !selectedEntity?.getCurrentGeneration()?.imageUrl}
+                    disabled={isGenerating || !currentGenLog || currentGenLog.assetType !== 'image'}
                   >
                     {isGenerating3D ? renderSpinner('') : 'Convert to 3D'}
                     {isGenerating3D && 

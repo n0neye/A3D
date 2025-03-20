@@ -1,8 +1,10 @@
-import { fal } from "@fal-ai/client";
+import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode, AiObjectType, EntityType, applyImageToEntity } from './extensions/entityNode';
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
+import { GenerationResult } from "./realtime-generation-util";
+import { TrellisOutput } from "@fal-ai/client/endpoints";
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;
@@ -32,7 +34,7 @@ export async function generateBackground(
         imageSize?: ImageSize;
         negativePrompt?: string;
     } = {}
-): Promise<boolean> {
+): Promise<GenerationResult> {
     // Use defaults if not provided
     const startTime = performance.now();
     const imageSize = options.imageSize || 'medium';
@@ -65,16 +67,20 @@ export async function generateBackground(
         },
     });
 
-
+    let log: GenerationLog | null = null;
     const success = result.data.images.length > 0;
     if (success && result.data.images[0].url) {
+
+        // Apply the image to the entity mesh
         applyImageToEntity(entity, result.data.images[0].url, scene);
 
         // Add to history
-        entity.addGenerationToHistory(prompt, result.data.images[0].url, {
+        log = entity.addImageGenerationLog(prompt, result.data.images[0].url, {
             ratio: '16:9',
             imageSize: 'medium'
         });
+
+        // Log time
         const endTime = performance.now();
         const duration = endTime - startTime;
         console.log(`%cBackground generation took ${(duration / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
@@ -86,8 +92,7 @@ export async function generateBackground(
         progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
     });
 
-    return success;
-
+    return { success: success, generationLog: log };
 }
 /**
  * Load a 3D model and replace the current mesh
@@ -202,10 +207,11 @@ export async function generate3DModel(
     entity: EntityNode,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
+    derivedFromId: string,
     options: {
         prompt?: string;
     } = {}
-): Promise<{ success: boolean, modelUrl?: string, error?: string }> {
+): Promise<GenerationResult> {
     const entityType = entity.getEntityType();
 
     try {
@@ -217,7 +223,7 @@ export async function generate3DModel(
                 const blob = await response.blob();
                 processedImageUrl = await blobToBase64(blob);
             } catch (error) {
-                return { success: false, error: "Failed to prepare image" };
+                return { success: false, generationLog: null };
             }
         }
 
@@ -235,61 +241,38 @@ export async function generate3DModel(
         });
 
         const startTime = performance.now();
+
+        let result: Result<TrellisOutput> | null = null;
+
         if (options.prompt === "_") {
             // Wait for 1 second
             await new Promise(resolve => setTimeout(resolve, 500));
-            const testData = get3DSimulationData();
-
-            await loadModel(
-                entity,
-                testData.data.model_mesh.url,
-                scene,
-                gizmoManager,
-                (progress) => {
-                    entity.setProcessingState({
-                        isGenerating2D: false,
-                        isGenerating3D: true,
-                        progressMessage: progress.message
-                    });
-                }
-            );
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: false,
-                progressMessage: '3D model generated successfully!'
+            result = get3DSimulationData();
+        } else {
+            result = await fal.subscribe("fal-ai/trellis", {
+                input: params,
+                logs: true,
+                onQueueUpdate: (update) => {
+                    if (update.status === "IN_PROGRESS") {
+                        const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
+                        const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s estimated`;
+                        entity.setProcessingState({
+                            isGenerating2D: false,
+                            isGenerating3D: true,
+                            progressMessage: latestLog
+                        });
+                    }
+                },
             });
-            return {
-                success: true,
-                modelUrl: testData.data.model_mesh.url
-            }
         }
-
-        const result = await fal.subscribe("fal-ai/trellis", {
-            input: params,
-            logs: true,
-            onQueueUpdate: (update) => {
-                if (update.status === "IN_PROGRESS") {
-                    const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
-                    const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s estimated`;
-                    entity.setProcessingState({
-                        isGenerating2D: false,
-                        isGenerating3D: true,
-                        progressMessage: latestLog
-                    });
-                }
-            },
-        });
 
         // Log time
         const elapsedTime = performance.now() - startTime;
         const seconds = (elapsedTime / 1000).toFixed(2);
         console.log("%c3D conversion completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
 
-        console.log(result);
-
         // Return result
         if (result.data?.model_mesh?.url) {
-
             await loadModel(
                 entity,
                 result.data.model_mesh.url,
@@ -304,18 +287,17 @@ export async function generate3DModel(
                 }
             );
 
-            entity.addModelToHistory(result.data.model_mesh.url, entity.getCurrentGeneration()?.id);
+            const log = entity.addModelGenerationLog(result.data.model_mesh.url, derivedFromId);
 
             entity.setProcessingState({
                 isGenerating2D: false,
                 isGenerating3D: false,
                 progressMessage: ''
             });
-
-            return { success: true, modelUrl: result.data.model_mesh.url };
-        } else {
-            return { success: false, error: 'No 3D model generated' };
+            return { success: true, generationLog: log };
         }
+
+        throw new Error('No 3D model generated');
     } catch (error) {
         console.error("3D conversion failed:", error);
         entity.setProcessingState({
@@ -325,7 +307,7 @@ export async function generate3DModel(
         });
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            generationLog: null
         };
     }
 }

@@ -2,7 +2,7 @@ import { ProgressCallback } from "./generation-util";
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import { getImageSimulationData, } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, EntityNode, applyImageToEntity } from './extensions/entityNode';
+import { IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, EntityNode, applyImageToEntity, GenerationLog } from './extensions/entityNode';
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
 
@@ -13,6 +13,10 @@ export interface Generation2DRealtimResult {
     error?: string;
 }
 
+export interface GenerationResult {
+    success: boolean;
+    generationLog: GenerationLog | null;
+}
 
 // Initialize the connection on module load
 export function initializeRealtimeConnection(): void {
@@ -28,7 +32,7 @@ export async function generateRealtimeImage(
         imageSize?: ImageSize;
         negativePrompt?: string;
     } = {}
-): Promise<Generation2DRealtimResult> {
+): Promise<GenerationResult> {
     const startTime = performance.now();
     // Use defaults if not provided
     const ratio = '1:1';
@@ -36,6 +40,7 @@ export async function generateRealtimeImage(
     const entityType = entity.getEntityType();
     const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
     const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
+
     // Update entity state
     entity.setProcessingState({
         isGenerating2D: true,
@@ -66,39 +71,28 @@ export async function generateRealtimeImage(
     }
 
     // If the prompt is "_", use the test data
+    let result: Generation2DRealtimResult;
     if (prompt === "_") {
-        const testData = getImageSimulationData();
-        if (testData.imageUrl) {
-            applyImageToEntity(entity, testData.imageUrl, scene);
-            entity.addGenerationToHistory(prompt, testData.imageUrl, {
-                ratio: '1:1',
-                imageSize: 'medium'
-            });
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: false,
-                progressMessage: 'Image generated successfully!'
-            });
-        }
-        return testData;
+        result = getImageSimulationData();
+    } else {
+        result = await generateRealtimeImageRunware(prompt, {
+            imageSize: imageSize,
+            negativePrompt: negativePrompt
+        });
+
+        // result = await generateRealtimeImageFal(prompt, {
+        //     width: width,
+        //     height: height,
+        //     negativePrompt: negativePrompt
+        // });
     }
 
-    const result = await generateRealtimeImageRunware(prompt, {
-        imageSize: imageSize,
-        negativePrompt: negativePrompt
-    });
-    // const result = await generateRealtimeImageFal(prompt, {
-    //     width: width,
-    //     height: height,
-    //     negativePrompt: negativePrompt
-    // });
-
-    const success = result.success && result.imageUrl;
+    const success = result.success && result.imageUrl !== undefined;
     if (success && result.imageUrl) {
         console.log(`%cImage generation took ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
         // Add to history
-        entity.addGenerationToHistory(prompt, result.imageUrl, {
+        const log = entity.addImageGenerationLog(prompt, result.imageUrl, {
             ratio: '1:1',
             imageSize: 'medium'
         });
@@ -106,16 +100,18 @@ export async function generateRealtimeImage(
         await applyImageToEntity(entity, result.imageUrl, scene);
 
         console.log(`%cTask completed in ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
+
+        entity.setProcessingState({
+            isGenerating2D: false,
+            isGenerating3D: false,
+            progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
+        });
+
+        return { success, generationLog: log };
     }
 
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: false,
-        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
-    });
 
-    return result;
-
+    return { success: false, generationLog: null };
 }
 
 /**
