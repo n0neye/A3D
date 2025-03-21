@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown, IconAspectRatio, IconCheck } from '@tabler/icons-react';
 
 import { generateBackground, generate3DModel } from '../util/generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
@@ -7,14 +7,118 @@ import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
 import { ImageRatio } from '../util/generation-util';
 
-// Ratio options for the dropdown
+// Ratio options with icons
 const ratioOptions: { value: ImageRatio; label: string }[] = [
-  { value: '1:1', label: 'Square (1:1)' },
-  { value: '16:9', label: 'Landscape (16:9)' },
-  { value: '9:16', label: 'Portrait (9:16)' },
-  { value: '4:3', label: 'Standard (4:3)' },
-  { value: '3:4', label: 'Portrait (3:4)' },
+  { value: '1:1', label: '1:1' },
+  { value: '4:3', label: '4:3' },
+  { value: '16:9', label: '16:9' },
+  { value: '3:4', label: '3:4' },
+  { value: '9:16', label: '9:16' },
 ];
+
+// New compact ratio selector component
+const RatioSelector: React.FC<{
+  value: ImageRatio;
+  onChange: (value: ImageRatio) => void;
+  disabled?: boolean;
+}> = ({ value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Generate ratio icon CSS class
+  const getRatioIconClass = (ratio: ImageRatio) => {
+    switch (ratio) {
+      case '1:1': return 'ratio-icon-square';
+      case '16:9': return 'ratio-icon-wide';
+      case '9:16': return 'ratio-icon-tall';
+      case '4:3': return 'ratio-icon-standard';
+      case '3:4': return 'ratio-icon-portrait';
+      default: return 'ratio-icon-square';
+    }
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`flex items-center p-1 rounded hover:bg-gray-700 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        title="Aspect Ratio"
+      >
+        <div className={`${getRatioIconClass(value)} mr-1`}></div>
+        <span className="text-xs text-gray-400">{value}</span>
+      </button>
+      
+      {isOpen && !disabled && (
+        <div className="absolute z-10 left-0 mt-1 bg-gray-800 shadow-lg rounded-md py-1 min-w-[160px]">
+          {ratioOptions.map((option) => (
+            <div
+              key={option.value}
+              className="px-3 py-2 flex items-center hover:bg-gray-700 cursor-pointer"
+              onClick={() => {
+                onChange(option.value as ImageRatio);
+                setIsOpen(false);
+              }}
+            >
+              <div className={`${getRatioIconClass(option.value as ImageRatio)} mr-2`}></div>
+              <span className="text-sm text-gray-200">{option.label}</span>
+              {value === option.value && <IconCheck size={16} className="ml-auto text-blue-400" />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Add CSS for the ratio icons
+const ratioIconStyles = `
+.ratio-icon-square, .ratio-icon-wide, .ratio-icon-tall, .ratio-icon-standard, .ratio-icon-portrait {
+  display: inline-block;
+  border: 2px solid #9ca3af;
+  border-radius: 2px;
+}
+
+.ratio-icon-square {
+  width: 14px;
+  height: 14px;
+}
+
+.ratio-icon-wide {
+  width: 20px;
+  height: 11px;
+}
+
+.ratio-icon-tall {
+  width: 11px;
+  height: 20px;
+}
+
+.ratio-icon-standard {
+  width: 16px;
+  height: 12px;
+}
+
+.ratio-icon-portrait {
+  width: 12px;
+  height: 16px;
+}
+`;
 
 let prevEntity: EntityNode | null = null;
 
@@ -94,17 +198,8 @@ const EntityPanel: React.FC = () => {
   const [isGenerating3D, setIsGenerating3D] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
 
-  // Create progress handler
-  // const handleProgress = useCallback((progress: EntityProcessingState) => {
-  //   setIsGenerating2D(progress.isGenerating2D);
-  //   setIsGenerating3D(progress.isGenerating3D);
-  //   setProgressMessage(progress.progressMessage);
-  // }, []);
-
-
   // Update when selected entity changes
   useEffect(() => {
-
     const handleProgress = (progress: EntityProcessingState) => {
       setIsGenerating2D(progress.isGenerating2D);
       setIsGenerating3D(progress.isGenerating3D);
@@ -161,15 +256,11 @@ const EntityPanel: React.FC = () => {
     }
   }, [selectedEntity, inputElementRef, generationHistory]);
 
-
   // Add keyboard shortcut handler
   useEffect(() => {
     const handleKeyboardShortcuts = (e: KeyboardEvent) => {
-
       if (!selectedEntity) return;
 
-
-      // Only process if we have a selected entity and generations to navigate
       if (generationHistory.length > 1 && !isGenerating2D && !isGenerating3D) {
         if (e.shiftKey && e.key === "ArrowLeft") {
           e.preventDefault();
@@ -206,58 +297,6 @@ const EntityPanel: React.FC = () => {
     }
   }
 
-  // Update panel position
-  // useEffect(() => {
-  //   if (!scene || !selectedEntity) {
-  //     return;
-  //   }
-
-  //   const updatePosition = () => {
-  //     const mesh = selectedEntity.primaryMesh;
-  //     const camera = scene.activeCamera;
-  //     if (!mesh || !camera) return;
-
-  //     // Get the mesh's bounding info
-  //     mesh.computeWorldMatrix(true);
-  //     const boundingInfo = mesh.getBoundingInfo();
-  //     const boundingBox = boundingInfo.boundingBox;
-
-  //     // Project bottom position to screen coordinates
-  //     const meshBottomCenterWorld = new BABYLON.Vector3(
-  //       mesh.position.x,
-  //       boundingBox.minimumWorld.y,
-  //       mesh.position.z
-  //     );
-
-  //     const meshBottomScreenPosition = BABYLON.Vector3.Project(
-  //       meshBottomCenterWorld,
-  //       BABYLON.Matrix.Identity(),
-  //       scene.getTransformMatrix(),
-  //       camera.viewport.toGlobal(
-  //         scene.getEngine().getRenderWidth(),
-  //         scene.getEngine().getRenderHeight()
-  //       )
-  //     );
-
-  //     // Position the panel below the object with a margin
-  //     const margin = 20;
-  //     setPosition({
-  //       left: meshBottomScreenPosition.x,
-  //       top: meshBottomScreenPosition.y + margin
-  //     });
-
-  //   };
-
-  //   const observer = scene.onBeforeRenderObservable.add(updatePosition);
-
-  //   return () => {
-  //     scene.onBeforeRenderObservable.remove(observer);
-  //   };
-  // }, [scene, selectedEntity]);
-
-  // Handle key events
-
-
   // Handle image generation
   const handleGenerate2D = async () => {
     console.log('handleGenerate2D', promptInput);
@@ -278,7 +317,6 @@ const EntityPanel: React.FC = () => {
   const handleGenerate3D = async () => {
     console.log('handleGenerate3D');
     if (!selectedEntity || !scene) return;
-
 
     // Get current generation
     const currentGen = selectedEntity.getCurrentGenerationLog();
@@ -356,21 +394,35 @@ const EntityPanel: React.FC = () => {
   }
 
   // Handle ratio change
-  const handleRatioChange = (ratio: string) => {
+  const handleRatioChange = (ratio: ImageRatio) => {
     if (!selectedEntity || !scene) return;
     
     // Update the entity's aspect ratio
-    const newRatio = ratio as ImageRatio;
-    setCurrentRatio(newRatio);
+    setCurrentRatio(ratio);
     
     // Update entity metadata
     if (selectedEntity.metadata.aiData) {
-      selectedEntity.metadata.aiData.ratio = newRatio;
+      selectedEntity.metadata.aiData.ratio = ratio;
     }
     
     // Apply the ratio to the mesh
-    selectedEntity.updateAspectRatio(newRatio);
+    selectedEntity.updateAspectRatio(ratio);
   };
+
+  // Add global style for ratio icons
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = "ratio-icon-styles";
+    styleSheet.textContent = ratioIconStyles;
+    document.head.appendChild(styleSheet);
+    
+    return () => {
+      const existingStyle = document.getElementById("ratio-icon-styles");
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
 
   // UI content based on object type
   const renderContent = () => {
@@ -386,12 +438,10 @@ const EntityPanel: React.FC = () => {
         return (
           <>
             <div className="flex flex-col space-y-2">
-              {/* Object settings */}
+              {/* Object settings - now just shown as a compact icon control */}
               {isObject && !isBackground && (
-                <div className="mb-2">
-                  <label className="block text-xs text-gray-400 mb-1">Aspect Ratio</label>
-                  <Dropdown
-                    options={ratioOptions}
+                <div className="flex items-center space-x-2 mb-1">
+                  <RatioSelector
                     value={currentRatio}
                     onChange={handleRatioChange}
                     disabled={isGenerating}
@@ -464,16 +514,6 @@ const EntityPanel: React.FC = () => {
                 </div>
 
               </div>
-
-              {/* {(isGenerating) && (
-                <div className="text-xs text-gray-400 mt-1 flex flex-row items-center px-2">
-                  <svg className="animate-spin mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>{progressMessage}</span>
-                </div>
-              )} */}
             </div>
           </>
         );
@@ -495,15 +535,12 @@ const EntityPanel: React.FC = () => {
     }
   };
 
-
   if (!selectedEntity) return null;
 
   return (
     <div
       className="fixed z-10 panel left-1/2 bottom-4 "
       style={{
-        // left: `${position.left}px`,
-        // top: `${position.top}px`,
         transform: 'translateX(-50%)', // Center horizontally
         minWidth: '150px',
       }}
