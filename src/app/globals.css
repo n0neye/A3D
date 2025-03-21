@@ -59,6 +59,13 @@
   border-radius: 1rem;
 }
 
+.panel-shape-dark{
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+  border-radius: 1rem;
+}
+
 /* Style for the sliders */
 input[type="range"] {
   -webkit-appearance: none;

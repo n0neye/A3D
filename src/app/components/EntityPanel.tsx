@@ -1,188 +1,14 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown, IconAspectRatio, IconCheck } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown } from '@tabler/icons-react';
 
 import { generateBackground, generate3DModel } from '../util/generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
 import { ImageRatio } from '../util/generation-util';
-
-// Ratio options with icons
-const ratioOptions: { value: ImageRatio; label: string }[] = [
-  { value: '1:1', label: '1:1' },
-  { value: '4:3', label: '4:3' },
-  { value: '16:9', label: '16:9' },
-  { value: '3:4', label: '3:4' },
-  { value: '9:16', label: '9:16' },
-];
-
-// New compact ratio selector component
-const RatioSelector: React.FC<{
-  value: ImageRatio;
-  onChange: (value: ImageRatio) => void;
-  disabled?: boolean;
-}> = ({ value, onChange, disabled }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Generate ratio icon CSS class
-  const getRatioIconClass = (ratio: ImageRatio) => {
-    switch (ratio) {
-      case '1:1': return 'ratio-icon-square';
-      case '16:9': return 'ratio-icon-wide';
-      case '9:16': return 'ratio-icon-tall';
-      case '4:3': return 'ratio-icon-standard';
-      case '3:4': return 'ratio-icon-portrait';
-      default: return 'ratio-icon-square';
-    }
-  };
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`flex items-center p-1 rounded hover:bg-gray-700 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-        title="Aspect Ratio"
-      >
-        <div className={`${getRatioIconClass(value)} mr-1`}></div>
-        <span className="text-xs text-gray-400">{value}</span>
-      </button>
-      
-      {isOpen && !disabled && (
-        <div className="absolute z-10 left-0 mt-1 bg-gray-800 shadow-lg rounded-md py-1 min-w-[160px]">
-          {ratioOptions.map((option) => (
-            <div
-              key={option.value}
-              className="px-3 py-2 flex items-center hover:bg-gray-700 cursor-pointer"
-              onClick={() => {
-                onChange(option.value as ImageRatio);
-                setIsOpen(false);
-              }}
-            >
-              <div className={`${getRatioIconClass(option.value as ImageRatio)} mr-2`}></div>
-              <span className="text-sm text-gray-200">{option.label}</span>
-              {value === option.value && <IconCheck size={16} className="ml-auto text-blue-400" />}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Add CSS for the ratio icons
-const ratioIconStyles = `
-.ratio-icon-square, .ratio-icon-wide, .ratio-icon-tall, .ratio-icon-standard, .ratio-icon-portrait {
-  display: inline-block;
-  border: 2px solid #9ca3af;
-  border-radius: 2px;
-}
-
-.ratio-icon-square {
-  width: 14px;
-  height: 14px;
-}
-
-.ratio-icon-wide {
-  width: 20px;
-  height: 11px;
-}
-
-.ratio-icon-tall {
-  width: 11px;
-  height: 20px;
-}
-
-.ratio-icon-standard {
-  width: 16px;
-  height: 12px;
-}
-
-.ratio-icon-portrait {
-  width: 12px;
-  height: 16px;
-}
-`;
+import RatioSelector from './RatioSelector';
 
 let prevEntity: EntityNode | null = null;
-
-// Shadcn-inspired dropdown component
-interface DropdownProps {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}
-
-const Dropdown: React.FC<DropdownProps> = ({ options, value, onChange, disabled }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const selectedOption = options.find(option => option.value === value);
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`flex items-center justify-between w-full px-3 py-1 text-sm rounded-md 
-                  ${disabled ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-800 text-white hover:bg-gray-700'}`}
-      >
-        <span>{selectedOption?.label || value}</span>
-        <IconChevronDown size={16} className={`ml-2 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
-      </button>
-      
-      {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-gray-800 shadow-lg rounded-md py-1 text-sm">
-          {options.map((option) => (
-            <div
-              key={option.value}
-              className={`px-3 py-1.5 cursor-pointer hover:bg-gray-700 
-                      ${option.value === value ? 'bg-blue-600 text-white' : 'text-gray-200'}`}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-            >
-              {option.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
@@ -245,6 +71,14 @@ const EntityPanel: React.FC = () => {
     }
   }, [selectedEntity]);
 
+  // CurrentGenLog changed, update the ratio
+  useEffect(() => {
+    if (currentGenLog?.assetType === 'image' && currentGenLog.fileUrl) {
+      const ratio = currentGenLog.imageParams?.ratio || '1:1';
+      setCurrentRatio(ratio);
+    }
+  }, [currentGenLog, selectedEntity]);
+
   // Additional effect to handle the input field mounting
   useEffect(() => {
     if (selectedEntity && inputElementRef.current) {
@@ -305,7 +139,7 @@ const EntityPanel: React.FC = () => {
     if (selectedEntity.metadata.aiData?.aiObjectType === 'background') {
       result = await generateBackground(promptInput, selectedEntity, scene);
     } else {
-      result = await generateRealtimeImage(promptInput, selectedEntity, scene);
+      result = await generateRealtimeImage(promptInput, selectedEntity, scene, { ratio: currentRatio });
     }
 
     if (result.success && result.generationLog) {
@@ -396,33 +230,18 @@ const EntityPanel: React.FC = () => {
   // Handle ratio change
   const handleRatioChange = (ratio: ImageRatio) => {
     if (!selectedEntity || !scene) return;
-    
+
     // Update the entity's aspect ratio
     setCurrentRatio(ratio);
-    
+
     // Update entity metadata
     if (selectedEntity.metadata.aiData) {
       selectedEntity.metadata.aiData.ratio = ratio;
     }
-    
+
     // Apply the ratio to the mesh
     selectedEntity.updateAspectRatio(ratio);
   };
-
-  // Add global style for ratio icons
-  useEffect(() => {
-    const styleSheet = document.createElement("style");
-    styleSheet.id = "ratio-icon-styles";
-    styleSheet.textContent = ratioIconStyles;
-    document.head.appendChild(styleSheet);
-    
-    return () => {
-      const existingStyle = document.getElementById("ratio-icon-styles");
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-    };
-  }, []);
 
   // UI content based on object type
   const renderContent = () => {
@@ -438,20 +257,10 @@ const EntityPanel: React.FC = () => {
         return (
           <>
             <div className="flex flex-col space-y-2">
-              {/* Object settings - now just shown as a compact icon control */}
-              {isObject && !isBackground && (
-                <div className="flex items-center space-x-2 mb-1">
-                  <RatioSelector
-                    value={currentRatio}
-                    onChange={handleRatioChange}
-                    disabled={isGenerating}
-                  />
-                </div>
-              )}
 
               {/* Prompt */}
               <div className="space-y-2 flex flex-row space-x-2">
-                <div className="flex flex-col">
+                <div className="flex flex-col m-0">
                   <textarea
                     ref={inputElementRef}
                     placeholder="Enter prompt..."
@@ -464,12 +273,19 @@ const EntityPanel: React.FC = () => {
                   />
 
                   {/* Bottom row */}
-                  <div className="flex justify-start mt-1 space-x-1 h-4">
+                  <div className="flex justify-start space-x-1 h-6">
+
+                    {isObject && !isBackground && <RatioSelector
+                      value={currentRatio}
+                      onChange={handleRatioChange}
+                      disabled={isGenerating}
+                    />}
+
                     {/* History navigation buttons */}
                     {generationHistory.length > 1 && (
                       <>
                         <button
-                          className={`p-1 rounded ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                          className={`p-1 rounded mr-0 ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
                           onClick={goToPreviousGeneration}
                           disabled={!hasPreviousGeneration || isGenerating}
                           title="Previous generation (Shift + ←)"

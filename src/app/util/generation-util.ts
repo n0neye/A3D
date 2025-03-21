@@ -13,9 +13,9 @@ export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
 // Map of image sizes to actual dimensions
 export const IMAGE_SIZE_MAP = {
     small: 512,
-    medium: 768,
-    large: 1024,
-    xl: 1536
+    medium: 1024,
+    large: 1280,
+    xl: 1920
 };
 
 // Map of ratios to width/height multipliers

@@ -285,7 +285,7 @@ export class EntityNode extends BABYLON.TransformNode {
         // Apply based on asset type
         if (log.assetType === 'image' && log.fileUrl) {
             // For image assets, apply the image to the entity
-            applyImageToEntity(this, log.fileUrl, this.getScene());
+            applyImageToEntity(this, log.fileUrl, this.getScene(), log.imageParams?.ratio);
         } else if (log.assetType === 'model' && log.fileUrl) {
             // For model assets, we need to set 3D display mode
             // (Assuming the model is already loaded and attached to this entity)
@@ -465,11 +465,17 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
 export const applyImageToEntity = async(
     entity: EntityNode,
     imageUrl: string,
-    scene: BABYLON.Scene
+    scene: BABYLON.Scene,
+    ratio?: ImageRatio
 ): Promise<void> => {
     // Get the plane mesh
     const planeMesh = entity.planeMesh;
     if (!planeMesh) return;
+
+    if(ratio) {
+        const { width, height } = getPlaneSize(ratio);
+        planeMesh.scaling = new BABYLON.Vector3(width, height, 1);
+    }
 
     // Check if this is a background
     const isBackground = entity.metadata.aiData?.aiObjectType === 'background';

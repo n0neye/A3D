@@ -2,7 +2,7 @@ import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import { getImageSimulationData, } from "./simulation-data";
 import {  EntityNode, applyImageToEntity, GenerationLog } from './extensions/entityNode';
-import { ProgressCallback , IMAGE_SIZE_MAP, RATIO_MAP, ImageSize } from "./generation-util";
+import { ProgressCallback , IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, ImageRatio } from "./generation-util";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
 
@@ -29,13 +29,14 @@ export async function generateRealtimeImage(
     entity: EntityNode,
     scene: BABYLON.Scene,
     options: {
+        ratio?: ImageRatio,
         imageSize?: ImageSize;
         negativePrompt?: string;
     } = {}
 ): Promise<GenerationResult> {
     const startTime = performance.now();
     // Use defaults if not provided
-    const ratio = '1:1';
+    const ratio = options.ratio || '1:1';
     const imageSize = options.imageSize || 'medium';
     const entityType = entity.getEntityType();
     const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
@@ -62,9 +63,11 @@ export async function generateRealtimeImage(
         width = Math.floor(baseSize * (ratioMultipliers.width / ratioMultipliers.height));
     }
 
+    console.log(`Generation with ratio ${ratio} and size ${imageSize} will be ${width}x${height}`);
+
     // Enhance prompt based on entity type
     let enhancedPrompt = prompt;
-    if (aiObjectType === 'object' || entityType === 'aiObject') {
+    if (aiObjectType === 'object') {
         enhancedPrompt = `${prompt} at the center of the frame, close up, focused on the object, uncropped, solid black background`;
     } else if (aiObjectType === 'background') {
         enhancedPrompt = `expansive panoramic view of ${prompt}`;
@@ -75,12 +78,13 @@ export async function generateRealtimeImage(
     if (prompt === "_") {
         result = getImageSimulationData();
     } else {
-        result = await generateRealtimeImageRunware(prompt, {
-            imageSize: imageSize,
+        result = await generateRealtimeImageRunware(enhancedPrompt, {
+            width: width,
+            height: height,
             negativePrompt: negativePrompt
         });
 
-        // result = await generateRealtimeImageFal(prompt, {
+        // result = await generateRealtimeImageFal(enhancedPrompt, {
         //     width: width,
         //     height: height,
         //     negativePrompt: negativePrompt
@@ -93,8 +97,8 @@ export async function generateRealtimeImage(
 
         // Add to history
         const log = entity.addImageGenerationLog(prompt, result.imageUrl, {
-            ratio: '1:1',
-            imageSize: 'medium'
+            ratio: ratio,
+            imageSize: imageSize
         });
 
         await applyImageToEntity(entity, result.imageUrl, scene);
@@ -146,7 +150,8 @@ const initRunwareClient = async () => {
 async function generateRealtimeImageRunware(
     prompt: string,
     options: {
-        imageSize?: ImageSize;
+        width?: number;
+        height?: number;
         negativePrompt?: string;
     } = {}
 ): Promise<Generation2DRealtimResult> {
@@ -159,8 +164,8 @@ async function generateRealtimeImageRunware(
     const runwareResult = await runwareClient.requestImages({
         positivePrompt: prompt,
         negativePrompt: options.negativePrompt,
-        width: 1024,
-        height: 1024,
+        width: options.width || 1024,
+        height: options.height || 1024,
         model: "runware:100@1",
         numberResults: 1,
         outputType: "URL",
