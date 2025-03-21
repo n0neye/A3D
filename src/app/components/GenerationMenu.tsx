@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';  
 import { AiObjectType, createEntity, EntityType } from '../util/extensions/entityNode';
-import { ImageRatio, ImageSize } from '../util/extensions/entityNode';
+import { ImageSize } from '../util/generation-util';
 
 const GenerationMenu: React.FC = () => {
   const { scene, setSelectedEntity } = useEditorContext();

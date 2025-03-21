@@ -1,8 +1,8 @@
-import { ProgressCallback } from "./generation-util";
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import { getImageSimulationData, } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, EntityNode, applyImageToEntity, GenerationLog } from './extensions/entityNode';
+import {  EntityNode, applyImageToEntity, GenerationLog } from './extensions/entityNode';
+import { ProgressCallback , IMAGE_SIZE_MAP, RATIO_MAP, ImageSize } from "./generation-util";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
 

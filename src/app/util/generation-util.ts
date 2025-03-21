@@ -2,15 +2,37 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio, ImageSize, EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
+import { EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
+
+
+export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
+
+// Map of image sizes to actual dimensions
+export const IMAGE_SIZE_MAP = {
+    small: 512,
+    medium: 768,
+    large: 1024,
+    xl: 1536
+};
+
+// Map of ratios to width/height multipliers
+export const RATIO_MAP = {
+    '1:1': { width: 1, height: 1 },
+    '16:9': { width: 16, height: 9 },
+    '9:16': { width: 9, height: 16 },
+    '4:3': { width: 4, height: 3 },
+    '3:4': { width: 3, height: 4 }
+};
+
+
 // Types for callbacks and results
 export interface GenerationProgress {
     message: string;
     progress?: number;
 }
-
 
 export interface PromptProps {
     prompt: string;
@@ -255,7 +277,7 @@ export async function generate3DModel(
                 onQueueUpdate: (update) => {
                     if (update.status === "IN_PROGRESS") {
                         const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
-                        const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s estimated`;
+                        const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s est`;
                         entity.setProcessingState({
                             isGenerating2D: false,
                             isGenerating3D: true,

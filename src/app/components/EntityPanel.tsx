@@ -1,12 +1,84 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { IconArrowLeft, IconArrowRight, IconCornerDownLeft } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown } from '@tabler/icons-react';
 
 import { generateBackground, generate3DModel } from '../util/generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
+import { ImageRatio } from '../util/generation-util';
+
+// Ratio options for the dropdown
+const ratioOptions: { value: ImageRatio; label: string }[] = [
+  { value: '1:1', label: 'Square (1:1)' },
+  { value: '16:9', label: 'Landscape (16:9)' },
+  { value: '9:16', label: 'Portrait (9:16)' },
+  { value: '4:3', label: 'Standard (4:3)' },
+  { value: '3:4', label: 'Portrait (3:4)' },
+];
 
 let prevEntity: EntityNode | null = null;
+
+// Shadcn-inspired dropdown component
+interface DropdownProps {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+const Dropdown: React.FC<DropdownProps> = ({ options, value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const selectedOption = options.find(option => option.value === value);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`flex items-center justify-between w-full px-3 py-1 text-sm rounded-md 
+                  ${disabled ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-800 text-white hover:bg-gray-700'}`}
+      >
+        <span>{selectedOption?.label || value}</span>
+        <IconChevronDown size={16} className={`ml-2 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-gray-800 shadow-lg rounded-md py-1 text-sm">
+          {options.map((option) => (
+            <div
+              key={option.value}
+              className={`px-3 py-1.5 cursor-pointer hover:bg-gray-700 
+                      ${option.value === value ? 'bg-blue-600 text-white' : 'text-gray-200'}`}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager } = useEditorContext();
@@ -15,6 +87,7 @@ const EntityPanel: React.FC = () => {
   const [generationHistory, setGenerationHistory] = useState<GenerationLog[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);
+  const [currentRatio, setCurrentRatio] = useState<ImageRatio>('1:1');
 
   // State for processing
   const [isGenerating2D, setIsGenerating2D] = useState(false);
@@ -66,6 +139,13 @@ const EntityPanel: React.FC = () => {
         setCurrentHistoryIndex(index !== -1 ? index : history.length - 1);
       } else {
         setCurrentHistoryIndex(-1);
+      }
+
+      // Set the current ratio from entity metadata
+      if (selectedEntity.metadata.aiData?.ratio) {
+        setCurrentRatio(selectedEntity.metadata.aiData.ratio);
+      } else {
+        setCurrentRatio('1:1'); // Default
       }
     }
   }, [selectedEntity]);
@@ -275,6 +355,23 @@ const EntityPanel: React.FC = () => {
     setPromptInput(prompt);
   }
 
+  // Handle ratio change
+  const handleRatioChange = (ratio: string) => {
+    if (!selectedEntity || !scene) return;
+    
+    // Update the entity's aspect ratio
+    const newRatio = ratio as ImageRatio;
+    setCurrentRatio(newRatio);
+    
+    // Update entity metadata
+    if (selectedEntity.metadata.aiData) {
+      selectedEntity.metadata.aiData.ratio = newRatio;
+    }
+    
+    // Apply the ratio to the mesh
+    selectedEntity.updateAspectRatio(newRatio);
+  };
+
   // UI content based on object type
   const renderContent = () => {
     const isGenerating = isGenerating2D || isGenerating3D;
@@ -289,11 +386,18 @@ const EntityPanel: React.FC = () => {
         return (
           <>
             <div className="flex flex-col space-y-2">
-
-              {/* Object type */}
-              {/* <div className="text-xs text-gray-400">
-                <span className='text-xs uppercase'> {selectedEntity?.metadata.aiData?.aiObjectType}</span>
-              </div> */}
+              {/* Object settings */}
+              {isObject && !isBackground && (
+                <div className="mb-2">
+                  <label className="block text-xs text-gray-400 mb-1">Aspect Ratio</label>
+                  <Dropdown
+                    options={ratioOptions}
+                    value={currentRatio}
+                    onChange={handleRatioChange}
+                    disabled={isGenerating}
+                  />
+                </div>
+              )}
 
               {/* Prompt */}
               <div className="space-y-2 flex flex-row space-x-2">

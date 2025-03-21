@@ -1,31 +1,11 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
 import { create2DBackground } from '../editor/editor-util';
-
+import { ImageRatio, ImageSize } from '../generation-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "object" | "background";
-
-export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
-export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
 export type AssetType = 'image' | 'model';
-
-// Map of image sizes to actual dimensions
-export const IMAGE_SIZE_MAP = {
-    small: 512,
-    medium: 768,
-    large: 1024,
-    xl: 1536
-};
-
-// Map of ratios to width/height multipliers
-export const RATIO_MAP = {
-    '1:1': { width: 1, height: 1 },
-    '16:9': { width: 16, height: 9 },
-    '9:16': { width: 9, height: 16 },
-    '4:3': { width: 4, height: 3 },
-    '3:4': { width: 3, height: 4 }
-};
 
 
 // Progress event handling
@@ -311,6 +291,47 @@ export class EntityNode extends BABYLON.TransformNode {
             // (Assuming the model is already loaded and attached to this entity)
             this.setDisplayMode('3d');
         }
+    }
+
+    // Update aspect ratio of the entity
+    public updateAspectRatio(ratio: ImageRatio): void {
+        if (!this.metadata.aiData || !this.planeMesh) return;
+        
+        // Save the new ratio in metadata
+        this.metadata.aiData.ratio = ratio;
+        
+        // Get the new dimensions based on ratio
+        const { width, height } = getPlaneSize(ratio);
+        
+        // Update the mesh dimensions
+        // We need to create a new geometry with the new dimensions
+        const scene = this.getScene();
+        const oldMaterial = this.planeMesh.material;
+        
+        // Create a new plane with the new aspect ratio
+        const newPlaneMesh = BABYLON.MeshBuilder.CreatePlane(
+            `${this.name}-plane-new`,
+            { width, height },
+            scene
+        );
+        
+        // Copy position, rotation, and parent
+        newPlaneMesh.position = this.planeMesh.position.clone();
+        newPlaneMesh.rotation = this.planeMesh.rotation.clone();
+        newPlaneMesh.parent = this;
+        
+        // Apply the existing material
+        newPlaneMesh.material = oldMaterial;
+        
+        // Update metadata
+        newPlaneMesh.metadata = {
+            rootEntity: this
+        };
+        
+        // Dispose of the old plane mesh
+        const oldMesh = this.planeMesh;
+        this.planeMesh = newPlaneMesh;
+        oldMesh.dispose();
     }
 }
 
