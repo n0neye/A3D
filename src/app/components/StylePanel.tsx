@@ -1,19 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { CivitaiResponse, customLoras, getAllLoraInfo } from '../util/lora';
+import { CivitaiResponse, customLoras, getAllLoraInfo, LoraInfo } from '../util/lora';
 
-// Define SelectedLora interface
-export interface SelectedLora {
-  id: string;
-  name: string;
-  thumbUrl: string;
-  strength: number;
-  modelUrl: string;
-}
 
 interface StylePanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectStyle: (lora: SelectedLora) => void;
+  onSelectStyle: (lora: LoraInfo) => void;
   selectedLoraIds: string[]; // To show which styles are already selected
 }
 
@@ -23,7 +15,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
   onSelectStyle,
   selectedLoraIds
 }) => {
-  const [availableStyles, setAvailableStyles] = useState<CivitaiResponse[]>([]);
+  const [availableStyles, setAvailableStyles] = useState<LoraInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -68,17 +60,8 @@ const StylePanel: React.FC<StylePanelProps> = ({
   }, [isOpen, onClose]);
 
   // Function to select a style
-  const selectStyle = (style: CivitaiResponse) => {
-    const image = style.modelVersions[0].images[0];
-    const newLora: SelectedLora = {
-      id: style.id.toString(),
-      name: style.name,
-      thumbUrl: image.url,
-      strength: 1, // Default strength
-      modelUrl: style.modelVersions[0].downloadUrl,
-    };
-    
-    onSelectStyle(newLora);
+  const selectStyle = (style: LoraInfo) => {
+    onSelectStyle(style);
     onClose();
   };
 
@@ -110,8 +93,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {availableStyles.map(style => {
                 // Get the first image from the first model version
-                const image = style.modelVersions[0].images[0];
-                const isSelected = selectedLoraIds.includes(style.id.toString());
+                const isSelected = selectedLoraIds.includes(style.id);
                 
                 return (
                   <div 
@@ -122,7 +104,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                   >
                     <div className="aspect-square overflow-hidden relative bg-black">
                       <img 
-                        src={image.url} 
+                        src={style.thumbUrl} 
                         alt={style.name} 
                         className={`object-cover w-full h-full ${isSelected ? 'opacity-50' : ''}`}
                       />
@@ -134,7 +116,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                     </div>
                     <div className="p-2">
                       <h5 className="text-white text-sm font-medium truncate">{style.name}</h5>
-                      <p className="text-gray-400 text-xs truncate">by {style.creator.username}</p>
+                      <p className="text-gray-400 text-xs truncate">by {style.author}</p>
                     </div>
                   </div>
                 );

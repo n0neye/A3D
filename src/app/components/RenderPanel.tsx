@@ -3,7 +3,8 @@ import { generatePreviewImage as generateRenderImage, dataURLtoBlob, ModelType, 
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
-import StylePanel, { SelectedLora } from './StylePanel';
+import StylePanel from './StylePanel';
+import { LoraConfig, LoraInfo } from '../util/lora';
 
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const { scene, engine } = useEditorContext();
@@ -19,7 +20,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const [model, setModel] = useState<ModelType>('flux-lora-depth');
 
   // Style panel state
-  const [selectedLoras, setSelectedLoras] = useState<SelectedLora[]>([]);
+  const [selectedLoras, setSelectedLoras] = useState<LoraConfig[]>([]);
   const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
 
   // Add keyboard shortcut for Ctrl/Cmd+Enter
@@ -42,21 +43,21 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   }, [prompt, promptStrength, noiseStrength, model, selectedLoras]); // Re-create handler when these dependencies change
 
   // Style panel handlers
-  const handleSelectStyle = (lora: SelectedLora) => {
+  const handleSelectStyle = (lora: LoraInfo) => {
     // Only add if not already present
-    if (!selectedLoras.some(l => l.id === lora.id)) {
-      setSelectedLoras([...selectedLoras, lora]);
+    if (!selectedLoras.some(l => l.info.id === lora.id)) {
+      setSelectedLoras([...selectedLoras, { info: lora, strength: 0.5 }]);
     }
   };
 
   const handleRemoveStyle = (id: string) => {
-    setSelectedLoras(selectedLoras.filter(lora => lora.id !== id));
+    setSelectedLoras(selectedLoras.filter(lora => lora.info.id !== id));
   };
 
   const handleUpdateStyleStrength = (id: string, strength: number) => {
     setSelectedLoras(
       selectedLoras.map(lora =>
-        lora.id === id ? { ...lora, strength } : lora
+        lora.info.id === id ? { ...lora, strength } : lora
       )
     );
   };
@@ -76,13 +77,13 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
 
     return (
       <div className="space-y-3">
-        {selectedLoras.map(lora => (
-          <div key={lora.id} className="bg-gray-700 rounded-md p-1 flex flex-row">
+        {selectedLoras.map(loraConfig => (
+          <div key={loraConfig.info.id} className="bg-gray-700 rounded-md p-1 flex flex-row">
 
             <div className="h-14 w-14 mr-2 overflow-hidden rounded">
               <img
-                src={lora.thumbUrl}
-                alt={lora.name}
+                src={loraConfig.info.thumbUrl}
+                alt={loraConfig.info.name}
                 className="object-cover w-full h-full"
               />
             </div>
@@ -92,11 +93,11 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
               {/* Title and remove button */}
               <div className="flex items-center mb-2 h-6">
                 <div className="flex-grow">
-                  <h5 className="text-white text-sm font-medium truncate max-w-[120px] text-ellipsis">{lora.name}</h5>
+                  <h5 className="text-white text-sm font-medium truncate max-w-[120px] text-ellipsis">{loraConfig.info.name}</h5>
                 </div>
                 <button
                   className="text-gray-400 hover:text-red-500 p-1"
-                  onClick={() => handleRemoveStyle(lora.id)}
+                  onClick={() => handleRemoveStyle(loraConfig.info.id)}
                 >
                   &times;
                 </button>
@@ -110,11 +111,11 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                   min="0.1"
                   max="1"
                   step="0.05"
-                  value={lora.strength}
-                  onChange={(e) => handleUpdateStyleStrength(lora.id, parseFloat(e.target.value))}
+                  value={loraConfig.strength}
+                  onChange={(e) => handleUpdateStyleStrength(loraConfig.info.id, parseFloat(e.target.value))}
                   className="flex-grow h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer max-w-[115px]"
                 />
-                <span className="text-xs text-gray-300 w-8 text-right">{lora.strength.toFixed(2)}</span>
+                <span className="text-xs text-gray-300 w-8 text-right">{loraConfig.strength.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -195,11 +196,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         prompt: prompt,
         promptStrength: promptStrength,
         model: model,
-        loras: selectedLoras.map(lora => ({
-          id: lora.id,
-          modelUrl: lora.modelUrl,
-          strength: lora.strength,
-        })),
+        loras: selectedLoras,
       });
 
       // Calculate execution time
@@ -224,7 +221,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         isOpen={isStylePanelOpen}
         onClose={() => setIsStylePanelOpen(false)}
         onSelectStyle={handleSelectStyle}
-        selectedLoraIds={selectedLoras.map(lora => lora.id)}
+        selectedLoraIds={selectedLoras.map(lora => lora.info.id)}
       />
 
       <div className={`fixed z-40 right-4 bottom-4 w-64 panel overflow-y-auto ${isDebugMode ? 'right-80' : ''}`}>

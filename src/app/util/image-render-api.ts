@@ -1,5 +1,6 @@
 import { fal } from "@fal-ai/client";
 import { LoraWeight } from "@fal-ai/client/endpoints";
+import { LoraConfig } from "./lora";
 
 // Configure fal.ai client to use the proxy
 fal.config({
@@ -15,15 +16,8 @@ export interface ImageToImageParams {
   guidanceScale?: number;
   numInferenceSteps?: number;
   model?: ModelType;
-  loras?: loraConfig[];
+  loras?: LoraConfig[];
 }
-
-export interface loraConfig {
-  id: string;
-  modelUrl: string;
-  strength: number;
-}
-
 
 export interface AIModel {
   id: ModelType;
@@ -321,7 +315,7 @@ async function generateFluxLoraDepthImage(params: ImageToImageParams): Promise<I
   try {
 
     const loras: LoraWeight[] = params.loras?.map((lora) => ({
-      path: lora.modelUrl,
+      path: lora.info.modelUrl,
       scale: lora.strength * 2,
       force: true,
     })) || [];

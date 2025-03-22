@@ -1,11 +1,20 @@
-interface LoraInfo {
+export interface LoraInfo {
+    id: string;
+    civitaiId?: number;
     name: string;
-    description?: string;
     modelUrl: string;
     thumbUrl: string;
-    linkUrl: string;
     author: string;
     authorLinkUrl: string;
+    linkUrl?: string;
+    description?: string;
+}
+
+
+// Define SelectedLora interface
+export interface LoraConfig {
+    info: LoraInfo;
+    strength: number;
 }
 
 export const fluxDevLoraIds: string[] = [
@@ -31,38 +40,54 @@ export const fluxDevLoraIds: string[] = [
     "915918"
 ]
 
-export const customLoras: CivitaiResponse[] = [
+export const customLoras: LoraInfo[] = [
     {
-        id: 1,
+        id: "nontech-01",
         name: "nontech",
         description: "",
-        creator: {
-            username: "nontech",
-            image: "",
-        },
-        modelVersions: [
-            {
-                id: 1,
-                downloadUrl: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
-                images: [
-                    {
-                        url: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
-                    }
-                ]
-            }
-        ]
+        modelUrl: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
+        thumbUrl: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
+        author: "nontech",
+        authorLinkUrl: "https://nontech.net",
+        linkUrl: "",
     }
 ]
 
 export const getAllLoraInfo = async () => {
     const loraInfos = await Promise.all(fluxDevLoraIds.map(getLoraInfo))
-    return loraInfos
+    return loraInfos.filter((lora) => lora !== null)
 }
 
-export const getLoraInfo = async (loraId: string) => {
+export const getLoraInfo = async (loraId: string): Promise<LoraInfo | null> => {
     const response = await fetch(`https://civitai.com/api/v1/models/${loraId}`)
     const data: CivitaiResponse = await response.json()
-    return data
+    const modelVersion = GetFluxDevModelVersion(data);
+
+    if (!modelVersion) {
+        return null;
+    }
+
+    // Map to LoraInfo
+    return {
+        id: data.id.toString(),
+        civitaiId: data.id,
+        name: data.name,
+        thumbUrl: modelVersion.images[0].url,
+        modelUrl: modelVersion.downloadUrl,
+        author: data.creator.username,
+        authorLinkUrl: data.creator.image,
+        linkUrl: `https://civitai.com/models/${data.id}`,
+        description: data.description
+    }
+}
+
+const GetFluxDevModelVersion = (data: CivitaiResponse) => {
+    return data.modelVersions.find((version) => {
+        if (version.baseModel?.includes("Flux.1 D")) {
+            return version;
+        }
+        return null;
+    });
 }
 
 export interface CivitaiResponse {
