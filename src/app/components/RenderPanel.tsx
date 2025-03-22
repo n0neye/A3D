@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { generatePreviewImage as generateRenderImage, dataURLtoBlob, ModelType, availableModels } from '../util/image-render-api';
+import { renderImage as generateRenderImage, dataURLtoBlob, ModelType, availableModels } from '../util/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
@@ -245,14 +245,19 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
           <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
             {isLoading ? (
               <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-3"></div>
+                <div className="animate-spin rounded-full w-12 border-t-2 border-b-2 border-blue-500 mb-3"></div>
                 <p className="text-gray-400">Generating AI preview...</p>
               </div>
             ) : previewUrl ? (
               <img
                 src={previewUrl}
                 alt="Scene Preview"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain cursor-pointer"
+                onClick={() => {
+                  if (previewUrl) {
+                    window.open(previewUrl, '_blank');
+                  }
+                }}
               />
             ) : (
               <div className="text-gray-500 flex flex-col items-center">

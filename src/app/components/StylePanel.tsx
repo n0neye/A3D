@@ -26,7 +26,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
         try {
           setIsLoading(true);
           let loraInfo = await getAllLoraInfo();
-          loraInfo = [...customLoras, ...loraInfo, ];
+          loraInfo = [...customLoras, ...loraInfo,];
           setAvailableStyles(loraInfo);
         } catch (error) {
           console.error("Error loading LoRA styles:", error);
@@ -34,7 +34,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
           setIsLoading(false);
         }
       };
-      
+
       loadStyles();
     }
   }, []);
@@ -52,7 +52,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
       // Prevent scrolling on body when the panel is open
       document.body.style.overflow = 'hidden';
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.body.style.overflow = '';
@@ -70,20 +70,20 @@ const StylePanel: React.FC<StylePanelProps> = ({
   return (
     <div className="fixed inset-0  flex items-center justify-center z-50">
       <div className="bg-black opacity-60 absolute inset-0 z-0"></div>
-      <div 
+      <div
         ref={panelRef}
         className="relative panel-shape p-0 rounded-lg shadow-lg w-4/5 max-w-3xl max-h-[80vh] overflow-hidden flex flex-col"
       >
         <div className="flex justify-between items-center p-4 pl-8 border-b border-gray-700">
           <h3 className="text-lg font-medium text-white">Select a Style</h3>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-400 hover:text-white"
           >
             &times;
           </button>
         </div>
-        
+
         <div className="p-8 overflow-y-auto flex-grow">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
@@ -94,18 +94,18 @@ const StylePanel: React.FC<StylePanelProps> = ({
               {availableStyles.map(style => {
                 // Get the first image from the first model version
                 const isSelected = selectedLoraIds.includes(style.id);
-                
+
                 return (
-                  <div 
-                    key={style.id} 
+                  <div
+                    key={style.id}
                     className={`flex flex-col bg-gray-700 rounded-md overflow-hidden cursor-pointer 
                       hover:bg-gray-600 transition ${isSelected ? '' : ''}`}
                     onClick={() => !isSelected && selectStyle(style)}
                   >
                     <div className="aspect-square overflow-hidden relative bg-black">
-                      <img 
-                        src={style.thumbUrl} 
-                        alt={style.name} 
+                      <img
+                        src={style.thumbUrl}
+                        alt={style.name}
                         className={`object-cover w-full h-full ${isSelected ? 'opacity-50' : ''}`}
                       />
                       {isSelected && (
@@ -116,8 +116,18 @@ const StylePanel: React.FC<StylePanelProps> = ({
                     </div>
                     <div className="p-2">
                       <h5 className="text-white text-sm font-medium truncate">{style.name}</h5>
-                      <p className="text-gray-400 text-xs truncate">by {style.author}</p>
+                      <div className='flex flex-row items-center gap-2 justify-between'>
+                        <p className="text-gray-400 text-xs truncate">by {style.author}</p>
+                        {/* Info link */}
+                        <div onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(style.linkUrl, '_blank')
+                        }} className="text-gray-400 text-xs rounded-lg p-1 px-2 bg-gray-800 hover:bg-gray-700 transition">
+                          Info
+                        </div>
+                      </div>
                     </div>
+
                   </div>
                 );
               })}

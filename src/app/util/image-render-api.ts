@@ -67,9 +67,11 @@ export interface ImageToImageResult {
 }
 
 // Generate image based on the selected model
-export async function generatePreviewImage(params: ImageToImageParams): Promise<ImageToImageResult> {
+export async function renderImage(params: ImageToImageParams): Promise<ImageToImageResult> {
   // Select the appropriate API based on the model parameter
   const model = params.model || 'fal-turbo';
+
+  console.log('renderImage', model, params);
 
   switch (model) {
     case 'fal-turbo':
@@ -96,7 +98,7 @@ async function generateFalTurboImage(params: ImageToImageParams): Promise<ImageT
       input: {
         image_url: params.imageUrl,
         prompt: params.prompt,
-        negative_prompt: params.negativePrompt || "",
+        negative_prompt: params.negativePrompt || "text, watermark, logo",
         strength: params.promptStrength,
       },
       logs: true,
