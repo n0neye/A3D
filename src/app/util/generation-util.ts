@@ -351,3 +351,79 @@ function blobToBase64(blob: Blob): Promise<string> {
         reader.readAsDataURL(blob);
     });
 }
+
+/**
+ * Remove background from an image using the FAL AI API
+ */
+export async function removeBackground(
+    imageUrl: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
+    derivedFromId: string
+): Promise<GenerationResult> {
+    // Update entity state
+    entity.setProcessingState({
+        isGenerating2D: true,
+        isGenerating3D: false,
+        progressMessage: 'Removing background...'
+    });
+
+    try {
+        const startTime = performance.now();
+
+        // Call the FAL API to remove background
+        const result = await fal.subscribe("fal-ai/imageutils/rembg", {
+            input: {
+                image_url: imageUrl
+            },
+            logs: true,
+            onQueueUpdate: (update) => {
+                if (update.status === "IN_PROGRESS") {
+                    console.log("Background removal in progress...");
+                    update.logs?.map((log) => log.message).forEach(console.log);
+                }
+            },
+        });
+
+        const success = result.data && result.data.image && result.data.image.url;
+        if (success) {
+            // Apply the image to the entity mesh
+            await applyImageToEntity(entity, result.data.image.url, scene, entity.metadata.aiData?.ratio);
+
+            // Add to history - note this is a special case derived from another image
+            const prompt = entity.getCurrentGenerationLog()?.prompt || '';
+            const log = entity.addImageGenerationLog(prompt, result.data.image.url, {
+                ratio: entity.metadata.aiData?.ratio || '1:1',
+                imageSize: entity.metadata.aiData?.imageSize || 'medium',
+                derivedFromId: derivedFromId
+            }, );
+
+            // Log time
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            console.log(`%cBackground removal took ${(duration / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
+
+            entity.setProcessingState({
+                isGenerating2D: false,
+                isGenerating3D: false,
+                progressMessage: 'Background removed successfully!'
+            });
+
+            return { success: true, generationLog: log };
+        }
+
+        throw new Error('Failed to remove background');
+
+    } catch (error) {
+        console.error("Background removal failed:", error);
+        entity.setProcessingState({
+            isGenerating2D: false,
+            isGenerating3D: false,
+            progressMessage: 'Failed to remove background'
+        });
+        return {
+            success: false,
+            generationLog: null
+        };
+    }
+}

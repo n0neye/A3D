@@ -207,6 +207,7 @@ export class EntityNode extends BABYLON.TransformNode {
             negativePrompt?: string,
             ratio: ImageRatio;
             imageSize: ImageSize;
+            derivedFromId?: string;
         }
     ): GenerationLog {
         // Create AI data if it doesn't exist
@@ -216,7 +217,7 @@ export class EntityNode extends BABYLON.TransformNode {
                 currentStateId: null,
                 ratio: options.ratio,
                 imageSize: options.imageSize,
-                generationLogs: []
+                generationLogs: [],
             };
         }
 
@@ -227,6 +228,7 @@ export class EntityNode extends BABYLON.TransformNode {
             prompt,
             assetType: 'image',
             fileUrl,
+            derivedFromId: options.derivedFromId,
             imageParams: {
                 negativePrompt: options.negativePrompt,
                 ratio: options.ratio,
@@ -472,6 +474,8 @@ export const applyImageToEntity = async(
     const planeMesh = entity.planeMesh;
     if (!planeMesh) return;
 
+    console.log('applyImageToEntity', imageUrl);
+
     if(ratio) {
         const { width, height } = getPlaneSize(ratio);
         planeMesh.scaling = new BABYLON.Vector3(width, height, 1);
@@ -481,10 +485,14 @@ export const applyImageToEntity = async(
     const isBackground = entity.metadata.aiData?.aiObjectType === 'background';
 
     // Download the image
-    const image = await fetch(imageUrl);
+    const response = await fetch(imageUrl);
+    
+    // Check content type for PNG
+    const contentType = response.headers.get('content-type');
+    const isPotentiallyTransparent = contentType && contentType.includes('png');
     
     // convert to blob data url
-    const imageBlob = await image.blob();
+    const imageBlob = await response.blob();
     const imageDataUrl = URL.createObjectURL(imageBlob);
 
     if (isBackground) {
@@ -509,30 +517,42 @@ export const applyImageToEntity = async(
         // Update metadata
         entity.metadata.lastImageUrl = imageDataUrl;
     } else {
-        // Standard object - just update the texture
+        // For regular objects, update the material texture
         let material = planeMesh.material as BABYLON.StandardMaterial;
         if (!material || !(material instanceof BABYLON.StandardMaterial)) {
             material = new BABYLON.StandardMaterial(`${entity.name}-material`, scene);
-            material.backFaceCulling = false;
-            material.emissiveColor = new BABYLON.Color3(1, 1, 1);
         }
+        if (material) {
+            // Create a new texture
+            const texture = new BABYLON.Texture(imageDataUrl, scene);
+            
+            // Apply texture to the material
+            material.diffuseTexture = texture;
+            material.emissiveTexture = texture;
+            
+            // If the image is a PNG, check for transparency
+            if (isPotentiallyTransparent) {
+                console.log('isPotentiallyTransparent', isPotentiallyTransparent);
 
-        // Check if we need to revoke previous blob URL
-        const entityMetadata = entity.getEntityMetadata();
-        if (entityMetadata?.lastImageUrl?.startsWith('blob:')) {
-            URL.revokeObjectURL(entityMetadata.lastImageUrl);
+                // Set material to handle transparency
+                material.diffuseTexture.hasAlpha = true;
+                material.useAlphaFromDiffuseTexture = true;
+                material.backFaceCulling = false;
+                material.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+                material.needDepthPrePass = false;
+                
+                // For best rendering quality with transparent textures
+                planeMesh.renderingGroupId = 1; // Render after opaque objects
+            } else {
+                // Reset transparency settings if the image is not a PNG
+                material.useAlphaFromDiffuseTexture = false;
+                material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
+                planeMesh.renderingGroupId = 0;
+            }
+            
+            // Update metadata
+            entity.metadata.lastImageUrl = imageDataUrl;
         }
-
-        // Create texture
-        const texture = new BABYLON.Texture(imageDataUrl, scene);
-        material.diffuseTexture = texture;
-        material.emissiveTexture = texture;
-
-        // Apply material
-        planeMesh.material = material;
-
-        // Update metadata
-        entity.metadata.lastImageUrl = imageDataUrl;
     }
 
     // Switch to 2D display mode

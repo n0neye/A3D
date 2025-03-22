@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown, IconScissors } from '@tabler/icons-react';
 
-import { generateBackground, generate3DModel } from '../util/generation-util';
+import { generateBackground, generate3DModel, removeBackground } from '../util/generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
@@ -243,11 +243,37 @@ const EntityPanel: React.FC = () => {
     selectedEntity.updateAspectRatio(ratio);
   };
 
+  // Handler for removing background
+  const handleRemoveBackground = async () => {
+    if (!selectedEntity || !currentGenLog || !scene) return;
+    if (currentGenLog.assetType !== 'image' || !currentGenLog.fileUrl) return;
+    
+    // Call the background removal function
+    const result = await removeBackground(
+      currentGenLog.fileUrl,
+      selectedEntity,
+      scene,
+      currentGenLog.id // Pass current image ID as the derived from ID
+    );
+    
+    if (result.success && result.generationLog) {
+      onNewGeneration(result.generationLog);
+    }
+  };
+
   // UI content based on object type
   const renderContent = () => {
     const isGenerating = isGenerating2D || isGenerating3D;
     const isObject = selectedEntity?.metadata.aiData?.aiObjectType === 'object';
     const isBackground = selectedEntity?.metadata.aiData?.aiObjectType === 'background';
+
+    // Check if we can remove background (only if we have a current image)
+    const canRemoveBackground = 
+      !isGenerating && 
+      currentGenLog?.assetType === 'image' && 
+      !!currentGenLog.fileUrl && 
+      isObject && 
+      !isBackground;
 
     const hasPreviousGeneration = currentHistoryIndex > 0;
     const hasNextGeneration = currentHistoryIndex < generationHistory.length - 1;
@@ -313,7 +339,7 @@ const EntityPanel: React.FC = () => {
                     onClick={handleGenerate2D}
                     disabled={isGenerating || !promptInput.trim()}
                   >
-                    {isGenerating2D && renderSpinner('Generating')}
+                    {isGenerating2D && !progressMessage.includes('background') && renderSpinner('Generating')}
                     {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={12} className='inline' /></span></>}
                   </button>
 
@@ -327,6 +353,25 @@ const EntityPanel: React.FC = () => {
                     {isGenerating3D &&
                       <span>{progressMessage}</span>}
                   </button>}
+                  
+                  {/* Remove Background button */}
+                  {canRemoveBackground && (
+                    <button
+                      className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${
+                        isGenerating && progressMessage.includes('background') ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'
+                      } rounded text-white`}
+                      onClick={handleRemoveBackground}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating2D && progressMessage.includes('background') && renderSpinner('Processing')}
+                      {!(isGenerating2D && progressMessage.includes('background')) && (
+                        <>
+                          <IconScissors size={14} className="mx-auto mb-1" />
+                          Remove BG
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
 
               </div>
