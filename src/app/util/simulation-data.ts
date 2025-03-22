@@ -1,18 +1,19 @@
 import { Result } from "@fal-ai/client"
 import { TrellisOutput } from "@fal-ai/client/endpoints"
-import { Generation2DRealtimResult } from "./generation-util";
+import { Generation2DRealtimResult } from "./realtime-generation-util";
 
 export const isSimulating = true;
 
-export const get3DSimulationData=()=>{
+export const get3DSimulationData = () => {
     const randomIndex = Math.floor(Math.random() * modelSimulationData.length);
     return modelSimulationData[randomIndex];
 }
 const modelSimulationData: Result<TrellisOutput>[] = [
+    // Boy
     {
-        "data": {
+        data: {
             "model_mesh": {
-                "url": "https://v3.fal.media/files/elephant/Epqn8JLaoHlxEvfJ_g3FV_model.glb",
+                "url": "https://v3.fal.media/files/penguin/4xvjrpTFm2lZzTq7L4ap9_model.glb",
                 "content_type": "application/octet-stream",
                 "file_name": "model.glb",
                 "file_size": 1775568
@@ -22,42 +23,59 @@ const modelSimulationData: Result<TrellisOutput>[] = [
                 "generation": 4.51186943333596,
                 "export": 19.238466400653124
             }
+
         },
         "requestId": "eb0bf597-17cd-4eac-be05-38aa1aec1ef1"
     },
-    {
-        "data": {
-            "model_mesh": {
-                "url": "https://v3.fal.media/files/koala/Xco9WS9x-B7lKNCC_55du_model.glb",
-                "content_type": "application/octet-stream",
-                "file_name": "model.glb",
-                "file_size": 1613116
-            },
-            "timings": {
-                "prepare": 0.000009780284017324448,
-                "generation": 4.259151943959296,
-                "export": 13.910563554149121
-            }
-        },
-        "requestId": "d357daa6-e615-42f9-bbe1-1e38b723a850"
-    },
-    // Owl
-    {
-        "data": {
-            "model_mesh": {
-                "url": "https://v3.fal.media/files/zebra/-YbDsazHj-sqCBQirbrkS_model.glb",
-                "content_type": "application/octet-stream",
-                "file_name": "model.glb",
-                "file_size": 2256040
-            },
-            "timings": {
-                "prepare": 0.000010450370609760284,
-                "generation": 4.7261548400856555,
-                "export": 31.396583002060652
-            }
-        },
-        "requestId": "59ad9fc0-7876-432a-b353-810412f9f58a"
-    },
+    // {
+    //     "data": {
+    //         "model_mesh": {
+    //             "url": "https://v3.fal.media/files/elephant/Epqn8JLaoHlxEvfJ_g3FV_model.glb",
+    //             "content_type": "application/octet-stream",
+    //             "file_name": "model.glb",
+    //             "file_size": 1775568
+    //         },
+    //         "timings": {
+    //             "prepare": 0.00000681169331073761,
+    //             "generation": 4.51186943333596,
+    //             "export": 19.238466400653124
+    //         }
+    //     },
+    //     "requestId": "eb0bf597-17cd-4eac-be05-38aa1aec1ef1"
+    // },
+    // {
+    //     "data": {
+    //         "model_mesh": {
+    //             "url": "https://v3.fal.media/files/koala/Xco9WS9x-B7lKNCC_55du_model.glb",
+    //             "content_type": "application/octet-stream",
+    //             "file_name": "model.glb",
+    //             "file_size": 1613116
+    //         },
+    //         "timings": {
+    //             "prepare": 0.000009780284017324448,
+    //             "generation": 4.259151943959296,
+    //             "export": 13.910563554149121
+    //         }
+    //     },
+    //     "requestId": "d357daa6-e615-42f9-bbe1-1e38b723a850"
+    // },
+    // // Owl
+    // {
+    //     "data": {
+    //         "model_mesh": {
+    //             "url": "https://v3.fal.media/files/zebra/-YbDsazHj-sqCBQirbrkS_model.glb",
+    //             "content_type": "application/octet-stream",
+    //             "file_name": "model.glb",
+    //             "file_size": 2256040
+    //         },
+    //         "timings": {
+    //             "prepare": 0.000010450370609760284,
+    //             "generation": 4.7261548400856555,
+    //             "export": 31.396583002060652
+    //         }
+    //     },
+    //     "requestId": "59ad9fc0-7876-432a-b353-810412f9f58a"
+    // },
     // Flying bird
     {
         "data": {

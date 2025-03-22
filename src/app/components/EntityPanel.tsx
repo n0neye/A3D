@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconChevronDown, IconScissors } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
 import { generateBackground, generate3DModel, removeBackground } from '../util/generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
@@ -247,7 +247,7 @@ const EntityPanel: React.FC = () => {
   const handleRemoveBackground = async () => {
     if (!selectedEntity || !currentGenLog || !scene) return;
     if (currentGenLog.assetType !== 'image' || !currentGenLog.fileUrl) return;
-    
+
     // Call the background removal function
     const result = await removeBackground(
       currentGenLog.fileUrl,
@@ -255,11 +255,23 @@ const EntityPanel: React.FC = () => {
       scene,
       currentGenLog.id // Pass current image ID as the derived from ID
     );
-    
+
     if (result.success && result.generationLog) {
       onNewGeneration(result.generationLog);
     }
   };
+
+  const handleDownload = () => {
+    console.log('handleDownload');
+    if (!currentGenLog?.fileUrl) return;
+
+    // Call the download function
+    const a = document.createElement('a');
+    a.href = currentGenLog.fileUrl;
+    a.download = currentGenLog.fileUrl.split('/').pop() || 'image.png';
+    a.click();
+  }
+
 
   // UI content based on object type
   const renderContent = () => {
@@ -268,11 +280,11 @@ const EntityPanel: React.FC = () => {
     const isBackground = selectedEntity?.metadata.aiData?.aiObjectType === 'background';
 
     // Check if we can remove background (only if we have a current image)
-    const canRemoveBackground = 
-      !isGenerating && 
-      currentGenLog?.assetType === 'image' && 
-      !!currentGenLog.fileUrl && 
-      isObject && 
+    const canRemoveBackground =
+      !isGenerating &&
+      currentGenLog?.assetType === 'image' &&
+      !!currentGenLog.fileUrl &&
+      isObject &&
       !isBackground;
 
     const hasPreviousGeneration = currentHistoryIndex > 0;
@@ -299,7 +311,7 @@ const EntityPanel: React.FC = () => {
                   />
 
                   {/* Bottom row */}
-                  <div className="flex justify-start space-x-1 h-6">
+                  <div className="flex justify-start space-x-1 h-6 pr-2">
 
                     {isObject && !isBackground && <RatioSelector
                       value={currentRatio}
@@ -318,6 +330,9 @@ const EntityPanel: React.FC = () => {
                         >
                           <IconArrowLeft size={16} />
                         </button>
+                        <span className="text-xs text-gray-400 self-center">
+                          {currentHistoryIndex + 1}/{generationHistory.length}
+                        </span>
                         <button
                           className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
                           onClick={goToNextGeneration}
@@ -326,10 +341,16 @@ const EntityPanel: React.FC = () => {
                         >
                           <IconArrowRight size={16} />
                         </button>
-                        <span className="text-xs text-gray-400 self-center">
-                          {currentHistoryIndex + 1}/{generationHistory.length}
-                        </span></>
+                        </>
                     )}
+                    {/* <div className='flex-grow'></div> */}
+                    <button className="p-1 rounded text-white hover:bg-gray-700"
+                      onClick={handleDownload}
+                      disabled={!currentGenLog?.fileUrl}
+                    >
+                        {/* Icon */}
+                        <IconDownload size={16} />
+                      </button>
                   </div>
                 </div>
 
@@ -353,13 +374,12 @@ const EntityPanel: React.FC = () => {
                     {isGenerating3D &&
                       <span>{progressMessage}</span>}
                   </button>}
-                  
+
                   {/* Remove Background button */}
                   {canRemoveBackground && (
                     <button
-                      className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${
-                        isGenerating && progressMessage.includes('background') ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'
-                      } rounded text-white`}
+                      className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating && progressMessage.includes('background') ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'
+                        } rounded text-white`}
                       onClick={handleRemoveBackground}
                       disabled={isGenerating}
                     >
