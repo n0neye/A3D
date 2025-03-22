@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { create2DBackground } from '../editor/editor-util';
+import { create2DBackground, createEquirectangularSkybox } from '../editor/editor-util';
 import { ImageRatio, ImageSize } from '../generation-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
@@ -421,7 +421,9 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         const placeholderUrl = options.imageUrl || "https://playground.babylonjs.com/textures/equirectangular.jpg";
 
         // Create the background mesh
-        planeMesh = create2DBackground(scene, placeholderUrl);
+        // planeMesh = create2DBackground(scene, placeholderUrl);
+        
+        planeMesh = createEquirectangularSkybox(scene, placeholderUrl);
 
         // Set special properties for backgrounds
         planeMesh.renderingGroupId = 0; // Ensure it renders behind everything
@@ -445,11 +447,8 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         // Apply material to mesh
         planeMesh.material = material;
 
-
-        // Look at the camera for non-background objects
-        if (scene.activeCamera) {
-            planeMesh.lookAt(scene.activeCamera.position);
-        }
+        // Always face the camera
+        planeMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
     }
 
     // Parent the mesh to the entity

@@ -1,4 +1,5 @@
 import * as BABYLON from "@babylonjs/core";
+import { GridMaterial } from "@babylonjs/materials/grid";
 import { createEntity, EntityNode } from "../extensions/entityNode";
 
 // Store environment objects
@@ -9,6 +10,7 @@ export interface EnvironmentObjects {
     ambientLight?: BABYLON.HemisphericLight;
     skybox?: BABYLON.Mesh;
     background?: BABYLON.Mesh;
+    grid?: BABYLON.Mesh;
 }
 
 // Global environment reference
@@ -36,6 +38,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     camera.lowerRadiusLimit = 1;
     camera.upperRadiusLimit = 20;
     camera.attachControl(canvas, true);
+    camera.position = new BABYLON.Vector3(0, 0, 2);
 
     // Ambient Light
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
@@ -44,12 +47,13 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     // createSunEntity(scene);
 
     // Create a background entity
-    // createEquirectangularSkybox(scene, "./demoAssets/skybox/sunsetforest.webp");
-    // create2DBackground(scene, "./demoAssets/skybox/sunsetforest.webp");
     createEntity(scene, "aiObject", {
         aiObjectType: "background",
-        imageUrl: "./demoAssets/skybox/sunsetforest.webp"
+        imageUrl: "./demoAssets/skybox/qwantani_puresky_4k.jpg"
     });
+
+    // Create world grid
+    createWorldGrid(scene, 20, 10);
 }
 
 
@@ -61,7 +65,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
  */
 export const createEquirectangularSkybox = (
     scene: BABYLON.Scene,
-    url: string = "https://playground.babylonjs.com/textures/equirectangular.jpg"
+    url: string,
 ): BABYLON.Mesh => {
     // Create a large dome for the skybox
     const skyDome = BABYLON.MeshBuilder.CreateSphere(
@@ -74,6 +78,7 @@ export const createEquirectangularSkybox = (
         scene
     );
 
+
     // Flip the skybox
     skyDome.rotation.x = Math.PI;
 
@@ -85,6 +90,7 @@ export const createEquirectangularSkybox = (
     // Create texture
     const skyTexture = new BABYLON.Texture(url, scene);
     skyMaterial.emissiveTexture = skyTexture;
+    // skyTexture.proje
 
     // Apply material
     skyDome.material = skyMaterial;
@@ -221,8 +227,48 @@ export const create2DBackground = (
     return background;
 };
 
-
-
+/**
+ * Creates a world floor grid to help with spatial orientation
+ * @param scene The Babylon.js scene
+ * @param size The size of the grid
+ * @param majorUnitFrequency How often to show major grid lines
+ * @returns The created grid mesh
+ */
+export const createWorldGrid = (
+    scene: BABYLON.Scene,
+    size: number = 100,
+    majorUnitFrequency: number = 10
+): BABYLON.Mesh => {
+    // Create a ground mesh for the grid
+    const gridGround = BABYLON.MeshBuilder.CreateGround(
+        "worldGrid",
+        { width: size, height: size, subdivisions: 1 },
+        scene
+    );
+    gridGround.position.y = -0.5;
+    
+    // Create a grid material
+    const gridMaterial = new GridMaterial("gridMaterial", scene);
+    gridMaterial.majorUnitFrequency = majorUnitFrequency;
+    gridMaterial.minorUnitVisibility = 0.45;
+    gridMaterial.gridRatio = 1;
+    gridMaterial.backFaceCulling = false;
+    gridMaterial.mainColor = new BABYLON.Color3(0.2, 0.2, 0.3);
+    gridMaterial.lineColor = new BABYLON.Color3(0.0, 0.7, 1.0);
+    gridMaterial.opacity = 0.8;
+    
+    // Apply the material to the grid
+    gridGround.material = gridMaterial;
+    
+    // Set grid to be non-pickable and not receive shadows
+    gridGround.isPickable = false;
+    gridGround.receiveShadows = false;
+    
+    // Store in environment objects
+    environmentObjects.grid = gridGround;
+    
+    return gridGround;
+};
 
 // Create an arrow to visualize direction
 const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON.Mesh => {
