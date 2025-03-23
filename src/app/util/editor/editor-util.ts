@@ -39,6 +39,8 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     camera.upperRadiusLimit = 20;
     camera.attachControl(canvas, true);
     camera.position = new BABYLON.Vector3(0, 0, 2);
+    camera.minZ = 0.1;
+    camera.maxZ = 10;
 
     // Ambient Light
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);

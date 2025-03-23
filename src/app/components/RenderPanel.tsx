@@ -6,6 +6,8 @@ import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 
+let postProcess: BABYLON.PostProcess | null = null;
+
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const { scene, engine } = useEditorContext();
   // State variables
@@ -213,6 +215,121 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     }
   };
 
+  const EnableDepthRender = async () => {
+    try {
+      if (!scene || !engine) throw new Error("Scene or engine not found");
+      if (!scene.activeCamera) throw new Error("Active camera not found");
+
+      setIsLoading(true);
+
+      // Clean up existing resources
+      scene.disableDepthRenderer();
+      if (scene.activeCamera && postProcess) {
+        scene.activeCamera.detachPostProcess(postProcess);
+        postProcess.dispose();
+        postProcess = null;
+      }
+
+      // Enable depth renderer with better settings
+      const depthRenderer = scene.enableDepthRenderer(
+        scene.activeCamera,
+        false,  // Don't colorize
+        true    // Use logarithmic depth buffer for better precision
+      );
+
+      // Adjust camera clip planes for better depth resolution if needed
+      scene.activeCamera.minZ = 0.1;  // Set to a reasonable near clip distance
+      scene.activeCamera.maxZ = 20;  // Set to a reasonable far clip distance
+
+      // Force a render to update the depth values
+      scene.render();
+
+      // Create an improved shader that better handles depth values
+      BABYLON.Effect.ShadersStore['improvedDepthPixelShader'] = `
+        varying vec2 vUV;
+        uniform sampler2D textureSampler;
+        uniform float near;
+        uniform float far;
+        
+        void main(void) {
+          // Get raw depth value
+          float depth = texture2D(textureSampler, vUV).r;
+          
+          // Use a power function to emphasize smaller differences
+          // This makes middle-range depths more visible
+          float scaledDepth = pow(depth, 0.45);
+          
+          // Invert for better visualization (closer is brighter)
+          float displayDepth = 1.0 - scaledDepth;
+          
+          gl_FragColor = vec4(displayDepth, displayDepth, displayDepth, 1.0);
+        }
+      `;
+
+      // Create the post process with our improved shader
+      postProcess = new BABYLON.PostProcess(
+        "depthVisualizer",
+        "improvedDepth",
+        ["near", "far"],  // Added uniforms for near/far planes
+        null,
+        1.0,
+        scene.activeCamera
+      );
+
+      // Set up the shader parameters and texture
+      postProcess.onApply = (effect) => {
+        effect.setTexture("textureSampler", depthRenderer.getDepthMap());
+        effect.setFloat("near", scene.activeCamera!.minZ);
+        effect.setFloat("far", scene.activeCamera!.maxZ);
+      };
+
+      // Add a button to take a snapshot when you want
+      const snapshotButton = document.createElement('button');
+      snapshotButton.innerHTML = "Save Depth Map";
+      snapshotButton.style.position = "absolute";
+      snapshotButton.style.top = "10px";
+      snapshotButton.style.left = "10px";
+      snapshotButton.style.zIndex = "1000";
+      snapshotButton.style.padding = "8px 16px";
+      snapshotButton.style.backgroundColor = "#375a7f";
+      snapshotButton.style.color = "white";
+      snapshotButton.style.border = "none";
+      snapshotButton.style.borderRadius = "4px";
+      snapshotButton.style.cursor = "pointer";
+
+      document.body.appendChild(snapshotButton);
+
+      snapshotButton.onclick = async () => {
+        const activeCamera = scene.activeCamera as BABYLON.Camera;
+        const width = activeCamera.getScene().getEngine().getRenderWidth();
+        const height = activeCamera.getScene().getEngine().getRenderHeight();
+        const depthSnapshot = await BABYLON.Tools.CreateScreenshotAsync(
+          engine,
+          activeCamera,
+          { width: width, height: height }
+        );
+
+        // Create download link
+        const link = document.createElement('a');
+        link.download = 'depth_map.png';
+        link.href = depthSnapshot;
+        link.click();
+
+        // Update preview
+        setDebugImage(depthSnapshot);
+
+        // Remove the button after capture
+        document.body.removeChild(snapshotButton);
+      };
+
+    } catch (error) {
+      console.error("Error generating depth map:", error);
+      alert("Failed to generate depth map: " + (error as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
 
@@ -358,6 +475,27 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
               ))}
             </div>
           </div>
+
+          {/* Add Debug Buttons for isDebugMode */}
+          {(
+            <div className="w-full mb-4">
+              <label className="block text-sm text-gray-400 mb-2">Debug Tools</label>
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  onClick={generateDebugImage}
+                  className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
+                >
+                  Generate Scene Image
+                </button>
+                <button
+                  onClick={EnableDepthRender}
+                  className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
+                >
+                  Download Depth Map
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex gap-2 w-full">
