@@ -12,12 +12,11 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const { scene, engine } = useEditorContext();
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string>('flooded office, fire, dark night, a female warrior with a spear');
   const [promptStrength, setPromptStrength] = useState<number>(0.9); // Default to 0.7 strength
   const previewImageRef = useRef<HTMLImageElement | null>(null);
-  const [debugImage, setDebugImage] = useState<string | null>(null);
-  const [noiseStrength, setNoiseStrength] = useState<number>(0.6); // Default to 0 (no noise)
+  const [noiseStrength, setNoiseStrength] = useState<number>(0); // Default to 0 (no noise)
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [model, setModel] = useState<ModelType>('flux-lora-depth');
 
@@ -150,13 +149,13 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       const screenshot = await takeScreenshot();
 
       console.log("Screenshot generated:", screenshot.substring(0, 100) + "...");
-      setDebugImage(screenshot);
+      setImageUrl(screenshot);
       // Apply noise to the screenshot if noiseStrength > 0
       let processedImage = screenshot;
       if (noiseStrength > 0) {
         processedImage = await addNoiseToImage(screenshot, noiseStrength);
       }
-      setDebugImage(processedImage);
+      setImageUrl(processedImage);
 
     } catch (error) {
       console.error("Error in debug image:", error);
@@ -172,7 +171,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       const screenshot = await takeScreenshot();
 
       // Store the original screenshot
-      setDebugImage(screenshot);
+      setImageUrl(screenshot);
 
       // Apply noise to the screenshot if noiseStrength > 0
       let processedImage = screenshot;
@@ -181,7 +180,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       }
 
       // Update the debug image with the processed image
-      setPreviewUrl(processedImage);
+      setImageUrl(processedImage);
 
       // Resize the image to 512x512 before sending to API
       const resizedImage = await resizeImage(processedImage, 512, 512);
@@ -206,7 +205,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       setExecutionTime(endTime - startTime);
 
       // Update the preview with the generated image
-      setPreviewUrl(result.imageUrl);
+      setImageUrl(result.imageUrl);
     } catch (error) {
       console.error("Error generating preview:", error);
       alert("Failed to generate preview. Please try again.");
@@ -223,12 +222,12 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       setIsLoading(true);
 
       // Clean up existing resources
-      scene.disableDepthRenderer();
-      if (scene.activeCamera && postProcess) {
-        scene.activeCamera.detachPostProcess(postProcess);
-        postProcess.dispose();
-        postProcess = null;
-      }
+      // scene.disableDepthRenderer();
+      // if (postProcess) {
+      //   scene.activeCamera.detachPostProcess(postProcess);
+      //   postProcess.dispose();
+      //   postProcess = null;
+      // }
 
       // Enable depth renderer with better settings
       const depthRenderer = scene.enableDepthRenderer(
@@ -283,44 +282,33 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         effect.setFloat("far", scene.activeCamera!.maxZ);
       };
 
-      // Add a button to take a snapshot when you want
-      const snapshotButton = document.createElement('button');
-      snapshotButton.innerHTML = "Save Depth Map";
-      snapshotButton.style.position = "absolute";
-      snapshotButton.style.top = "10px";
-      snapshotButton.style.left = "10px";
-      snapshotButton.style.zIndex = "1000";
-      snapshotButton.style.padding = "8px 16px";
-      snapshotButton.style.backgroundColor = "#375a7f";
-      snapshotButton.style.color = "white";
-      snapshotButton.style.border = "none";
-      snapshotButton.style.borderRadius = "4px";
-      snapshotButton.style.cursor = "pointer";
 
-      document.body.appendChild(snapshotButton);
+      // Save snapshot of depth map
+      const width = engine.getRenderWidth();
+      const height = engine.getRenderHeight();
 
-      snapshotButton.onclick = async () => {
-        const activeCamera = scene.activeCamera as BABYLON.Camera;
-        const width = activeCamera.getScene().getEngine().getRenderWidth();
-        const height = activeCamera.getScene().getEngine().getRenderHeight();
-        const depthSnapshot = await BABYLON.Tools.CreateScreenshotAsync(
-          engine,
-          activeCamera,
-          { width: width, height: height }
-        );
+      const depthSnapshot = await BABYLON.Tools.CreateScreenshotAsync(
+        engine,
+        scene.activeCamera,
+        { width: width, height: height }
+      );
 
-        // Create download link
-        const link = document.createElement('a');
-        link.download = 'depth_map.png';
-        link.href = depthSnapshot;
-        link.click();
+      // Create download link
+      const link = document.createElement('a');
+      link.download = 'depth_map.png';
+      link.href = depthSnapshot;
+      link.click();
 
-        // Update preview
-        setDebugImage(depthSnapshot);
+      // Update preview
+      setImageUrl(depthSnapshot);
 
-        // Remove the button after capture
-        document.body.removeChild(snapshotButton);
-      };
+      // Detach depth renderer
+      // scene.disableDepthRenderer();
+      if (scene.activeCamera && postProcess) {
+        scene.activeCamera.detachPostProcess(postProcess);
+        postProcess.dispose();
+        postProcess = null;
+      }
 
     } catch (error) {
       console.error("Error generating depth map:", error);
@@ -345,18 +333,6 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         <h3 className="text-lg font-medium mb-3 text-white">Render</h3>
 
         <div className="flex flex-col items-center">
-          {/* Debug image */}
-          {/* <button
-          onClick={() => generateDebugImage()}
-          className="mb-4 px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
-        >
-          Generate Debug Image
-        </button> */}
-          {/* {debugImage && (
-          <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-            <img src={debugImage} alt="Debug" className="w-full h-full object-contain" />
-          </div>
-        )} */}
 
           {/* Preview image or placeholder */}
           <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
@@ -365,14 +341,14 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                 <div className="animate-spin rounded-full w-12 border-t-2 border-b-2 border-blue-500 mb-3"></div>
                 <p className="text-gray-400">Generating AI preview...</p>
               </div>
-            ) : previewUrl ? (
+            ) : imageUrl ? (
               <img
-                src={previewUrl}
+                src={imageUrl}
                 alt="Scene Preview"
                 className="w-full h-full object-contain cursor-pointer"
                 onClick={() => {
-                  if (previewUrl) {
-                    window.open(previewUrl, '_blank');
+                  if (imageUrl) {
+                    window.open(imageUrl, '_blank');
                   }
                 }}
               />

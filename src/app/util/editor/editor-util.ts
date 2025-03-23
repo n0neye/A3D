@@ -40,7 +40,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     camera.attachControl(canvas, true);
     camera.position = new BABYLON.Vector3(0, 0, 2);
     camera.minZ = 0.1;
-    camera.maxZ = 10;
+    camera.maxZ = 20;
 
     // Ambient Light
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
@@ -70,10 +70,11 @@ export const createEquirectangularSkybox = (
     url: string,
 ): BABYLON.Mesh => {
     // Create a large dome for the skybox
+    const maxZ = scene.activeCamera?.maxZ  || 100;
     const skyDome = BABYLON.MeshBuilder.CreateSphere(
         "skyDome",
         {
-            diameter: 1000,
+            diameter: maxZ * 2,
             segments: 32,
             sideOrientation: BABYLON.Mesh.BACKSIDE
         },
