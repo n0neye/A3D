@@ -18,33 +18,40 @@ export interface LoraConfig {
 }
 
 export const fluxDevLoraIds: string[] = [
-    "832858", // Anime art
-    "736706", // Epic gorgeous Details
+
+    // Cinematic, Photography
     "214956", // Cinematic Photography Style XL + F1D
     "235495", // Cinematic Kodak Motion Picture "Film Still" Style XL + F1D
-    "678853", //SXZ Dark Fantasy
-    "128568", // Cyberpunk Anime Style
-    "667004", // Elden Ring
     "707312", // Luminous Shadowscape
     "118103", // Abandoned Style
-    "1032948",
-    "289500",
-    "676275",
-    "757042",
-    "504579",
-    "365274",
-    "383452",
-    "264275",
-    "109414",
-    "921061",
-    "915918",
+    "668468",
+    "675648",
+    "878199",
+    "1032948", // Dark Side of the light
+    "289500", //Cinematic volumetric lighting
+    "504579", // 16mm
+    "365274", // Kodak
+    "264275", // Blade Runner
+    "921061", // Film Style
+
+    // NA
+
+    // Fantasy
+    "263107",
+    "667004", // Elden Ring
+    "678853", //SXZ Dark Fantasy
+    "660112",
+    "736706", // Epic gorgeous Details
     // 3D
+    "383452", // Unreal Engine
+    "109414", // Digital Human
     "1059755", //3D asset
     "1180834",
     "911050",
     "730729",
     "1295619",
     "562478",
+    "274425",
     // Surreal
     "721398",
     "707582",
@@ -54,9 +61,30 @@ export const fluxDevLoraIds: string[] = [
     "894628",
     "691069",
     "795791",
+    // Painting
+    "757042", // oil painting
+    "866333",
+    "803456", // sketch
+    "640459",
+    "858800",
+    "676275", // Mezzotint Artstyle for Flux
     // Artists
     "682760",
-    "751068"
+    "751068",
+    
+    // Anime
+    "832858", // Anime art
+    "128568", // Cyberpunk Anime Style
+    "721039", // Retro Anime Flux
+    "658958",
+    "938811", 
+    "651694",
+    "1101919",
+    "653658",
+    "915918", // Niji
+
+    // Util
+    // "290836", // Multi view
 ]
 
 export const customLoras: LoraInfo[] = [
@@ -68,7 +96,16 @@ export const customLoras: LoraInfo[] = [
         thumbUrl: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
         author: "nontech",
         authorLinkUrl: "https://nontech.net",
-        linkUrl: "",
+        linkUrl: "https://nontech.net",
+    },{
+        id: "nontech-dreamer",
+        name: "DRM",
+        description: "",
+        modelUrl: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/dreamer.safetensors",
+        thumbUrl: "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/dreamer.webp",
+        author: "nontech",
+        authorLinkUrl: "https://nontech.net",
+        linkUrl: "https://nontech.net",
     }
 ]
 
@@ -86,12 +123,17 @@ export const getLoraInfo = async (loraId: string): Promise<LoraInfo | null> => {
         return null;
     }
 
+    const findFirstImage = (images: Image[]) => {
+        // Find first type==="image"
+        return images.find((image) => image.type === "image")
+    }
+
     // Map to LoraInfo
     return {
         id: data.id.toString(),
         civitaiId: data.id,
         name: data.name,
-        thumbUrl: modelVersion.images[0].url,
+        thumbUrl: findFirstImage(modelVersion.images)?.url || "",
         modelUrl: modelVersion.downloadUrl,
         author: data.creator.username,
         authorLinkUrl: data.creator.image,

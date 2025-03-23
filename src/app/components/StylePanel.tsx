@@ -102,7 +102,8 @@ const StylePanel: React.FC<StylePanelProps> = ({
                       hover:bg-gray-600 transition ${isSelected ? '' : ''}`}
                     onClick={() => !isSelected && selectStyle(style)}
                   >
-                    <div className="aspect-square overflow-hidden relative bg-black">
+                    <div className="aspect-square overflow-hidden relative bg-black"
+                      style={{ aspectRatio: "2/3" }}>
                       <img
                         src={style.thumbUrl}
                         alt={style.name}

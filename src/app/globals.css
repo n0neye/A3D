@@ -43,7 +43,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-.panel{
+.panel {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
@@ -52,14 +52,14 @@
   color: white;
 }
 
-.panel-shape{
+.panel-shape {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
   border-radius: 1rem;
 }
 
-.panel-shape-dark{
+.panel-shape-dark {
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(20px);
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
@@ -110,7 +110,7 @@ input[type="color"]::-webkit-color-swatch {
   border-radius: 2px;
 }
 
-button{
+button {
   cursor: pointer;
 }
 
@@ -189,5 +189,29 @@ button{
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+body {
+  /* ===== Scrollbar CSS ===== */
+  /* Firefox */
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: #ffffff55 #00000000;
+  }
+
+  /* Chrome, Edge, and Safari */
+  *::-webkit-scrollbar {
+    width: 16px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #00000000;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #ffffff66;
+    border-radius: 10px;
+    border: 3px solid #ffffff;
   }
 }
