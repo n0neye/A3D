@@ -46,7 +46,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
 
     // Sun
-    // createSunEntity(scene);
+    createSunEntity(scene);
 
     // Create a background entity
     createEntity(scene, "aiObject", {
@@ -334,18 +334,17 @@ export const createSunEntity = (scene: BABYLON.Scene,) => {
     // Create a sun (directional light)
     const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
     sunLight.intensity = 1;
-    sunLight.diffuse = new BABYLON.Color3(1, 0.8, 0.5); // Warm sunlight color
+    sunLight.diffuse = new BABYLON.Color3(1, 0.8, 0.9); 
     // Parent the light to the transform node
     sunLight.parent = sunTransform;
 
     // Create directional arrow for sun visualization
-    const sunArrow = createDirectionalArrow(scene, 1);
-    sunArrow.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
-    // Parent the arrow to the transform node
-    sunArrow.parent = sunTransform;
+    // const sunArrow = createDirectionalArrow(scene, 1);
+    // sunArrow.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+    // sunArrow.parent = sunTransform;
 
     environmentObjects.sun = sunLight;
     environmentObjects.sunTransform = sunTransform;
-    environmentObjects.sunArrow = sunArrow;
+    // environmentObjects.sunArrow = sunArrow;
 
 }
