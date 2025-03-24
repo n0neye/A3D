@@ -415,6 +415,14 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
 
     if (entity.metadata.aiData) {
         entity.metadata.aiData.aiObjectType = options.aiObjectType;
+    }else{
+        entity.metadata.aiData = {
+            aiObjectType: options.aiObjectType,
+            generationLogs: [],
+            currentStateId: null,
+            ratio: options.ratio || '1:1',
+            imageSize: options.imageSize || 'medium',
+        };
     }
 
     // Create child mesh based on entity type and aiObjectType
@@ -424,14 +432,18 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         // Create a background that fills the screen
         // A placeholder texture for the background until a real one is provided
         const placeholderUrl = options.imageUrl || "./demoAssets/skybox/qwantani_puresky_4k.jpg";
-
         // Create the background mesh
         // planeMesh = create2DBackground(scene, placeholderUrl);
-
         newMesh = createEquirectangularSkybox(scene, placeholderUrl);
-
         // Set special properties for backgrounds
         newMesh.renderingGroupId = 0; // Ensure it renders behind everything
+        entity.metadata.aiData.generationLogs.push({
+            id: uuidv4(),
+            timestamp: Date.now(),
+            prompt: '',
+            assetType: 'image',
+            fileUrl: placeholderUrl,
+        });
     } else if (options.aiObjectType === 'shape' && options.shapeType) {
         // Create a primitive shape based on shapeType
         switch (options.shapeType) {
@@ -464,7 +476,6 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
         material.diffuseColor = new BABYLON.Color3(1, 1, 1);
         material.backFaceCulling = false;
-
         newMesh.material = material;
 
 
@@ -749,7 +760,11 @@ function findShapeType(data: any): ShapeType {
 function createBackgroundMesh(entity: EntityNode, scene: BABYLON.Scene): void {
     // Create skybox with default texture (will be replaced when applying generation)
     const defaultUrl = "https://playground.babylonjs.com/textures/equirectangular.jpg";
-    const skybox = createEquirectangularSkybox(scene, defaultUrl);
+    const logs = entity.metadata.aiData?.generationLogs;
+    const lastLog = logs && logs.length > 0 ? logs[logs.length - 1] : null;
+    const fileUrl = lastLog?.fileUrl;
+    console.log('createBackgroundMesh',entity, fileUrl, logs);
+    const skybox = createEquirectangularSkybox(scene, fileUrl || defaultUrl);
     
     // Set up the mesh
     skybox.parent = entity;
