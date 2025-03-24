@@ -8,6 +8,14 @@ import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { convertTextureToImage, EnableDepthRender, GetDepthMap } from '../util/render-util';
 
+// Import Shadcn components
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const { scene, engine } = useEditorContext();
   // State variables
@@ -72,20 +80,20 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const renderSelectedStyles = () => {
     if (selectedLoras.length === 0) {
       return (
-        <div
-          className="w-full p-3 border border-dashed border-gray-600 rounded-md cursor-pointer hover:bg-gray-700 transition text-center"
+        <Button 
+          variant="outline" 
+          className="w-full h-16 border-dashed" 
           onClick={() => setIsStylePanelOpen(true)}
         >
-          <p className="text-gray-400 text-sm">Click to add a style</p>
-        </div>
+          <span className="text-muted-foreground">Click to add a style</span>
+        </Button>
       );
     }
 
     return (
       <div className="space-y-3">
         {selectedLoras.map(loraConfig => (
-          <div key={loraConfig.info.id} className="bg-gray-700 rounded-md p-1 flex flex-row">
-
+          <Card key={loraConfig.info.id} className="bg-card border-border p-1 flex flex-row items-center">
             <div className="h-14 w-14 mr-2 overflow-hidden rounded">
               <img
                 src={loraConfig.info.thumbUrl}
@@ -94,45 +102,47 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
               />
             </div>
 
-            <div className="flex flex-col max-w-[140px]">
-
+            <div className="flex flex-col max-w-[140px] flex-grow">
               {/* Title and remove button */}
               <div className="flex items-center mb-2 h-6">
-                <div className="flex-grow">
-                  <h5 className="text-white text-sm font-medium truncate max-w-[120px] text-ellipsis">{loraConfig.info.name}</h5>
-                </div>
-                <button
-                  className="text-gray-400 hover:text-red-500 p-1"
+                <span className="text-sm font-medium truncate max-w-[120px] text-ellipsis">
+                  {loraConfig.info.name}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-0 h-6 w-6 ml-auto"
                   onClick={() => handleRemoveStyle(loraConfig.info.id)}
                 >
                   &times;
-                </button>
+                </Button>
               </div>
 
               {/* Strength slider */}
-              <div className="flex items-center space-x-2">
-                {/* <span className="text-xs text-gray-400">Strength:</span> */}
-                <input
-                  type="range"
-                  min="0.1"
-                  max="1"
-                  step="0.05"
-                  value={loraConfig.strength}
-                  onChange={(e) => handleUpdateStyleStrength(loraConfig.info.id, parseFloat(e.target.value))}
-                  className="flex-grow h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer max-w-[115px]"
+              <div className="flex items-center gap-2">
+                <Slider
+                  defaultValue={[loraConfig.strength]}
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={[loraConfig.strength]}
+                  onValueChange={(values) => handleUpdateStyleStrength(loraConfig.info.id, values[0])}
+                  className="flex-grow max-w-[115px]"
                 />
-                <span className="text-xs text-gray-300 w-8 text-right">{loraConfig.strength.toFixed(2)}</span>
+                <span className="text-xs w-8 text-right">{loraConfig.strength.toFixed(2)}</span>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
 
-        <button
-          className="w-full p-2 text-sm bg-gray-700 text-gray-300 rounded-md hover:bg-gray-600"
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full"
           onClick={() => setIsStylePanelOpen(true)}
         >
-          Add another style
-        </button>
+          Add
+        </Button>
       </div>
     );
   };
@@ -267,17 +277,18 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         selectedLoraIds={selectedLoras.map(lora => lora.info.id)}
       />
 
-      <div className={`fixed z-40 right-4 bottom-4 w-64 panel overflow-y-auto ${isDebugMode ? 'right-80' : ''}`}>
-        <h3 className="text-lg font-medium mb-3 text-white">Render</h3>
-
-        <div className="flex flex-col items-center">
-
+      <Card className={`fixed panel-shape z-40 right-4 bottom-4 w-64 border-border max-h-[90vh] overflow-y-auto gap-2 ${isDebugMode ? 'right-80' : ''}`}>
+        <CardHeader className="">
+          <CardTitle className="text-lg font-medium">Render</CardTitle>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
           {/* Preview image or placeholder */}
-          <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden group relative">
+          <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden group relative">
             {isLoading ? (
               <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full w-12 border-t-2 border-b-2 border-blue-500 mb-3"></div>
-                <p className="text-gray-400">Generating AI preview...</p>
+                <div className="animate-spin rounded-full w-12 border-t-2 border-b-2 border-primary mb-3"></div>
+                <p className="text-muted-foreground">Generating AI preview...</p>
               </div>
             ) : imageUrl ? (
               <>
@@ -288,11 +299,12 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                     className="w-full h-full object-contain cursor-pointer"
                   />
                 </a>
-                <button className="p-1 rounded text-white hover:bg-gray-700 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   onClick={() => {
-                    if (!imageUrl) {
-                      return;
-                    }
+                    if (!imageUrl) return;
                     const a = document.createElement('a');
                     a.href = imageUrl;
                     a.download = imageUrl.split('/').pop() || 'image.png';
@@ -300,21 +312,19 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                   }}
                 >
                   <IconDownload size={16} />
-                </button>
-
+                </Button>
 
                 {/* Execution time */}
                 {executionTime && (
-                  <div className="w-full mb-1 absolute bottom-0 left-0">
+                  <div className="w-full mb-1 absolute bottom-0 left-0 bg-black/50 py-1">
                     <div className="flex justify-center items-center">
-                      <label className="block text-xs text-gray-400 mb-1">{(executionTime / 1000).toFixed(2)} s</label>
+                      <span className="text-xs text-white/80">{(executionTime / 1000).toFixed(2)} s</span>
                     </div>
                   </div>
                 )}
-
               </>
             ) : (
-              <div className="text-gray-500 flex flex-col items-center">
+              <div className="text-muted-foreground flex flex-col items-center">
                 <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -324,183 +334,161 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
           </div>
 
           {/* Styles section */}
-          <div className="w-full mb-4">
-            <label className="block text-sm text-gray-400 mb-2">Style</label>
+          <div>
+            <Label className="text-sm mb-2 block">Style</Label>
             {renderSelectedStyles()}
           </div>
 
           {/* Prompt Strength slider */}
-          <div className="w-full mb-4">
-            <div className="flex justify-between items-center">
-              <label className="block text-sm text-gray-400 mb-1">Creativity</label> <span className="text-xs text-gray-200"> {promptStrength.toFixed(2)}</span>
-              {/* <span className="text-xs text-gray-500">{promptStrength < 0.4 ? 'More accurate' : promptStrength > 0.7 ? 'More creative' : 'Balanced'}</span> */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <Label className="text-sm">Creativity</Label>
+              <span className="text-xs">{promptStrength.toFixed(2)}</span>
             </div>
-            <input
-              type="range"
-              min="0.1"
-              max="1"
-              step="0.05"
-              value={promptStrength}
-              onChange={(e) => setPromptStrength(parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            <Slider
+              defaultValue={[promptStrength]}
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={[promptStrength]}
+              onValueChange={(values) => setPromptStrength(values[0])}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
               <span>Source</span>
-              <span>creative</span>
+              <span>Creative</span>
             </div>
           </div>
-
 
           {/* Depth Strength slider */}
-          {selectedAPI.useDepthImage && <div className="w-full mb-4">
-            <div className="flex justify-between items-center">
-              <label className="block text-sm text-gray-400 mb-1">Depth Strength</label> <span className="text-xs text-gray-200"> {depthStrength.toFixed(2)}</span>
-              {/* <span className="text-xs text-gray-500">{promptStrength < 0.4 ? 'More accurate' : promptStrength > 0.7 ? 'More creative' : 'Balanced'}</span> */}
+          {selectedAPI.useDepthImage && (
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <Label className="text-sm">Depth Strength</Label>
+                <span className="text-xs">{depthStrength.toFixed(2)}</span>
+              </div>
+              <Slider
+                defaultValue={[depthStrength]}
+                min={0.1}
+                max={1}
+                step={0.05}
+                value={[depthStrength]}
+                onValueChange={(values) => setDepthStrength(values[0])}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Source</span>
+                <span>Creative</span>
+              </div>
             </div>
-            <input
-              type="range"
-              min="0.1"
-              max="1"
-              step="0.05"
-              value={depthStrength}
-              onChange={(e) => setDepthStrength(parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Source</span>
-              <span>creative</span>
-            </div>
-          </div>}
-
-          {/* Client-side noise slider */}
-          {/* <div className="w-full mb-4">
-          <div className="flex justify-between items-center">
-            <label className="block text-sm text-gray-400 mb-1">Image Noise: {noiseStrength.toFixed(2)}</label>
-            <span className="text-xs text-gray-500">
-              {noiseStrength === 0 ? 'None' : noiseStrength < 0.3 ? 'Subtle' : noiseStrength < 0.6 ? 'Medium' : 'Strong'}
-            </span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={noiseStrength}
-            onChange={(e) => setNoiseStrength(parseFloat(e.target.value))}
-            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Clean image</span>
-            <span>Noisy image</span>
-          </div>
-        </div> */}
+          )}
 
           {/* Prompt input */}
-          <div className="w-full mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Render Prompt </label>
-            <textarea
+          <div>
+            <Label className="text-sm mb-2 block">Render Prompt</Label>
+            <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full p-2 border-b-2 border-gray-600 text-white text-sm focus:outline-none focus:bg-gray-700"
+              className="resize-none"
               rows={3}
               placeholder="Describe how you want the scene to look..."
             />
           </div>
 
           {/* Seed input */}
-          <div className="w-full mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Seed</label>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <Label className="text-sm">Seed</Label>
+            </div>
             <div className="flex items-center">
-              <input
+              <Input
                 type="number"
                 value={seed}
                 onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
                 disabled={useRandomSeed}
-                className={`w-40 h-8 p-2 bg-gray-700 text-white text-sm rounded-l-md focus:outline-none ${useRandomSeed ? 'opacity-50' : ''
-                  }`}
+                className="rounded-r-none"
               />
-              <button
+              <Button
+                variant="secondary"
+                size="icon"
                 onClick={generateNewSeed}
-                className="p-2 bg-gray-600 text-white hover:bg-gray-500 w-8"
-                title="Generate new seed"
                 disabled={useRandomSeed}
+                className="rounded-l-none rounded-r-none h-10 w-10"
+                title="Generate new seed"
               >
                 <IconRefresh size={16} />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant={useRandomSeed ? "default" : "secondary"}
+                size="icon"
                 onClick={() => setUseRandomSeed(!useRandomSeed)}
-                className={`p-2 text-white rounded-r-md w-8 ${useRandomSeed ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
-                  }`}
+                className="rounded-l-none h-10 w-10"
                 title={useRandomSeed ? "Using random seed" : "Using fixed seed"}
               >
                 <IconDice size={16} />
-              </button>
+              </Button>
             </div>
-            {/* <div className="text-xs text-gray-400 mt-1">
-              {useRandomSeed ? "Using random seed for each generation" : "Using fixed seed for reproducible results"}
-            </div> */}
           </div>
 
           {/* Model selection */}
-          <div className="w-full mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Model</label>
+          <div>
+            <Label className="text-sm mb-2 block">Model</Label>
             <div className="grid grid-cols-2 gap-2">
               {availableAPIs.map((aiModel) => (
-                <button
+                <Button
                   key={aiModel.id}
+                  variant={selectedAPI.id === aiModel.id ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setSelectedAPI(aiModel)}
-                  className={`py-1 text-xs rounded-md ${selectedAPI.id === aiModel.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
+                  className="w-full overflow-ellipsis text-xs"
                 >
                   {aiModel.name}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
-          {/* Add Debug Buttons for isDebugMode */}
-          {(
-            <div className="w-full mb-4">
-              <label className="block text-sm text-gray-400 mb-2">Debug Tools</label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
+          {/* Debug Tools */}
+          { (
+            <div>
+              <Label className="text-sm mb-2 block">Debug Tools</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={generateDebugImage}
-                  className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
                 >
                   Scene Image
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={onGetDepthMap}
-                  className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
                 >
                   Get Depth
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={OnEnableDepthRender}
-                  className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
                 >
                   Show Depth
-                </button>
+                </Button>
               </div>
             </div>
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-2 w-full">
-            <button
-              onClick={handleRender}
-              disabled={isLoading}
-              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Rendering...' : 'Render'}
-              <span className="mx-1 text-xs opacity-50">Ctrl+⏎</span>
-            </button>
-
-          </div>
-        </div>
-      </div>
+          <Button
+            variant="default"
+            size="lg"
+            onClick={handleRender}
+            disabled={isLoading}
+            className="w-full"
+          >
+            {isLoading ? 'Rendering...' : 'Render'}
+            <span className="ml-2 text-xs opacity-70">Ctrl+⏎</span>
+          </Button>
+        </CardContent>
+      </Card>
     </>
   );
 };
