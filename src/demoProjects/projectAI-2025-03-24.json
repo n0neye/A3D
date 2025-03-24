@@ -1,0 +1,107 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-03-24T12:58:36.520Z",
+  "entities": [
+    {
+      "id": "sunTransform",
+      "name": "sunTransform",
+      "position": {
+        "x": 0,
+        "y": 0.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "metadata": {
+        "entityType": "light",
+        "created": "2025-03-24T12:58:23.389Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        }
+      },
+      "displayMode": "2d"
+    },
+    {
+      "id": "aiObject-0289d051",
+      "name": "aiObject-0289d051",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-24T12:58:23.409Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "background",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        }
+      },
+      "displayMode": "2d"
+    },
+    {
+      "id": "aiObject-a758b105",
+      "name": "aiObject-a758b105",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-24T12:58:31.225Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        }
+      },
+      "displayMode": "3d"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ const GizmoModeSelector: React.FC = () => {
   const { currentGizmoMode, setGizmoMode } = useEditorContext();
 
   return (
-    <div className="fixed top-2 left-2 panel-shape p-1 flex gap-1">
+    <>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -80,7 +80,7 @@ const GizmoModeSelector: React.FC = () => {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-    </div>
+    </>
   );
 };
 

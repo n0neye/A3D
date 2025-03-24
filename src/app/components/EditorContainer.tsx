@@ -12,9 +12,12 @@ import DebugLayer from './DebugLayer';
 import { initScene } from '../util/editor/editor-util';
 import EnvironmentPanel from './EnvironmentPanel';
 import GizmoModeSelector from './GizmoModeSelector';
+import FileMenu from './FileMenu';
+import { saveProjectToFile, loadProjectFromFile } from '../util/extensions/entityNode';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     setScene,
     setEngine,
@@ -49,7 +52,6 @@ export default function EditorContainer() {
 
   // Handle keyboard shortcuts
   const handleKeyDown = (event: KeyboardEvent) => {
-
     // Delete selected entity - using getCurrentSelectedEntity to get the latest value
     if (event.key === 'Delete') {
       const currentEntity = getCurrentSelectedEntity();
@@ -82,8 +84,37 @@ export default function EditorContainer() {
         scene.render();
       }
     }
+
+    // Save project (Ctrl+S)
+    if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault(); // Prevent browser's save dialog
+      if (scene) {
+        const projectName = `projectAI-${new Date().toISOString().split('T')[0]}.json`;
+        saveProjectToFile(scene, projectName);
+      }
+    }
+
+    // Open project (Ctrl+O)
+    if (event.key === 'o' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault(); // Prevent browser's open dialog
+      fileInputRef.current?.click();
+    }
   };
 
+  // Handle file selection for project loading
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !scene) return;
+    
+    try {
+      const file = e.target.files[0];
+      await loadProjectFromFile(file, scene);
+      // Reset file input so the same file can be loaded again
+      e.target.value = '';
+    } catch (error) {
+      console.error('Error loading project:', error);
+      alert('Failed to load project. See console for details.');
+    }
+  };
 
   // Initialize BabylonJS engine and scene
   useEffect(() => {
@@ -158,10 +189,21 @@ export default function EditorContainer() {
         {/* Environment Panel */}
         <EnvironmentPanel />
       </div>
-      <div className="editor-toolbar">
+
+      {/* Top Toolbar */}
+      <div className="fixed top-2 left-2 panel-shape p-1 flex gap-2">
+        <FileMenu />
         <GizmoModeSelector />
       </div>
-      {/* <DebugLayer /> */}
+      
+      {/* Hidden file input for keyboard shortcut open */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept=".json" 
+        className="hidden" 
+      />
     </div>
   );
 } 

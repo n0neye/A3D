@@ -409,7 +409,9 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     shapeType?: ShapeType;
 }) => {
     if (!options.aiObjectType) {
-        throw new Error('aiObjectType is required');
+        // Instead of throwing an error, set a default aiObjectType
+        options.aiObjectType = "generativeObject";
+        console.warn(`No aiObjectType specified for entity ${name}, defaulting to "generativeObject"`);
     }
 
     if (entity.metadata.aiData) {
@@ -466,7 +468,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
 
         newMesh.material = material;
 
-        
+
         entity.modelMesh = newMesh;
         entity.setDisplayMode('3d');
 
@@ -495,14 +497,15 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         // Set up plane mesh
         entity.planeMesh = newMesh;
 
-        // Set position
-        entity.position = options.position || new BABYLON.Vector3(0, 0, 0);
     } else {
         throw new Error('Invalid aiObjectType');
     }
 
     // Parent the mesh to the entity
     newMesh.parent = entity;
+
+    // Set position
+    entity.position = options.position || new BABYLON.Vector3(0, 0, 0);
 
     newMesh.metadata = {
         rootEntity: entity
@@ -603,5 +606,188 @@ export const applyImageToEntity = async (
 
     // Switch to 2D display mode
     entity.setDisplayMode('2d');
+}
+
+// Serialization and deserialization functions for projects
+
+// Serialize an EntityNode to a JSON-compatible object
+export function serializeEntityNode(entity: EntityNode): any {
+    // Create a base serialized object with core properties
+    const serialized: any = {
+        id: entity.id,
+        name: entity.name,
+        position: {
+            x: entity.position.x,
+            y: entity.position.y,
+            z: entity.position.z
+        },
+        rotation: {
+            x: entity.rotation.x,
+            y: entity.rotation.y,
+            z: entity.rotation.z
+        },
+        scaling: {
+            x: entity.scaling.x,
+            y: entity.scaling.y,
+            z: entity.scaling.z
+        },
+        metadata: {
+            ...entity.metadata,
+            // Convert Date object to ISO string for JSON serialization
+            created: entity.metadata.created.toISOString()
+        },
+        displayMode: entity.displayMode
+    };
+
+    return serialized;
+}
+
+// Deserialize JSON data back into an EntityNode
+export function deserializeEntityNode(data: any, scene: BABYLON.Scene): EntityNode {
+    // Create options for entity creation
+    const options: any = {
+        position: new BABYLON.Vector3(data.position.x, data.position.y, data.position.z),
+        name: data.name
+    };
+
+    // Add AI-specific options if this is an AI object
+    if (data.metadata.entityType === 'aiObject' && data.metadata.aiData) {
+        options.aiObjectType = data.metadata.aiData.aiObjectType;
+        options.ratio = data.metadata.aiData.ratio;
+        options.imageSize = data.metadata.aiData.imageSize;
+
+        // For shape entities, include shape type
+        if (data.metadata.aiData.aiObjectType === 'shape') {
+            // Default to 'cube' if no shape type is specified
+            options.shapeType = 'cube';
+
+            // Try to find shape type from generation logs if available
+            if (data.metadata.aiData.generationLogs && data.metadata.aiData.generationLogs.length > 0) {
+                const currentGen = data.metadata.aiData.generationLogs.find(
+                    (log: any) => log.id === data.metadata.aiData.currentStateId
+                );
+                if (currentGen && currentGen.shapeType) {
+                    options.shapeType = currentGen.shapeType;
+                }
+            }
+        }
+    }
+
+    // Create the entity
+    const entity = createEntity(scene, data.metadata.entityType, options);
+
+    // Restore rotation and scaling
+    entity.rotation = new BABYLON.Vector3(data.rotation.x, data.rotation.y, data.rotation.z);
+    entity.scaling = new BABYLON.Vector3(data.scaling.x, data.scaling.y, data.scaling.z);
+
+    // Restore metadata with Date object
+    entity.metadata = {
+        ...data.metadata,
+        created: new Date(data.metadata.created)
+    };
+
+    // Restore display mode
+    entity.setDisplayMode(data.displayMode);
+
+    // Restore generation logs and apply current state if available
+    if (data.metadata.aiData && data.metadata.aiData.generationLogs) {
+        if (entity.metadata.aiData) {
+            entity.metadata.aiData.generationLogs = data.metadata.aiData.generationLogs;
+            entity.metadata.aiData.currentStateId = data.metadata.aiData.currentStateId;
+
+            // Apply the current generation state
+            if (data.metadata.aiData.currentStateId) {
+                const currentGen = data.metadata.aiData.generationLogs.find(
+                    (log: any) => log.id === data.metadata.aiData.currentStateId
+                );
+                if (currentGen) {
+                    entity.applyGenerationLog(currentGen);
+                }
+            }
+        }
+    }
+
+    return entity;
+}
+
+// Serialize all EntityNodes in a scene to a project JSON structure
+export function serializeScene(scene: BABYLON.Scene): any {
+    const entityNodes: EntityNode[] = [];
+
+    // Find all EntityNodes in the scene
+    scene.rootNodes.forEach(node => {
+        if (isEntity(node)) {
+            entityNodes.push(node);
+        }
+    });
+
+    // Create project data structure
+    const project = {
+        version: "1.0.0",
+        timestamp: new Date().toISOString(),
+        entities: entityNodes.map(entity => serializeEntityNode(entity))
+    };
+
+    return project;
+}
+
+// Deserialize a project JSON and recreate all EntityNodes in the scene
+export function deserializeScene(data: any, scene: BABYLON.Scene): void {
+    // Clear existing entities if needed
+    const existingEntities = scene.rootNodes.filter(node => isEntity(node));
+    existingEntities.forEach(entity => entity.dispose());
+
+    // Create entities from the saved data
+    if (data.entities && Array.isArray(data.entities)) {
+        data.entities.forEach((entityData: any) => {
+            deserializeEntityNode(entityData, scene);
+        });
+    }
+}
+
+// Utility functions for file operations
+
+// Save scene to a JSON file for download
+export function saveProjectToFile(scene: BABYLON.Scene, fileName: string = 'scene-project.json'): void {
+    const projectData = serializeScene(scene);
+    const jsonString = JSON.stringify(projectData, null, 2);
+
+    // Create a blob and download link
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    // Create and trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+
+    // Clean up
+    URL.revokeObjectURL(url);
+}
+
+// Load project from a file
+export async function loadProjectFromFile(file: File, scene: BABYLON.Scene): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+            try {
+                if (event.target && typeof event.target.result === 'string') {
+                    const projectData = JSON.parse(event.target.result);
+                    deserializeScene(projectData, scene);
+                    resolve();
+                }
+            } catch (error) {
+                reject(error);
+            }
+        };
+
+        reader.onerror = () => {
+            reject(new Error('Failed to read project file'));
+        };
+
+        reader.readAsText(file);
+    });
 }
 
