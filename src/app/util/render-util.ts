@@ -1,0 +1,181 @@
+import * as BABYLON from '@babylonjs/core';
+
+// Add this utility function to convert depth texture to image
+export const convertTextureToImage = async (texture: BABYLON.Texture, width: number, height: number): Promise<string> => {
+    // Get the raw pixel data
+    const pixels = await texture.readPixels();
+    if (!pixels) throw new Error("Failed to read texture pixels");
+
+    // Convert to Float32Array to access the depth values
+    const depthValues = new Float32Array(pixels.buffer);
+
+    // Create a new canvas element
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    // Get the canvas context
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error("Failed to create canvas context");
+
+    // Create an ImageData object
+    const imageData = ctx.createImageData(width, height);
+    const data = imageData.data;
+
+    // Fill the ImageData with depth values
+    for (let i = 0; i < depthValues.length; i++) {
+        // Apply the same transformation as in the shader
+        const depth = depthValues[i];
+        const scaledDepth = Math.pow(depth, 0.45);
+        const displayDepth = 1.0 - scaledDepth;
+
+        // Convert to 0-255 range
+        const value = Math.floor(displayDepth * 255);
+
+        // Set RGBA values
+        const index = i * 4;
+        data[index] = value;     // R
+        data[index + 1] = value; // G
+        data[index + 2] = value; // B
+        data[index + 3] = 255;   // A
+    }
+
+    // Put the image data onto the canvas
+    ctx.putImageData(imageData, 0, 0);
+
+    // Return as data URL
+    return canvas.toDataURL('image/png');
+};
+
+
+
+export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.Engine, seconds: number = 2) => {
+    try {
+        if (!scene.activeCamera) throw new Error("Active camera not found");
+
+        // Enable depth renderer with better settings
+        const depthRenderer = scene.enableDepthRenderer(
+            scene.activeCamera,
+            false,  // Don't colorize
+            true,    // Use logarithmic depth buffer for better precision
+            BABYLON.Engine.TEXTURE_NEAREST_LINEAR_MIPLINEAR,
+        );
+
+        // Adjust camera clip planes for better depth resolution if needed
+        scene.activeCamera.minZ = 0.1;  // Set to a reasonable near clip distance
+        scene.activeCamera.maxZ = 20;  // Set to a reasonable far clip distance
+
+        // Force a render to update the depth values
+        scene.render();
+
+        // Create an improved shader that better handles depth values
+        BABYLON.Effect.ShadersStore['improvedDepthPixelShader'] = `
+        varying vec2 vUV;
+        uniform sampler2D textureSampler;
+        uniform float near;
+        uniform float far;
+        
+        void main(void) {
+          // Get raw depth value
+          float depth = texture2D(textureSampler, vUV).r;
+          
+          // Use a power function to emphasize smaller differences
+          // This makes middle-range depths more visible
+          float scaledDepth = pow(depth, 0.45);
+          
+          // Invert for better visualization (closer is brighter)
+          float displayDepth = 1.0 - scaledDepth;
+          
+          gl_FragColor = vec4(displayDepth, displayDepth, displayDepth, 1.0);
+        }
+      `;
+
+        // Create the post process with our improved shader
+        const postProcess = new BABYLON.PostProcess(
+            "depthVisualizer",
+            "improvedDepth",
+            ["near", "far"],  // Added uniforms for near/far planes
+            null,
+            1.0,
+            scene.activeCamera
+        );
+
+        // Set up the shader parameters and texture
+        postProcess.onApply = (effect) => {
+            effect.setTexture("textureSampler", depthRenderer.getDepthMap());
+            effect.setFloat("near", scene.activeCamera!.minZ);
+            effect.setFloat("far", scene.activeCamera!.maxZ);
+        };
+
+
+        // Save snapshot of depth map
+        const width = engine.getRenderWidth();
+        const height = engine.getRenderHeight();
+
+        //   wait for 1 frame
+        await new Promise(resolve => setTimeout(resolve, 1));
+
+        const depthSnapshot = await BABYLON.Tools.CreateScreenshotAsync(
+            engine,
+            scene.activeCamera!,
+            { width: width, height: height }
+        );
+
+
+        setTimeout(() => {
+            // Detach depth renderer
+            if (scene.activeCamera && postProcess) {
+                scene.activeCamera.detachPostProcess(postProcess);
+                postProcess.dispose();
+            }
+        }, seconds * 1000);
+
+        // Update preview
+        return depthSnapshot;
+    } catch (error) {
+        console.error("Error generating depth map:", error);
+        return null;
+    }
+};
+
+
+
+export const GetDepthMap = async (scene: BABYLON.Scene, engine: BABYLON.Engine) => {
+    try {
+        if (!scene || !engine) throw new Error("Scene or engine not found");
+        if (!scene.activeCamera) throw new Error("Active camera not found");
+
+        // Enable depth renderer with better settings
+        const depthRenderer = scene.enableDepthRenderer(
+            scene.activeCamera,
+            false,  // Don't colorize
+            true    // Use logarithmic depth buffer for better precision
+        );
+
+        // Adjust camera clip planes for better depth resolution if needed
+        scene.activeCamera.minZ = 0.1;  // Set to a reasonable near clip distance
+        scene.activeCamera.maxZ = 20;  // Set to a reasonable far clip distance
+
+        // Force a render to update the depth values
+        scene.render();
+
+        //   Wait for 1 frame
+        await new Promise(resolve => setTimeout(resolve, 1));
+
+        // Get the depth map texture
+        const depthMap = depthRenderer.getDepthMap();
+        // Get width and height
+        const width = depthMap.getRenderWidth();
+        const height = depthMap.getRenderHeight();
+
+        // Convert the texture to an image
+        const depthSnapshot = await convertTextureToImage(depthMap, width, height);
+
+        // Update preview
+        return depthSnapshot;
+
+    } catch (error) {
+        console.error("Error generating depth map:", error);
+        return null;
+    }
+};
