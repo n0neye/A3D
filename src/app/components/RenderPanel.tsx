@@ -5,7 +5,7 @@ import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
-import { IconDownload } from '@tabler/icons-react';
+import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { convertTextureToImage, EnableDepthRender, GetDepthMap } from '../util/render-util';
 
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
@@ -162,6 +162,15 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     }
   };
 
+  const [seed, setSeed] = useState<number>(Math.floor(Math.random() * 2147483647));
+  const [useRandomSeed, setUseRandomSeed] = useState<boolean>(true);
+  
+  const generateNewSeed = () => {
+    const newSeed = Math.floor(Math.random() * 2147483647);
+    setSeed(newSeed);
+    return newSeed;
+  };
+
   const handleRender = async () => {
     setIsLoading(true);
     setExecutionTime(null); // Reset execution time when starting new generation
@@ -191,13 +200,23 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       // Start measuring time
       const startTime = Date.now();
 
-      // Call the API with the selected model
+      if (!scene || !engine) throw new Error("Scene or engine not found");
+      const depthImageBlob = await EnableDepthRender(scene, engine, 1) || undefined;
+
+      // If useRandomSeed is true, generate a new seed for this render
+      const currentSeed = useRandomSeed ? generateNewSeed() : seed;
+      
+      // Call the API with the selected model and seed
       const result = await generateRenderImage({
         imageUrl: imageBlob,
         prompt: prompt,
         promptStrength: promptStrength,
         model: model,
         loras: selectedLoras,
+        width: 1280,
+        height: 720,
+        depthImageUrl: depthImageBlob,
+        seed: currentSeed,
       });
 
       // Calculate execution time
@@ -345,6 +364,42 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
               rows={3}
               placeholder="Describe how you want the scene to look..."
             />
+          </div>
+
+          {/* Seed input */}
+          <div className="w-full mb-4">
+            <label className="block text-sm text-gray-400 mb-1">Seed</label>
+            <div className="flex items-center">
+              <input
+                type="number"
+                value={seed}
+                onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
+                disabled={useRandomSeed}
+                className={`w-40 h-8 p-2 bg-gray-700 text-white text-sm rounded-l-md focus:outline-none ${
+                  useRandomSeed ? 'opacity-50' : ''
+                }`}
+              />
+              <button
+                onClick={generateNewSeed}
+                className="p-2 bg-gray-600 text-white hover:bg-gray-500 w-8"
+                title="Generate new seed"
+                disabled={useRandomSeed}
+              >
+                <IconRefresh size={16} />
+              </button>
+              <button
+                onClick={() => setUseRandomSeed(!useRandomSeed)}
+                className={`p-2 text-white rounded-r-md w-8 ${
+                  useRandomSeed ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
+                }`}
+                title={useRandomSeed ? "Using random seed" : "Using fixed seed"}
+              >
+                <IconDice size={16} />
+              </button>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              {useRandomSeed ? "Using random seed for each generation" : "Using fixed seed for reproducible results"}
+            </div>
           </div>
 
           {/* Execution time */}
