@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
 import { create2DBackground, createEquirectangularSkybox } from '../editor/editor-util';
-import { ImageRatio, ImageSize } from '../generation-util';
+import { ImageRatio, ImageSize, loadModel } from '../generation-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
@@ -71,7 +71,6 @@ export interface EntityMetadata {
         ratio: ImageRatio;
         imageSize: ImageSize;
         aiObjectType: AiObjectType;
-
         generationLogs: Array<GenerationLog>;
     };
 }
@@ -611,9 +610,21 @@ export const applyImageToEntity = async (
 // Serialization and deserialization functions for projects
 
 // Serialize an EntityNode to a JSON-compatible object
+
+interface SerializedEntityNode {
+    id: string;
+    name: string;
+    displayMode: '2d' | '3d';
+    position: { x: number, y: number, z: number };
+    rotation: { x: number, y: number, z: number };
+    scaling: { x: number, y: number, z: number };
+    metadata: EntityMetadata;
+    created: string;
+}
+
 export function serializeEntityNode(entity: EntityNode): any {
     // Create a base serialized object with core properties
-    const serialized: any = {
+    const serialized: SerializedEntityNode = {
         id: entity.id,
         name: entity.name,
         position: {
@@ -633,102 +644,246 @@ export function serializeEntityNode(entity: EntityNode): any {
         },
         metadata: {
             ...entity.metadata,
-            // Convert Date object to ISO string for JSON serialization
-            created: entity.metadata.created.toISOString()
         },
+        // Convert Date object to ISO string for JSON serialization
+        created: entity.metadata.created.toISOString(),
         displayMode: entity.displayMode
     };
 
     return serialized;
 }
 
-// Deserialize JSON data back into an EntityNode
+// Redesigned deserialization function for EntityNode
 export function deserializeEntityNode(data: any, scene: BABYLON.Scene): EntityNode {
-    // Create options for entity creation
-    const options: any = {
-        position: new BABYLON.Vector3(data.position.x, data.position.y, data.position.z),
-        name: data.name
-    };
-
-    // Add AI-specific options if this is an AI object
-    if (data.metadata.entityType === 'aiObject' && data.metadata.aiData) {
-        options.aiObjectType = data.metadata.aiData.aiObjectType;
-        options.ratio = data.metadata.aiData.ratio;
-        options.imageSize = data.metadata.aiData.imageSize;
-
-        // For shape entities, include shape type
-        if (data.metadata.aiData.aiObjectType === 'shape') {
-            // Default to 'cube' if no shape type is specified
-            options.shapeType = 'cube';
-
-            // Try to find shape type from generation logs if available
-            if (data.metadata.aiData.generationLogs && data.metadata.aiData.generationLogs.length > 0) {
-                const currentGen = data.metadata.aiData.generationLogs.find(
-                    (log: any) => log.id === data.metadata.aiData.currentStateId
-                );
-                if (currentGen && currentGen.shapeType) {
-                    options.shapeType = currentGen.shapeType;
-                }
-            }
-        }
-    }
-
-    // Create the entity
-    const entity = createEntity(scene, data.metadata.entityType, options);
-
-    // Restore rotation and scaling
+    // First create a base EntityNode directly
+    const entity = new EntityNode(data.name, scene);
+    
+    // Restore core transform properties
+    entity.position = new BABYLON.Vector3(data.position.x, data.position.y, data.position.z);
     entity.rotation = new BABYLON.Vector3(data.rotation.x, data.rotation.y, data.rotation.z);
     entity.scaling = new BABYLON.Vector3(data.scaling.x, data.scaling.y, data.scaling.z);
-
-    // Restore metadata with Date object
+    
+    // Completely restore metadata (convert date strings back to Date objects)
     entity.metadata = {
         ...data.metadata,
-        created: new Date(data.metadata.created)
+        created: new Date(data.metadata.created || data.created)
     };
-
-    // Restore display mode
-    entity.setDisplayMode(data.displayMode);
-
-    // Restore generation logs and apply current state if available
-    if (data.metadata.aiData && data.metadata.aiData.generationLogs) {
-        if (entity.metadata.aiData) {
-            entity.metadata.aiData.generationLogs = data.metadata.aiData.generationLogs;
-            entity.metadata.aiData.currentStateId = data.metadata.aiData.currentStateId;
-
-            // Apply the current generation state
-            if (data.metadata.aiData.currentStateId) {
-                const currentGen = data.metadata.aiData.generationLogs.find(
-                    (log: any) => log.id === data.metadata.aiData.currentStateId
-                );
-                if (currentGen) {
-                    entity.applyGenerationLog(currentGen);
+    
+    // Handle display mode
+    entity.displayMode = data.displayMode || '2d';
+    
+    // Recreate visual representation based on entityType and aiObjectType
+    if (data.metadata.entityType === 'aiObject' && data.metadata.aiData) {
+        const aiData = data.metadata.aiData;
+        
+        // Recreate the appropriate visual representation
+        if (aiData.aiObjectType === 'background') {
+            // Recreate background
+            createBackgroundMesh(entity, scene);
+        } 
+        else if (aiData.aiObjectType === 'shape') {
+            // Recreate shape
+            const shapeType = findShapeType(data);
+            createShapeMesh(entity, scene, shapeType);
+            entity.setDisplayMode('3d');
+        } 
+        else if (aiData.aiObjectType === 'generativeObject') {
+            // For generative objects, we need to handle both 2D and 3D modes
+            
+            // Create the 2D plane (needed regardless of display mode)
+            const ratio = aiData.ratio || '1:1';
+            createPlaneMesh(entity, scene, ratio);
+            
+            // If there's a 3D model and display mode is 3D, we need to load that too
+            const currentGeneration = aiData.generationLogs.find(
+                (log: any) => log.id === aiData.currentStateId
+            );
+            
+            // Check if we have a 3D model in the current generation
+            const has3DModel = currentGeneration && 
+                              currentGeneration.assetType === 'model' && 
+                              currentGeneration.fileUrl;
+                              
+            // If we have a 3D model and display mode is 3D, we need to load it
+            if (has3DModel && entity.displayMode === '3d') {
+                // Schedule the model loading (to avoid blocking)
+                setTimeout(() => {
+                    loadModel(entity, currentGeneration.fileUrl, scene, null);
+                    entity.setDisplayMode('3d');
+                }, 0);
+            } else {
+                // Apply current 2D texture if available
+                if (currentGeneration && currentGeneration.assetType === 'image' && currentGeneration.fileUrl) {
+                    applyGenerationToEntity(entity, currentGeneration, scene);
                 }
+                
+                // Make sure display mode is set correctly
+                entity.setDisplayMode(entity.displayMode);
             }
         }
     }
-
+    
     return entity;
 }
 
-// Serialize all EntityNodes in a scene to a project JSON structure
-export function serializeScene(scene: BABYLON.Scene): any {
-    const entityNodes: EntityNode[] = [];
-
-    // Find all EntityNodes in the scene
-    scene.rootNodes.forEach(node => {
-        if (isEntity(node)) {
-            entityNodes.push(node);
+// Helper function to find shape type from entity data
+function findShapeType(data: any): ShapeType {
+    // Default shape
+    let shapeType: ShapeType = 'cube';
+    
+    // Try to find shape type from the current generation
+    if (data.metadata?.aiData?.generationLogs && data.metadata.aiData.currentStateId) {
+        const currentGen = data.metadata.aiData.generationLogs.find(
+            (log: any) => log.id === data.metadata.aiData.currentStateId
+        );
+        
+        if (currentGen && currentGen.shapeType) {
+            shapeType = currentGen.shapeType;
         }
-    });
+    }
+    
+    return shapeType;
+}
 
-    // Create project data structure
-    const project = {
-        version: "1.0.0",
-        timestamp: new Date().toISOString(),
-        entities: entityNodes.map(entity => serializeEntityNode(entity))
-    };
+// Create background mesh for entity
+function createBackgroundMesh(entity: EntityNode, scene: BABYLON.Scene): void {
+    // Create skybox with default texture (will be replaced when applying generation)
+    const defaultUrl = "https://playground.babylonjs.com/textures/equirectangular.jpg";
+    const skybox = createEquirectangularSkybox(scene, defaultUrl);
+    
+    // Set up the mesh
+    skybox.parent = entity;
+    skybox.renderingGroupId = 0;
+    skybox.metadata = { rootEntity: entity };
+    
+    // Store reference
+    entity.planeMesh = skybox;
+}
 
-    return project;
+// Create shape mesh for entity
+function createShapeMesh(entity: EntityNode, scene: BABYLON.Scene, shapeType: ShapeType): void {
+    // Create the shape mesh
+    let shapeMesh: BABYLON.Mesh;
+    
+    switch (shapeType) {
+        case 'sphere':
+            shapeMesh = BABYLON.MeshBuilder.CreateSphere(`${entity.name}-sphere`, { diameter: 1 }, scene);
+            break;
+        case 'cylinder':
+            shapeMesh = BABYLON.MeshBuilder.CreateCylinder(`${entity.name}-cylinder`, { height: 1, diameter: 1 }, scene);
+            break;
+        case 'cone':
+            shapeMesh = BABYLON.MeshBuilder.CreateCylinder(`${entity.name}-cone`, { height: 1, diameterTop: 0, diameterBottom: 1 }, scene);
+            break;
+        case 'plane':
+            shapeMesh = BABYLON.MeshBuilder.CreatePlane(`${entity.name}-plane`, { width: 2, height: 2 }, scene);
+            shapeMesh.rotation.x = Math.PI / 2;
+            shapeMesh.position.y = -0.5;
+            break;
+        case 'torus':
+            shapeMesh = BABYLON.MeshBuilder.CreateTorus(`${entity.name}-torus`, { diameter: 1, thickness: 0.2 }, scene);
+            break;
+        case 'cube':
+        default:
+            shapeMesh = BABYLON.MeshBuilder.CreateBox(`${entity.name}-box`, { size: 1 }, scene);
+    }
+    
+    // Create a default material
+    const material = new BABYLON.StandardMaterial(`${entity.name}-material`, scene);
+    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
+    material.backFaceCulling = false;
+    
+    // Apply the material
+    shapeMesh.material = material;
+    
+    // Setup the mesh
+    shapeMesh.parent = entity;
+    shapeMesh.metadata = { rootEntity: entity };
+    
+    // Store reference
+    entity.modelMesh = shapeMesh;
+}
+
+// Create plane mesh for generative objects
+function createPlaneMesh(entity: EntityNode, scene: BABYLON.Scene, ratio: ImageRatio): void {
+    // Get dimensions from ratio
+    const { width, height } = getPlaneSize(ratio);
+    
+    // Create the plane
+    const planeMesh = BABYLON.MeshBuilder.CreatePlane(`${entity.name}-plane`, {
+        width,
+        height
+    }, scene);
+    
+    // Create default material
+    const material = new BABYLON.StandardMaterial(`${entity.name}-material`, scene);
+    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
+    material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    material.backFaceCulling = false;
+    
+    // Apply material
+    planeMesh.material = material;
+    
+    // Make plane face camera
+    planeMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+    
+    // Setup the mesh
+    planeMesh.parent = entity;
+    planeMesh.metadata = { rootEntity: entity };
+    
+    // Store reference
+    entity.planeMesh = planeMesh;
+}
+
+// Helper to create a mock 3D model (for demonstration purposes)
+// In a real implementation, you'd load the actual 3D model from the URL
+function createMockModelMesh(entity: EntityNode, scene: BABYLON.Scene): void {
+    // Create a box as a stand-in for the 3D model
+    const modelMesh = BABYLON.MeshBuilder.CreateBox(`${entity.name}-model`, { size: 1 }, scene);
+    
+    // Create a material for the model
+    const material = new BABYLON.StandardMaterial(`${entity.name}-model-material`, scene);
+    material.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
+    modelMesh.material = material;
+    
+    // Setup the mesh
+    modelMesh.parent = entity;
+    modelMesh.metadata = { rootEntity: entity };
+    
+    // Store reference
+    entity.modelMesh = modelMesh;
+}
+
+// Apply generation log to entity
+function applyGenerationToEntity(entity: EntityNode, generation: any, scene: BABYLON.Scene): void {
+    if (!generation || !generation.fileUrl) return;
+    
+    // Apply based on asset type
+    if (generation.assetType === 'image') {
+        // For images, we schedule an async operation to apply the image
+        // This avoids blocking the UI during deserialization
+        setTimeout(() => {
+            applyImageToEntity(entity, generation.fileUrl, scene, generation.imageParams?.ratio);
+            // Important: Only set to 2D mode if that's the current display mode
+            // This prevents overriding the user's preference
+            if (entity.displayMode === '2d') {
+                entity.setDisplayMode('2d');
+            }
+        }, 0);
+    }
+    else if (generation.assetType === 'model') {
+        // For models, we need to create the model mesh and set 3D display mode
+        setTimeout(() => {
+            // In a real implementation, load the model from generation.fileUrl
+            // For now, create a mock model
+            createMockModelMesh(entity, scene);
+            
+            // Only switch to 3D mode if that was the saved display mode
+            if (entity.displayMode === '3d') {
+                entity.setDisplayMode('3d');
+            }
+        }, 0);
+    }
 }
 
 // Deserialize a project JSON and recreate all EntityNodes in the scene
@@ -736,7 +891,7 @@ export function deserializeScene(data: any, scene: BABYLON.Scene): void {
     // Clear existing entities if needed
     const existingEntities = scene.rootNodes.filter(node => isEntity(node));
     existingEntities.forEach(entity => entity.dispose());
-
+    
     // Create entities from the saved data
     if (data.entities && Array.isArray(data.entities)) {
         data.entities.forEach((entityData: any) => {
@@ -789,5 +944,26 @@ export async function loadProjectFromFile(file: File, scene: BABYLON.Scene): Pro
 
         reader.readAsText(file);
     });
+}
+
+// Serialize all EntityNodes in a scene to a project JSON structure
+export function serializeScene(scene: BABYLON.Scene): any {
+    const entityNodes: EntityNode[] = [];
+    
+    // Find all EntityNodes in the scene
+    scene.rootNodes.forEach(node => {
+        if (isEntity(node)) {
+            entityNodes.push(node);
+        }
+    });
+    
+    // Create project data structure
+    const project = {
+        version: "1.0.0",
+        timestamp: new Date().toISOString(),
+        entities: entityNodes.map(entity => serializeEntityNode(entity))
+    };
+    
+    return project;
 }
 
