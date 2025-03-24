@@ -11,6 +11,7 @@ import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
 import { initScene } from '../util/editor/editor-util';
 import EnvironmentPanel from './EnvironmentPanel';
+import GizmoModeSelector from './GizmoModeSelector';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -156,6 +157,9 @@ export default function EditorContainer() {
 
         {/* Environment Panel */}
         <EnvironmentPanel />
+      </div>
+      <div className="editor-toolbar">
+        <GizmoModeSelector />
       </div>
       {/* <DebugLayer /> */}
     </div>
