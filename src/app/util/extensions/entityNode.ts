@@ -424,7 +424,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     if (options.aiObjectType === 'background') {
         // Create a background that fills the screen
         // A placeholder texture for the background until a real one is provided
-        const placeholderUrl = options.imageUrl || "https://playground.babylonjs.com/textures/equirectangular.jpg";
+        const placeholderUrl = options.imageUrl || "./demoAssets/skybox/qwantani_puresky_4k.jpg";
 
         // Create the background mesh
         // planeMesh = create2DBackground(scene, placeholderUrl);

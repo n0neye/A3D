@@ -127,7 +127,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         if (selectedEntity.getEntityType() === 'aiObject' && selectedEntity.metadata.aiData?.aiObjectType !== 'background') {
           // Apply current gizmo mode instead of enabling all gizmos
           setGizmoMode(currentGizmoMode);
-          gizmoManager.attachToMesh(primaryMesh);
+          // gizmoManager.attachToMesh(primaryMesh);
+          gizmoManager.attachToNode(selectedEntity);
           // Store reference to entity on gizmo
           gizmoManager.metadata = {
             ...gizmoManager.metadata || {},
