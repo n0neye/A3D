@@ -7,26 +7,25 @@ fal.config({
   proxyUrl: "/api/fal/proxy",
 });
 
-export type ModelType = 'fal-turbo' | 'fal-lcm' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm' | 'fal-ai/flux-control-lora-depth/image-to-image' | 'fal-ai/flux-control-lora-depth';
-
-
-export interface AIModel {
-  id: ModelType;
+export interface API_Info {
+  id: 'fal-turbo' | 'fast-lcm-diffusion' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm' | 'fal-ai/flux-control-lora-depth/image-to-image' | 'fal-ai/flux-control-lora-depth';
   name: string;
   description: string;
+  useDepthImage: boolean;
 }
 
 // Model definitions with descriptions
-export const availableModels: AIModel[] = [
+export const availableAPIs: API_Info[] = [
   // {
   //   id: 'fal-turbo',
   //   name: 'Fal Turbo',
   //   description: 'Fast general-purpose image-to-image model with good quality'
   // },
   // {
-  //   id: 'fal-lcm',
+  //   id: 'fast-lcm-diffusion',
   //   name: 'Fal LCM',
-  //   description: 'Very fast Latent Consistency Model, fewer steps needed'
+  //   description: 'Very fast Latent Consistency Model, fewer steps needed',
+  //   useDepthImage: false,
   // },
   // {
   //   id: 'flux-dev',
@@ -36,22 +35,26 @@ export const availableModels: AIModel[] = [
   {
     id: 'flux-lora-depth',
     name: 'Flux Dev LoRA Depth',
-    description: 'With style transformations'
+    description: 'With style transformations',
+    useDepthImage: false,
   },
   {
     id: 'flux-pro-depth',
     name: 'Flux Pro Depth',
-    description: 'Heighest quality'
+      description: 'Heighest quality',
+      useDepthImage: false,
   },
   {
     id: "fal-ai/flux-control-lora-depth/image-to-image",
     name: 'Flux LoRA Depth(I2I)',
-    description: 'With style transformations'
+    description: 'With style transformations',
+    useDepthImage: true,
   },
   {
     id: "fal-ai/flux-control-lora-depth",
     name: 'Flux LoRA Depth(T2I)',
-    description: 'With style transformations'
+    description: 'With style transformations',
+    useDepthImage: true,
   },
   // {
   //   id: 'replicate-lcm',
@@ -63,7 +66,7 @@ export const availableModels: AIModel[] = [
 export interface ImageToImageParams {
   imageUrl: string | Blob;
   prompt: string;
-  model: ModelType;
+  modelApiInfo: API_Info;
   seed: number;
   width: number;
   height: number;
@@ -73,6 +76,7 @@ export interface ImageToImageParams {
   negativePrompt?: string;
   promptStrength?: number;
   depthImageUrl?: string | Blob;
+  depthStrength?: number;
 
   // details
   guidanceScale?: number;
@@ -88,15 +92,13 @@ export interface ImageToImageResult {
 
 // Generate image based on the selected model
 export async function renderImage(params: ImageToImageParams): Promise<ImageToImageResult> {
-  // Select the appropriate API based on the model parameter
-  const model = params.model || 'fal-turbo';
 
-  console.log('renderImage', model, params);
+  console.log('renderImage', params.modelApiInfo.id, params);
 
-  switch (model) {
+  switch (params.modelApiInfo.id) {
     case 'fal-turbo':
       return generateFalTurboImage(params);
-    case 'fal-lcm':
+    case 'fast-lcm-diffusion':
       return generateFalLcmImage(params);
     case 'flux-dev':
       return generateFluxDevImage(params);
@@ -209,7 +211,13 @@ async function generateFluxControlLoraDepthI2I(params: ImageToImageParams): Prom
         height: params.height,
       },
       control_lora_image_url: params.depthImageUrl,
+      control_lora_strength: params.depthStrength,
       seed: params.seed,
+      loras: params.loras?.map((lora) => ({
+        path: lora.info.modelUrl,
+        scale: lora.strength * 2,
+        force: true,
+      })) || [],
     },
     logs: true,
     onQueueUpdate: (update) => {
@@ -231,12 +239,21 @@ async function generateFluxControlLoraDepthI2I(params: ImageToImageParams): Prom
 async function generateFluxControlLoraDepthT2I(params: ImageToImageParams): Promise<ImageToImageResult> {
   const result = await fal.subscribe("fal-ai/flux-control-lora-depth", {
     input: {
-      image_url: params.imageUrl,
       prompt: params.prompt,
       negative_prompt: params.negativePrompt || "text, watermark, logo",
       strength: params.promptStrength,
+      image_size: {
+        width: params.width,
+        height: params.height,
+      },
       control_lora_image_url: params.depthImageUrl,
+      control_lora_strength: params.depthStrength,
       seed: params.seed,
+      loras: params.loras?.map((lora) => ({
+        path: lora.info.modelUrl,
+        scale: lora.strength * 2,
+        force: true,
+      })) || [],
     },
     logs: true,
     onQueueUpdate: (update) => {
@@ -295,8 +312,13 @@ async function generateFalLcmImage(params: ImageToImageParams): Promise<ImageToI
       input: {
         image_url: params.imageUrl,
         prompt: params.prompt,
-        negative_prompt: params.negativePrompt || "",
         strength: params.promptStrength || 0.3,
+        seed: params.seed,
+        image_size: {
+          width: params.width,
+          height: params.height,
+        },
+        negative_prompt: params.negativePrompt || "",
       },
       logs: true,
       onQueueUpdate: (update) => {

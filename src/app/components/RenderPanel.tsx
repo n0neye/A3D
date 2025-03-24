@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { renderImage as generateRenderImage, dataURLtoBlob, ModelType, availableModels } from '../util/image-render-api';
+import { renderImage as generateRenderImage, dataURLtoBlob, availableAPIs, API_Info } from '../util/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/image-processing';
 import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
@@ -13,12 +13,17 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const previewImageRef = useRef<HTMLImageElement | null>(null);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+
+  // Inputs
   const [prompt, setPrompt] = useState<string>('flooded office, fire, dark night, a female warrior with a spear');
   const [promptStrength, setPromptStrength] = useState<number>(0.9); // Default to 0.7 strength
-  const previewImageRef = useRef<HTMLImageElement | null>(null);
+  const [depthStrength, setDepthStrength] = useState<number>(0.9); // Default to 0.7 strength
   const [noiseStrength, setNoiseStrength] = useState<number>(0); // Default to 0 (no noise)
-  const [executionTime, setExecutionTime] = useState<number | null>(null);
-  const [model, setModel] = useState<ModelType>('flux-lora-depth');
+  const [selectedAPI, setSelectedAPI] = useState<API_Info>(availableAPIs[0]);
+  const [seed, setSeed] = useState<number>(Math.floor(Math.random() * 2147483647));
+  const [useRandomSeed, setUseRandomSeed] = useState<boolean>(false);
 
   // Style panel state
   const [selectedLoras, setSelectedLoras] = useState<LoraConfig[]>([]);
@@ -41,7 +46,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [prompt, promptStrength, noiseStrength, model, selectedLoras]); // Re-create handler when these dependencies change
+  }, [prompt, promptStrength, noiseStrength, selectedAPI, selectedLoras]); // Re-create handler when these dependencies change
 
   // Style panel handlers
   const handleSelectStyle = (lora: LoraInfo) => {
@@ -162,9 +167,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     }
   };
 
-  const [seed, setSeed] = useState<number>(Math.floor(Math.random() * 2147483647));
-  const [useRandomSeed, setUseRandomSeed] = useState<boolean>(true);
-  
+
   const generateNewSeed = () => {
     const newSeed = Math.floor(Math.random() * 2147483647);
     setSeed(newSeed);
@@ -201,22 +204,27 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       const startTime = Date.now();
 
       if (!scene || !engine) throw new Error("Scene or engine not found");
-      const depthImageBlob = await EnableDepthRender(scene, engine, 1) || undefined;
+      let depthImageBlob = undefined;
+      if (selectedAPI.useDepthImage) {
+        depthImageBlob = await EnableDepthRender(scene, engine, 1) || undefined;
+      }
 
       // If useRandomSeed is true, generate a new seed for this render
       const currentSeed = useRandomSeed ? generateNewSeed() : seed;
-      
+
       // Call the API with the selected model and seed
       const result = await generateRenderImage({
         imageUrl: imageBlob,
         prompt: prompt,
         promptStrength: promptStrength,
-        model: model,
-        loras: selectedLoras,
+        modelApiInfo: selectedAPI,
+        seed: currentSeed,
         width: 1280,
         height: 720,
+        // Optional
+        loras: selectedLoras,
         depthImageUrl: depthImageBlob,
-        seed: currentSeed,
+        depthStrength: selectedAPI.useDepthImage ? depthStrength : 0,
       });
 
       // Calculate execution time
@@ -293,6 +301,17 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                 >
                   <IconDownload size={16} />
                 </button>
+
+
+                {/* Execution time */}
+                {executionTime && (
+                  <div className="w-full mb-1 absolute bottom-0 left-0">
+                    <div className="flex justify-center items-center">
+                      <label className="block text-xs text-gray-400 mb-1">{(executionTime / 1000).toFixed(2)} s</label>
+                    </div>
+                  </div>
+                )}
+
               </>
             ) : (
               <div className="text-gray-500 flex flex-col items-center">
@@ -310,7 +329,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
             {renderSelectedStyles()}
           </div>
 
-          {/* Strength slider */}
+          {/* Prompt Strength slider */}
           <div className="w-full mb-4">
             <div className="flex justify-between items-center">
               <label className="block text-sm text-gray-400 mb-1">Creativity</label> <span className="text-xs text-gray-200"> {promptStrength.toFixed(2)}</span>
@@ -330,6 +349,28 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
               <span>creative</span>
             </div>
           </div>
+
+
+          {/* Depth Strength slider */}
+          {selectedAPI.useDepthImage && <div className="w-full mb-4">
+            <div className="flex justify-between items-center">
+              <label className="block text-sm text-gray-400 mb-1">Depth Strength</label> <span className="text-xs text-gray-200"> {depthStrength.toFixed(2)}</span>
+              {/* <span className="text-xs text-gray-500">{promptStrength < 0.4 ? 'More accurate' : promptStrength > 0.7 ? 'More creative' : 'Balanced'}</span> */}
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="1"
+              step="0.05"
+              value={depthStrength}
+              onChange={(e) => setDepthStrength(parseFloat(e.target.value))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Source</span>
+              <span>creative</span>
+            </div>
+          </div>}
 
           {/* Client-side noise slider */}
           {/* <div className="w-full mb-4">
@@ -375,9 +416,8 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                 value={seed}
                 onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
                 disabled={useRandomSeed}
-                className={`w-40 h-8 p-2 bg-gray-700 text-white text-sm rounded-l-md focus:outline-none ${
-                  useRandomSeed ? 'opacity-50' : ''
-                }`}
+                className={`w-40 h-8 p-2 bg-gray-700 text-white text-sm rounded-l-md focus:outline-none ${useRandomSeed ? 'opacity-50' : ''
+                  }`}
               />
               <button
                 onClick={generateNewSeed}
@@ -389,37 +429,27 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
               </button>
               <button
                 onClick={() => setUseRandomSeed(!useRandomSeed)}
-                className={`p-2 text-white rounded-r-md w-8 ${
-                  useRandomSeed ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
-                }`}
+                className={`p-2 text-white rounded-r-md w-8 ${useRandomSeed ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
+                  }`}
                 title={useRandomSeed ? "Using random seed" : "Using fixed seed"}
               >
                 <IconDice size={16} />
               </button>
             </div>
-            <div className="text-xs text-gray-400 mt-1">
+            {/* <div className="text-xs text-gray-400 mt-1">
               {useRandomSeed ? "Using random seed for each generation" : "Using fixed seed for reproducible results"}
-            </div>
+            </div> */}
           </div>
-
-          {/* Execution time */}
-          {executionTime && (
-            <div className="w-full mb-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-sm text-gray-400 mb-1">Execution Time: {(executionTime / 1000).toFixed(2)} s</label>
-              </div>
-            </div>
-          )}
 
           {/* Model selection */}
           <div className="w-full mb-4">
             <label className="block text-sm text-gray-400 mb-1">Model</label>
             <div className="grid grid-cols-2 gap-2">
-              {availableModels.map((aiModel) => (
+              {availableAPIs.map((aiModel) => (
                 <button
                   key={aiModel.id}
-                  onClick={() => setModel(aiModel.id)}
-                  className={`py-2 px-3 text-xs rounded-md ${model === aiModel.id
+                  onClick={() => setSelectedAPI(aiModel)}
+                  className={`py-1 text-xs rounded-md ${selectedAPI.id === aiModel.id
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
