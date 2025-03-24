@@ -5,6 +5,7 @@ import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
+import { IconDownload } from '@tabler/icons-react';
 
 let postProcess: BABYLON.PostProcess | null = null;
 
@@ -223,11 +224,11 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
 
       // Clean up existing resources
       // scene.disableDepthRenderer();
-      // if (postProcess) {
-      //   scene.activeCamera.detachPostProcess(postProcess);
-      //   postProcess.dispose();
-      //   postProcess = null;
-      // }
+      if (postProcess) {
+        scene.activeCamera.detachPostProcess(postProcess);
+        postProcess.dispose();
+        postProcess = null;
+      }
 
       // Enable depth renderer with better settings
       const depthRenderer = scene.enableDepthRenderer(
@@ -335,23 +336,35 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         <div className="flex flex-col items-center">
 
           {/* Preview image or placeholder */}
-          <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+          <div className="w-full aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden group relative">
             {isLoading ? (
               <div className="flex flex-col items-center">
                 <div className="animate-spin rounded-full w-12 border-t-2 border-b-2 border-blue-500 mb-3"></div>
                 <p className="text-gray-400">Generating AI preview...</p>
               </div>
             ) : imageUrl ? (
-              <img
-                src={imageUrl}
-                alt="Scene Preview"
-                className="w-full h-full object-contain cursor-pointer"
-                onClick={() => {
-                  if (imageUrl) {
-                    window.open(imageUrl, '_blank');
-                  }
-                }}
-              />
+              <>
+                <a href={imageUrl} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={imageUrl}
+                    alt="Scene Preview"
+                    className="w-full h-full object-contain cursor-pointer"
+                  />
+                </a>
+                <button className="p-1 rounded text-white hover:bg-gray-700 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  onClick={() => {
+                    if (!imageUrl) {
+                      return;
+                    }
+                    const a = document.createElement('a');
+                    a.href = imageUrl;
+                    a.download = imageUrl.split('/').pop() || 'image.png';
+                    a.click();
+                  }}
+                >
+                  <IconDownload size={16} />
+                </button>
+              </>
             ) : (
               <div className="text-gray-500 flex flex-col items-center">
                 <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -461,13 +474,13 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                   onClick={generateDebugImage}
                   className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
                 >
-                  Generate Scene Image
+                  Scene Image
                 </button>
                 <button
                   onClick={EnableDepthRender}
                   className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
                 >
-                  Download Depth Map
+                  Depth Map
                 </button>
               </div>
             </div>
