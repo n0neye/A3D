@@ -81,13 +81,13 @@ const EntityPanel: React.FC = () => {
 
   // Additional effect to handle the input field mounting
   useEffect(() => {
-    if (selectedEntity && inputElementRef.current) {
-      inputElementRef.current.focus();
-      setTimeout(() => {
-        inputElementRef.current?.focus();
-        console.log("Focused input");
-      }, 50);
-    }
+    // if (selectedEntity && inputElementRef.current) {
+    //   inputElementRef.current.focus();
+    //   setTimeout(() => {
+    //     inputElementRef.current?.focus();
+    //     console.log("Focused input");
+    //   }, 50);
+    // }
   }, [selectedEntity, inputElementRef, generationHistory]);
 
   // Add keyboard shortcut handler

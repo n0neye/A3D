@@ -447,7 +447,10 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
                 newMesh = BABYLON.MeshBuilder.CreateCylinder(`${name}-cone`, { height: 1, diameterTop: 0, diameterBottom: 1 }, scene);
                 break;
             case 'plane':
-                newMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, { width: 1, height: 1 }, scene);
+                newMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, { width: 2, height: 2 }, scene);
+                // Look upwards
+                newMesh.rotation.x = Math.PI / 2;
+                newMesh.position.y = -0.5;
                 break;
             case 'torus':
                 newMesh = BABYLON.MeshBuilder.CreateTorus(`${name}-torus`, { diameter: 1, thickness: 0.2 }, scene);
@@ -459,6 +462,8 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         // Create a default material for the shape
         const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
         material.diffuseColor = new BABYLON.Color3(1, 1, 1);
+        material.backFaceCulling = false;
+
         newMesh.material = material;
 
         
@@ -489,6 +494,9 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
 
         // Set up plane mesh
         entity.planeMesh = newMesh;
+
+        // Set position
+        entity.position = options.position || new BABYLON.Vector3(0, 0, 0);
     } else {
         throw new Error('Invalid aiObjectType');
     }

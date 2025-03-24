@@ -98,11 +98,18 @@ export default function EditorContainer() {
     initScene(canvasRef.current, scene);
 
     // Set up gizmo manager
-    const gizmoManager = new BABYLON.GizmoManager(scene);
+    const gizmoManager = new BABYLON.GizmoManager(scene, 1.5);
     gizmoManager.positionGizmoEnabled = false;
     gizmoManager.rotationGizmoEnabled = false;
     gizmoManager.scaleGizmoEnabled = false;
+    gizmoManager.boundingBoxGizmoEnabled = false;
     gizmoManager.usePointerToAttachGizmos = false;
+
+    // Scale gizmo sensitivity
+    if (gizmoManager.gizmos.scaleGizmo) {
+      gizmoManager.gizmos.scaleGizmo.sensitivity = 2.0;
+    }
+
     setGizmoManager(gizmoManager);
 
     // Start the render loop
@@ -148,7 +155,7 @@ export default function EditorContainer() {
         <RenderPanel isDebugMode={isDebugMode} />
 
         {/* Environment Panel */}
-        {/* <EnvironmentPanel /> */}
+        <EnvironmentPanel />
       </div>
       {/* <DebugLayer /> */}
     </div>
