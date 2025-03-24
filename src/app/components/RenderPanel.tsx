@@ -7,8 +7,6 @@ import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload } from '@tabler/icons-react';
 
-let postProcess: BABYLON.PostProcess | null = null;
-
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const { scene, engine } = useEditorContext();
   // State variables
@@ -222,14 +220,6 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
 
       setIsLoading(true);
 
-      // Clean up existing resources
-      // scene.disableDepthRenderer();
-      if (postProcess) {
-        scene.activeCamera.detachPostProcess(postProcess);
-        postProcess.dispose();
-        postProcess = null;
-      }
-
       // Enable depth renderer with better settings
       const depthRenderer = scene.enableDepthRenderer(
         scene.activeCamera,
@@ -267,7 +257,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       `;
 
       // Create the post process with our improved shader
-      postProcess = new BABYLON.PostProcess(
+      const postProcess = new BABYLON.PostProcess(
         "depthVisualizer",
         "improvedDepth",
         ["near", "far"],  // Added uniforms for near/far planes
@@ -288,29 +278,23 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
       const width = engine.getRenderWidth();
       const height = engine.getRenderHeight();
 
-      const depthSnapshot = await BABYLON.Tools.CreateScreenshotAsync(
-        engine,
-        scene.activeCamera,
-        { width: width, height: height }
-      );
+      setTimeout(async () => {
+        const depthSnapshot = await BABYLON.Tools.CreateScreenshotAsync(
+          engine,
+          scene.activeCamera!,
+          { width: width, height: height }
+        );
+        
+        // Update preview
+        setImageUrl(depthSnapshot);
 
-      // Create download link
-      const link = document.createElement('a');
-      link.download = 'depth_map.png';
-      link.href = depthSnapshot;
-      link.click();
-
-      // Update preview
-      setImageUrl(depthSnapshot);
-
-      // Detach depth renderer
-      // scene.disableDepthRenderer();
-      if (scene.activeCamera && postProcess) {
-        scene.activeCamera.detachPostProcess(postProcess);
-        postProcess.dispose();
-        postProcess = null;
-      }
-
+        // Detach depth renderer
+        // scene.disableDepthRenderer();
+        if (scene.activeCamera && postProcess) {
+          scene.activeCamera.detachPostProcess(postProcess);
+          postProcess.dispose();
+        }
+      }, 1);
     } catch (error) {
       console.error("Error generating depth map:", error);
       alert("Failed to generate depth map: " + (error as Error).message);
