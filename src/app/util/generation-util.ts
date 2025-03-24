@@ -61,7 +61,7 @@ export async function generateBackground(
     const startTime = performance.now();
     const imageSize = options.imageSize || 'medium';
     const entityType = entity.getEntityType();
-    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
+    const aiObjectType = entity.getAIData()?.aiObjectType || 'generativeObject';
     const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
     // Update entity state
     entity.setProcessingState({

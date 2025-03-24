@@ -276,7 +276,7 @@ const EntityPanel: React.FC = () => {
   // UI content based on object type
   const renderContent = () => {
     const isGenerating = isGenerating2D || isGenerating3D;
-    const isObject = selectedEntity?.metadata.aiData?.aiObjectType === 'object';
+    const isObject = selectedEntity?.metadata.aiData?.aiObjectType === 'generativeObject';
     const isBackground = selectedEntity?.metadata.aiData?.aiObjectType === 'background';
 
     // Check if we can remove background (only if we have a current image)

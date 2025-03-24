@@ -39,7 +39,7 @@ export async function generateRealtimeImage(
     const ratio = options.ratio || '1:1';
     const imageSize = options.imageSize || 'medium';
     const entityType = entity.getEntityType();
-    const aiObjectType = entity.getAIData()?.aiObjectType || 'object';
+    const aiObjectType = entity.getAIData()?.aiObjectType || 'generativeObject';
     const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
 
     // Update entity state
@@ -67,7 +67,7 @@ export async function generateRealtimeImage(
 
     // Enhance prompt based on entity type
     let enhancedPrompt = prompt;
-    if (aiObjectType === 'object') {
+    if (aiObjectType === 'generativeObject') {
         enhancedPrompt = `${prompt} at the center of the frame, close up, focused on the object, uncropped, solid black background`;
     } else if (aiObjectType === 'background') {
         enhancedPrompt = `expansive panoramic view of ${prompt}`;

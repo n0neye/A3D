@@ -55,7 +55,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       
       if (primaryMesh) {
         // Setup gizmo
-        if(selectedEntity.getEntityType() === 'aiObject' && selectedEntity.metadata.aiData?.aiObjectType === 'object') {
+        if(selectedEntity.getEntityType() === 'aiObject' && selectedEntity.metadata.aiData?.aiObjectType === 'generativeObject') {
           gizmoManager.positionGizmoEnabled = true;
           gizmoManager.rotationGizmoEnabled = true;
           gizmoManager.scaleGizmoEnabled = true;

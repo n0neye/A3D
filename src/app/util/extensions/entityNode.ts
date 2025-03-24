@@ -4,9 +4,10 @@ import { create2DBackground, createEquirectangularSkybox } from '../editor/edito
 import { ImageRatio, ImageSize } from '../generation-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
-export type AiObjectType = "object" | "background";
+export type AiObjectType = "generativeObject" | "background" | "shape";
 export type AssetType = 'image' | 'model';
-
+// Add shape type definition
+export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'torus';
 
 // Progress event handling
 export type ProgressListener = (state: EntityProcessingState) => void;
@@ -39,14 +40,14 @@ export interface GenerationLog {
     id: string;
     timestamp: number;
     prompt: string;
-    
+
     // Asset type and URLs
     assetType: AssetType;
     fileUrl?: string;
-    
+
     // If model is derived from image
     derivedFromId?: string;
-    
+
     // Generation parameters
     imageParams?: {
         negativePrompt?: string;
@@ -122,7 +123,7 @@ export class EntityNode extends BABYLON.TransformNode {
         // Add AI data for AI entities
         if (type === 'aiObject') {
             this.metadata.aiData = {
-                aiObjectType: "object",
+                aiObjectType: "generativeObject",
                 currentStateId: null,
                 ratio: options.ratio || '1:1',
                 imageSize: options.imageSize || 'medium',
@@ -213,7 +214,7 @@ export class EntityNode extends BABYLON.TransformNode {
         // Create AI data if it doesn't exist
         if (!this.metadata.aiData) {
             this.metadata.aiData = {
-                aiObjectType: "object",
+                aiObjectType: "generativeObject",
                 currentStateId: null,
                 ratio: options.ratio,
                 imageSize: options.imageSize,
@@ -280,10 +281,10 @@ export class EntityNode extends BABYLON.TransformNode {
     // Apply a specific generation log 
     public applyGenerationLog(log: GenerationLog): void {
         if (!log || !this.metadata.aiData) return;
-        
+
         // Set as current state
         this.metadata.aiData.currentStateId = log.id;
-        
+
         // Apply based on asset type
         if (log.assetType === 'image' && log.fileUrl) {
             // For image assets, apply the image to the entity
@@ -298,38 +299,38 @@ export class EntityNode extends BABYLON.TransformNode {
     // Update aspect ratio of the entity
     public updateAspectRatio(ratio: ImageRatio): void {
         if (!this.metadata.aiData || !this.planeMesh) return;
-        
+
         // Save the new ratio in metadata
         this.metadata.aiData.ratio = ratio;
-        
+
         // Get the new dimensions based on ratio
         const { width, height } = getPlaneSize(ratio);
-        
+
         // Update the mesh dimensions
         // We need to create a new geometry with the new dimensions
         const scene = this.getScene();
         const oldMaterial = this.planeMesh.material;
-        
+
         // Create a new plane with the new aspect ratio
         const newPlaneMesh = BABYLON.MeshBuilder.CreatePlane(
             `${this.name}-plane-new`,
             { width, height },
             scene
         );
-        
+
         // Copy position, rotation, and parent
         newPlaneMesh.position = this.planeMesh.position.clone();
         newPlaneMesh.rotation = this.planeMesh.rotation.clone();
         newPlaneMesh.parent = this;
-        
+
         // Apply the existing material
         newPlaneMesh.material = oldMaterial;
-        
+
         // Update metadata
         newPlaneMesh.metadata = {
             rootEntity: this
         };
-        
+
         // Dispose of the old plane mesh
         const oldMesh = this.planeMesh;
         this.planeMesh = newPlaneMesh;
@@ -381,6 +382,7 @@ export function createEntity(
         imageSize?: ImageSize;
         name?: string;
         imageUrl?: string;
+        shapeType?: ShapeType;
     } = {}
 ): EntityNode {
     const name = options.name || `${type}-${uuidv4().substring(0, 8)}`;
@@ -399,11 +401,12 @@ export function createEntity(
 
 
 const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, options: {
+    aiObjectType?: AiObjectType;
     position?: BABYLON.Vector3;
     ratio?: ImageRatio;
     imageSize?: ImageSize;
     imageUrl?: string;
-    aiObjectType?: AiObjectType;
+    shapeType?: ShapeType;
 }) => {
     if (!options.aiObjectType) {
         throw new Error('aiObjectType is required');
@@ -414,7 +417,8 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     }
 
     // Create child mesh based on entity type and aiObjectType
-    let planeMesh: BABYLON.Mesh;
+    let newMesh: BABYLON.Mesh;
+
     if (options.aiObjectType === 'background') {
         // Create a background that fills the screen
         // A placeholder texture for the background until a real one is provided
@@ -422,17 +426,51 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
 
         // Create the background mesh
         // planeMesh = create2DBackground(scene, placeholderUrl);
-        
-        planeMesh = createEquirectangularSkybox(scene, placeholderUrl);
+
+        newMesh = createEquirectangularSkybox(scene, placeholderUrl);
 
         // Set special properties for backgrounds
-        planeMesh.renderingGroupId = 0; // Ensure it renders behind everything
-    } else {
+        newMesh.renderingGroupId = 0; // Ensure it renders behind everything
+    } else if (options.aiObjectType === 'shape' && options.shapeType) {
+        // Create a primitive shape based on shapeType
+        switch (options.shapeType) {
+            case 'cube':
+                newMesh = BABYLON.MeshBuilder.CreateBox(`${name}-box`, { size: 1 }, scene);
+                break;
+            case 'sphere':
+                newMesh = BABYLON.MeshBuilder.CreateSphere(`${name}-sphere`, { diameter: 1 }, scene);
+                break;
+            case 'cylinder':
+                newMesh = BABYLON.MeshBuilder.CreateCylinder(`${name}-cylinder`, { height: 1, diameter: 1 }, scene);
+                break;
+            case 'cone':
+                newMesh = BABYLON.MeshBuilder.CreateCylinder(`${name}-cone`, { height: 1, diameterTop: 0, diameterBottom: 1 }, scene);
+                break;
+            case 'plane':
+                newMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, { width: 1, height: 1 }, scene);
+                break;
+            case 'torus':
+                newMesh = BABYLON.MeshBuilder.CreateTorus(`${name}-torus`, { diameter: 1, thickness: 0.2 }, scene);
+                break;
+            default:
+                newMesh = BABYLON.MeshBuilder.CreateBox(`${name}-default`, { size: 1 }, scene);
+        }
+
+        // Create a default material for the shape
+        const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
+        material.diffuseColor = new BABYLON.Color3(1, 1, 1);
+        newMesh.material = material;
+
+        
+        entity.modelMesh = newMesh;
+        entity.setDisplayMode('3d');
+
+    } else if (options.aiObjectType === 'generativeObject') {
         // Default object - create a plane with the right aspect ratio
         const ratio = options.ratio || '1:1';
         const { width, height } = getPlaneSize(ratio);
 
-        planeMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
+        newMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
             width,
             height
         }, scene);
@@ -443,27 +481,28 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
         material.backFaceCulling = false;
 
-
         // Apply material to mesh
-        planeMesh.material = material;
+        newMesh.material = material;
 
         // Always face the camera
-        planeMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+        newMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+
+        // Set up plane mesh
+        entity.planeMesh = newMesh;
+    } else {
+        throw new Error('Invalid aiObjectType');
     }
 
     // Parent the mesh to the entity
-    planeMesh.parent = entity;
+    newMesh.parent = entity;
 
-    // Set up plane mesh
-    entity.planeMesh = planeMesh;
-
-    planeMesh.metadata = {
+    newMesh.metadata = {
         rootEntity: entity
     };
 }
 
 // Apply image to entity
-export const applyImageToEntity = async(
+export const applyImageToEntity = async (
     entity: EntityNode,
     imageUrl: string,
     scene: BABYLON.Scene,
@@ -475,7 +514,7 @@ export const applyImageToEntity = async(
 
     console.log('applyImageToEntity', imageUrl);
 
-    if(ratio) {
+    if (ratio) {
         const { width, height } = getPlaneSize(ratio);
         planeMesh.scaling = new BABYLON.Vector3(width, height, 1);
     }
@@ -485,11 +524,11 @@ export const applyImageToEntity = async(
 
     // Download the image
     const response = await fetch(imageUrl);
-    
+
     // Check content type for PNG
     const contentType = response.headers.get('content-type');
     const isPotentiallyTransparent = contentType && contentType.includes('png');
-    
+
     // convert to blob data url
     const imageBlob = await response.blob();
     const imageDataUrl = URL.createObjectURL(imageBlob);
@@ -524,11 +563,11 @@ export const applyImageToEntity = async(
         if (material) {
             // Create a new texture
             const texture = new BABYLON.Texture(imageDataUrl, scene);
-            
+
             // Apply texture to the material
             material.diffuseTexture = texture;
             material.emissiveTexture = texture;
-            
+
             // If the image is a PNG, check for transparency
             if (isPotentiallyTransparent) {
                 console.log('isPotentiallyTransparent', isPotentiallyTransparent);
@@ -539,7 +578,7 @@ export const applyImageToEntity = async(
                 material.backFaceCulling = false;
                 material.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
                 material.needDepthPrePass = false;
-                
+
                 // For best rendering quality with transparent textures
                 planeMesh.renderingGroupId = 1; // Render after opaque objects
             } else {
@@ -548,7 +587,7 @@ export const applyImageToEntity = async(
                 material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
                 planeMesh.renderingGroupId = 0;
             }
-            
+
             // Update metadata
             entity.metadata.lastImageUrl = imageDataUrl;
         }

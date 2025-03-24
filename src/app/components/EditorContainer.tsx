@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import GenerationMenu from './GenerationMenu';
+import AddPanel from './AddPanel';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
 import { resolveEntity } from '../util/extensions/entityNode';
@@ -137,7 +137,7 @@ export default function EditorContainer() {
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
       <div className="flex h-full">
         {/* Generation menu */}
-        <GenerationMenu />
+        <AddPanel />
 
         {/* Main 3D canvas */}
         <div className="flex-1 relative">
