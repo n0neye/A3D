@@ -12,7 +12,8 @@ import {
   IconPyramid,
   IconPlus,
   IconSquareRotated,
-  IconOvalVertical
+  IconOvalVertical,
+  IconSquare
 } from '@tabler/icons-react';
 
 type PrimitiveShape = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'torus';
@@ -79,7 +80,8 @@ const AddPanel: React.FC = () => {
     { type: 'sphere', label: 'Sphere', icon: <IconSphere size={20} /> },
     { type: 'cylinder', label: 'Cylinder', icon: <IconCylinder size={20} /> },
     { type: 'cone', label: 'Cone', icon: <IconPyramid size={20} /> },
-    { type: 'plane', label: 'Plane', icon: <IconSquareRotated size={20} /> },
+    { type: 'plane', label: 'Plane', icon: <IconSquare size={20} /> },
+    { type: 'floor', label: 'Floor', icon: <IconSquareRotated size={20} /> },
     { type: 'torus', label: 'Torus', icon: <IconOvalVertical size={20} /> },
   ];
 
