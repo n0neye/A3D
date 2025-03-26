@@ -17,20 +17,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { blobToBase64 } from '../util/generation-util';
 
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const { scene, engine } = useEditorContext();
   const { renderSettings, updateRenderSettings } = useRenderSettings();
-  
+
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const previewImageRef = useRef<HTMLImageElement | null>(null);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [isTest, setIsTest] = useState<boolean>(false);
 
   // Use values from context instead of local state
   const {
-    prompt, 
+    prompt,
     promptStrength,
     depthStrength,
     noiseStrength,
@@ -38,13 +40,13 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     useRandomSeed,
     selectedLoras
   } = renderSettings;
-  
+
   // Find the selected API object from its ID in the context
   const [selectedAPI, setSelectedAPI] = useState(() => {
     const api = availableAPIs.find(api => api.id === renderSettings.selectedAPI);
     return api || availableAPIs[0];
   });
-  
+
   // Style panel state
   const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
 
@@ -106,9 +108,9 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const renderSelectedStyles = () => {
     if (selectedLoras.length === 0) {
       return (
-        <Button 
-          variant="outline" 
-          className="w-full h-16 border-dashed" 
+        <Button
+          variant="outline"
+          className="w-full h-16 border-dashed"
           onClick={() => setIsStylePanelOpen(true)}
         >
           <span className="text-muted-foreground">Click to add a style</span>
@@ -134,9 +136,9 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                 <span className="text-sm font-medium truncate max-w-[120px] text-ellipsis">
                   {loraConfig.info.name}
                 </span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="p-0 h-6 w-6 ml-auto"
                   onClick={() => handleRemoveStyle(loraConfig.info.id)}
                 >
@@ -201,11 +203,13 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     return newSeed;
   };
 
-  const handleRender = async () => {
+  const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null); // Reset execution time when starting new generation
 
     try {
+      // Start measuring time
+      const startTime = Date.now();
       // First, take a screenshot of the current scene
       if (!scene || !engine) throw new Error("Scene or engine not found");
       const screenshot = await TakeFramedScreenshot(scene, engine);
@@ -220,23 +224,30 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         processedImage = await addNoiseToImage(screenshot, noiseStrength);
       }
 
-      // Update the debug image with the processed image
-      setImageUrl(processedImage);
-
       // Resize the image to 512x512 before sending to API
       const resizedImage = await resizeImage(processedImage, 1280, 720);
 
       // Convert the resized image to blob for API
       const imageBlob = dataURLtoBlob(resizedImage);
 
-      // Start measuring time
-      const startTime = Date.now();
 
-      if (!scene || !engine) throw new Error("Scene or engine not found");
-      let depthImageBlob = undefined;
+      let depthImage = undefined;
       if (selectedAPI.useDepthImage) {
-        depthImageBlob = await EnableDepthRender(scene, engine, 1) || undefined;
+        depthImage = await EnableDepthRender(scene, engine, 1) || undefined;
+        if (depthImage) {
+          setImageUrl(depthImage);
+        }
       }
+
+      // Log pre-processing time
+      const preProcessingTime = Date.now();
+      console.log(`%cPre-processing time: ${(preProcessingTime - startTime) / 1000} seconds`, "color: #4CAF50; font-weight: bold;");
+
+
+      if (isTest) {
+        return;
+      }
+
 
       // If useRandomSeed is true, generate a new seed for this render
       const currentSeed = useRandomSeed ? generateNewSeed() : seed;
@@ -252,7 +263,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         height: 720,
         // Optional
         loras: selectedLoras,
-        depthImageUrl: depthImageBlob,
+        depthImageUrl: depthImage,
         depthStrength: selectedAPI.useDepthImage ? depthStrength : 0,
       });
 
@@ -299,16 +310,17 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
         <CardHeader className="">
           <CardTitle className="text-lg font-medium">Render</CardTitle>
         </CardHeader>
-        
+
         <CardContent className="space-y-4">
           {/* Preview image or placeholder */}
           <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden group relative">
-            {isLoading ? (
-              <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full w-12 border-t-2 border-b-2 border-primary mb-3"></div>
-                <p className="text-muted-foreground">Generating AI preview...</p>
+            {isLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="animate-spin rounded-full w-12 h-12 border-t-2 border-b-2 border-primary mb-3"></div>
+                <p className="text-muted-foreground">Rendering...</p>
               </div>
-            ) : imageUrl ? (
+            )}
+            {imageUrl ? (
               <>
                 <a href={imageUrl} target="_blank" rel="noopener noreferrer">
                   <img
@@ -317,9 +329,9 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                     className="w-full h-full object-contain cursor-pointer"
                   />
                 </a>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   onClick={() => {
                     if (!imageUrl) return;
@@ -465,7 +477,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
           </div>
 
           {/* Debug Tools */}
-          { (
+          {(
             <div>
               <Label className="text-sm mb-2 block">Debug Tools</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -490,6 +502,13 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                 >
                   Show Depth
                 </Button>
+                <Button
+                  variant={isTest ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsTest(!isTest)}
+                >
+                  Test
+                </Button>
               </div>
             </div>
           )}
@@ -498,7 +517,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
           <Button
             variant="default"
             size="lg"
-            onClick={handleRender}
+            onClick={() => handleRender(isTest)}
             disabled={isLoading}
             className="w-full"
           >

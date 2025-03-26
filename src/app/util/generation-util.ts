@@ -337,7 +337,7 @@ export async function generate3DModel(
 /**
  * Helper function to convert a Blob to a base64 data URL
  */
-function blobToBase64(blob: Blob): Promise<string> {
+export function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {

@@ -59,11 +59,11 @@ export async function addNoiseToImage(imageDataUrl: string, noiseStrength: numbe
 }
 
 /**
- * Resizes an image to a specific width and height
+ * Resizes an image to fit within specified dimensions
  * @param imageDataUrl The data URL of the image
  * @param maxWidth The maximum width
  * @param maxHeight The maximum height
- * @param keepRatio Whether to maintain the original aspect ratio (defaults to false)
+ * @param keepRatio Whether to maintain the original aspect ratio (defaults to true)
  * @returns A promise that resolves to the data URL of the resized image
  */
 export async function resizeImage(
@@ -76,47 +76,38 @@ export async function resizeImage(
     const img = new Image();
     img.onload = () => {
       try {
-        // Create a canvas for resizing
-        const canvas = document.createElement('canvas');
-        
+        // Calculate dimensions
         let targetWidth = maxWidth;
         let targetHeight = maxHeight;
         
-        // Calculate dimensions if keeping aspect ratio
         if (keepRatio) {
           const originalRatio = img.width / img.height;
-          const targetRatio = maxWidth / maxHeight;
           
-          if (originalRatio > targetRatio) {
-            // Image is wider than target: constrain by width
+          // Calculate which dimension constrains the resize
+          if (img.width / maxWidth > img.height / maxHeight) {
+            // Width is the limiting factor
             targetWidth = maxWidth;
             targetHeight = targetWidth / originalRatio;
           } else {
-            // Image is taller than target: constrain by height
+            // Height is the limiting factor
             targetHeight = maxHeight;
             targetWidth = targetHeight * originalRatio;
           }
         }
         
-        // Set canvas dimensions
-        canvas.width = maxWidth;
-        canvas.height = maxHeight;
-        const ctx = canvas.getContext('2d');
+        // Create a canvas with the exact dimensions of the resized image
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         
+        const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Failed to get 2D context'));
           return;
         }
         
-        // Clear canvas with transparent background
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // If keeping ratio, center the image in the canvas
-        const x = keepRatio ? (maxWidth - targetWidth) / 2 : 0;
-        const y = keepRatio ? (maxHeight - targetHeight) / 2 : 0;
-        
-        // Draw the image resized to the canvas
-        ctx.drawImage(img, x, y, targetWidth, targetHeight);
+        // Draw the image resized to the canvas (no positioning needed)
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
         
         // Get the data URL of the resized image
         const resizedImageUrl = canvas.toDataURL('image/png');
@@ -132,8 +123,7 @@ export async function resizeImage(
     
     img.src = imageDataUrl;
   });
-} 
-
+}
 
 /**
  * Crops an image based on the ratio overlay frame

@@ -65,7 +65,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     createSunEntity(scene);
 
     // Create Ambient Light
-    createAmbientLight(scene);
+    createBasicLights(scene);
 
 
     // Create a background entity
@@ -348,11 +348,28 @@ const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON
     return arrowMesh;
 };
 
-export const createAmbientLight = (scene: BABYLON.Scene) => {
-    const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 1, 0), scene);
+export const createBasicLights = (scene: BABYLON.Scene) => {
+    const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
     ambientLight.intensity = 1;
+    ambientLight.shadowEnabled = true;
     environmentObjects.ambientLight = ambientLight;
-    return ambientLight;
+
+    // Create two point lights with warm and cold colors
+    const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);
+    warmLight.intensity = 1;
+    warmLight.diffuse = new BABYLON.Color3(1, 0.8, 0);
+    warmLight.position = new BABYLON.Vector3(1, 1, 1);
+    warmLight.shadowEnabled = true;
+    // environmentObjects.warmLight = warmLight;
+
+    const coldLight = new BABYLON.PointLight("coldLight", new BABYLON.Vector3(0, 1, 0), scene);
+    coldLight.intensity = 1;
+    coldLight.diffuse = new BABYLON.Color3(3, 0.8, 1);
+    coldLight.position = new BABYLON.Vector3(-1, 1, 1);
+    coldLight.shadowEnabled = true;
+    // environmentObjects.coldLight = coldLight;
+    
+    return;
 };
 
 export const createSunEntity = (scene: BABYLON.Scene,) => {
