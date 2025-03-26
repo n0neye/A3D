@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useEditorContext } from '../context/EditorContext';
-import { saveProjectToFile, loadProjectFromFile } from '../util/extensions/entityNode';
+import { saveProjectToFile, loadProjectFromFile } from '../util/editor/project-util';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 

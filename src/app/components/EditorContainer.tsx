@@ -13,7 +13,7 @@ import { initScene } from '../util/editor/editor-util';
 import EnvironmentPanel from './EnvironmentPanel';
 import GizmoModeSelector from './GizmoModeSelector';
 import FileMenu from './FileMenu';
-import { saveProjectToFile, loadProjectFromFile } from '../util/extensions/entityNode';
+import { saveProjectToFile, loadProjectFromFile } from '../util/editor/project-util';
 import RatioPanel from './RatioPanel';
 
 export default function EditorContainer() {
