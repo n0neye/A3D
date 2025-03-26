@@ -113,11 +113,7 @@ export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.En
         //   wait for 1 frame
         await new Promise(resolve => setTimeout(resolve, 1));
 
-        const depthSnapshot = await BABYLON.Tools.CreateScreenshotAsync(
-            engine,
-            scene.activeCamera!,
-            { width: width, height: height }
-        );
+        const depthSnapshot = await TakeFramedScreenshot(scene, engine);
 
         setTimeout(() => {
             // Detach depth renderer
@@ -189,7 +185,7 @@ export const cropImageToRatioFrame = async (
 // Modify the existing functions to use the cropping if overlay is active
 
 // Modify CreateScreenshotAsync to use the ratio frame if visible
-export async function TakeScreenshot(scene: BABYLON.Scene, engine: BABYLON.Engine): Promise<string | null> {
+export async function TakeFramedScreenshot(scene: BABYLON.Scene, engine: BABYLON.Engine): Promise<string | null> {
     try {
         if (!scene || !engine) return null;
         

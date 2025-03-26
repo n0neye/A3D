@@ -6,7 +6,7 @@ import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { convertTextureToImage, EnableDepthRender, GetDepthMap, TakeScreenshot } from '../util/render-util';
+import { convertTextureToImage, EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -152,7 +152,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     try {
       // Force a fresh render
       if (!scene || !engine) throw new Error("Scene or engine not found");
-      const screenshot = await TakeScreenshot(scene, engine);
+      const screenshot = await TakeFramedScreenshot(scene, engine);
       if (!screenshot) throw new Error("Failed to take screenshot");
       console.log("Screenshot generated:", screenshot?.substring(0, 100) + "...");
       setImageUrl(screenshot);
@@ -182,7 +182,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     try {
       // First, take a screenshot of the current scene
       if (!scene || !engine) throw new Error("Scene or engine not found");
-      const screenshot = await TakeScreenshot(scene, engine);
+      const screenshot = await TakeFramedScreenshot(scene, engine);
       if (!screenshot) throw new Error("Failed to take screenshot");
 
       // Store the original screenshot

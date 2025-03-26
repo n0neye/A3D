@@ -16,6 +16,12 @@ export interface EnvironmentObjects {
         container: GUI.AdvancedDynamicTexture;
         frame: GUI.Rectangle;
         padding: number;
+        borders?: {
+            top: GUI.Rectangle;
+            right: GUI.Rectangle;
+            bottom: GUI.Rectangle;
+            left: GUI.Rectangle;
+        };
     };
 }
 
@@ -376,28 +382,47 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
     // Create fullscreen UI
     const advancedTexture = GUI.AdvancedDynamicTexture.CreateFullscreenUI("ratioOverlayUI", true, scene);
     
-    // Create the frame rectangle
-    const frame = new GUI.Rectangle("ratioFrame");
-    frame.thickness = 2;
-    frame.color = "rgba(255, 255, 255, 0.3)";
-    frame.background = "rgba(0, 0, 0, 0.05)";
-    frame.cornerRadius = 0;
+    // Create a container to group the frame elements
+    const container = new GUI.Rectangle("ratioFrameContainer");
+    container.thickness = 0;
+    container.background = "transparent";
+    advancedTexture.addControl(container);
     
-    // Add to the texture
-    advancedTexture.addControl(frame);
+    // Create the frame elements (four rectangles for borders)
+    const topBorder = new GUI.Rectangle("topBorder");
+    const rightBorder = new GUI.Rectangle("rightBorder");
+    const bottomBorder = new GUI.Rectangle("bottomBorder");
+    const leftBorder = new GUI.Rectangle("leftBorder");
+    
+    // Set properties for all borders
+    [topBorder, rightBorder, bottomBorder, leftBorder].forEach(border => {
+        border.thickness = 0;
+        border.background = "rgba(0, 0, 0, 0.3)"; // Semi-transparent black
+        container.addControl(border);
+    });
     
     // Store in environment objects with initial padding
     environmentObjects.ratioOverlay = {
         container: advancedTexture,
-        frame: frame,
-        padding: DEFAULT_FRAME_PADDING
+        frame: container,
+        padding: DEFAULT_FRAME_PADDING,
+        borders: {
+            top: topBorder,
+            right: rightBorder,
+            bottom: bottomBorder,
+            left: leftBorder
+        }
     };
     
     // Initial sizing
     updateRatioOverlay(scene);
     
     // Update when the window is resized
-    window.addEventListener('resize', () => updateRatioOverlay(scene));
+    window.addEventListener('resize', () => {
+        setTimeout(() => {
+            updateRatioOverlay(scene)
+        }, 1);
+    });
 };
 
 /**
@@ -405,35 +430,71 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
  * @param scene The Babylon.js scene
  */
 export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
-    if (!environmentObjects.ratioOverlay) return;
+    if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return;
     
-    const { frame, padding } = environmentObjects.ratioOverlay;
+    const { frame, padding, borders } = environmentObjects.ratioOverlay;
     
     // Get current engine dimensions
     const engine = scene.getEngine();
-    const width = engine.getRenderWidth();
-    const height = engine.getRenderHeight();
+    const screenWidth = engine.getRenderWidth();
+    const screenHeight = engine.getRenderHeight();
     
     // Calculate padding in pixels
-    const paddingPixels = (padding / 100) * Math.min(width, height);
+    const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
     
     // Calculate frame dimensions maintaining 16:9 ratio
     const targetRatio = 16 / 9;
     let frameWidth, frameHeight;
     
-    if (width / height > targetRatio) {
+    if (screenWidth / screenHeight > targetRatio) {
         // Screen is wider than 16:9
-        frameHeight = height - (paddingPixels * 2);
+        frameHeight = screenHeight - (paddingPixels * 2);
         frameWidth = frameHeight * targetRatio;
     } else {
         // Screen is taller than 16:9
-        frameWidth = width - (paddingPixels * 2);
+        frameWidth = screenWidth - (paddingPixels * 2);
         frameHeight = frameWidth / targetRatio;
     }
     
-    // Apply new dimensions
-    frame.width = `${frameWidth}px`;
-    frame.height = `${frameHeight}px`;
+    // Calculate frame position (centered)
+    const frameLeft = (screenWidth - frameWidth) / 2;
+    const frameTop = (screenHeight - frameHeight) / 2;
+    
+    // Set container size to match screen
+    frame.width = "100%";
+    frame.height = "100%";
+    
+    // Position the borders to create a hollow frame
+    
+    // Top border - covers everything above the frame
+    borders.top.width = "100%";
+    borders.top.height = `${frameTop}px`;
+    borders.top.topInPixels = 0;
+    borders.top.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    borders.top.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    
+    // Bottom border - covers everything below the frame
+    borders.bottom.width = "100%";
+    borders.bottom.height = `${frameTop}px`;
+    borders.bottom.topInPixels = frameTop + frameHeight;
+    borders.bottom.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    borders.bottom.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    
+    // Left border - covers left area between top and bottom borders
+    borders.left.width = `${frameLeft}px`;
+    borders.left.height = `${frameHeight}px`;
+    borders.left.leftInPixels = 0;
+    borders.left.topInPixels = frameTop;
+    borders.left.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    borders.left.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    
+    // Right border - covers right area between top and bottom borders
+    borders.right.width = `${frameLeft}px`;
+    borders.right.height = `${frameHeight}px`;
+    borders.right.leftInPixels = frameLeft + frameWidth;
+    borders.right.topInPixels = frameTop;
+    borders.right.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    borders.right.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
 };
 
 /**
@@ -474,18 +535,29 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
     width: number;
     height: number;
 } | null => {
-    if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.frame.isVisible) return null;
+    if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return null;
     
-    const frame = environmentObjects.ratioOverlay.frame;
+    const { padding } = environmentObjects.ratioOverlay;
     const engine = scene.getEngine();
     const screenWidth = engine.getRenderWidth();
     const screenHeight = engine.getRenderHeight();
     
-    // Get the actual pixel dimensions from the frame
-    const frameWidth = typeof frame.width === 'string' ? 
-        parseFloat(frame.width.replace('px', '')) : frame.width;
-    const frameHeight = typeof frame.height === 'string' ? 
-        parseFloat(frame.height.replace('px', '')) : frame.height;
+    // Calculate padding in pixels
+    const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
+    
+    // Calculate frame dimensions maintaining 16:9 ratio
+    const targetRatio = 16 / 9;
+    let frameWidth, frameHeight;
+    
+    if (screenWidth / screenHeight > targetRatio) {
+        // Screen is wider than 16:9
+        frameHeight = screenHeight - (paddingPixels * 2);
+        frameWidth = frameHeight * targetRatio;
+    } else {
+        // Screen is taller than 16:9
+        frameWidth = screenWidth - (paddingPixels * 2);
+        frameHeight = frameWidth / targetRatio;
+    }
     
     // Calculate position (centered on screen)
     const left = (screenWidth - frameWidth) / 2;
