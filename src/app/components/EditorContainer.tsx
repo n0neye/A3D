@@ -14,6 +14,7 @@ import EnvironmentPanel from './EnvironmentPanel';
 import GizmoModeSelector from './GizmoModeSelector';
 import FileMenu from './FileMenu';
 import { saveProjectToFile, loadProjectFromFile } from '../util/extensions/entityNode';
+import RatioPanel from './RatioPanel';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -104,7 +105,7 @@ export default function EditorContainer() {
   // Handle file selection for project loading
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !scene) return;
-    
+
     try {
       const file = e.target.files[0];
       await loadProjectFromFile(file, scene);
@@ -195,14 +196,17 @@ export default function EditorContainer() {
         <FileMenu />
         <GizmoModeSelector />
       </div>
-      
+
+      {/* Ratio Panel */}
+      <RatioPanel />
+
       {/* Hidden file input for keyboard shortcut open */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        accept=".json" 
-        className="hidden" 
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".json"
+        className="hidden"
       />
     </div>
   );

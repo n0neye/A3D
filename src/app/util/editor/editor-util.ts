@@ -2,6 +2,7 @@ import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
 import { createEntity, EntityNode } from "../extensions/entityNode";
 import * as GUI from '@babylonjs/gui';
+import { ImageRatio, RATIO_MAP } from '../generation-util';
 
 // Store environment objects
 export interface EnvironmentObjects {
@@ -16,6 +17,7 @@ export interface EnvironmentObjects {
         container: GUI.AdvancedDynamicTexture;
         frame: GUI.Rectangle;
         padding: number;
+        ratio: ImageRatio;
         borders?: {
             top: GUI.Rectangle;
             right: GUI.Rectangle;
@@ -32,6 +34,8 @@ export const getEnvironmentObjects = (): EnvironmentObjects => {
     return environmentObjects;
 };
 
+// Default ratio
+const DEFAULT_RATIO: ImageRatio = '16:9';
 
 export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     // Camera
@@ -368,7 +372,7 @@ export const createSunEntity = (scene: BABYLON.Scene,) => {
 const DEFAULT_FRAME_PADDING = 10; // percentage of screen size
 
 /**
- * Creates a 16:9 ratio overlay frame for positioning elements for rendering
+ * Creates a ratio overlay frame for positioning elements for rendering
  * @param scene The Babylon.js scene
  * @returns The created GUI elements
  */
@@ -401,11 +405,12 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
         container.addControl(border);
     });
     
-    // Store in environment objects with initial padding
+    // Store in environment objects with initial padding and ratio
     environmentObjects.ratioOverlay = {
         container: advancedTexture,
         frame: container,
         padding: DEFAULT_FRAME_PADDING,
+        ratio: DEFAULT_RATIO,
         borders: {
             top: topBorder,
             right: rightBorder,
@@ -426,13 +431,13 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
 };
 
 /**
- * Updates the ratio overlay frame to maintain 16:9 aspect ratio
+ * Updates the ratio overlay frame to maintain the selected aspect ratio
  * @param scene The Babylon.js scene
  */
 export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
     if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return;
     
-    const { frame, padding, borders } = environmentObjects.ratioOverlay;
+    const { frame, padding, borders, ratio } = environmentObjects.ratioOverlay;
     
     // Get current engine dimensions
     const engine = scene.getEngine();
@@ -442,16 +447,18 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
     // Calculate padding in pixels
     const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
     
-    // Calculate frame dimensions maintaining 16:9 ratio
-    const targetRatio = 16 / 9;
+    // Use the ratio from the ratio map instead of hardcoded value
+    const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
+    const targetRatio = ratioWidth / ratioHeight;
+    
     let frameWidth, frameHeight;
     
     if (screenWidth / screenHeight > targetRatio) {
-        // Screen is wider than 16:9
+        // Screen is wider than the target ratio
         frameHeight = screenHeight - (paddingPixels * 2);
         frameWidth = frameHeight * targetRatio;
     } else {
-        // Screen is taller than 16:9
+        // Screen is taller than the target ratio
         frameWidth = screenWidth - (paddingPixels * 2);
         frameHeight = frameWidth / targetRatio;
     }
@@ -526,6 +533,21 @@ export const setRatioOverlayVisibility = (visible: boolean): void => {
 };
 
 /**
+ * Set the ratio for the overlay frame
+ * @param ratio The aspect ratio to use
+ * @param scene The Babylon.js scene
+ */
+export const setRatioOverlayRatio = (ratio: ImageRatio, scene: BABYLON.Scene): void => {
+    if (!environmentObjects.ratioOverlay) return;
+    
+    // Update ratio
+    environmentObjects.ratioOverlay.ratio = ratio;
+    
+    // Update overlay
+    updateRatioOverlay(scene);
+};
+
+/**
  * Get the current dimensions and position of the ratio overlay
  * in scene coordinates
  */
@@ -537,7 +559,7 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
 } | null => {
     if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return null;
     
-    const { padding } = environmentObjects.ratioOverlay;
+    const { padding, ratio } = environmentObjects.ratioOverlay;
     const engine = scene.getEngine();
     const screenWidth = engine.getRenderWidth();
     const screenHeight = engine.getRenderHeight();
@@ -545,16 +567,18 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
     // Calculate padding in pixels
     const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
     
-    // Calculate frame dimensions maintaining 16:9 ratio
-    const targetRatio = 16 / 9;
+    // Use the ratio from the ratio map
+    const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
+    const targetRatio = ratioWidth / ratioHeight;
+    
     let frameWidth, frameHeight;
     
     if (screenWidth / screenHeight > targetRatio) {
-        // Screen is wider than 16:9
+        // Screen is wider than the target ratio
         frameHeight = screenHeight - (paddingPixels * 2);
         frameWidth = frameHeight * targetRatio;
     } else {
-        // Screen is taller than 16:9
+        // Screen is taller than the target ratio
         frameWidth = screenWidth - (paddingPixels * 2);
         frameHeight = frameWidth / targetRatio;
     }
