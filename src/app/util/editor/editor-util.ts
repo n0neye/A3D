@@ -9,7 +9,8 @@ export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
     sunTransform?: BABYLON.TransformNode;
     sunArrow?: BABYLON.Mesh;
-    ambientLight?: BABYLON.HemisphericLight;
+    ambientLight?: BABYLON.Light;
+    pointLights: BABYLON.PointLight[];
     skybox?: BABYLON.Mesh;
     background?: BABYLON.Mesh;
     grid?: BABYLON.Mesh;
@@ -25,10 +26,14 @@ export interface EnvironmentObjects {
             left: GUI.Rectangle;
         };
     };
+    shadowGenerators: BABYLON.ShadowGenerator[];
 }
 
 // Global environment reference
-const environmentObjects: EnvironmentObjects = {};
+const environmentObjects: EnvironmentObjects = {
+    shadowGenerators: [], // Initialize the array
+    pointLights: []
+};
 
 export const getEnvironmentObjects = (): EnvironmentObjects => {
     return environmentObjects;
@@ -62,7 +67,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
 
     // Sun
-    createSunEntity(scene);
+    // createSunEntity(scene);
 
     // Create Ambient Light
     createBasicLights(scene);
@@ -271,7 +276,7 @@ export const createWorldGrid = (
         { width: size, height: size, subdivisions: 1 },
         scene
     );
-    gridGround.position.y = -0.4999;
+    gridGround.position.y = -0.501;
     
     // Create a grid material
     const gridMaterial = new GridMaterial("gridMaterial", scene);
@@ -288,7 +293,7 @@ export const createWorldGrid = (
     
     // Set grid to be non-pickable and not receive shadows
     gridGround.isPickable = false;
-    gridGround.receiveShadows = false;
+    gridGround.receiveShadows = true; // Enable receiving shadows for the grid
     
     // Store in environment objects
     environmentObjects.grid = gridGround;
@@ -349,25 +354,31 @@ const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON
 };
 
 export const createBasicLights = (scene: BABYLON.Scene) => {
-    const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
-    ambientLight.intensity = 1;
+    // const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
+    const ambientLight = new BABYLON.PointLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
+    ambientLight.intensity = 0.5; // Reduced to make shadows more visible
+    ambientLight.position = new BABYLON.Vector3(0, 2, 0);
     ambientLight.shadowEnabled = true;
+    ambientLight.diffuse = new BABYLON.Color3(1, 2, 3);
     environmentObjects.ambientLight = ambientLight;
+    createShadowGenerator(ambientLight, scene);
 
     // Create two point lights with warm and cold colors
     const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);
-    warmLight.intensity = 1;
-    warmLight.diffuse = new BABYLON.Color3(1, 0.8, 0);
-    warmLight.position = new BABYLON.Vector3(1, 1, 1);
+    warmLight.intensity = 0.7;
+    warmLight.diffuse = new BABYLON.Color3(1, 0.33, 0.33);
+    warmLight.position = new BABYLON.Vector3(2, 2, 2);
     warmLight.shadowEnabled = true;
-    // environmentObjects.warmLight = warmLight;
+    environmentObjects.pointLights.push(warmLight);
+    createShadowGenerator(warmLight, scene);
 
     const coldLight = new BABYLON.PointLight("coldLight", new BABYLON.Vector3(0, 1, 0), scene);
-    coldLight.intensity = 1;
-    coldLight.diffuse = new BABYLON.Color3(3, 0.8, 1);
-    coldLight.position = new BABYLON.Vector3(-1, 1, 1);
+    coldLight.intensity = 0.7;
+    coldLight.diffuse = new BABYLON.Color3(0, 0.5, 1);
+    coldLight.position = new BABYLON.Vector3(-2, 2, 3);
     coldLight.shadowEnabled = true;
-    // environmentObjects.coldLight = coldLight;
+    environmentObjects.pointLights.push(coldLight);
+    // createShadowGenerator(coldLight, scene);
     
     return;
 };
@@ -376,24 +387,32 @@ export const createSunEntity = (scene: BABYLON.Scene,) => {
     // Create a transform node to group the sun and arrow
     const sunTransform = new EntityNode("sunTransform", scene, "light");
     // Position the transform at an offset from the origin
-    sunTransform.position = new BABYLON.Vector3(0, 0.5, 0);
+    sunTransform.position = new BABYLON.Vector3(0, 5, 0);
 
     // Create a sun (directional light)
     const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
-    sunLight.intensity = 1;
+    sunLight.intensity = 0.3;
     sunLight.diffuse = new BABYLON.Color3(0.8, 0.9, 1); 
+    sunLight.shadowEnabled = true;
+    
+    // Create a shadow generator for the sun with specialized settings
+    const sunShadowGenerator = createShadowGenerator(sunLight, scene);
+    
+    // For directional lights, use Cascaded Shadow Maps for better quality
+    sunShadowGenerator.usePoissonSampling = true; // Better sampling
+    sunShadowGenerator.bias = 0.0001; // Adjust as needed
+    sunShadowGenerator.useBlurExponentialShadowMap = true;
+
+    
+    // If artifacts still persist, can use contact hardening shadow
+    // sunShadowGenerator.useContactHardeningShadow = true;
+    // sunShadowGenerator.contactHardeningLightSizeUVRatio = 0.02;
+    
     // Parent the light to the transform node
     sunLight.parent = sunTransform;
 
-    // Create directional arrow for sun visualization
-    // const sunArrow = createDirectionalArrow(scene, 1);
-    // sunArrow.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
-    // sunArrow.parent = sunTransform;
-
     environmentObjects.sun = sunLight;
     environmentObjects.sunTransform = sunTransform;
-    // environmentObjects.sunArrow = sunArrow;
-
 }
 
 // Default padding percentage (can be adjusted by user)
@@ -621,4 +640,55 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
         width: frameWidth,
         height: frameHeight
     };
+};
+
+/**
+ * Creates a shadow generator for a given light
+ * @param light The light to create a shadow generator for
+ * @param scene The Babylon.js scene
+ * @returns The created shadow generator
+ */
+export const createShadowGenerator = (
+    light: BABYLON.IShadowLight,
+    scene: BABYLON.Scene
+): BABYLON.ShadowGenerator => {
+    // Create with higher resolution for better quality
+    const shadowGenerator = new BABYLON.ShadowGenerator(2048, light);
+    
+    // Better filtering technique for smoother shadows
+    shadowGenerator.usePercentageCloserFiltering = true; // Use PCF instead of blur
+    shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
+    
+    // Fix self-shadowing artifacts with proper bias
+    shadowGenerator.bias = 0.05
+
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.blurScale = 0.5;
+    
+    // Add to our global list
+    environmentObjects.shadowGenerators.push(shadowGenerator);
+    
+    return shadowGenerator;
+};
+
+/**
+ * Adds a mesh to all shadow generators (to cast shadows)
+ * @param mesh The mesh to add
+ */
+export const addMeshToShadowCasters = (mesh: BABYLON.AbstractMesh): void => {
+    environmentObjects.shadowGenerators.forEach(generator => {
+        generator.addShadowCaster(mesh);
+    });
+};
+
+/**
+ * Configures a mesh to cast and receive shadows
+ * @param mesh The mesh to configure
+ */
+export const setupMeshShadows = (mesh: BABYLON.AbstractMesh): void => {
+    // Set mesh to receive shadows
+    mesh.receiveShadows = true;
+    
+    // Add mesh to all shadow generators (to cast shadows)
+    addMeshToShadowCasters(mesh);
 };

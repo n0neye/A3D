@@ -11,10 +11,27 @@ const EnvironmentPanel: React.FC = () => {
   const [sunTilt, setSunTilt] = useState(-30); // Vertical angle (-90 to 90)
   const [ambientIntensity, setAmbientIntensity] = useState(0.5);
   const [ambientColor, setAmbientColor] = useState('#FFFFFF');
+  
+  // State for point lights
+  const [pointLightSettings, setPointLightSettings] = useState<{
+    intensity: number;
+    color: string;
+  }[]>([
+    {
+      intensity: 0.7,
+      color: '#FFC080'
+    },
+    {
+      intensity: 0.7,
+      color: '#0080FF'
+    }
+  ]);
 
   // Initialize values from scene
   useEffect(() => {
     const env = getEnvironmentObjects();
+    
+    // Existing initialization code for sun and ambient light
     if (env.sun) {
       setSunIntensity(env.sun.intensity);
       setSunColor(colorToHex(env.sun.diffuse));
@@ -31,6 +48,7 @@ const EnvironmentPanel: React.FC = () => {
       setAmbientIntensity(env.ambientLight.intensity);
       setAmbientColor(colorToHex(env.ambientLight.diffuse));
     }
+    
   }, []);
 
   // Update sun intensity
@@ -80,6 +98,36 @@ const EnvironmentPanel: React.FC = () => {
     const env = getEnvironmentObjects();
     if (env.ambientLight) {
       env.ambientLight.diffuse = hexToColor3(value);
+    }
+  };
+
+  // New handlers for point lights
+  
+  // Update point light intensity
+  const handlePointLightIntensityChange = (index: number, value: number) => {
+    setPointLightSettings(prev => {
+      const updated = [...prev];
+      updated[index].intensity = value;
+      return updated;
+    });
+    
+    const env = getEnvironmentObjects();
+    if (env.pointLights && env.pointLights[index]) {
+      env.pointLights[index].intensity = value;
+    }
+  };
+  
+  // Update point light color
+  const handlePointLightColorChange = (index: number, value: string) => {
+    setPointLightSettings(prev => {
+      const updated = [...prev];
+      updated[index].color = value;
+      return updated;
+    });
+    
+    const env = getEnvironmentObjects();
+    if (env.pointLights && env.pointLights[index]) {
+      env.pointLights[index].diffuse = hexToColor3(value);
     }
   };
 
@@ -151,7 +199,7 @@ const EnvironmentPanel: React.FC = () => {
           onClick={handleSunSelect}>Select Sun</button>
       </div>
 
-      <div className="mb-3 flex flex-col space-y-4">
+      <div className="mb-6 flex flex-col space-y-4">
         <div className="text-xs font-medium mb-1 ">Ambient Light</div>
         <div className="flex items-center mb-1">
           <span className="text-xs w-16 text-gray-400">Intensity</span>
@@ -177,6 +225,36 @@ const EnvironmentPanel: React.FC = () => {
           <span className="text-xs">{ambientColor}</span>
         </div>
       </div>
+      
+      {/* Point Lights Section */}
+      {pointLightSettings.map((light, index) => (
+        <div key={index} className="mb-6 flex flex-col space-y-4">
+          <div className="text-xs font-medium mb-1">Point Light {index + 1}</div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs w-16 text-gray-400">Intensity</span>
+            <input
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              value={light.intensity}
+              onChange={(e) => handlePointLightIntensityChange(index, parseFloat(e.target.value))}
+              className="w-32"
+            />
+            <span className="text-xs ml-2">{light.intensity.toFixed(1)}</span>
+          </div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs w-16 text-gray-400">Color</span>
+            <input
+              type="color"
+              value={light.color}
+              onChange={(e) => handlePointLightColorChange(index, e.target.value)}
+              className="w-8 h-6 mr-2"
+            />
+            <span className="text-xs">{light.color}</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

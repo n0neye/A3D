@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { create2DBackground, createEquirectangularSkybox } from '../editor/editor-util';
+import { create2DBackground, createEquirectangularSkybox, setupMeshShadows } from '../editor/editor-util';
 import { ImageRatio, ImageSize, loadModel } from '../generation-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
@@ -767,6 +767,9 @@ function createShapeMesh(entity: EntityNode, scene: BABYLON.Scene, shapeType: Sh
     shapeMesh.parent = entity;
     shapeMesh.metadata = { rootEntity: entity };
 
+    // Setup shadows for the mesh
+    setupMeshShadows(shapeMesh);
+
     // Store reference
     entity.modelMesh = shapeMesh;
     entity.metadata.shapeType = shapeType;
@@ -801,12 +804,14 @@ function createPlaneMesh(entity: EntityNode, scene: BABYLON.Scene, ratio: ImageR
     planeMesh.parent = entity;
     planeMesh.metadata = { rootEntity: entity };
 
+    // Configure shadow casting (planes typically receive but don't cast shadows)
+    planeMesh.receiveShadows = true;
+
     // Store reference
     entity.planeMesh = planeMesh;
 }
 
 // Helper to create a mock 3D model (for demonstration purposes)
-// In a real implementation, you'd load the actual 3D model from the URL
 function createMockModelMesh(entity: EntityNode, scene: BABYLON.Scene): void {
     // Create a box as a stand-in for the 3D model
     const modelMesh = BABYLON.MeshBuilder.CreateBox(`${entity.name}-model`, { size: 1 }, scene);
@@ -819,6 +824,9 @@ function createMockModelMesh(entity: EntityNode, scene: BABYLON.Scene): void {
     // Setup the mesh
     modelMesh.parent = entity;
     modelMesh.metadata = { rootEntity: entity };
+
+    // Setup shadows for the model
+    setupMeshShadows(modelMesh);
 
     // Store reference
     entity.modelMesh = modelMesh;
