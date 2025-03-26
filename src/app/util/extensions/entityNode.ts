@@ -60,18 +60,17 @@ export interface GenerationLog {
 export interface EntityMetadata {
     entityType: EntityType;
     created: Date;
-    lastImageUrl?: string;
 
     // Add progress tracking
     processingState?: EntityProcessingState;
 
     // For AI generated entities
     aiData?: {
-        currentStateId: string | null;
+        aiObjectType: AiObjectType;
         ratio: ImageRatio;
         imageSize: ImageSize;
-        aiObjectType: AiObjectType;
         generationLogs: Array<GenerationLog>;
+        currentStateId: string | null;
     };
 }
 
@@ -573,8 +572,6 @@ export const applyImageToEntity = async (
             oldMesh.dispose();
         }
 
-        // Update metadata
-        entity.metadata.lastImageUrl = imageDataUrl;
     } else {
         // For regular objects, update the material texture
         let material = planeMesh.material as BABYLON.StandardMaterial;
@@ -609,8 +606,6 @@ export const applyImageToEntity = async (
                 planeMesh.renderingGroupId = 0;
             }
 
-            // Update metadata
-            entity.metadata.lastImageUrl = imageDataUrl;
         }
     }
 

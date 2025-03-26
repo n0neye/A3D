@@ -6,7 +6,7 @@ import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { convertTextureToImage, EnableDepthRender, GetDepthMap } from '../util/render-util';
+import { convertTextureToImage, EnableDepthRender, GetDepthMap, TakeScreenshot } from '../util/render-util';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -147,23 +147,14 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     );
   };
 
-  const takeScreenshot = async () => {
-    if (!scene || !engine) throw new Error("Scene or engine not found");
-
-    // Prepare scene for screenshot - hide any UI elements if needed
-    // TODO: Hide gizmos
-    // Take the screenshot
-    const result = await BABYLON.Tools.CreateScreenshotAsync(engine, scene.activeCamera!, { precision: 1 });
-    if (!result) throw new Error("Failed to take screenshot");
-    return result;
-  };
 
   const generateDebugImage = async () => {
     try {
       // Force a fresh render
-      const screenshot = await takeScreenshot();
-
-      console.log("Screenshot generated:", screenshot.substring(0, 100) + "...");
+      if (!scene || !engine) throw new Error("Scene or engine not found");
+      const screenshot = await TakeScreenshot(scene, engine);
+      if (!screenshot) throw new Error("Failed to take screenshot");
+      console.log("Screenshot generated:", screenshot?.substring(0, 100) + "...");
       setImageUrl(screenshot);
       // Apply noise to the screenshot if noiseStrength > 0
       let processedImage = screenshot;
@@ -190,7 +181,9 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
 
     try {
       // First, take a screenshot of the current scene
-      const screenshot = await takeScreenshot();
+      if (!scene || !engine) throw new Error("Scene or engine not found");
+      const screenshot = await TakeScreenshot(scene, engine);
+      if (!screenshot) throw new Error("Failed to take screenshot");
 
       // Store the original screenshot
       setImageUrl(screenshot);

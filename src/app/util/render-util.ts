@@ -1,4 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
+import { getRatioOverlayDimensions } from './editor/editor-util';
 
 // Add this utility function to convert depth texture to image
 export const convertTextureToImage = async (texture: BABYLON.Texture, width: number, height: number): Promise<string> => {
@@ -46,8 +47,6 @@ export const convertTextureToImage = async (texture: BABYLON.Texture, width: num
     // Return as data URL
     return canvas.toDataURL('image/png');
 };
-
-
 
 export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.Engine, seconds: number = 2) => {
     try {
@@ -107,7 +106,6 @@ export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.En
             effect.setFloat("far", scene.activeCamera!.maxZ);
         };
 
-
         // Save snapshot of depth map
         const width = engine.getRenderWidth();
         const height = engine.getRenderHeight();
@@ -120,7 +118,6 @@ export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.En
             scene.activeCamera!,
             { width: width, height: height }
         );
-
 
         setTimeout(() => {
             // Detach depth renderer
@@ -138,8 +135,88 @@ export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.En
     }
 };
 
+/**
+ * Crops an image based on the ratio overlay frame
+ * @param imageDataUrl The source image data URL
+ * @param cropDimensions The dimensions to crop to
+ * @returns A promise resolving to the cropped image data URL
+ */
+export const cropImageToRatioFrame = async (
+    imageDataUrl: string,
+    cropDimensions: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    }
+): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        
+        img.onload = () => {
+            // Create a canvas for cropping
+            const canvas = document.createElement('canvas');
+            canvas.width = cropDimensions.width;
+            canvas.height = cropDimensions.height;
+            
+            // Get the drawing context
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Failed to get canvas context'));
+                return;
+            }
+            
+            // Draw the cropped image
+            ctx.drawImage(
+                img,
+                cropDimensions.left, cropDimensions.top, cropDimensions.width, cropDimensions.height,
+                0, 0, cropDimensions.width, cropDimensions.height
+            );
+            
+            // Convert to data URL
+            resolve(canvas.toDataURL('image/png'));
+        };
+        
+        img.onerror = () => {
+            reject(new Error('Failed to load image for cropping'));
+        };
+        
+        // Start loading the image
+        img.src = imageDataUrl;
+    });
+};
 
+// Modify the existing functions to use the cropping if overlay is active
 
+// Modify CreateScreenshotAsync to use the ratio frame if visible
+export async function TakeScreenshot(scene: BABYLON.Scene, engine: BABYLON.Engine): Promise<string | null> {
+    try {
+        if (!scene || !engine) return null;
+        
+        // Get standard screenshot
+        const screenshot = await BABYLON.Tools.CreateScreenshotAsync(
+            engine, 
+            scene.activeCamera as BABYLON.Camera,
+            { precision: 1 }
+        );
+        
+        // Check if we have an active ratio overlay
+        const ratioDimensions = getRatioOverlayDimensions(scene);
+        
+        if (ratioDimensions) {
+            // Crop to the ratio overlay
+            return await cropImageToRatioFrame(screenshot, ratioDimensions);
+        }
+        
+        // Return the uncropped screenshot if no overlay
+        return screenshot;
+    } catch (error) {
+        console.error("Error taking screenshot:", error);
+        return null;
+    }
+}
+
+// Also update GetDepthMap to use the ratio frame
 export const GetDepthMap = async (scene: BABYLON.Scene, engine: BABYLON.Engine) => {
     try {
         if (!scene || !engine) throw new Error("Scene or engine not found");
@@ -171,7 +248,15 @@ export const GetDepthMap = async (scene: BABYLON.Scene, engine: BABYLON.Engine) 
         // Convert the texture to an image
         const depthSnapshot = await convertTextureToImage(depthMap, width, height);
 
-        // Update preview
+        // Check if we have an active ratio overlay
+        const ratioDimensions = getRatioOverlayDimensions(scene);
+        
+        if (ratioDimensions) {
+            // Crop to the ratio overlay
+            return await cropImageToRatioFrame(depthSnapshot, ratioDimensions);
+        }
+        
+        // Return the uncropped depth map if no overlay
         return depthSnapshot;
 
     } catch (error) {

@@ -1,6 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
 import { createEntity, EntityNode } from "../extensions/entityNode";
+import * as GUI from '@babylonjs/gui';
 
 // Store environment objects
 export interface EnvironmentObjects {
@@ -11,6 +12,11 @@ export interface EnvironmentObjects {
     skybox?: BABYLON.Mesh;
     background?: BABYLON.Mesh;
     grid?: BABYLON.Mesh;
+    ratioOverlay?: {
+        container: GUI.AdvancedDynamicTexture;
+        frame: GUI.Rectangle;
+        padding: number;
+    };
 }
 
 // Global environment reference
@@ -56,6 +62,9 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
     // Create world grid
     createWorldGrid(scene, 20, 10);
+
+    // createRatioOverlay
+    createRatioOverlay(scene);
 }
 
 
@@ -334,7 +343,7 @@ export const createSunEntity = (scene: BABYLON.Scene,) => {
     // Create a sun (directional light)
     const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
     sunLight.intensity = 1;
-    sunLight.diffuse = new BABYLON.Color3(1, 0.8, 0.9); 
+    sunLight.diffuse = new BABYLON.Color3(0.8, 0.9, 1); 
     // Parent the light to the transform node
     sunLight.parent = sunTransform;
 
@@ -348,3 +357,144 @@ export const createSunEntity = (scene: BABYLON.Scene,) => {
     // environmentObjects.sunArrow = sunArrow;
 
 }
+
+// Default padding percentage (can be adjusted by user)
+const DEFAULT_FRAME_PADDING = 10; // percentage of screen size
+
+/**
+ * Creates a 16:9 ratio overlay frame for positioning elements for rendering
+ * @param scene The Babylon.js scene
+ * @returns The created GUI elements
+ */
+export const createRatioOverlay = (scene: BABYLON.Scene): void => {
+    // Remove existing overlay if present
+    if (environmentObjects.ratioOverlay) {
+        environmentObjects.ratioOverlay.container.dispose();
+        delete environmentObjects.ratioOverlay;
+    }
+
+    // Create fullscreen UI
+    const advancedTexture = GUI.AdvancedDynamicTexture.CreateFullscreenUI("ratioOverlayUI", true, scene);
+    
+    // Create the frame rectangle
+    const frame = new GUI.Rectangle("ratioFrame");
+    frame.thickness = 2;
+    frame.color = "rgba(255, 255, 255, 0.3)";
+    frame.background = "rgba(0, 0, 0, 0.05)";
+    frame.cornerRadius = 0;
+    
+    // Add to the texture
+    advancedTexture.addControl(frame);
+    
+    // Store in environment objects with initial padding
+    environmentObjects.ratioOverlay = {
+        container: advancedTexture,
+        frame: frame,
+        padding: DEFAULT_FRAME_PADDING
+    };
+    
+    // Initial sizing
+    updateRatioOverlay(scene);
+    
+    // Update when the window is resized
+    window.addEventListener('resize', () => updateRatioOverlay(scene));
+};
+
+/**
+ * Updates the ratio overlay frame to maintain 16:9 aspect ratio
+ * @param scene The Babylon.js scene
+ */
+export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
+    if (!environmentObjects.ratioOverlay) return;
+    
+    const { frame, padding } = environmentObjects.ratioOverlay;
+    
+    // Get current engine dimensions
+    const engine = scene.getEngine();
+    const width = engine.getRenderWidth();
+    const height = engine.getRenderHeight();
+    
+    // Calculate padding in pixels
+    const paddingPixels = (padding / 100) * Math.min(width, height);
+    
+    // Calculate frame dimensions maintaining 16:9 ratio
+    const targetRatio = 16 / 9;
+    let frameWidth, frameHeight;
+    
+    if (width / height > targetRatio) {
+        // Screen is wider than 16:9
+        frameHeight = height - (paddingPixels * 2);
+        frameWidth = frameHeight * targetRatio;
+    } else {
+        // Screen is taller than 16:9
+        frameWidth = width - (paddingPixels * 2);
+        frameHeight = frameWidth / targetRatio;
+    }
+    
+    // Apply new dimensions
+    frame.width = `${frameWidth}px`;
+    frame.height = `${frameHeight}px`;
+};
+
+/**
+ * Set the padding for the ratio overlay frame
+ * @param padding Padding percentage (0-50)
+ * @param scene The Babylon.js scene
+ */
+export const setRatioOverlayPadding = (padding: number, scene: BABYLON.Scene): void => {
+    if (!environmentObjects.ratioOverlay) return;
+    
+    // Clamp padding to reasonable range
+    const clampedPadding = Math.max(0, Math.min(50, padding));
+    
+    // Update padding
+    environmentObjects.ratioOverlay.padding = clampedPadding;
+    
+    // Update overlay
+    updateRatioOverlay(scene);
+};
+
+/**
+ * Toggle the visibility of the ratio overlay
+ * @param visible Whether the overlay should be visible
+ */
+export const setRatioOverlayVisibility = (visible: boolean): void => {
+    if (!environmentObjects.ratioOverlay) return;
+    
+    environmentObjects.ratioOverlay.frame.isVisible = visible;
+};
+
+/**
+ * Get the current dimensions and position of the ratio overlay
+ * in scene coordinates
+ */
+export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+} | null => {
+    if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.frame.isVisible) return null;
+    
+    const frame = environmentObjects.ratioOverlay.frame;
+    const engine = scene.getEngine();
+    const screenWidth = engine.getRenderWidth();
+    const screenHeight = engine.getRenderHeight();
+    
+    // Get the actual pixel dimensions from the frame
+    const frameWidth = typeof frame.width === 'string' ? 
+        parseFloat(frame.width.replace('px', '')) : frame.width;
+    const frameHeight = typeof frame.height === 'string' ? 
+        parseFloat(frame.height.replace('px', '')) : frame.height;
+    
+    // Calculate position (centered on screen)
+    const left = (screenWidth - frameWidth) / 2;
+    const top = (screenHeight - frameHeight) / 2;
+    
+    return {
+        left,
+        top,
+        width: frameWidth,
+        height: frameHeight
+    };
+};
