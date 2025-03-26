@@ -6,7 +6,7 @@ import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { convertTextureToImage, EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
+import { convertDepthTextureToImage, EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -253,9 +253,9 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
 
   const onGetDepthMap = async () => {
     if (!scene || !engine) throw new Error("Scene or engine not found");
-    const depthSnapshot = await GetDepthMap(scene, engine);
-    if (!depthSnapshot) throw new Error("Failed to generate depth map");
-    setImageUrl(depthSnapshot);
+    const result = await GetDepthMap(scene, engine);
+    if (!result) throw new Error("Failed to generate depth map");
+    setImageUrl(result.imageUrl);
   };
 
 

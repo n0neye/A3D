@@ -61,14 +61,16 @@ export async function addNoiseToImage(imageDataUrl: string, noiseStrength: numbe
 /**
  * Resizes an image to a specific width and height
  * @param imageDataUrl The data URL of the image
- * @param targetWidth The desired width
- * @param targetHeight The desired height
+ * @param maxWidth The maximum width
+ * @param maxHeight The maximum height
+ * @param keepRatio Whether to maintain the original aspect ratio (defaults to false)
  * @returns A promise that resolves to the data URL of the resized image
  */
 export async function resizeImage(
   imageDataUrl: string, 
-  targetWidth: number = 512, 
-  targetHeight: number = 512
+  maxWidth: number = 512, 
+  maxHeight: number = 512,
+  keepRatio: boolean = true
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -76,8 +78,29 @@ export async function resizeImage(
       try {
         // Create a canvas for resizing
         const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
+        
+        let targetWidth = maxWidth;
+        let targetHeight = maxHeight;
+        
+        // Calculate dimensions if keeping aspect ratio
+        if (keepRatio) {
+          const originalRatio = img.width / img.height;
+          const targetRatio = maxWidth / maxHeight;
+          
+          if (originalRatio > targetRatio) {
+            // Image is wider than target: constrain by width
+            targetWidth = maxWidth;
+            targetHeight = targetWidth / originalRatio;
+          } else {
+            // Image is taller than target: constrain by height
+            targetHeight = maxHeight;
+            targetWidth = targetHeight * originalRatio;
+          }
+        }
+        
+        // Set canvas dimensions
+        canvas.width = maxWidth;
+        canvas.height = maxHeight;
         const ctx = canvas.getContext('2d');
         
         if (!ctx) {
@@ -85,11 +108,18 @@ export async function resizeImage(
           return;
         }
         
+        // Clear canvas with transparent background
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // If keeping ratio, center the image in the canvas
+        const x = keepRatio ? (maxWidth - targetWidth) / 2 : 0;
+        const y = keepRatio ? (maxHeight - targetHeight) / 2 : 0;
+        
         // Draw the image resized to the canvas
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        ctx.drawImage(img, x, y, targetWidth, targetHeight);
         
         // Get the data URL of the resized image
-        const resizedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const resizedImageUrl = canvas.toDataURL('image/png');
         resolve(resizedImageUrl);
       } catch (error) {
         reject(error);
@@ -103,3 +133,55 @@ export async function resizeImage(
     img.src = imageDataUrl;
   });
 } 
+
+
+/**
+ * Crops an image based on the ratio overlay frame
+ * @param imageDataUrl The source image data URL
+ * @param cropDimensions The dimensions to crop to
+ * @returns A promise resolving to the cropped image data URL
+ */
+export const cropImageToRatioFrame = async (
+  imageDataUrl: string,
+  cropDimensions: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+  }
+): Promise<{imageUrl: string, width: number, height: number}> => {
+  return new Promise((resolve, reject) => {
+      const img = new Image();
+      
+      img.onload = () => {
+          // Create a canvas for cropping
+          const canvas = document.createElement('canvas');
+          canvas.width = cropDimensions.width;
+          canvas.height = cropDimensions.height;
+          
+          // Get the drawing context
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+              reject(new Error('Failed to get canvas context'));
+              return;
+          }
+          
+          // Draw the cropped image
+          ctx.drawImage(
+              img,
+              cropDimensions.left, cropDimensions.top, cropDimensions.width, cropDimensions.height,
+              0, 0, cropDimensions.width, cropDimensions.height
+          );
+          
+          // Convert to data URL
+          resolve({imageUrl: canvas.toDataURL('image/png'), width: cropDimensions.width, height: cropDimensions.height});
+      };
+      
+      img.onerror = () => {
+          reject(new Error('Failed to load image for cropping'));
+      };
+      
+      // Start loading the image
+      img.src = imageDataUrl;
+  });
+};
