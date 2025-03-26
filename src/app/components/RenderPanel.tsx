@@ -7,6 +7,8 @@ import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { convertDepthTextureToImage, EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
+import { SerializedRenderSettings } from '../util/editor/project-util';
+import { useRenderSettings } from '../context/RenderSettingsContext';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -18,24 +20,48 @@ import { Label } from "@/components/ui/label";
 
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const { scene, engine } = useEditorContext();
+  const { renderSettings, updateRenderSettings } = useRenderSettings();
+  
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const previewImageRef = useRef<HTMLImageElement | null>(null);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
 
-  // Inputs
-  const [prompt, setPrompt] = useState<string>('flooded office, fire, dark night, a female warrior with a spear');
-  const [promptStrength, setPromptStrength] = useState<number>(0.9); // Default to 0.7 strength
-  const [depthStrength, setDepthStrength] = useState<number>(0.9); // Default to 0.7 strength
-  const [noiseStrength, setNoiseStrength] = useState<number>(0); // Default to 0 (no noise)
-  const [selectedAPI, setSelectedAPI] = useState<API_Info>(availableAPIs[0]);
-  const [seed, setSeed] = useState<number>(Math.floor(Math.random() * 2147483647));
-  const [useRandomSeed, setUseRandomSeed] = useState<boolean>(false);
-
+  // Use values from context instead of local state
+  const {
+    prompt, 
+    promptStrength,
+    depthStrength,
+    noiseStrength,
+    seed,
+    useRandomSeed,
+    selectedLoras
+  } = renderSettings;
+  
+  // Find the selected API object from its ID in the context
+  const [selectedAPI, setSelectedAPI] = useState(() => {
+    const api = availableAPIs.find(api => api.id === renderSettings.selectedAPI);
+    return api || availableAPIs[0];
+  });
+  
   // Style panel state
-  const [selectedLoras, setSelectedLoras] = useState<LoraConfig[]>([]);
   const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
+
+  // Update functions that modify the context
+  const setPrompt = (value: string) => updateRenderSettings({ prompt: value });
+  const setPromptStrength = (value: number) => updateRenderSettings({ promptStrength: value });
+  const setDepthStrength = (value: number) => updateRenderSettings({ depthStrength: value });
+  const setNoiseStrength = (value: number) => updateRenderSettings({ noiseStrength: value });
+  const setSeed = (value: number) => updateRenderSettings({ seed: value });
+  const setUseRandomSeed = (value: boolean) => updateRenderSettings({ useRandomSeed: value });
+  const setSelectedLoras = (loras: LoraConfig[]) => updateRenderSettings({ selectedLoras: loras });
+
+  // Instead, modify the setSelectedAPI function to update context at the same time
+  const handleAPIChange = (newAPI: API_Info) => {
+    setSelectedAPI(newAPI);
+    updateRenderSettings({ selectedAPI: newAPI.id });
+  };
 
   // Add keyboard shortcut for Ctrl/Cmd+Enter
   useEffect(() => {
@@ -258,7 +284,6 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
     setImageUrl(result.imageUrl);
   };
 
-
   return (
     <>
 
@@ -430,7 +455,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
                   key={aiModel.id}
                   variant={selectedAPI.id === aiModel.id ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedAPI(aiModel)}
+                  onClick={() => handleAPIChange(aiModel)}
                   className="w-full overflow-ellipsis text-xs"
                 >
                   {aiModel.name}

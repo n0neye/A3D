@@ -1,19 +1,23 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useEditorContext } from '../context/EditorContext';
-import { saveProjectToFile, loadProjectFromFile } from '../util/editor/project-util';
+import { saveProjectToFile, loadProjectFromFile, SerializedRenderSettings } from '../util/editor/project-util';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
+import RenderPanel from './RenderPanel';
+import { useRenderSettings } from '../context/RenderSettingsContext';
 
 export default function FileMenu() {
   const { scene } = useEditorContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { renderSettings, updateRenderSettings } = useRenderSettings();
 
   const handleSaveProject = () => {
-    if (!scene) return;
-    const projectName = `projectAI-${new Date().toISOString().split('T')[0]}.json`;
-    saveProjectToFile(scene, projectName);
+    if (scene) {
+      const projectName = `projectAI-${new Date().toISOString().split('T')[0]}.json`;
+      saveProjectToFile(scene, renderSettings, projectName);
+    }
   };
 
   const handleOpenProject = () => {
@@ -25,7 +29,10 @@ export default function FileMenu() {
     
     try {
       const file = e.target.files[0];
-      await loadProjectFromFile(file, scene);
+      await loadProjectFromFile(file, scene, (settings: SerializedRenderSettings) => {
+        // Apply all settings at once via context
+        updateRenderSettings(settings);
+      });
       // Reset file input so the same file can be loaded again
       e.target.value = '';
     } catch (error) {
@@ -33,6 +40,31 @@ export default function FileMenu() {
       alert('Failed to load project. See console for details.');
     }
   };
+  
+  // Add keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Save project (Ctrl+S)
+      if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault(); // Prevent browser's save dialog
+        handleSaveProject();
+      }
+
+      // Open project (Ctrl+O)
+      if (event.key === 'o' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault(); // Prevent browser's open dialog
+        handleOpenProject();
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [scene, renderSettings]); // Re-attach when scene or settings change
 
   return (
     <div className="flex gap-2 items-center">

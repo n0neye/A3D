@@ -2,6 +2,20 @@ import { isEntity, EntityNode, deserializeEntityNode, serializeEntityNode } from
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility } from './editor-util';
 import { ImageRatio } from '../generation-util';
+import { API_Info } from '../image-render-api';
+import { LoraConfig } from '../lora';
+
+// Interface for serialized render settings
+export interface SerializedRenderSettings {
+  prompt: string;
+  promptStrength: number;
+  depthStrength: number;
+  noiseStrength: number;
+  selectedAPI: string; // Store API ID as string
+  seed: number;
+  useRandomSeed: boolean;
+  selectedLoras: LoraConfig[];
+}
 
 // Interface for serialized environment settings
 interface SerializedEnvironment {
@@ -105,7 +119,11 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
 }
 
 // Deserialize a project JSON and recreate all EntityNodes in the scene
-export function deserializeScene(data: any, scene: BABYLON.Scene): void {
+export function deserializeScene(
+  data: any, 
+  scene: BABYLON.Scene, 
+  applyRenderSettings?: (settings: SerializedRenderSettings) => void
+): void {
     // Clear existing entities if needed
     const existingEntities = scene.rootNodes.filter(node => isEntity(node));
     existingEntities.forEach(entity => entity.dispose());
@@ -121,13 +139,22 @@ export function deserializeScene(data: any, scene: BABYLON.Scene): void {
     if (data.environment) {
         deserializeEnvironment(data.environment, scene);
     }
+    
+    // Apply render settings if available and callback provided
+    if (data.renderSettings && applyRenderSettings) {
+        applyRenderSettings(data.renderSettings);
+    }
 }
 
 // Utility functions for file operations
 
 // Save scene to a JSON file for download
-export function saveProjectToFile(scene: BABYLON.Scene, fileName: string = 'scene-project.json'): void {
-    const projectData = serializeScene(scene);
+export function saveProjectToFile(
+  scene: BABYLON.Scene, 
+  renderSettings?: SerializedRenderSettings,
+  fileName: string = 'scene-project.json'
+): void {
+    const projectData = serializeScene(scene, renderSettings);
     const jsonString = JSON.stringify(projectData, null, 2);
 
     // Create a blob and download link
@@ -145,7 +172,11 @@ export function saveProjectToFile(scene: BABYLON.Scene, fileName: string = 'scen
 }
 
 // Load project from a file
-export async function loadProjectFromFile(file: File, scene: BABYLON.Scene): Promise<void> {
+export async function loadProjectFromFile(
+  file: File, 
+  scene: BABYLON.Scene,
+  applyRenderSettings?: (settings: SerializedRenderSettings) => void
+): Promise<void> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
@@ -153,7 +184,7 @@ export async function loadProjectFromFile(file: File, scene: BABYLON.Scene): Pro
             try {
                 if (event.target && typeof event.target.result === 'string') {
                     const projectData = JSON.parse(event.target.result);
-                    deserializeScene(projectData, scene);
+                    deserializeScene(projectData, scene, applyRenderSettings);
                     resolve();
                 }
             } catch (error) {
@@ -170,7 +201,10 @@ export async function loadProjectFromFile(file: File, scene: BABYLON.Scene): Pro
 }
 
 // Serialize all EntityNodes in a scene to a project JSON structure
-export function serializeScene(scene: BABYLON.Scene): any {
+export function serializeScene(
+  scene: BABYLON.Scene, 
+  renderSettings?: SerializedRenderSettings
+): any {
     const entityNodes: EntityNode[] = [];
 
     // Find all EntityNodes in the scene
@@ -188,7 +222,8 @@ export function serializeScene(scene: BABYLON.Scene): any {
         version: "1.0.0",
         timestamp: new Date().toISOString(),
         entities: entityNodes.map(entity => serializeEntityNode(entity)),
-        environment: environment
+        environment: environment,
+        renderSettings: renderSettings
     };
 
     return project;
