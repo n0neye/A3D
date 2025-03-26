@@ -72,6 +72,9 @@ export interface EntityMetadata {
         generationLogs: Array<GenerationLog>;
         currentStateId: string | null;
     };
+
+    // For shape entities
+    shapeType?: ShapeType;
 }
 
 // Custom Entity Class that extends TransformNode
@@ -628,7 +631,7 @@ export function serializeEntityNode(entity: EntityNode): any {
 }
 
 // Redesigned deserialization function for EntityNode
-export function deserializeEntityNode(data: any, scene: BABYLON.Scene): EntityNode {
+export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): EntityNode {
     // First create a base EntityNode directly
     const entity = new EntityNode(data.name, scene);
 
@@ -657,7 +660,10 @@ export function deserializeEntityNode(data: any, scene: BABYLON.Scene): EntityNo
         }
         else if (aiData.aiObjectType === 'shape') {
             // Recreate shape
-            const shapeType = findShapeType(data);
+            const shapeType = data.metadata.shapeType;
+            if (!shapeType) {
+                throw new Error('Shape type is required for shape entities');
+            }
             createShapeMesh(entity, scene, shapeType);
         }
         else if (aiData.aiObjectType === 'generativeObject') {
@@ -681,7 +687,7 @@ export function deserializeEntityNode(data: any, scene: BABYLON.Scene): EntityNo
             if (has3DModel && entity.displayMode === '3d') {
                 // Schedule the model loading (to avoid blocking)
                 setTimeout(() => {
-                    loadModel(entity, currentGeneration.fileUrl, scene, null);
+                    loadModel(entity, currentGeneration.fileUrl!, scene, null);
                     entity.setDisplayMode('3d');
                 }, 0);
             } else {
@@ -699,24 +705,6 @@ export function deserializeEntityNode(data: any, scene: BABYLON.Scene): EntityNo
     return entity;
 }
 
-// Helper function to find shape type from entity data
-function findShapeType(data: any): ShapeType {
-    // Default shape
-    let shapeType: ShapeType = 'cube';
-
-    // Try to find shape type from the current generation
-    if (data.metadata?.aiData?.generationLogs && data.metadata.aiData.currentStateId) {
-        const currentGen = data.metadata.aiData.generationLogs.find(
-            (log: any) => log.id === data.metadata.aiData.currentStateId
-        );
-
-        if (currentGen && currentGen.shapeType) {
-            shapeType = currentGen.shapeType;
-        }
-    }
-
-    return shapeType;
-}
 
 // Create background mesh for entity
 function createBackgroundMesh(entity: EntityNode, scene: BABYLON.Scene): void {
@@ -781,6 +769,7 @@ function createShapeMesh(entity: EntityNode, scene: BABYLON.Scene, shapeType: Sh
 
     // Store reference
     entity.modelMesh = shapeMesh;
+    entity.metadata.shapeType = shapeType;
     entity.setDisplayMode('3d');
     return shapeMesh;
 }

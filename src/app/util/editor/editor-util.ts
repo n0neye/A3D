@@ -64,6 +64,10 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     // Sun
     createSunEntity(scene);
 
+    // Create Ambient Light
+    createAmbientLight(scene);
+
+
     // Create a background entity
     createEntity(scene, "aiObject", {
         aiObjectType: "background",
@@ -267,7 +271,7 @@ export const createWorldGrid = (
         { width: size, height: size, subdivisions: 1 },
         scene
     );
-    gridGround.position.y = -0.5;
+    gridGround.position.y = -0.4999;
     
     // Create a grid material
     const gridMaterial = new GridMaterial("gridMaterial", scene);
@@ -342,6 +346,13 @@ const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON
     arrowMesh.rotation.x = Math.PI;
 
     return arrowMesh;
+};
+
+export const createAmbientLight = (scene: BABYLON.Scene) => {
+    const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 1, 0), scene);
+    ambientLight.intensity = 1;
+    environmentObjects.ambientLight = ambientLight;
+    return ambientLight;
 };
 
 export const createSunEntity = (scene: BABYLON.Scene,) => {

@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';
@@ -64,7 +65,8 @@ const AddPanel: React.FC = () => {
     const entity = createEntity(scene, 'aiObject', {
       aiObjectType: 'shape',
       shapeType: shapeType,
-      position: new BABYLON.Vector3(0, 0, 0)
+      position: new BABYLON.Vector3(0, 0, 0),
+      name: `${shapeType}-${uuidv4().substring(0, 8)}`
     });
 
     // Select the entity
