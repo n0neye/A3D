@@ -7,122 +7,122 @@ import { LoraConfig } from '../lora';
 
 // Interface for serialized render settings
 export interface SerializedRenderSettings {
-  prompt: string;
-  promptStrength: number;
-  depthStrength: number;
-  noiseStrength: number;
-  selectedAPI: string; // Store API ID as string
-  seed: number;
-  useRandomSeed: boolean;
-  selectedLoras: LoraConfig[];
+    prompt: string;
+    promptStrength: number;
+    depthStrength: number;
+    noiseStrength: number;
+    selectedAPI: string; // Store API ID as string
+    seed: number;
+    useRandomSeed: boolean;
+    selectedLoras: LoraConfig[];
 }
 
 // Interface for serialized environment settings
 interface SerializedEnvironment {
-  sun?: {
-    intensity: number;
-    diffuse: { r: number, g: number, b: number };
-    direction: { x: number, y: number, z: number };
-  };
-  ambientLight?: {
-    intensity: number;
-    diffuse: { r: number, g: number, b: number };
-  };
-  ratioOverlay?: {
-    visible: boolean;
-    ratio: ImageRatio;
-    padding: number;
-  };
+    sun?: {
+        intensity: number;
+        diffuse: { r: number, g: number, b: number };
+        direction: { x: number, y: number, z: number };
+    };
+    ambientLight?: {
+        intensity: number;
+        diffuse: { r: number, g: number, b: number };
+    };
+    ratioOverlay?: {
+        visible: boolean;
+        ratio: ImageRatio;
+        padding: number;
+    };
 }
 
 // Serialize environment settings
 export function serializeEnvironment(scene: BABYLON.Scene): SerializedEnvironment {
-  const env = getEnvironmentObjects();
-  const serializedEnv: SerializedEnvironment = {};
+    const env = getEnvironmentObjects();
+    const serializedEnv: SerializedEnvironment = {};
 
-  // Serialize sun properties
-  if (env.sun) {
-    serializedEnv.sun = {
-      intensity: env.sun.intensity,
-      diffuse: {
-        r: env.sun.diffuse.r,
-        g: env.sun.diffuse.g,
-        b: env.sun.diffuse.b
-      },
-      direction: {
-        x: env.sun.direction.x,
-        y: env.sun.direction.y,
-        z: env.sun.direction.z
-      }
-    };
-  }
+    // Serialize sun properties
+    if (env.sun) {
+        serializedEnv.sun = {
+            intensity: env.sun.intensity,
+            diffuse: {
+                r: env.sun.diffuse.r,
+                g: env.sun.diffuse.g,
+                b: env.sun.diffuse.b
+            },
+            direction: {
+                x: env.sun.direction.x,
+                y: env.sun.direction.y,
+                z: env.sun.direction.z
+            }
+        };
+    }
 
-  // Serialize ambient light properties
-  if (env.ambientLight) {
-    serializedEnv.ambientLight = {
-      intensity: env.ambientLight.intensity,
-      diffuse: {
-        r: env.ambientLight.diffuse.r,
-        g: env.ambientLight.diffuse.g,
-        b: env.ambientLight.diffuse.b
-      }
-    };
-  }
+    // Serialize ambient light properties
+    if (env.ambientLight) {
+        serializedEnv.ambientLight = {
+            intensity: env.ambientLight.intensity,
+            diffuse: {
+                r: env.ambientLight.diffuse.r,
+                g: env.ambientLight.diffuse.g,
+                b: env.ambientLight.diffuse.b
+            }
+        };
+    }
 
-  // Serialize ratio overlay settings
-  if (env.ratioOverlay) {
-    serializedEnv.ratioOverlay = {
-      visible: env.ratioOverlay.frame.isVisible,
-      ratio: env.ratioOverlay.ratio,
-      padding: env.ratioOverlay.padding
-    };
-  }
+    // Serialize ratio overlay settings
+    if (env.ratioOverlay) {
+        serializedEnv.ratioOverlay = {
+            visible: env.ratioOverlay.frame.isVisible,
+            ratio: env.ratioOverlay.ratio,
+            padding: env.ratioOverlay.padding
+        };
+    }
 
-  return serializedEnv;
+    return serializedEnv;
 }
 
 // Deserialize and apply environment settings
 export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYLON.Scene): void {
-  const env = getEnvironmentObjects();
+    const env = getEnvironmentObjects();
 
-  // Apply sun settings
-  if (data.sun && env.sun) {
-    env.sun.intensity = data.sun.intensity;
-    env.sun.diffuse = new BABYLON.Color3(
-      data.sun.diffuse.r,
-      data.sun.diffuse.g,
-      data.sun.diffuse.b
-    );
-    env.sun.direction = new BABYLON.Vector3(
-      data.sun.direction.x,
-      data.sun.direction.y,
-      data.sun.direction.z
-    );
-  }
+    // Apply sun settings
+    if (data.sun && env.sun) {
+        env.sun.intensity = data.sun.intensity;
+        env.sun.diffuse = new BABYLON.Color3(
+            data.sun.diffuse.r,
+            data.sun.diffuse.g,
+            data.sun.diffuse.b
+        );
+        env.sun.direction = new BABYLON.Vector3(
+            data.sun.direction.x,
+            data.sun.direction.y,
+            data.sun.direction.z
+        );
+    }
 
-  // Apply ambient light settings
-  if (data.ambientLight && env.ambientLight) {
-    env.ambientLight.intensity = data.ambientLight.intensity;
-    env.ambientLight.diffuse = new BABYLON.Color3(
-      data.ambientLight.diffuse.r,
-      data.ambientLight.diffuse.g,
-      data.ambientLight.diffuse.b
-    );
-  }
+    // Apply ambient light settings
+    if (data.ambientLight && env.ambientLight) {
+        env.ambientLight.intensity = data.ambientLight.intensity;
+        env.ambientLight.diffuse = new BABYLON.Color3(
+            data.ambientLight.diffuse.r,
+            data.ambientLight.diffuse.g,
+            data.ambientLight.diffuse.b
+        );
+    }
 
-  // Apply ratio overlay settings
-  if (data.ratioOverlay && env.ratioOverlay) {
-    setRatioOverlayVisibility(data.ratioOverlay.visible);
-    setRatioOverlayRatio(data.ratioOverlay.ratio, scene);
-    setRatioOverlayPadding(data.ratioOverlay.padding, scene);
-  }
+    // Apply ratio overlay settings
+    if (data.ratioOverlay && env.ratioOverlay) {
+        setRatioOverlayVisibility(data.ratioOverlay.visible);
+        setRatioOverlayRatio(data.ratioOverlay.ratio, scene);
+        setRatioOverlayPadding(data.ratioOverlay.padding, scene);
+    }
 }
 
 // Deserialize a project JSON and recreate all EntityNodes in the scene
 export function deserializeScene(
-  data: any, 
-  scene: BABYLON.Scene, 
-  applyRenderSettings?: (settings: SerializedRenderSettings) => void
+    data: any,
+    scene: BABYLON.Scene,
+    applyRenderSettings?: (settings: SerializedRenderSettings) => void
 ): void {
     // Clear existing entities if needed
     const existingEntities = scene.rootNodes.filter(node => isEntity(node));
@@ -139,7 +139,7 @@ export function deserializeScene(
     if (data.environment) {
         deserializeEnvironment(data.environment, scene);
     }
-    
+
     // Apply render settings if available and callback provided
     if (data.renderSettings && applyRenderSettings) {
         applyRenderSettings(data.renderSettings);
@@ -148,34 +148,73 @@ export function deserializeScene(
 
 // Utility functions for file operations
 
-// Save scene to a JSON file for download
-export function saveProjectToFile(
-  scene: BABYLON.Scene, 
-  renderSettings?: SerializedRenderSettings,
-  fileName: string = 'scene-project.json'
-): void {
+// Save scene to a JSON file for download with Save As dialog 
+export async function saveProjectToFile(
+    scene: BABYLON.Scene,
+    renderSettings?: SerializedRenderSettings,
+    fileName: string = 'scene-project.json'
+): Promise<void> {
     const projectData = serializeScene(scene, renderSettings);
     const jsonString = JSON.stringify(projectData, null, 2);
-
-    // Create a blob and download link
     const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
 
-    // Create and trigger download
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
+    // Try to use the File System Access API if available (modern browsers)
+    if ('showSaveFilePicker' in window) {
+        try {
+            // @ts-ignore - TypeScript might not recognize this API yet
+            const fileHandle = await window.showSaveFilePicker({
+                suggestedName: fileName,
+                types: [{
+                    description: 'JSON Files',
+                    accept: { 'application/json': ['.json'] },
+                }],
+            });
 
-    // Clean up
-    URL.revokeObjectURL(url);
+            // Create a writable stream
+            // @ts-ignore - TypeScript might not recognize this API yet
+            const writable = await fileHandle.createWritable();
+
+            // Write the blob to the file
+            // @ts-ignore - TypeScript might not recognize this API yet
+            await writable.write(blob);
+
+            // Close the file
+            // @ts-ignore - TypeScript might not recognize this API yet
+            await writable.close();
+
+            return;
+        } catch (err) {
+            // User probably cancelled the save dialog or browser doesn't support it
+            console.log("File System Access API failed, falling back to download method");
+        }
+    } else {
+
+        // Fallback method for browsers that don't support File System Access API
+        // This doesn't always show a Save As dialog, but we can try to encourage it
+        const url = URL.createObjectURL(blob);
+
+        // Create and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+
+        // Append to body and click (to ensure it works in all browsers)
+        document.body.appendChild(a);
+        a.click();
+
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
 }
 
 // Load project from a file
 export async function loadProjectFromFile(
-  file: File, 
-  scene: BABYLON.Scene,
-  applyRenderSettings?: (settings: SerializedRenderSettings) => void
+    file: File,
+    scene: BABYLON.Scene,
+    applyRenderSettings?: (settings: SerializedRenderSettings) => void
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -202,8 +241,8 @@ export async function loadProjectFromFile(
 
 // Serialize all EntityNodes in a scene to a project JSON structure
 export function serializeScene(
-  scene: BABYLON.Scene, 
-  renderSettings?: SerializedRenderSettings
+    scene: BABYLON.Scene,
+    renderSettings?: SerializedRenderSettings
 ): any {
     const entityNodes: EntityNode[] = [];
 
