@@ -17,19 +17,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { blobToBase64 } from '../util/generation-util';
-import { GalleryImage } from './GalleryPanel';
 
 // Update the props of RenderPanel to include the new gallery functions
 interface RenderPanelProps {
   isDebugMode: boolean;
-  onImageGenerated?: (image: GalleryImage) => void;
   onOpenGallery?: () => void;
 }
 
-const RenderPanel = ({ isDebugMode, onImageGenerated, onOpenGallery }: RenderPanelProps) => {
+const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager } = useEditorContext();
-  const { renderSettings, updateRenderSettings } = useRenderSettings();
+  const { renderSettings, updateRenderSettings, addRenderLog } = useRenderSettings();
 
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -47,6 +44,7 @@ const RenderPanel = ({ isDebugMode, onImageGenerated, onOpenGallery }: RenderPan
     seed,
     useRandomSeed,
     selectedLoras
+    , renderLogs
   } = renderSettings;
 
   // Find the selected API object from its ID in the context
@@ -91,6 +89,14 @@ const RenderPanel = ({ isDebugMode, onImageGenerated, onOpenGallery }: RenderPan
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [prompt, promptStrength, noiseStrength, selectedAPI, selectedLoras]); // Re-create handler when these dependencies change
+
+  useEffect(() => {
+    console.log("renderLogs", renderLogs);
+    if (renderLogs.length > 0) {
+      setImageUrl(renderLogs[renderLogs.length - 1].imageUrl);
+    }
+  }, [renderLogs])
+  
 
   // Style panel handlers
   const handleSelectStyle = (lora: LoraInfo) => {
@@ -211,6 +217,21 @@ const RenderPanel = ({ isDebugMode, onImageGenerated, onOpenGallery }: RenderPan
     return newSeed;
   };
 
+  const handleSuccessfulRender = (result: any, currentSeed: number) => {
+    if (result && result.imageUrl) {
+      addRenderLog({
+        imageUrl: result.imageUrl,
+        prompt: renderSettings.prompt,
+        model: selectedAPI.name,
+        timestamp: new Date(),
+        seed: currentSeed,
+        promptStrength: renderSettings.promptStrength,
+        depthStrength: selectedAPI.useDepthImage ? renderSettings.depthStrength : 0,
+        selectedLoras: renderSettings.selectedLoras,
+      });
+    }
+  };
+
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null);
@@ -286,18 +307,9 @@ const RenderPanel = ({ isDebugMode, onImageGenerated, onOpenGallery }: RenderPan
       // Update the preview with the generated image
       setImageUrl(result.imageUrl);
 
-      // If we have a successful result and it's not a test, add to gallery
-      if (!isTest && result && result.imageUrl && onImageGenerated) {
-        onImageGenerated({
-          imageUrl: result.imageUrl,
-          prompt: prompt,
-          model: selectedAPI.name,
-          timestamp: new Date(),
-          seed: currentSeed,
-          promptStrength: promptStrength,
-          depthStrength: selectedAPI.useDepthImage ? depthStrength : 0,
-          selectedLoras: selectedLoras,
-        });
+      // If it's not a test, add to gallery using the context function
+      if (!isTest) {
+        handleSuccessfulRender(result, currentSeed);
       }
     } catch (error) {
       console.error("Error generating preview:", error);

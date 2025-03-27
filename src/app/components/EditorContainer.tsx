@@ -14,8 +14,8 @@ import EnvironmentPanel from './EnvironmentPanel';
 import GizmoModeSelector from './GizmoModeSelector';
 import FileMenu from './FileMenu';
 import RatioPanel from './RatioPanel';
-import { RenderSettingsProvider } from '../context/RenderSettingsContext';
-import GalleryPanel, { GalleryImage } from './GalleryPanel';
+import { useRenderSettings } from '../context/RenderSettingsContext';
+import GalleryPanel from './GalleryPanel';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,29 +32,19 @@ export default function EditorContainer() {
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
   
-  // Gallery state
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const { renderSettings } = useRenderSettings();
+  
+  // Remove local gallery state since it's now in the context
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
-  // Function to add an image to the gallery
-  const addImageToGallery = (image: GalleryImage) => {
-    setGalleryImages(prevImages => {
-      const newImages = [...prevImages, image];
-      setCurrentGalleryIndex(newImages.length - 1);
-      return newImages;
-    });
-  };
-
-  // Function to open the gallery
-  const openGallery = (index?: number) => {
-    if (galleryImages.length === 0) return;
-    if (index !== undefined) {
-      setCurrentGalleryIndex(index);
-    }
+  // Modified function to open the gallery
+  const openGallery = () => {
+    console.log("openGallery", renderSettings.renderLogs.length);
+    if (renderSettings.renderLogs.length === 0) return;
+    setCurrentGalleryIndex(renderSettings.renderLogs.length - 1); // Show the most recent image
     setIsGalleryOpen(true);
   };
-
 
   const onPointerObservable = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
     if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
@@ -175,7 +165,6 @@ export default function EditorContainer() {
   }, []);
 
   return (
-    <RenderSettingsProvider>
       <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
         <div className="flex h-full">
           {/* Generation menu */}
@@ -187,10 +176,9 @@ export default function EditorContainer() {
             <EntityPanel />
           </div>
 
-          {/* Render Panel */}
+          {/* Render Panel - no longer needs onImageGenerated */}
           <RenderPanel 
             isDebugMode={isDebugMode} 
-            onImageGenerated={addImageToGallery} 
             onOpenGallery={openGallery}
           />
 
@@ -207,15 +195,14 @@ export default function EditorContainer() {
         {/* Ratio Panel */}
         <RatioPanel />
 
-        {/* Gallery Panel */}
+        {/* Gallery Panel - now uses context for images */}
         <GalleryPanel 
           isOpen={isGalleryOpen}
           onClose={() => setIsGalleryOpen(false)}
-          images={galleryImages}
+          images={renderSettings.renderLogs}
           currentIndex={currentGalleryIndex}
           onSelectImage={setCurrentGalleryIndex}
         />
       </div>
-    </RenderSettingsProvider>
   );
 } 

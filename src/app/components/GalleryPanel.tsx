@@ -3,22 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconArrowRight, IconX, IconDownload } from '@tabler/icons-react';
-
-export interface GalleryImage {
-  imageUrl: string;
-  prompt: string;
-  model: string;
-  timestamp: Date;
-  seed?: number;
-  promptStrength?: number;
-  depthStrength?: number;
-  selectedLoras?: any[];
-}
+import { RenderLog } from '../util/editor/project-util';
 
 interface GalleryPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  images: GalleryImage[];
+  images: RenderLog[];
   currentIndex: number;
   onSelectImage: (index: number) => void;
 }
@@ -104,6 +94,7 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
                 const a = document.createElement('a');
                 a.href = currentImage.imageUrl;
                 a.download = `render-${new Date().toISOString()}.png`;
+                a.target = '_blank';
                 a.click();
               }}
             >

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { SerializedRenderSettings } from '../util/editor/project-util';
 import { availableAPIs } from '../util/image-render-api';
+import { RenderLog } from '../util/editor/project-util';
 
 // Default settings
 const defaultSettings: SerializedRenderSettings = {
@@ -11,19 +12,22 @@ const defaultSettings: SerializedRenderSettings = {
   selectedAPI: availableAPIs[0].id,
   seed: Math.floor(Math.random() * 2147483647),
   useRandomSeed: false,
-  selectedLoras: []
+  selectedLoras: [],
+  renderLogs: []
 };
 
 // Define the context interface
 interface RenderSettingsContextType {
   renderSettings: SerializedRenderSettings;
   updateRenderSettings: (settings: Partial<SerializedRenderSettings>) => void;
+  addRenderLog: (image: RenderLog) => void;
 }
 
 // Create context with default values
 const RenderSettingsContext = createContext<RenderSettingsContextType>({
   renderSettings: defaultSettings,
-  updateRenderSettings: () => {}
+  updateRenderSettings: () => { },
+  addRenderLog: () => { }
 });
 
 // Custom hook to use the render settings context
@@ -42,11 +46,20 @@ export const RenderSettingsProvider: React.FC<{
     }));
   };
 
+  const addRenderLog = (image: RenderLog) => {
+    console.log("RenderSettingsContext: addRenderLog", image);
+    setRenderSettings(prev => ({
+      ...prev,
+      renderLogs: [...prev.renderLogs, image]
+    }));
+  };
+
   return (
     <RenderSettingsContext.Provider
       value={{
         renderSettings,
-        updateRenderSettings
+        updateRenderSettings,
+        addRenderLog
       }}
     >
       {children}

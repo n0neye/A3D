@@ -15,8 +15,20 @@ export interface SerializedRenderSettings {
     seed: number;
     useRandomSeed: boolean;
     selectedLoras: LoraConfig[];
+    renderLogs: RenderLog[];
 }
 
+export interface RenderLog {
+    imageUrl: string;
+    prompt: string;
+    model: string;
+    timestamp: Date;
+    seed?: number;
+    promptStrength?: number;
+    depthStrength?: number;
+    selectedLoras?: any[];
+  }
+  
 // Interface for serialized environment settings
 interface SerializedEnvironment {
     sun?: {
