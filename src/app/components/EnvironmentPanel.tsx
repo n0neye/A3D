@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { ChevronUp, ChevronDown, Settings } from "lucide-react";
 
 const EnvironmentPanel: React.FC = () => {
   const { scene, gizmoManager } = useEditorContext();
@@ -19,6 +20,9 @@ const EnvironmentPanel: React.FC = () => {
   const [sunTilt, setSunTilt] = useState(-30); // Vertical angle (-90 to 90)
   const [ambientIntensity, setAmbientIntensity] = useState(0.5);
   const [ambientColor, setAmbientColor] = useState('#FFFFFF');
+  
+  // Add state for panel expansion
+  const [isExpanded, setIsExpanded] = useState(false);
   
   // State for point lights
   const [pointLightSettings, setPointLightSettings] = useState<{
@@ -58,6 +62,11 @@ const EnvironmentPanel: React.FC = () => {
     }
     
   }, []);
+
+  // Toggle panel expansion
+  const toggleExpansion = () => {
+    setIsExpanded(prev => !prev);
+  };
 
   // Update sun intensity
   const handleSunIntensityChange = (values: number[]) => {
@@ -174,135 +183,149 @@ const EnvironmentPanel: React.FC = () => {
   };
 
   return (
-    <Card className="fixed z-50 left-4 bottom-28 w-72 shadow-lg">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Environment</CardTitle>
-      </CardHeader>
-      <CardContent className="h-[calc(100vh-400px)] overflow-y-auto space-y-6">
-        {/* Sun Light Section */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Sun Light</h4>
-          
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <Label className="text-xs text-muted-foreground">Intensity</Label>
-                <span className="text-xs">{sunIntensity.toFixed(1)}</span>
-              </div>
-              <Slider 
-                value={[sunIntensity]} 
-                min={0} 
-                max={10} 
-                step={0.1}
-                onValueChange={handleSunIntensityChange}
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Color</Label>
-              <div className="flex items-center space-x-2">
-                <div className="relative w-8 h-8 overflow-hidden rounded-md">
-                  <Input
-                    type="color"
-                    value={sunColor}
-                    onChange={handleSunColorChange}
-                    className="absolute inset-0 w-10 h-10 border-0"
-                  />
-                </div>
-                <span className="text-xs">{sunColor}</span>
-              </div>
-            </div>
-          </div>
-          
-          <Button 
-            variant="default" 
-            size="sm" 
-            onClick={handleSunSelect}
-            className="w-full text-xs"
-          >
-            Select Sun
+    <Card className={`fixed z-50 left-4 bottom-28 shadow-lg transition-all duration-200 ${isExpanded ? 'w-72' : 'w-12'}`}>
+      <CardHeader className="pb-2 flex flex-row items-center justify-between p-2">
+        {isExpanded ? (
+          <>
+            <CardTitle className="text-base">Environment</CardTitle>
+            <Button variant="ghost" size="icon" onClick={toggleExpansion} className="h-8 w-8">
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <Button variant="ghost" size="icon" onClick={toggleExpansion} className="mx-auto h-8 w-8">
+            <Settings className="h-4 w-4" />
           </Button>
-        </div>
-        
-        <Separator />
-        
-        {/* Ambient Light Section */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Ambient Light</h4>
-          
+        )}
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent className="h-[calc(100vh-400px)] overflow-y-auto space-y-6">
+          {/* Sun Light Section */}
           <div className="space-y-3">
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <Label className="text-xs text-muted-foreground">Intensity</Label>
-                <span className="text-xs">{ambientIntensity.toFixed(1)}</span>
+            <h4 className="text-sm font-medium">Sun Light</h4>
+            
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs text-muted-foreground">Intensity</Label>
+                  <span className="text-xs">{sunIntensity.toFixed(1)}</span>
+                </div>
+                <Slider 
+                  value={[sunIntensity]} 
+                  min={0} 
+                  max={10} 
+                  step={0.1}
+                  onValueChange={handleSunIntensityChange}
+                />
               </div>
-              <Slider 
-                value={[ambientIntensity]} 
-                min={0} 
-                max={1} 
-                step={0.1}
-                onValueChange={handleAmbientIntensityChange}
-              />
+              
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Color</Label>
+                <div className="flex items-center space-x-2">
+                  <div className="relative w-8 h-8 overflow-hidden rounded-md">
+                    <Input
+                      type="color"
+                      value={sunColor}
+                      onChange={handleSunColorChange}
+                      className="absolute inset-0 w-10 h-10 border-0"
+                    />
+                  </div>
+                  <span className="text-xs">{sunColor}</span>
+                </div>
+              </div>
             </div>
             
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Color</Label>
-              <div className="flex items-center space-x-2">
-                <div className="relative w-8 h-8 overflow-hidden rounded-md">
-                  <Input
-                    type="color"
-                    value={ambientColor}
-                    onChange={handleAmbientColorChange}
-                    className="absolute inset-0 w-10 h-10 border-0"
-                  />
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={handleSunSelect}
+              className="w-full text-xs"
+            >
+              Select Sun
+            </Button>
+          </div>
+          
+          <Separator />
+          
+          {/* Ambient Light Section */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">Ambient Light</h4>
+            
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs text-muted-foreground">Intensity</Label>
+                  <span className="text-xs">{ambientIntensity.toFixed(1)}</span>
                 </div>
-                <span className="text-xs">{ambientColor}</span>
+                <Slider 
+                  value={[ambientIntensity]} 
+                  min={0} 
+                  max={1} 
+                  step={0.1}
+                  onValueChange={handleAmbientIntensityChange}
+                />
+              </div>
+              
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Color</Label>
+                <div className="flex items-center space-x-2">
+                  <div className="relative w-8 h-8 overflow-hidden rounded-md">
+                    <Input
+                      type="color"
+                      value={ambientColor}
+                      onChange={handleAmbientColorChange}
+                      className="absolute inset-0 w-10 h-10 border-0"
+                    />
+                  </div>
+                  <span className="text-xs">{ambientColor}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        
-        {/* Point Lights Section */}
-        {pointLightSettings.map((light, index) => (
-          <React.Fragment key={index}>
-            <Separator />
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Point Light {index + 1}</h4>
-              
+          
+          {/* Point Lights Section */}
+          {pointLightSettings.map((light, index) => (
+            <React.Fragment key={index}>
+              <Separator />
               <div className="space-y-3">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-xs text-muted-foreground">Intensity</Label>
-                    <span className="text-xs">{light.intensity.toFixed(1)}</span>
-                  </div>
-                  <Slider 
-                    value={[light.intensity]} 
-                    min={0} 
-                    max={2} 
-                    step={0.1}
-                    onValueChange={(values) => handlePointLightIntensityChange(index, values)}
-                  />
-                </div>
+                <h4 className="text-sm font-medium">Point Light {index + 1}</h4>
                 
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Color</Label>
-                  <div className="flex items-center space-x-2">
-                    <div className="relative w-8 h-8 overflow-hidden rounded-md">
-                      <Input
-                        type="color"
-                        value={light.color}
-                        onChange={(e) => handlePointLightColorChange(index, e.target.value)}
-                        className="absolute inset-0 w-10 h-10 border-0"
-                      />
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs text-muted-foreground">Intensity</Label>
+                      <span className="text-xs">{light.intensity.toFixed(1)}</span>
                     </div>
-                    <span className="text-xs">{light.color}</span>
+                    <Slider 
+                      value={[light.intensity]} 
+                      min={0} 
+                      max={2} 
+                      step={0.1}
+                      onValueChange={(values) => handlePointLightIntensityChange(index, values)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Color</Label>
+                    <div className="flex items-center space-x-2">
+                      <div className="relative w-8 h-8 overflow-hidden rounded-md">
+                        <Input
+                          type="color"
+                          value={light.color}
+                          onChange={(e) => handlePointLightColorChange(index, e.target.value)}
+                          className="absolute inset-0 w-10 h-10 border-0"
+                        />
+                      </div>
+                      <span className="text-xs">{light.color}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </React.Fragment>
-        ))}
-      </CardContent>
+            </React.Fragment>
+          ))}
+        </CardContent>
+      )}
     </Card>
   );
 };

@@ -36,10 +36,10 @@
   resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-7.52.3.tgz#94dc027a003d6a43f3a172beeddb785971696c0b"
   integrity sha512-ZSgsqLKKTLjRBpEPX1etflSiiseC7VuzBvODErFTi1BwZh2TiG/iQ4ho0bBYbW4l2djFXDdlM8e9SDPrQFPrOA==
 
-"@babylonjs/materials@^7.53.3":
-  version "7.53.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/materials/-/materials-7.53.3.tgz#bc04908085cc14bcede001a3e82416885bdb4d91"
-  integrity sha512-PZMgi8udAXCDb58AdgBX4H8DNsF9rECwM2ftMarGfgKNx0pz7ge0njNrynSrOEPbBdg12LPWx+CF0YmHWg/nEQ==
+"@babylonjs/materials@^7.54.3":
+  version "7.54.3"
+  resolved "https://registry.yarnpkg.com/@babylonjs/materials/-/materials-7.54.3.tgz#dd4a28ca71a8eefd8ba3bea9bb772a78b68cca1c"
+  integrity sha512-WYqvpX6+iR0/h/X0SaoFZH2hD1nDIzu9Qo86/yEK8R+whhShgpkJ9VDdTE1yYNBxf5azFoUrxWcMy3OXNn3Z3w==
 
 "@babylonjs/serializers@^7.53.3":
   version "7.53.3"

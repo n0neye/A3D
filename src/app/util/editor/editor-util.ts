@@ -3,6 +3,7 @@ import { GridMaterial } from "@babylonjs/materials/grid";
 import { createEntity, EntityNode } from "../extensions/entityNode";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation-util';
+import { TriPlanarMaterial } from "@babylonjs/materials/TriPlanar/triPlanarMaterial";
 
 // Store environment objects
 export interface EnvironmentObjects {
@@ -59,15 +60,12 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     camera.lowerRadiusLimit = 1;
     camera.upperRadiusLimit = 20;
     camera.attachControl(canvas, true);
-    camera.position = new BABYLON.Vector3(0, 0, 2);
-    camera.minZ = 0.1;
+    camera.position = new BABYLON.Vector3(0, 0, 5);
+    camera.minZ = 0.01;
     camera.maxZ = 20;
 
     // Ambient Light
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
-
-    // Sun
-    // createSunEntity(scene);
 
     // Create Ambient Light
     createBasicLights(scene);
@@ -84,8 +82,39 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
     // createRatioOverlay
     createRatioOverlay(scene);
+
+    // Create default material
+    createDefaultMaterial(scene);
+
+    // Create shapes
+    createEntity(scene, "aiObject", {
+        aiObjectType: "shape",
+        shapeType: "sphere",
+        position: new BABYLON.Vector3(0, 0.25, 0),
+    });
+
+    createEntity(scene, "aiObject", {
+        aiObjectType: "shape",
+        shapeType: "floor",
+        position: new BABYLON.Vector3(0, 0, 0),
+    });
 }
 
+export let defaultMaterial: TriPlanarMaterial;
+export const createDefaultMaterial = (scene: BABYLON.Scene) => {
+    const material = new TriPlanarMaterial(`defaultMaterial`, scene);
+    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
+    material.backFaceCulling = false;
+    material.diffuseTextureX = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
+    material.diffuseTextureY = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
+    material.diffuseTextureZ = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
+    material.normalTextureX = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
+    material.normalTextureY = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
+    material.normalTextureZ = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
+    material.tileSize = 3;
+    defaultMaterial = material;
+    return material;
+}
 
 /**
  * Creates an equirectangular skybox (more suitable for 21:9 panoramic images)
@@ -98,7 +127,7 @@ export const createEquirectangularSkybox = (
     url: string,
 ): BABYLON.Mesh => {
     // Create a large dome for the skybox
-    const maxZ = scene.activeCamera?.maxZ  || 100;
+    const maxZ = scene.activeCamera?.maxZ || 100;
     const skyDome = BABYLON.MeshBuilder.CreateSphere(
         "skyDome",
         {
@@ -277,7 +306,7 @@ export const createWorldGrid = (
         scene
     );
     gridGround.position.y = -0.501;
-    
+
     // Create a grid material
     const gridMaterial = new GridMaterial("gridMaterial", scene);
     gridMaterial.majorUnitFrequency = majorUnitFrequency;
@@ -287,17 +316,17 @@ export const createWorldGrid = (
     gridMaterial.mainColor = new BABYLON.Color3(0.2, 0.2, 0.3);
     gridMaterial.lineColor = new BABYLON.Color3(0.0, 0.7, 1.0);
     gridMaterial.opacity = 0.8;
-    
+
     // Apply the material to the grid
     gridGround.material = gridMaterial;
-    
+
     // Set grid to be non-pickable and not receive shadows
     gridGround.isPickable = false;
     gridGround.receiveShadows = true; // Enable receiving shadows for the grid
-    
+
     // Store in environment objects
     environmentObjects.grid = gridGround;
-    
+
     return gridGround;
 };
 
@@ -354,32 +383,40 @@ const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON
 };
 
 export const createBasicLights = (scene: BABYLON.Scene) => {
+    
+    // Sun
+    // createSunEntity(scene);
+
+
     // const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
     const ambientLight = new BABYLON.PointLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
-    ambientLight.intensity = 0.5; // Reduced to make shadows more visible
-    ambientLight.position = new BABYLON.Vector3(0, 2, 0);
+    ambientLight.position = new BABYLON.Vector3(0, 2, 2);
+    ambientLight.intensity = 0.7; // Reduced to make shadows more visible
+    ambientLight.diffuse = new BABYLON.Color3(1, 1, 1);
+    ambientLight.specular = new BABYLON.Color3(1, 1, 1);
     ambientLight.shadowEnabled = true;
-    ambientLight.diffuse = new BABYLON.Color3(1, 2, 3);
-    environmentObjects.ambientLight = ambientLight;
     createShadowGenerator(ambientLight, scene);
+    environmentObjects.ambientLight = ambientLight;
 
-    // Create two point lights with warm and cold colors
-    const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);
-    warmLight.intensity = 0.7;
-    warmLight.diffuse = new BABYLON.Color3(1, 0.33, 0.33);
-    warmLight.position = new BABYLON.Vector3(2, 2, 2);
-    warmLight.shadowEnabled = true;
-    environmentObjects.pointLights.push(warmLight);
-    createShadowGenerator(warmLight, scene);
+    // // Create two point lights with warm and cold colors
+    // const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);
+    // warmLight.position = new BABYLON.Vector3(5, 2, 3);
+    // warmLight.intensity = 0.5;
+    // warmLight.diffuse = new BABYLON.Color3(1, 0.33, 0.33);
+    // warmLight.specular = new BABYLON.Color3(1, 0.33, 0.33);
+    // environmentObjects.pointLights.push(warmLight);
+    // warmLight.shadowEnabled = true;
+    // createShadowGenerator(warmLight, scene);
 
-    const coldLight = new BABYLON.PointLight("coldLight", new BABYLON.Vector3(0, 1, 0), scene);
-    coldLight.intensity = 0.7;
-    coldLight.diffuse = new BABYLON.Color3(0, 0.5, 1);
-    coldLight.position = new BABYLON.Vector3(-2, 2, 3);
-    coldLight.shadowEnabled = true;
-    environmentObjects.pointLights.push(coldLight);
+    // const coldLight = new BABYLON.PointLight("coldLight", new BABYLON.Vector3(0, 1, 0), scene);
+    // coldLight.intensity = 0.5;
+    // coldLight.position = new BABYLON.Vector3(-5, 2, 3);
+    // coldLight.diffuse = new BABYLON.Color3(0, 0.5, 1);
+    // coldLight.specular = new BABYLON.Color3(0, 0.5, 1);
+    // environmentObjects.pointLights.push(coldLight);
+    // coldLight.shadowEnabled = true;
     // createShadowGenerator(coldLight, scene);
-    
+
     return;
 };
 
@@ -392,22 +429,22 @@ export const createSunEntity = (scene: BABYLON.Scene,) => {
     // Create a sun (directional light)
     const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
     sunLight.intensity = 0.3;
-    sunLight.diffuse = new BABYLON.Color3(0.8, 0.9, 1); 
+    sunLight.diffuse = new BABYLON.Color3(0.8, 0.9, 1);
     sunLight.shadowEnabled = true;
-    
+
     // Create a shadow generator for the sun with specialized settings
     const sunShadowGenerator = createShadowGenerator(sunLight, scene);
-    
+
     // For directional lights, use Cascaded Shadow Maps for better quality
     sunShadowGenerator.usePoissonSampling = true; // Better sampling
     sunShadowGenerator.bias = 0.0001; // Adjust as needed
     sunShadowGenerator.useBlurExponentialShadowMap = true;
 
-    
+
     // If artifacts still persist, can use contact hardening shadow
     // sunShadowGenerator.useContactHardeningShadow = true;
     // sunShadowGenerator.contactHardeningLightSizeUVRatio = 0.02;
-    
+
     // Parent the light to the transform node
     sunLight.parent = sunTransform;
 
@@ -432,26 +469,26 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
 
     // Create fullscreen UI
     const advancedTexture = GUI.AdvancedDynamicTexture.CreateFullscreenUI("ratioOverlayUI", true, scene);
-    
+
     // Create a container to group the frame elements
     const container = new GUI.Rectangle("ratioFrameContainer");
     container.thickness = 0;
     container.background = "transparent";
     advancedTexture.addControl(container);
-    
+
     // Create the frame elements (four rectangles for borders)
     const topBorder = new GUI.Rectangle("topBorder");
     const rightBorder = new GUI.Rectangle("rightBorder");
     const bottomBorder = new GUI.Rectangle("bottomBorder");
     const leftBorder = new GUI.Rectangle("leftBorder");
-    
+
     // Set properties for all borders
     [topBorder, rightBorder, bottomBorder, leftBorder].forEach(border => {
         border.thickness = 0;
         border.background = "rgba(0, 0, 0, 0.3)"; // Semi-transparent black
         container.addControl(border);
     });
-    
+
     // Store in environment objects with initial padding and ratio
     environmentObjects.ratioOverlay = {
         container: advancedTexture,
@@ -465,10 +502,10 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
             left: leftBorder
         }
     };
-    
+
     // Initial sizing
     updateRatioOverlay(scene);
-    
+
     // Update when the window is resized
     window.addEventListener('resize', () => {
         setTimeout(() => {
@@ -483,23 +520,23 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
  */
 export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
     if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return;
-    
+
     const { frame, padding, borders, ratio } = environmentObjects.ratioOverlay;
-    
+
     // Get current engine dimensions
     const engine = scene.getEngine();
     const screenWidth = engine.getRenderWidth();
     const screenHeight = engine.getRenderHeight();
-    
+
     // Calculate padding in pixels
     const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
-    
+
     // Use the ratio from the ratio map instead of hardcoded value
     const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
     const targetRatio = ratioWidth / ratioHeight;
-    
+
     let frameWidth, frameHeight;
-    
+
     if (screenWidth / screenHeight > targetRatio) {
         // Screen is wider than the target ratio
         frameHeight = screenHeight - (paddingPixels * 2);
@@ -509,31 +546,31 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
         frameWidth = screenWidth - (paddingPixels * 2);
         frameHeight = frameWidth / targetRatio;
     }
-    
+
     // Calculate frame position (centered)
     const frameLeft = (screenWidth - frameWidth) / 2;
     const frameTop = (screenHeight - frameHeight) / 2;
-    
+
     // Set container size to match screen
     frame.width = "100%";
     frame.height = "100%";
-    
+
     // Position the borders to create a hollow frame
-    
+
     // Top border - covers everything above the frame
     borders.top.width = "100%";
     borders.top.height = `${frameTop}px`;
     borders.top.topInPixels = 0;
     borders.top.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     borders.top.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-    
+
     // Bottom border - covers everything below the frame
     borders.bottom.width = "100%";
     borders.bottom.height = `${frameTop}px`;
     borders.bottom.topInPixels = frameTop + frameHeight;
     borders.bottom.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     borders.bottom.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-    
+
     // Left border - covers left area between top and bottom borders
     borders.left.width = `${frameLeft}px`;
     borders.left.height = `${frameHeight}px`;
@@ -541,7 +578,7 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
     borders.left.topInPixels = frameTop;
     borders.left.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
     borders.left.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-    
+
     // Right border - covers right area between top and bottom borders
     borders.right.width = `${frameLeft}px`;
     borders.right.height = `${frameHeight}px`;
@@ -558,13 +595,13 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
  */
 export const setRatioOverlayPadding = (padding: number, scene: BABYLON.Scene): void => {
     if (!environmentObjects.ratioOverlay) return;
-    
+
     // Clamp padding to reasonable range
     const clampedPadding = Math.max(0, Math.min(50, padding));
-    
+
     // Update padding
     environmentObjects.ratioOverlay.padding = clampedPadding;
-    
+
     // Update overlay
     updateRatioOverlay(scene);
 };
@@ -575,7 +612,7 @@ export const setRatioOverlayPadding = (padding: number, scene: BABYLON.Scene): v
  */
 export const setRatioOverlayVisibility = (visible: boolean): void => {
     if (!environmentObjects.ratioOverlay) return;
-    
+
     environmentObjects.ratioOverlay.frame.isVisible = visible;
 };
 
@@ -586,10 +623,10 @@ export const setRatioOverlayVisibility = (visible: boolean): void => {
  */
 export const setRatioOverlayRatio = (ratio: ImageRatio, scene: BABYLON.Scene): void => {
     if (!environmentObjects.ratioOverlay) return;
-    
+
     // Update ratio
     environmentObjects.ratioOverlay.ratio = ratio;
-    
+
     // Update overlay
     updateRatioOverlay(scene);
 };
@@ -605,21 +642,21 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
     height: number;
 } | null => {
     if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return null;
-    
+
     const { padding, ratio } = environmentObjects.ratioOverlay;
     const engine = scene.getEngine();
     const screenWidth = engine.getRenderWidth();
     const screenHeight = engine.getRenderHeight();
-    
+
     // Calculate padding in pixels
     const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
-    
+
     // Use the ratio from the ratio map
     const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
     const targetRatio = ratioWidth / ratioHeight;
-    
+
     let frameWidth, frameHeight;
-    
+
     if (screenWidth / screenHeight > targetRatio) {
         // Screen is wider than the target ratio
         frameHeight = screenHeight - (paddingPixels * 2);
@@ -629,11 +666,11 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
         frameWidth = screenWidth - (paddingPixels * 2);
         frameHeight = frameWidth / targetRatio;
     }
-    
+
     // Calculate position (centered on screen)
     const left = (screenWidth - frameWidth) / 2;
     const top = (screenHeight - frameHeight) / 2;
-    
+
     return {
         left,
         top,
@@ -654,20 +691,20 @@ export const createShadowGenerator = (
 ): BABYLON.ShadowGenerator => {
     // Create with higher resolution for better quality
     const shadowGenerator = new BABYLON.ShadowGenerator(2048, light);
-    
+
     // Better filtering technique for smoother shadows
     shadowGenerator.usePercentageCloserFiltering = true; // Use PCF instead of blur
     shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
-    
+
     // Fix self-shadowing artifacts with proper bias
     shadowGenerator.bias = 0.05
 
     shadowGenerator.useBlurExponentialShadowMap = true;
     shadowGenerator.blurScale = 0.5;
-    
+
     // Add to our global list
     environmentObjects.shadowGenerators.push(shadowGenerator);
-    
+
     return shadowGenerator;
 };
 
@@ -688,7 +725,7 @@ export const addMeshToShadowCasters = (mesh: BABYLON.AbstractMesh): void => {
 export const setupMeshShadows = (mesh: BABYLON.AbstractMesh): void => {
     // Set mesh to receive shadows
     mesh.receiveShadows = true;
-    
+
     // Add mesh to all shadow generators (to cast shadows)
     addMeshToShadowCasters(mesh);
 };

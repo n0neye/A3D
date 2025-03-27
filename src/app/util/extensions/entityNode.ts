@@ -1,6 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
+import { TriPlanarMaterial } from '@babylonjs/materials/TriPlanar';
 import { v4 as uuidv4 } from 'uuid';
-import { create2DBackground, createEquirectangularSkybox, setupMeshShadows } from '../editor/editor-util';
+import { create2DBackground, createEquirectangularSkybox, defaultMaterial, setupMeshShadows } from '../editor/editor-util';
 import { ImageRatio, ImageSize, loadModel } from '../generation-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
@@ -755,13 +756,8 @@ function createShapeMesh(entity: EntityNode, scene: BABYLON.Scene, shapeType: Sh
             shapeMesh = BABYLON.MeshBuilder.CreateBox(`${entity.name}-box`, { size: 1 }, scene);
     }
 
-    // Create a default material
-    const material = new BABYLON.StandardMaterial(`${entity.name}-material`, scene);
-    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
-    material.backFaceCulling = false;
-
     // Apply the material
-    shapeMesh.material = material;
+    shapeMesh.material = defaultMaterial;
 
     // Setup the mesh
     shapeMesh.parent = entity;
