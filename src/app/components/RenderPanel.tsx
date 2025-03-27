@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { blobToBase64 } from '../util/generation-util';
 
 const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
-  const { scene, engine } = useEditorContext();
+  const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager } = useEditorContext();
   const { renderSettings, updateRenderSettings } = useRenderSettings();
 
   // State variables
@@ -206,6 +206,10 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null); // Reset execution time when starting new generation
+    setSelectedEntity(null);
+    if (gizmoManager) {
+      gizmoManager.attachToNode(null);
+    }
 
     try {
       // Start measuring time
