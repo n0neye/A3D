@@ -3,6 +3,14 @@ import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';
 import { getEnvironmentObjects } from '../util/editor/editor-util';
 
+// Import Shadcn UI components
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+
 const EnvironmentPanel: React.FC = () => {
   const { scene, gizmoManager } = useEditorContext();
   const [sunIntensity, setSunIntensity] = useState(0.7);
@@ -52,8 +60,8 @@ const EnvironmentPanel: React.FC = () => {
   }, []);
 
   // Update sun intensity
-  const handleSunIntensityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
+  const handleSunIntensityChange = (values: number[]) => {
+    const value = values[0];
     setSunIntensity(value);
     const env = getEnvironmentObjects();
     if (env.sun) {
@@ -82,8 +90,8 @@ const EnvironmentPanel: React.FC = () => {
   };
 
   // Update ambient light intensity
-  const handleAmbientIntensityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
+  const handleAmbientIntensityChange = (values: number[]) => {
+    const value = values[0];
     setAmbientIntensity(value);
     const env = getEnvironmentObjects();
     if (env.ambientLight) {
@@ -104,7 +112,8 @@ const EnvironmentPanel: React.FC = () => {
   // New handlers for point lights
   
   // Update point light intensity
-  const handlePointLightIntensityChange = (index: number, value: number) => {
+  const handlePointLightIntensityChange = (index: number, values: number[]) => {
+    const value = values[0];
     setPointLightSettings(prev => {
       const updated = [...prev];
       updated[index].intensity = value;
@@ -165,97 +174,136 @@ const EnvironmentPanel: React.FC = () => {
   };
 
   return (
-    <div className={`fixed z-50 left-4 bottom-28 w-64 panel h-96 overflow-y-auto`} >
-      <h3 className="text-base font-bold mb-6">Environment</h3>
-
-      <div className="mb-6 flex flex-col space-y-4">
-        <div className="text-xs font-medium mb-1">Sun Light</div>
-        <div className="flex items-center mb-1">
-          <span className="text-xs w-16 text-gray-400">Intensity</span>
-          <input
-            type="range"
-            min="0"
-            max="10"
-            step="0.1"
-            value={sunIntensity}
-            onChange={handleSunIntensityChange}
-            className="w-32"
-          />
-          <span className="text-xs ml-2">{sunIntensity.toFixed(1)}</span>
-        </div>
-        <div className="flex items-center mb-1">
-          <span className="text-xs w-16 text-gray-400">Color</span>
-          <input
-            type="color"
-            value={sunColor}
-            onChange={handleSunColorChange}
-            className="w-8 h-6 mr-2"
-          />
-          <span className="text-xs">{sunColor}</span>
-        </div>
-
-        <button
-          className="w-full bg-blue-500 text-white text-xs p-2 rounded hover:bg-blue-600 h-8"
-          onClick={handleSunSelect}>Select Sun</button>
-      </div>
-
-      <div className="mb-6 flex flex-col space-y-4">
-        <div className="text-xs font-medium mb-1 ">Ambient Light</div>
-        <div className="flex items-center mb-1">
-          <span className="text-xs w-16 text-gray-400">Intensity</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={ambientIntensity}
-            onChange={handleAmbientIntensityChange}
-            className="w-32"
-          />
-          <span className="text-xs ml-2">{ambientIntensity.toFixed(1)}</span>
-        </div>
-        <div className="flex items-center mb-1">
-          <span className="text-xs w-16 text-gray-400">Color</span>
-          <input
-            type="color"
-            value={ambientColor}
-            onChange={handleAmbientColorChange}
-            className="w-8 h-6 mr-2"
-          />
-          <span className="text-xs">{ambientColor}</span>
-        </div>
-      </div>
-      
-      {/* Point Lights Section */}
-      {pointLightSettings.map((light, index) => (
-        <div key={index} className="mb-6 flex flex-col space-y-4">
-          <div className="text-xs font-medium mb-1">Point Light {index + 1}</div>
-          <div className="flex items-center mb-1">
-            <span className="text-xs w-16 text-gray-400">Intensity</span>
-            <input
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
-              value={light.intensity}
-              onChange={(e) => handlePointLightIntensityChange(index, parseFloat(e.target.value))}
-              className="w-32"
-            />
-            <span className="text-xs ml-2">{light.intensity.toFixed(1)}</span>
+    <Card className="fixed z-50 left-4 bottom-28 w-72 shadow-lg">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Environment</CardTitle>
+      </CardHeader>
+      <CardContent className="h-[calc(100vh-400px)] overflow-y-auto space-y-6">
+        {/* Sun Light Section */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium">Sun Light</h4>
+          
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs text-muted-foreground">Intensity</Label>
+                <span className="text-xs">{sunIntensity.toFixed(1)}</span>
+              </div>
+              <Slider 
+                value={[sunIntensity]} 
+                min={0} 
+                max={10} 
+                step={0.1}
+                onValueChange={handleSunIntensityChange}
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Color</Label>
+              <div className="flex items-center space-x-2">
+                <div className="relative w-8 h-8 overflow-hidden rounded-md">
+                  <Input
+                    type="color"
+                    value={sunColor}
+                    onChange={handleSunColorChange}
+                    className="absolute inset-0 w-10 h-10 border-0"
+                  />
+                </div>
+                <span className="text-xs">{sunColor}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center mb-1">
-            <span className="text-xs w-16 text-gray-400">Color</span>
-            <input
-              type="color"
-              value={light.color}
-              onChange={(e) => handlePointLightColorChange(index, e.target.value)}
-              className="w-8 h-6 mr-2"
-            />
-            <span className="text-xs">{light.color}</span>
+          
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={handleSunSelect}
+            className="w-full text-xs"
+          >
+            Select Sun
+          </Button>
+        </div>
+        
+        <Separator />
+        
+        {/* Ambient Light Section */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium">Ambient Light</h4>
+          
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs text-muted-foreground">Intensity</Label>
+                <span className="text-xs">{ambientIntensity.toFixed(1)}</span>
+              </div>
+              <Slider 
+                value={[ambientIntensity]} 
+                min={0} 
+                max={1} 
+                step={0.1}
+                onValueChange={handleAmbientIntensityChange}
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Color</Label>
+              <div className="flex items-center space-x-2">
+                <div className="relative w-8 h-8 overflow-hidden rounded-md">
+                  <Input
+                    type="color"
+                    value={ambientColor}
+                    onChange={handleAmbientColorChange}
+                    className="absolute inset-0 w-10 h-10 border-0"
+                  />
+                </div>
+                <span className="text-xs">{ambientColor}</span>
+              </div>
+            </div>
           </div>
         </div>
-      ))}
-    </div>
+        
+        {/* Point Lights Section */}
+        {pointLightSettings.map((light, index) => (
+          <React.Fragment key={index}>
+            <Separator />
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Point Light {index + 1}</h4>
+              
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-xs text-muted-foreground">Intensity</Label>
+                    <span className="text-xs">{light.intensity.toFixed(1)}</span>
+                  </div>
+                  <Slider 
+                    value={[light.intensity]} 
+                    min={0} 
+                    max={2} 
+                    step={0.1}
+                    onValueChange={(values) => handlePointLightIntensityChange(index, values)}
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Color</Label>
+                  <div className="flex items-center space-x-2">
+                    <div className="relative w-8 h-8 overflow-hidden rounded-md">
+                      <Input
+                        type="color"
+                        value={light.color}
+                        onChange={(e) => handlePointLightColorChange(index, e.target.value)}
+                        className="absolute inset-0 w-10 h-10 border-0"
+                      />
+                    </div>
+                    <span className="text-xs">{light.color}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+        ))}
+      </CardContent>
+    </Card>
   );
 };
 
