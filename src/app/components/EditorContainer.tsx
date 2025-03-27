@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import AddPanel from './AddPanel';
 import EntityPanel from './EntityPanel';
@@ -15,6 +15,7 @@ import GizmoModeSelector from './GizmoModeSelector';
 import FileMenu from './FileMenu';
 import RatioPanel from './RatioPanel';
 import { RenderSettingsProvider } from '../context/RenderSettingsContext';
+import GalleryPanel, { GalleryImage } from './GalleryPanel';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,6 +31,29 @@ export default function EditorContainer() {
     scene
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
+  
+  // Gallery state
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  // Function to add an image to the gallery
+  const addImageToGallery = (image: GalleryImage) => {
+    setGalleryImages(prevImages => {
+      const newImages = [...prevImages, image];
+      setCurrentGalleryIndex(newImages.length - 1);
+      return newImages;
+    });
+  };
+
+  // Function to open the gallery
+  const openGallery = (index?: number) => {
+    if (galleryImages.length === 0) return;
+    if (index !== undefined) {
+      setCurrentGalleryIndex(index);
+    }
+    setIsGalleryOpen(true);
+  };
 
 
   const onPointerObservable = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
@@ -59,6 +83,9 @@ export default function EditorContainer() {
          activeElement.tagName === 'TEXTAREA')) {
       return;
     }
+
+    // Don't process keyboard shortcuts when gallery is open
+    if (isGalleryOpen) return;
 
     // Delete selected entity - using getCurrentSelectedEntity to get the latest value
     if (event.key === 'Delete') {
@@ -161,7 +188,11 @@ export default function EditorContainer() {
           </div>
 
           {/* Render Panel */}
-          <RenderPanel isDebugMode={isDebugMode} />
+          <RenderPanel 
+            isDebugMode={isDebugMode} 
+            onImageGenerated={addImageToGallery} 
+            onOpenGallery={openGallery}
+          />
 
           {/* Environment Panel */}
           <EnvironmentPanel />
@@ -175,6 +206,15 @@ export default function EditorContainer() {
 
         {/* Ratio Panel */}
         <RatioPanel />
+
+        {/* Gallery Panel */}
+        <GalleryPanel 
+          isOpen={isGalleryOpen}
+          onClose={() => setIsGalleryOpen(false)}
+          images={galleryImages}
+          currentIndex={currentGalleryIndex}
+          onSelectImage={setCurrentGalleryIndex}
+        />
       </div>
     </RenderSettingsProvider>
   );

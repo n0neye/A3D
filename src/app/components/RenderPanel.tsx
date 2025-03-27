@@ -18,8 +18,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { blobToBase64 } from '../util/generation-util';
+import { GalleryImage } from './GalleryPanel';
 
-const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
+// Update the props of RenderPanel to include the new gallery functions
+interface RenderPanelProps {
+  isDebugMode: boolean;
+  onImageGenerated?: (image: GalleryImage) => void;
+  onOpenGallery?: () => void;
+}
+
+const RenderPanel = ({ isDebugMode, onImageGenerated, onOpenGallery }: RenderPanelProps) => {
   const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager } = useEditorContext();
   const { renderSettings, updateRenderSettings } = useRenderSettings();
 
@@ -205,7 +213,7 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
 
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
-    setExecutionTime(null); // Reset execution time when starting new generation
+    setExecutionTime(null);
     setSelectedEntity(null);
     if (gizmoManager) {
       gizmoManager.attachToNode(null);
@@ -277,6 +285,20 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
 
       // Update the preview with the generated image
       setImageUrl(result.imageUrl);
+
+      // If we have a successful result and it's not a test, add to gallery
+      if (!isTest && result && result.imageUrl && onImageGenerated) {
+        onImageGenerated({
+          imageUrl: result.imageUrl,
+          prompt: prompt,
+          model: selectedAPI.name,
+          timestamp: new Date(),
+          seed: currentSeed,
+          promptStrength: promptStrength,
+          depthStrength: selectedAPI.useDepthImage ? depthStrength : 0,
+          selectedLoras: selectedLoras,
+        });
+      }
     } catch (error) {
       console.error("Error generating preview:", error);
       alert("Failed to generate preview. Please try again.");
@@ -326,13 +348,12 @@ const RenderPanel = ({ isDebugMode }: { isDebugMode: boolean }) => {
             )}
             {imageUrl ? (
               <>
-                <a href={imageUrl} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={imageUrl}
-                    alt="Scene Preview"
-                    className="w-full h-full object-contain cursor-pointer"
-                  />
-                </a>
+                <img
+                  src={imageUrl}
+                  alt="Scene Preview"
+                  className="w-full h-full object-contain cursor-pointer"
+                  onClick={() => onOpenGallery && onOpenGallery()}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
