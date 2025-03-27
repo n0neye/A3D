@@ -52,6 +52,14 @@ export default function EditorContainer() {
 
   // Handle keyboard shortcuts
   const handleKeyDown = (event: KeyboardEvent) => {
+    // Don't process delete if a text input or textarea is focused
+    const activeElement = document.activeElement;
+    if (activeElement && 
+        (activeElement.tagName === 'INPUT' || 
+         activeElement.tagName === 'TEXTAREA')) {
+      return;
+    }
+
     // Delete selected entity - using getCurrentSelectedEntity to get the latest value
     if (event.key === 'Delete') {
       const currentEntity = getCurrentSelectedEntity();
@@ -64,15 +72,13 @@ export default function EditorContainer() {
 
       // Get all child meshes to properly dispose them
       const meshesToDispose = currentEntity.getChildMeshes();
-
       // Dispose each mesh properly
       meshesToDispose.forEach(mesh => {
-        if (mesh.material) {
+        if (currentEntity.metadata.aiData?.aiObjectType !== "shape" && mesh.material) {
           mesh.material.dispose(true, true);
         }
         mesh.dispose(false, true);
       });
-
       // Dispose the entity itself
       currentEntity.dispose();
 

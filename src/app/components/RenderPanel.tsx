@@ -6,7 +6,7 @@ import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { convertDepthTextureToImage, EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
+import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
 import { SerializedRenderSettings } from '../util/editor/project-util';
 import { useRenderSettings } from '../context/RenderSettingsContext';
 
