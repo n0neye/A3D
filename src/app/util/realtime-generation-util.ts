@@ -68,7 +68,7 @@ export async function generateRealtimeImage(
     // Enhance prompt based on entity type
     let enhancedPrompt = prompt;
     if (aiObjectType === 'generativeObject') {
-        enhancedPrompt = `${prompt} at the center of the frame, close up, focused on the object, uncropped, solid black background`;
+        enhancedPrompt = `${prompt}, at the center of the frame, full-body, white 3d model, no texture, uncropped, solid black background`;
     } else if (aiObjectType === 'background') {
         enhancedPrompt = `expansive panoramic view of ${prompt}`;
     }

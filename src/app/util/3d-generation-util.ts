@@ -114,9 +114,84 @@ export async function loadModel(
 }
 
 /**
+ * Common helpers for 3D model generation
+ */
+
+// Process an image URL to get the right format for API submission
+async function processImageUrl(imageUrl: string): Promise<{ processedUrl: string, base64Data?: string }> {
+  let processedUrl = imageUrl;
+  let base64Data: string | undefined;
+        
+  if (imageUrl.startsWith('blob:')) {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      base64Data = await blobToBase64(blob);
+      processedUrl = ''; // Clear the URL since we're using base64
+    } catch (error) {
+      console.error("Failed to process image blob:", error);
+      throw new Error("Failed to process image");
+    }
+  } else if (imageUrl.startsWith('data:image')) {
+    // Already a base64 image
+    base64Data = imageUrl;
+    processedUrl = ''; // Clear the URL since we're using base64
+  }
+
+  return { processedUrl, base64Data };
+}
+
+// Handle the final model loading process that's common to both implementations
+async function finalizeModelGeneration(
+  modelUrl: string,
+  entity: EntityNode,
+  scene: BABYLON.Scene,
+  gizmoManager: BABYLON.GizmoManager | null,
+  derivedFromId: string,
+  startTime: number
+): Promise<GenerationResult> {
+  // Log time
+  const elapsedTime = performance.now() - startTime;
+  const seconds = (elapsedTime / 1000).toFixed(2);
+  console.log(`%c3D conversion completed in ${seconds} seconds`, "color: #4CAF50; font-weight: bold;");
+            
+  entity.setProcessingState({
+    isGenerating2D: false,
+    isGenerating3D: true,
+    progressMessage: 'Loading 3D model...'
+  });
+
+  // Load the model
+  await loadModel(
+    entity,
+    modelUrl,
+    scene,
+    gizmoManager,
+    (progress) => {
+      entity.setProcessingState({
+        isGenerating2D: false,
+        isGenerating3D: true,
+        progressMessage: progress.message
+      });
+    }
+  );
+            
+  // Add generation log
+  const log = entity.addModelGenerationLog(modelUrl, derivedFromId);
+            
+  entity.setProcessingState({
+    isGenerating2D: false,
+    isGenerating3D: false,
+    progressMessage: ''
+  });
+            
+  return { success: true, generationLog: log };
+}
+
+/**
  * Generate a 3D model from an image using the FAL AI Trellis API
  */
-export async function generate3DModel(
+export async function generate3DModel_Trellis(
     imageUrl: string,
     entity: EntityNode,
     scene: BABYLON.Scene,
@@ -129,21 +204,12 @@ export async function generate3DModel(
     const entityType = entity.getEntityType();
 
     try {
-        // Process image URL if it's a blob
-        let processedImageUrl = imageUrl;
-        if (imageUrl.startsWith('blob:')) {
-            try {
-                const response = await fetch(imageUrl);
-                const blob = await response.blob();
-                processedImageUrl = await blobToBase64(blob);
-            } catch (error) {
-                return { success: false, generationLog: null };
-            }
-        }
+        // Process image URL
+        const { processedUrl } = await processImageUrl(imageUrl);
 
         // Set parameters based on entity type
         const params: any = {
-            image_url: processedImageUrl,
+            image_url: processedUrl,
             mesh_simplify: 0.9,
         };
 
@@ -180,35 +246,16 @@ export async function generate3DModel(
             });
         }
 
-        // Log time
-        const elapsedTime = performance.now() - startTime;
-        const seconds = (elapsedTime / 1000).toFixed(2);
-        console.log("%c3D conversion completed in " + seconds + " seconds", "color: #4CAF50; font-weight: bold;");
-
         // Return result
         if (result.data?.model_mesh?.url) {
-            await loadModel(
-                entity,
+            return finalizeModelGeneration(
                 result.data.model_mesh.url,
+                entity,
                 scene,
                 gizmoManager,
-                (progress) => {
-                    entity.setProcessingState({
-                        isGenerating2D: false,
-                        isGenerating3D: true,
-                        progressMessage: progress.message
-                    });
-                }
+                derivedFromId,
+                startTime
             );
-
-            const log = entity.addModelGenerationLog(result.data.model_mesh.url, derivedFromId);
-
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: false,
-                progressMessage: ''
-            });
-            return { success: true, generationLog: log };
         }
 
         throw new Error('No 3D model generated');
@@ -223,5 +270,192 @@ export async function generate3DModel(
             success: false,
             generationLog: null
         };
+    }
+}
+
+/**
+ * Generate a 3D model from an image using RunPod API
+ */
+export async function generate3DModel_Runpod(
+    imageUrl: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
+    gizmoManager: BABYLON.GizmoManager | null,
+    derivedFromId: string,
+    options: {
+        prompt?: string;
+    } = {}
+): Promise<GenerationResult> {
+    try {
+        
+        // Set entity to processing state
+        entity.setProcessingState({
+            isGenerating2D: false,
+            isGenerating3D: true,
+            progressMessage: 'Starting 3D conversion with RunPod...'
+        });
+        
+        const startTime = performance.now();
+
+        // Process image URL
+        // const { processedUrl, base64Data } = await processImageUrl(imageUrl);
+
+        // Submit job to RunPod API
+        // const payload = base64Data 
+        //     ? { imageBase64: base64Data } 
+        //     : { imageUrl: processedUrl };
+
+        
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const base64Data = await blobToBase64(blob);
+        const payload = {imageBase64:base64Data};
+
+        const submitResponse = await fetch('/api/runpod/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!submitResponse.ok) {
+            const errorData = await submitResponse.json();
+            throw new Error(`Failed to submit job: ${JSON.stringify(errorData)}`);
+        }
+
+        const jobData = await submitResponse.json();
+        const jobId = jobData.id;
+
+        if (!jobId) {
+            throw new Error('No job ID returned from submission');
+        }
+
+        // Poll for the result
+        let completed = false;
+        let resultData = null;
+        let attempts = 0;
+        const maxAttempts = 300; // 5 minutes at 1-second intervals
+        
+        while (!completed && attempts < maxAttempts) {
+            attempts++;
+            
+            // Update progress message with elapsed time
+            const elapsedTime = performance.now() - startTime;
+            const elapsedSeconds = (elapsedTime / 1000).toFixed(0);
+            entity.setProcessingState({
+                isGenerating2D: false,
+                isGenerating3D: true,
+                progressMessage: `Processing 3D model... (${elapsedSeconds}s)`
+            });
+            
+            // Check job status
+            const statusResponse = await fetch(`/api/runpod/status/${jobId}`);
+            
+            if (!statusResponse.ok) {
+                // Wait and try again
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
+            
+            const statusData = await statusResponse.json();
+            
+            if (statusData.status === 'COMPLETED') {
+                completed = true;
+                resultData = statusData.output;
+            } else if (statusData.status === 'FAILED') {
+                throw new Error(`Job failed: ${statusData.error || 'Unknown error'}`);
+            }
+            
+            // Wait before polling again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        if (!completed) {
+            throw new Error('Job timed out - exceeded maximum polling attempts');
+        }
+        
+        // Process the results
+        if (resultData && resultData.model_base64) {
+            // Convert base64 to blob URL
+            const binary = atob(resultData.model_base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const blob = new Blob([bytes.buffer], { type: 'model/gltf-binary' });
+            const modelUrl = URL.createObjectURL(blob);
+            
+            return finalizeModelGeneration(
+                modelUrl,
+                entity,
+                scene,
+                gizmoManager,
+                derivedFromId,
+                startTime
+            );
+        }
+        
+        throw new Error('No 3D model data found in response');
+    } catch (error) {
+        console.error("RunPod 3D conversion failed:", error);
+        entity.setProcessingState({
+            isGenerating2D: false,
+            isGenerating3D: false,
+            progressMessage: 'Failed to generate 3D model'
+        });
+        return {
+            success: false,
+            generationLog: null
+        };
+    }
+}
+
+/**
+ * API providers for 3D model generation
+ */
+export type ModelApiProvider = 'trellis' | 'runpod';
+
+/**
+ * Unified function to generate a 3D model using the specified API provider
+ */
+export async function generate3DModel(
+    imageUrl: string,
+    entity: EntityNode,
+    scene: BABYLON.Scene,
+    gizmoManager: BABYLON.GizmoManager | null,
+    derivedFromId: string,
+    options: {
+        prompt?: string;
+        apiProvider?: ModelApiProvider;
+    } = {}
+): Promise<GenerationResult> {
+    // Default to Trellis if no provider specified
+    const apiProvider = options.apiProvider || 'runpod';
+    
+    console.log(`Generating 3D model using ${apiProvider} API...`);
+    
+    // Call the appropriate provider's implementation
+    switch (apiProvider) {
+        case 'runpod':
+            return generate3DModel_Runpod(
+                imageUrl,
+                entity,
+                scene,
+                gizmoManager,
+                derivedFromId,
+                { prompt: options.prompt }
+            );
+            
+        case 'trellis':
+        default:
+            return generate3DModel_Trellis(
+                imageUrl,
+                entity,
+                scene,
+                gizmoManager,
+                derivedFromId,
+                { prompt: options.prompt }
+            );
     }
 }
