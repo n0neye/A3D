@@ -285,6 +285,8 @@ export class EntityNode extends BABYLON.TransformNode {
     public applyGenerationLog(log: GenerationLog): void {
         if (!log || !this.metadata.aiData) return;
 
+        console.log("applyGenerationLog", log);
+
         // Set as current state
         this.metadata.aiData.currentStateId = log.id;
 
@@ -295,6 +297,9 @@ export class EntityNode extends BABYLON.TransformNode {
         } else if (log.assetType === 'model' && log.fileUrl) {
             // For model assets, we need to set 3D display mode
             // (Assuming the model is already loaded and attached to this entity)
+            loadModel(this, log.fileUrl, this.getScene(), null, (progress) => {
+                console.log("loadModel progress", progress);
+            });
             this.setDisplayMode('3d');
         }
     }

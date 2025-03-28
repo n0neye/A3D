@@ -6,7 +6,9 @@ export async function GET(
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const jobId = params.jobId;
+    // Make sure params is awaited if it's a promise
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const jobId = resolvedParams.jobId;
     
     if (!jobId) {
       return NextResponse.json(
@@ -14,6 +16,8 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    console.log("Checking job status for:", jobId);
 
     // Get status from RunPod
     const response = await fetch(getStatusUrl(jobId), {
@@ -24,6 +28,7 @@ export async function GET(
     // Handle response
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("RunPod API error:", errorData);
       return NextResponse.json(
         { error: 'RunPod API error', details: errorData },
         { status: response.status }
@@ -31,6 +36,7 @@ export async function GET(
     }
 
     const data = await response.json();
+    console.log("Job status response:", data.status);
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error checking job status:', error);

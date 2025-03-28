@@ -102,7 +102,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
 export let defaultMaterial: TriPlanarMaterial;
 export const createDefaultMaterial = (scene: BABYLON.Scene) => {
-    const material = new TriPlanarMaterial(`defaultMaterial`, scene);
+    const material = new TriPlanarMaterial(`BasicTriPlanarMaterial`, scene);
     material.diffuseColor = new BABYLON.Color3(1, 1, 1);
     material.backFaceCulling = false;
     material.diffuseTextureX = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);

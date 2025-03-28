@@ -12,7 +12,7 @@ import RatioSelector from './RatioSelector';
 let prevEntity: EntityNode | null = null;
 
 const EntityPanel: React.FC = () => {
-  const { scene, selectedEntity, gizmoManager } = useEditorContext();
+  const { scene, selectedEntity, gizmoManager, setSelectedEntity } = useEditorContext();
   const [promptInput, setPromptInput] = useState('_');
   const [currentGenLog, setCurrentGenLog] = useState<GenerationLog | null>(null);
   const [generationHistory, setGenerationHistory] = useState<GenerationLog[]>([]);
@@ -163,10 +163,12 @@ const EntityPanel: React.FC = () => {
     // Call the 3D conversion service
     const result = await generate3DModel(currentGen.fileUrl, selectedEntity, scene, gizmoManager, currentGen.id, {
       prompt: promptInput,
+      // apiProvider: 'trellis'
     });
 
     if (result.success && result.generationLog) {
       onNewGeneration(result.generationLog);
+      setSelectedEntity(selectedEntity);
     }
   };
 

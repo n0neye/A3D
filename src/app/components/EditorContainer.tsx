@@ -31,9 +31,9 @@ export default function EditorContainer() {
     scene
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
-  
+
   const { renderSettings } = useRenderSettings();
-  
+
   // Remove local gallery state since it's now in the context
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -68,9 +68,9 @@ export default function EditorContainer() {
   const handleKeyDown = (event: KeyboardEvent) => {
     // Don't process delete if a text input or textarea is focused
     const activeElement = document.activeElement;
-    if (activeElement && 
-        (activeElement.tagName === 'INPUT' || 
-         activeElement.tagName === 'TEXTAREA')) {
+    if (activeElement &&
+      (activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA')) {
       return;
     }
 
@@ -165,45 +165,71 @@ export default function EditorContainer() {
   }, []);
 
   return (
-      <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
-        <div className="flex h-full">
-          {/* Generation menu */}
-          <AddPanel />
+    <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
+      <div className="flex h-full">
+        {/* Generation menu */}
+        <AddPanel />
 
-          {/* Main 3D canvas */}
-          <div className="flex-1 relative">
-            <canvas ref={canvasRef} className="w-full h-full" />
-            <EntityPanel />
-          </div>
-
-          {/* Render Panel - no longer needs onImageGenerated */}
-          <RenderPanel 
-            isDebugMode={isDebugMode} 
-            onOpenGallery={openGallery}
-          />
-
-          {/* Environment Panel */}
-          <EnvironmentPanel />
+        {/* Main 3D canvas */}
+        <div className="flex-1 relative">
+          <canvas ref={canvasRef} className="w-full h-full" />
+          <EntityPanel />
         </div>
 
-        {/* Top Toolbar */}
-        <div className="fixed top-2 left-2 panel-shape p-1 flex gap-2">
-          <FileMenu />
-          <GizmoModeSelector />
-        </div>
-
-        {/* Ratio Panel */}
-        <RatioPanel />
-
-        {/* Gallery Panel - now uses context for images */}
-        <GalleryPanel 
-          isOpen={isGalleryOpen}
-          onClose={() => setIsGalleryOpen(false)}
-          images={renderSettings.renderLogs}
-          currentIndex={currentGalleryIndex}
-          onSelectImage={setCurrentGalleryIndex}
+        {/* Render Panel - no longer needs onImageGenerated */}
+        <RenderPanel
+          isDebugMode={isDebugMode}
+          onOpenGallery={openGallery}
         />
-        {/* <DebugLayer /> */}
+
+        {/* Environment Panel */}
+        <EnvironmentPanel />
       </div>
+
+      {/* Top Toolbar */}
+      <div className="fixed top-2 left-2 panel-shape p-1 flex gap-2">
+        <FileMenu />
+        <GizmoModeSelector />
+      </div>
+
+      {/* Ratio Panel */}
+      <RatioPanel />
+
+      {/* Gallery Panel - now uses context for images */}
+      <GalleryPanel
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        images={renderSettings.renderLogs}
+        currentIndex={currentGalleryIndex}
+        onSelectImage={setCurrentGalleryIndex}
+      />
+      {/* <DebugLayer /> */}
+
+      <button onClick={async () => {
+        // blob:http://localhost:3030/d24b3612-d9bf-47be-bee0-a502bbc44f9b
+        // LoadMesh
+        if (!scene) return;
+
+        const blobUrl = "blob:http://localhost:3030/d24b3612-d9bf-47be-bee0-a502bbc44f9b";
+
+        const result = await BABYLON.SceneLoader.ImportMeshAsync("", "", blobUrl, scene, function (progress) {
+          console.log("progress", progress);
+        }, ".glb", ".glb")
+        const mesh = result.meshes[0];
+
+        // const mesh = await BABYLON.ImportMeshAsync(
+        //   blobUrl,
+        //   scene,
+        //   {
+        //     onProgress: (progress) => {
+        //       console.log("progress", progress);
+        //     },
+        //     name: "test.glb"
+        //   }
+        // );
+        console.log("mesh", mesh);
+      }}
+        className='fixed bottom-10 left-2 panel-shape p-1'>Test</button>
+    </div>
   );
 } 
