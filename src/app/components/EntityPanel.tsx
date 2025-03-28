@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
-import { generateBackground, generate3DModel, removeBackground } from '../util/generation-util';
+import { generateBackground, removeBackground } from '../util/generation-util';
+import { generate3DModel } from '../util/3d-generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
@@ -341,16 +342,16 @@ const EntityPanel: React.FC = () => {
                         >
                           <IconArrowRight size={16} />
                         </button>
-                        </>
+                      </>
                     )}
                     {/* <div className='flex-grow'></div> */}
                     <button className="p-1 rounded text-white hover:bg-gray-700"
                       onClick={handleDownload}
                       disabled={!currentGenLog?.fileUrl}
                     >
-                        {/* Icon */}
-                        <IconDownload size={16} />
-                      </button>
+                      {/* Icon */}
+                      <IconDownload size={16} />
+                    </button>
                   </div>
                 </div>
 

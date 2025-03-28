@@ -2,13 +2,14 @@ import * as BABYLON from '@babylonjs/core';
 import { TriPlanarMaterial } from '@babylonjs/materials/TriPlanar';
 import { v4 as uuidv4 } from 'uuid';
 import { create2DBackground, createEquirectangularSkybox, defaultMaterial, setupMeshShadows } from '../editor/editor-util';
-import { ImageRatio, ImageSize, loadModel } from '../generation-util';
+import { ImageRatio, ImageSize } from '../generation-util';
+import { loadModel } from '../3d-generation-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
 export type AssetType = 'image' | 'model';
 // Add shape type definition
-export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'floor' | 'torus' ;
+export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'floor' | 'torus';
 
 // Progress event handling
 export type ProgressListener = (state: EntityProcessingState) => void;
@@ -589,37 +590,42 @@ export const applyImageToEntity = async (
 
 // Serialize an EntityNode to a JSON-compatible object
 
+type Vector3Data = {
+    x: number;
+    y: number;
+    z: number;
+}
+const toBabylonVector3 = (v: Vector3Data): BABYLON.Vector3 => {
+    return new BABYLON.Vector3(v.x, v.y, v.z);
+}
+const fromBabylonVector3 = (v: BABYLON.Vector3): Vector3Data => {
+    return { x: v.x, y: v.y, z: v.z };
+}
+
+
 interface SerializedEntityNode {
     id: string;
     name: string;
     displayMode: '2d' | '3d';
-    position: { x: number, y: number, z: number };
-    rotation: { x: number, y: number, z: number };
-    scaling: { x: number, y: number, z: number };
+    position: Vector3Data;
+    rotation: Vector3Data;
+    scaling: Vector3Data;
     metadata: EntityMetadata;
     created: string;
 }
 
 export function serializeEntityNode(entity: EntityNode): any {
     // Create a base serialized object with core properties
+    const mesh = entity.getPrimaryMesh();
     const serialized: SerializedEntityNode = {
         id: entity.id,
         name: entity.name,
-        position: {
-            x: entity.position.x,
-            y: entity.position.y,
-            z: entity.position.z
-        },
-        rotation: {
-            x: entity.rotation.x,
-            y: entity.rotation.y,
-            z: entity.rotation.z
-        },
-        scaling: {
-            x: entity.scaling.x,
-            y: entity.scaling.y,
-            z: entity.scaling.z
-        },
+
+        // TODO: Temp hack. Entity scale must stay uniform.
+        position: fromBabylonVector3(entity.position),
+        rotation: fromBabylonVector3(entity.rotation),
+        scaling: mesh ? fromBabylonVector3(mesh.scaling) : { x: 1, y: 1, z: 1 },
+
         metadata: {
             ...entity.metadata,
         },
@@ -635,11 +641,6 @@ export function serializeEntityNode(entity: EntityNode): any {
 export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): EntityNode {
     // First create a base EntityNode directly
     const entity = new EntityNode(data.name, scene);
-
-    // Restore core transform properties
-    entity.position = new BABYLON.Vector3(data.position.x, data.position.y, data.position.z);
-    entity.rotation = new BABYLON.Vector3(data.rotation.x, data.rotation.y, data.rotation.z);
-    entity.scaling = new BABYLON.Vector3(data.scaling.x, data.scaling.y, data.scaling.z);
 
     // Completely restore metadata (convert date strings back to Date objects)
     entity.metadata = {
@@ -701,6 +702,14 @@ export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON
                 entity.setDisplayMode(entity.displayMode);
             }
         }
+    }
+
+    const mesh = entity.getPrimaryMesh();
+    entity.position = toBabylonVector3(data.position);
+    entity.rotation = toBabylonVector3(data.rotation);
+    // TODO: Temp hack. Entity scale must stay uniform. 
+    if (mesh) {
+        mesh.scaling = toBabylonVector3(data.scaling);
     }
 
     return entity;

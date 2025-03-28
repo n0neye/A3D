@@ -118,7 +118,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (selectedEntity) {
-      console.log("EditorContext: selectedEntity", selectedEntity);
+      console.log("EditorContext: selectedEntity", selectedEntity.name, selectedEntity);
       // Get the primary mesh for this entity
       const primaryMesh = selectedEntity.getPrimaryMesh();
 
@@ -127,8 +127,15 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         if (selectedEntity.getEntityType() === 'aiObject' && selectedEntity.metadata.aiData?.aiObjectType !== 'background') {
           // Apply current gizmo mode instead of enabling all gizmos
           setGizmoMode(currentGizmoMode);
-          // gizmoManager.attachToMesh(primaryMesh);
-          gizmoManager.attachToNode(selectedEntity);
+
+          console.log("EditorContext: currentGizmoMode", currentGizmoMode);
+          
+          // TODO: Temp hack. Entity scale must stay uniform.
+          if (currentGizmoMode === 'boundingBox' || currentGizmoMode==="scale") {
+            gizmoManager.attachToMesh(primaryMesh);
+          } else {
+            gizmoManager.attachToNode(selectedEntity);
+          }
           // Store reference to entity on gizmo
           gizmoManager.metadata = {
             ...gizmoManager.metadata || {},

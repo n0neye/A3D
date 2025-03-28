@@ -203,6 +203,7 @@ export default function EditorContainer() {
           currentIndex={currentGalleryIndex}
           onSelectImage={setCurrentGalleryIndex}
         />
+        {/* <DebugLayer /> */}
       </div>
   );
 } 
