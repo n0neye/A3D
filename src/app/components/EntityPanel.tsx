@@ -295,131 +295,131 @@ const EntityPanel: React.FC = () => {
 
     switch (selectedEntity?.getEntityType()) {
       case 'aiObject':
-        return (
-          <>
-            <div className="flex flex-col space-y-2">
-
-              {/* Prompt */}
-              <div className="space-y-2 flex flex-row space-x-2">
-                <div className="flex flex-col m-0">
-                  <textarea
-                    ref={inputElementRef}
-                    placeholder="Enter prompt..."
-                    className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
-                    value={promptInput}
-                    onKeyDown={handleInputFieldKeyDown}
-                    onChange={(e) => setPromptInput(e.target.value)}
-                    disabled={isGenerating}
-                    rows={3}
-                  />
-
-                  {/* Bottom row */}
-                  <div className="flex justify-start space-x-1 h-6 pr-2">
-
-                    {isObject && !isBackground && <RatioSelector
-                      value={currentRatio}
-                      onChange={handleRatioChange}
-                      disabled={isGenerating}
-                    />}
-
-                    {/* History navigation buttons */}
-                    {generationHistory.length > 1 && (
-                      <>
-                        <button
-                          className={`p-1 rounded mr-0 ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
-                          onClick={goToPreviousGeneration}
-                          disabled={!hasPreviousGeneration || isGenerating}
-                          title="Previous generation (Shift + ←)"
+        switch (selectedEntity.metadata.aiData?.aiObjectType) {
+          case 'generativeObject':
+            return (
+              <>
+                <div className="flex flex-col space-y-2">
+    
+                  {/* Prompt */}
+                  <div className="space-y-2 flex flex-row space-x-2">
+                    <div className="flex flex-col m-0">
+                      <textarea
+                        ref={inputElementRef}
+                        placeholder="Enter prompt..."
+                        className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
+                        value={promptInput}
+                        onKeyDown={handleInputFieldKeyDown}
+                        onChange={(e) => setPromptInput(e.target.value)}
+                        disabled={isGenerating}
+                        rows={3}
+                      />
+    
+                      {/* Bottom row */}
+                      <div className="flex justify-start space-x-1 h-6 pr-2">
+    
+                        {isObject && !isBackground && <RatioSelector
+                          value={currentRatio}
+                          onChange={handleRatioChange}
+                          disabled={isGenerating}
+                        />}
+    
+                        {/* History navigation buttons */}
+                        {generationHistory.length > 1 && (
+                          <>
+                            <button
+                              className={`p-1 rounded mr-0 ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                              onClick={goToPreviousGeneration}
+                              disabled={!hasPreviousGeneration || isGenerating}
+                              title="Previous generation (Shift + ←)"
+                            >
+                              <IconArrowLeft size={16} />
+                            </button>
+                            <span className="text-xs text-gray-400 self-center">
+                              {currentHistoryIndex + 1}/{generationHistory.length}
+                            </span>
+                            <button
+                              className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                              onClick={goToNextGeneration}
+                              disabled={!hasNextGeneration || isGenerating}
+                              title="Next generation (Shift + →)"
+                            >
+                              <IconArrowRight size={16} />
+                            </button>
+                          </>
+                        )}
+                        {/* <div className='flex-grow'></div> */}
+                        <button className="p-1 rounded text-white hover:bg-gray-700"
+                          onClick={handleDownload}
+                          disabled={!currentGenLog?.fileUrl}
                         >
-                          <IconArrowLeft size={16} />
+                          {/* Icon */}
+                          <IconDownload size={16} />
                         </button>
-                        <span className="text-xs text-gray-400 self-center">
-                          {currentHistoryIndex + 1}/{generationHistory.length}
-                        </span>
+                      </div>
+                    </div>
+    
+                    <div className="flex flex-row space-x-1">
+                      <button
+                        className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
+                        onClick={handleGenerate2D}
+                        disabled={isGenerating || !promptInput.trim()}
+                      >
+                        {isGenerating2D && !progressMessage.includes('background') && renderSpinner('Generating')}
+                        {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={12} className='inline' /></span></>}
+                      </button>
+    
+                      {isObject && <button
+                        className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : currentGenLog?.assetType === 'image' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                        onClick={handleGenerate3D}
+                        disabled={isGenerating || !currentGenLog || currentGenLog.assetType !== 'image'}
+                      >
+                        {isGenerating3D && renderSpinner('')}
+                        {!isGenerating3D && <>Convert to 3D<span className="mx-1 text-xxs opacity-50 block">Shift+<IconCornerDownLeft size={12} className='inline' /></span></>}
+                        {isGenerating3D &&
+                          <span>{progressMessage}</span>}
+                      </button>}
+    
+                      {/* Remove Background button. Temporarily disabled */}
+                      {/* {canRemoveBackground && (
                         <button
-                          className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
-                          onClick={goToNextGeneration}
-                          disabled={!hasNextGeneration || isGenerating}
-                          title="Next generation (Shift + →)"
+                          className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating && progressMessage.includes('background') ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'
+                            } rounded text-white`}
+                          onClick={handleRemoveBackground}
+                          disabled={isGenerating}
                         >
-                          <IconArrowRight size={16} />
+                          {isGenerating2D && progressMessage.includes('background') && renderSpinner('Processing')}
+                          {!(isGenerating2D && progressMessage.includes('background')) && (
+                            <>
+                              <IconScissors size={14} className="mx-auto mb-1" />
+                              Remove BG
+                            </>
+                          )}
                         </button>
-                      </>
-                    )}
-                    {/* <div className='flex-grow'></div> */}
-                    <button className="p-1 rounded text-white hover:bg-gray-700"
-                      onClick={handleDownload}
-                      disabled={!currentGenLog?.fileUrl}
-                    >
-                      {/* Icon */}
-                      <IconDownload size={16} />
-                    </button>
+                      )} */}
+                    </div>
+    
                   </div>
                 </div>
-
-                <div className="flex flex-row space-x-1">
-                  <button
-                    className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
-                    onClick={handleGenerate2D}
-                    disabled={isGenerating || !promptInput.trim()}
-                  >
-                    {isGenerating2D && !progressMessage.includes('background') && renderSpinner('Generating')}
-                    {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={12} className='inline' /></span></>}
-                  </button>
-
-                  {isObject && <button
-                    className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : currentGenLog?.assetType === 'image' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
-                    onClick={handleGenerate3D}
-                    disabled={isGenerating || !currentGenLog || currentGenLog.assetType !== 'image'}
-                  >
-                    {isGenerating3D && renderSpinner('')}
-                    {!isGenerating3D && <>Convert to 3D<span className="mx-1 text-xxs opacity-50 block">Shift+<IconCornerDownLeft size={12} className='inline' /></span></>}
-                    {isGenerating3D &&
-                      <span>{progressMessage}</span>}
-                  </button>}
-
-                  {/* Remove Background button */}
-                  {canRemoveBackground && (
-                    <button
-                      className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating && progressMessage.includes('background') ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'
-                        } rounded text-white`}
-                      onClick={handleRemoveBackground}
-                      disabled={isGenerating}
-                    >
-                      {isGenerating2D && progressMessage.includes('background') && renderSpinner('Processing')}
-                      {!(isGenerating2D && progressMessage.includes('background')) && (
-                        <>
-                          <IconScissors size={14} className="mx-auto mb-1" />
-                          Remove BG
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-              </div>
-            </div>
-          </>
-        );
+              </>
+            );
+          default:
+            return (
+              <>
+              </>
+            );
+        }
 
       default:
         return (
           <>
-            <h3 className="text-sm font-medium mb-1">Object Settings</h3>
-            <div className="grid grid-cols-2 gap-1">
-              <button className="py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded text-white">
-                Duplicate
-              </button>
-              <button className="py-1 text-xs bg-red-600 hover:bg-red-700 rounded text-white">
-                Delete
-              </button>
-            </div>
           </>
         );
     }
   };
 
   if (!selectedEntity) return null;
+  if (selectedEntity.metadata.aiData?.aiObjectType !== 'generativeObject') return null;
 
   return (
     <div
