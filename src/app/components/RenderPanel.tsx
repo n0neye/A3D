@@ -96,7 +96,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       setImageUrl(renderLogs[renderLogs.length - 1].imageUrl);
     }
   }, [renderLogs])
-  
+
 
   // Style panel handlers
   const handleSelectStyle = (lora: LoraInfo) => {
@@ -514,7 +514,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
           </div>
 
           {/* Debug Tools */}
-          {(
+          {(isDebugMode &&
             <div>
               <Label className="text-sm mb-2 block">Debug Tools</Label>
               <div className="grid grid-cols-2 gap-2">

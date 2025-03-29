@@ -89,12 +89,11 @@ export default function EditorContainer() {
 
       // Get all child meshes to properly dispose them
       const meshesToDispose = currentEntity.getChildMeshes();
-      // Dispose each mesh properly
+      // Dispose Material
       meshesToDispose.forEach(mesh => {
-        if (currentEntity.metadata.aiData?.aiObjectType !== "shape" && mesh.material) {
-          mesh.material.dispose(true, true);
-        }
-        mesh.dispose(false, true);
+        // if (currentEntity.metadata.aiData?.aiObjectType !== "shape" && mesh.material) {
+        //   mesh.material.dispose(true, true);
+        // }
       });
       // Dispose the entity itself
       currentEntity.dispose();

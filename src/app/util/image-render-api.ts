@@ -32,30 +32,30 @@ export const availableAPIs: API_Info[] = [
   //   name: 'Flux Dev',
   //   description: 'Experimental Flux model with creative results'
   // },
+  // {
+  //   id: "fal-ai/flux-control-lora-depth/image-to-image",
+  //   name: 'LoRA Depth(I2I)',
+  //   description: 'With style transformations',
+  //   useDepthImage: true,
+  // },
+  {
+    id: "fal-ai/flux-control-lora-depth",
+    name: 'Flux Dev Depth',
+    description: 'With style transformations',
+    useDepthImage: true,
+  },
   {
     id: 'flux-lora-depth',
-    name: 'LoRA Dev Depth',
+    name: 'Flux Dev',
     description: 'With style transformations',
     useDepthImage: false,
   },
-  {
-    id: 'flux-pro-depth',
-    name: 'Pro Depth',
-      description: 'Heighest quality',
-      useDepthImage: false,
-  },
-  {
-    id: "fal-ai/flux-control-lora-depth/image-to-image",
-    name: 'LoRA Depth(I2I)',
-    description: 'With style transformations',
-    useDepthImage: true,
-  },
-  {
-    id: "fal-ai/flux-control-lora-depth",
-    name: 'LoRA Depth(T2I)',
-    description: 'With style transformations',
-    useDepthImage: true,
-  },
+  // {
+  //   id: 'flux-pro-depth',
+  //   name: 'Pro Depth',
+  //     description: 'Heighest quality',
+  //     useDepthImage: false,
+  // },
   // {
   //   id: 'replicate-lcm',
   //   name: 'Replicate LCM',
