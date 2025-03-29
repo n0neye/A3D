@@ -12,16 +12,18 @@ import { ImageRatio } from '../util/generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import { 
   setRatioOverlayRatio, 
-  setRatioOverlayPadding, 
+  setRatioOverlayPadding,
+  setRatioOverlayRightPadding,
   setRatioOverlayVisibility, 
   getEnvironmentObjects 
 } from '../util/editor/editor-util';
 import { TakeFramedScreenshot } from '../util/render-util';
 
-const RatioPanel: React.FC = () => {
+const FramePanel: React.FC = () => {
   const { scene, engine } = useEditorContext();
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [padding, setPadding] = useState(10); // Default padding
+  const [rightExtraPadding, setRightExtraPadding] = useState(0); // Default extra right padding
   const [ratio, setRatio] = useState<ImageRatio>('16:9'); // Default ratio
   
   // Update the actual overlay when state changes
@@ -30,8 +32,9 @@ const RatioPanel: React.FC = () => {
     
     setRatioOverlayVisibility(overlayVisible);
     setRatioOverlayPadding(padding, scene);
+    setRatioOverlayRightPadding(rightExtraPadding, scene);
     setRatioOverlayRatio(ratio, scene);
-  }, [overlayVisible, padding, ratio, scene]);
+  }, [overlayVisible, padding, rightExtraPadding, ratio, scene]);
 
   // Initialize state from current environment overlay settings
   useEffect(() => {
@@ -41,6 +44,7 @@ const RatioPanel: React.FC = () => {
     if (env.ratioOverlay) {
       setOverlayVisible(env.ratioOverlay.frame.isVisible);
       setPadding(env.ratioOverlay.padding);
+      setRightExtraPadding(env.ratioOverlay.rightExtraPadding || 0);
       setRatio(env.ratioOverlay.ratio);
     }
   }, [scene]);
@@ -51,6 +55,10 @@ const RatioPanel: React.FC = () => {
 
   const handlePaddingChange = (newValues: number[]) => {
     setPadding(newValues[0]);
+  };
+
+  const handleRightExtraPaddingChange = (newValues: number[]) => {
+    setRightExtraPadding(newValues[0]);
   };
 
   const handleVisibilityChange = (checked: boolean) => {
@@ -102,9 +110,25 @@ const RatioPanel: React.FC = () => {
             onValueChange={handlePaddingChange}
           />
         </div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="right-extra-padding-slider" className="text-sm">Right Extra Padding</Label>
+            <span className="text-xs text-gray-400">{rightExtraPadding}%</span>
+          </div>
+          <Slider 
+            id="right-extra-padding-slider"
+            disabled={!overlayVisible}
+            value={[rightExtraPadding]}
+            min={0}
+            max={30}
+            step={1}
+            onValueChange={handleRightExtraPaddingChange}
+          />
+        </div>
       </div>
     </div>
   );
 };
 
-export default RatioPanel; 
+export default FramePanel; 

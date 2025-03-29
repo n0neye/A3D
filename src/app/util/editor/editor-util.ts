@@ -20,6 +20,7 @@ export interface EnvironmentObjects {
         container: GUI.AdvancedDynamicTexture;
         frame: GUI.Rectangle;
         padding: number;
+        rightExtraPadding: number;
         ratio: ImageRatio;
         borders?: {
             top: GUI.Rectangle;
@@ -522,6 +523,7 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
         container: advancedTexture,
         frame: container,
         padding: DEFAULT_FRAME_PADDING,
+        rightExtraPadding: 0,
         ratio: DEFAULT_RATIO,
         borders: {
             top: topBorder,
@@ -549,7 +551,7 @@ export const createRatioOverlay = (scene: BABYLON.Scene): void => {
 export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
     if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return;
 
-    const { frame, padding, borders, ratio } = environmentObjects.ratioOverlay;
+    const { frame, padding, rightExtraPadding, borders, ratio } = environmentObjects.ratioOverlay;
 
     // Get current engine dimensions
     const engine = scene.getEngine();
@@ -558,6 +560,7 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
 
     // Calculate padding in pixels
     const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
+    const rightExtraPaddingPixels = (rightExtraPadding / 100) * Math.min(screenWidth, screenHeight);
 
     // Use the ratio from the ratio map instead of hardcoded value
     const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
@@ -571,12 +574,16 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
         frameWidth = frameHeight * targetRatio;
     } else {
         // Screen is taller than the target ratio
-        frameWidth = screenWidth - (paddingPixels * 2);
+        frameWidth = screenWidth - (paddingPixels * 2) - rightExtraPaddingPixels;
         frameHeight = frameWidth / targetRatio;
     }
 
-    // Calculate frame position (centered)
-    const frameLeft = (screenWidth - frameWidth) / 2;
+    // Calculate frame position (centered, but adjusted for extra right padding)
+    const horizontalSpace = screenWidth - frameWidth;
+    const leftPadding = (horizontalSpace - rightExtraPaddingPixels) / 2;
+    const rightPadding = leftPadding + rightExtraPaddingPixels;
+    
+    const frameLeft = leftPadding;
     const frameTop = (screenHeight - frameHeight) / 2;
 
     // Set container size to match screen
@@ -608,7 +615,7 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
     borders.left.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
 
     // Right border - covers right area between top and bottom borders
-    borders.right.width = `${frameLeft}px`;
+    borders.right.width = `${rightPadding}px`;
     borders.right.height = `${frameHeight}px`;
     borders.right.leftInPixels = frameLeft + frameWidth;
     borders.right.topInPixels = frameTop;
@@ -671,13 +678,14 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
 } | null => {
     if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return null;
 
-    const { padding, ratio } = environmentObjects.ratioOverlay;
+    const { padding, rightExtraPadding, ratio } = environmentObjects.ratioOverlay;
     const engine = scene.getEngine();
     const screenWidth = engine.getRenderWidth();
     const screenHeight = engine.getRenderHeight();
 
     // Calculate padding in pixels
     const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
+    const rightExtraPaddingPixels = (rightExtraPadding / 100) * Math.min(screenWidth, screenHeight);
 
     // Use the ratio from the ratio map
     const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
@@ -691,17 +699,17 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
         frameWidth = frameHeight * targetRatio;
     } else {
         // Screen is taller than the target ratio
-        frameWidth = screenWidth - (paddingPixels * 2);
+        frameWidth = screenWidth - (paddingPixels * 2) - rightExtraPaddingPixels;
         frameHeight = frameWidth / targetRatio;
     }
 
-    // Calculate position (centered on screen)
-    const left = (screenWidth - frameWidth) / 2;
-    const top = (screenHeight - frameHeight) / 2;
-
+    // Calculate position (centered on screen, but adjusted for extra right padding)
+    const horizontalSpace = screenWidth - frameWidth;
+    const leftPadding = (horizontalSpace - rightExtraPaddingPixels) / 2;
+    
     return {
-        left,
-        top,
+        left: leftPadding,
+        top: (screenHeight - frameHeight) / 2,
         width: frameWidth,
         height: frameHeight
     };
@@ -756,4 +764,22 @@ export const setupMeshShadows = (mesh: BABYLON.AbstractMesh): void => {
 
     // Add mesh to all shadow generators (to cast shadows)
     addMeshToShadowCasters(mesh);
+};
+
+/**
+ * Set the extra right padding for the ratio overlay frame
+ * @param padding Extra right padding percentage (0-50)
+ * @param scene The Babylon.js scene
+ */
+export const setRatioOverlayRightPadding = (padding: number, scene: BABYLON.Scene): void => {
+    if (!environmentObjects.ratioOverlay) return;
+
+    // Clamp padding to reasonable range
+    const clampedPadding = Math.max(0, Math.min(50, padding));
+
+    // Update padding
+    environmentObjects.ratioOverlay.rightExtraPadding = clampedPadding;
+
+    // Update overlay
+    updateRatioOverlay(scene);
 };

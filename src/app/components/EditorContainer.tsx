@@ -13,7 +13,7 @@ import { initScene } from '../util/editor/editor-util';
 import EnvironmentPanel from './EnvironmentPanel';
 import GizmoModeSelector from './GizmoModeSelector';
 import FileMenu from './FileMenu';
-import RatioPanel from './RatioPanel';
+import FramePanel from './FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
 
@@ -211,8 +211,8 @@ export default function EditorContainer() {
         </div>
       </div>
 
-      {/* Ratio Panel */}
-      {/* <RatioPanel /> */}
+      {/* FramePanel  */}
+      {/* <FramePanel /> */}
 
       {/* Gallery Panel - now uses context for images */}
       <GalleryPanel
