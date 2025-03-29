@@ -25,22 +25,28 @@ export function initializeRealtimeConnection(): void {
 }
 
 export async function generateRealtimeImage(
-    prompt: string,
+    promptInput: string,
     entity: EntityNode,
     scene: BABYLON.Scene,
     options: {
         ratio?: ImageRatio,
         imageSize?: ImageSize;
-        negativePrompt?: string;
     } = {}
 ): Promise<GenerationResult> {
     const startTime = performance.now();
+
+    // Split prompt input by "--no"
+    const promptParts = promptInput.split("--no");
+    const positivePrompt = promptParts[0];
+    let negativePrompt = promptParts[1] ? promptParts[1]+", " : "";
+    negativePrompt += 'cropped, out of frame, blurry, blur';
+    console.log("GenerateRealtimeImage: promptParts", positivePrompt, "negativePrompt: ", negativePrompt);
+
     // Use defaults if not provided
     const ratio = options.ratio || '1:1';
     const imageSize = options.imageSize || 'medium';
     const entityType = entity.getEntityType();
     const aiObjectType = entity.getAIData()?.aiObjectType || 'generativeObject';
-    const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
 
     // Update entity state
     entity.setProcessingState({
@@ -50,8 +56,8 @@ export async function generateRealtimeImage(
     });
 
     // update the entity name with first word of prompt
-    entity.name = prompt.split(' ')[0] + "_" + entity.name;
-    entity.id = prompt.split(' ')[0] + "_" + entity.id;
+    entity.name = positivePrompt.split(' ')[0] + "_" + entity.name;
+    entity.id = positivePrompt.split(' ')[0] + "_" + entity.id;
 
     // Determine dimensions
     const ratioMultipliers = RATIO_MAP[ratio];
@@ -70,16 +76,16 @@ export async function generateRealtimeImage(
     console.log(`Generation with ratio ${ratio} and size ${imageSize} will be ${width}x${height}`);
 
     // Enhance prompt based on entity type
-    let enhancedPrompt = prompt;
+    let enhancedPrompt = positivePrompt;
     if (aiObjectType === 'generativeObject') {
-        enhancedPrompt = `${prompt}, at the center of the frame, full-body, white 3d model, no texture, uncropped, solid black background`;
+        enhancedPrompt = `${positivePrompt}, at the center of the frame, full-body, white 3d model, no texture, uncropped, solid black background`;
     } else if (aiObjectType === 'background') {
-        enhancedPrompt = `expansive panoramic view of ${prompt}`;
+        enhancedPrompt = `expansive panoramic view of ${positivePrompt}`;
     }
 
     // If the prompt is "_", use the test data
     let result: Generation2DRealtimResult;
-    if (prompt === "_") {
+    if (positivePrompt === "_") {
         result = getImageSimulationData();
     } else {
         result = await generateRealtimeImageRunware(enhancedPrompt, {
@@ -100,7 +106,7 @@ export async function generateRealtimeImage(
         console.log(`%cImage generation took ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
         // Add to history
-        const log = entity.addImageGenerationLog(prompt, result.imageUrl, {
+        const log = entity.addImageGenerationLog(promptInput, result.imageUrl, {
             ratio: ratio,
             imageSize: imageSize
         });

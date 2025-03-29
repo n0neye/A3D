@@ -124,7 +124,7 @@ export default function EditorContainer() {
     // Set up gizmo manager
     const gizmoManager = new BABYLON.GizmoManager(scene, 1.5);
     gizmoManager.usePointerToAttachGizmos = false;
-    
+
     gizmoManager.scaleGizmoEnabled = true;
     // Scale gizmo sensitivity
     if (gizmoManager.gizmos.scaleGizmo) {
@@ -183,9 +183,11 @@ export default function EditorContainer() {
       </div>
 
       {/* Top Toolbar */}
-      <div className="fixed top-2 left-2 panel-shape p-1 flex gap-2">
-        <FileMenu />
-        <GizmoModeSelector />
+      <div className='fixed top-2  w-full flex justify-center items-center'>
+        <div className=" panel-shape p-1 flex gap-2">
+          <FileMenu />
+          <GizmoModeSelector />
+        </div>
       </div>
 
       {/* Ratio Panel */}
