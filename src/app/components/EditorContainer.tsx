@@ -33,17 +33,38 @@ export default function EditorContainer() {
   const [showInspector, setShowInspector] = React.useState(false);
 
   const { ProjectSettings } = useProjectSettings();
-
-  // Remove local gallery state since it's now in the context
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
+  const prevRenderLogsLength = useRef(0);
+
+  // Track when new images are added to renderLogs
+  useEffect(() => {
+    if (ProjectSettings.renderLogs.length > prevRenderLogsLength.current && shouldOpenGallery) {
+      // A new image was added and gallery should open
+      setCurrentGalleryIndex(ProjectSettings.renderLogs.length - 1);
+      setIsGalleryOpen(true);
+      setShouldOpenGallery(false);
+    }
+    
+    // Update previous length
+    prevRenderLogsLength.current = ProjectSettings.renderLogs.length;
+  }, [ProjectSettings.renderLogs.length]);
 
   // Modified function to open the gallery
-  const openGallery = () => {
-    console.log("openGallery", ProjectSettings.renderLogs.length);
+  const openGallery = (shouldAutoOpen?: boolean) => {
+    console.log("openGallery called", ProjectSettings.renderLogs.length);
+    
     if (ProjectSettings.renderLogs.length === 0) return;
-    setCurrentGalleryIndex(ProjectSettings.renderLogs.length - 1); // Show the most recent image
-    setIsGalleryOpen(true);
+    
+    // If we're opening immediately
+    if (shouldAutoOpen === undefined) {
+      setCurrentGalleryIndex(ProjectSettings.renderLogs.length - 1);
+      setIsGalleryOpen(true);
+    } else {
+      // Otherwise, set flag to open when new image is added
+      setShouldOpenGallery(shouldAutoOpen);
+    }
   };
 
   const onPointerObservable = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {

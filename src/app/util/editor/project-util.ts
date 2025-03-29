@@ -16,6 +16,7 @@ export interface SerializedProjectSettings {
     useRandomSeed: boolean;
     selectedLoras: LoraConfig[];
     renderLogs: RenderLog[];
+    openOnRendered: boolean;
 }
 
 export interface RenderLog {

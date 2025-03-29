@@ -13,7 +13,8 @@ const defaultSettings: SerializedProjectSettings = {
   seed: Math.floor(Math.random() * 2147483647),
   useRandomSeed: false,
   selectedLoras: [],
-  renderLogs: []
+  renderLogs: [],
+  openOnRendered: true
 };
 
 // Define the context interface
@@ -47,7 +48,7 @@ export const ProjectSettingsProvider: React.FC<{
   };
 
   const addRenderLog = (image: RenderLog) => {
-    console.log("ProjectSettingsContext: addRenderLog", image);
+    console.log("ProjectSettingsContext: addRenderLog",ProjectSettings.renderLogs.length, image);
     setProjectSettings(prev => ({
       ...prev,
       renderLogs: [...prev.renderLogs, image]
