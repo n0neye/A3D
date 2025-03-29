@@ -7,7 +7,8 @@ import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
 import { defaultMaterial } from "./editor/editor-util";
-
+import { v4 as uuidv4 } from 'uuid';
+import { get3DModelPersistentUrl, upload3DModelToGCP } from "./storage-util";
 
 /**
  * Load a 3D model and replace the current mesh
@@ -16,7 +17,6 @@ export async function loadModel(
     entity: EntityNode,
     modelUrl: string,
     scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
     onProgress?: ProgressCallback
 ): Promise<boolean> {
     try {
@@ -149,6 +149,7 @@ async function processImageUrl(imageUrl: string): Promise<{ processedUrl: string
 // Handle the final model loading process that's common to both implementations
 async function finalizeModelGeneration(
     modelUrl: string,
+    isPersistentUrl: boolean,
     entity: EntityNode,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
@@ -171,7 +172,6 @@ async function finalizeModelGeneration(
         entity,
         modelUrl,
         scene,
-        gizmoManager,
         (progress) => {
             entity.setProcessingState({
                 isGenerating2D: false,
@@ -181,8 +181,16 @@ async function finalizeModelGeneration(
         }
     );
 
+    let persistentUrl = modelUrl;
+    // if not persistent url, create a uuid and upload to GCP Storage
+    if (!isPersistentUrl) {
+        const uuid = uuidv4();
+        persistentUrl = get3DModelPersistentUrl(uuid);
+        upload3DModelToGCP(modelUrl, uuid);
+    }
+
     // Add generation log
-    const log = entity.addModelGenerationLog(modelUrl, derivedFromId);
+    const log = entity.addModelGenerationLog(persistentUrl, derivedFromId);
 
     entity.setProcessingState({
         isGenerating2D: false,
@@ -255,6 +263,7 @@ export async function generate3DModel_Trellis(
         if (result.data?.model_mesh?.url) {
             return finalizeModelGeneration(
                 result.data.model_mesh.url,
+                true,
                 entity,
                 scene,
                 gizmoManager,
@@ -413,7 +422,7 @@ export async function generate3DModel_Runpod(
 
             // Instead of just creating a blob URL, let's save the model to a File object
             // with a .glb extension to help Babylon.js recognize the format
-            const fileName = `model_${Date.now()}.glb`;
+            const fileName = `model_${derivedFromId}.glb`;
             const file = new File([blob], fileName, { type: 'model/gltf-binary' });
             const modelUrl = URL.createObjectURL(file);
 
@@ -422,6 +431,7 @@ export async function generate3DModel_Runpod(
             // When we load the model later, we need to modify loadModel to handle blob URLs better
             return finalizeModelGeneration(
                 modelUrl,
+                false,
                 entity,
                 scene,
                 gizmoManager,

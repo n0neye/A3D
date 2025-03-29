@@ -297,7 +297,7 @@ export class EntityNode extends BABYLON.TransformNode {
         } else if (log.assetType === 'model' && log.fileUrl) {
             // For model assets, we need to set 3D display mode
             // (Assuming the model is already loaded and attached to this entity)
-            loadModel(this, log.fileUrl, this.getScene(), null, (progress) => {
+            loadModel(this, log.fileUrl, this.getScene(),  (progress) => {
                 console.log("loadModel progress", progress);
             });
             this.setDisplayMode('3d');
@@ -696,7 +696,7 @@ export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON
             if (has3DModel && entity.displayMode === '3d') {
                 // Schedule the model loading (to avoid blocking)
                 setTimeout(() => {
-                    loadModel(entity, currentGeneration.fileUrl!, scene, null);
+                    loadModel(entity, currentGeneration.fileUrl!, scene);
                     entity.setDisplayMode('3d');
                 }, 0);
             } else {
