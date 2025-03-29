@@ -644,8 +644,10 @@ export function serializeEntityNode(entity: EntityNode): any {
 
 // Redesigned deserialization function for EntityNode
 export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): EntityNode {
+    
+    console.log('deserializeEntityNode', data.name);
     // First create a base EntityNode directly
-    const entity = new EntityNode(data.name, scene);
+    const entity = new EntityNode(data.name, scene, data.metadata.entityType);
 
     // Completely restore metadata (convert date strings back to Date objects)
     entity.metadata = {
@@ -710,6 +712,7 @@ export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON
     }
 
     const mesh = entity.getPrimaryMesh();
+    console.log('deserializeEntityNode', entity.name, mesh?.name);
     entity.position = toBabylonVector3(data.position);
     entity.rotation = toBabylonVector3(data.rotation);
     // TODO: Temp hack. Entity scale must stay uniform. 

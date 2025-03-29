@@ -49,6 +49,10 @@ export async function generateRealtimeImage(
         progressMessage: 'Starting generation...'
     });
 
+    // update the entity name with first word of prompt
+    entity.name = prompt.split(' ')[0] + "_" + entity.name;
+    entity.id = prompt.split(' ')[0] + "_" + entity.id;
+
     // Determine dimensions
     const ratioMultipliers = RATIO_MAP[ratio];
     const baseSize = IMAGE_SIZE_MAP[imageSize];

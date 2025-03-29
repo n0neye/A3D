@@ -36,7 +36,7 @@ export async function loadModel(
                     }
                 },
                 pluginExtension: ".glb",
-                name:  "_.glb"
+                name: "_.glb"
             }
         );
 
@@ -87,13 +87,20 @@ export async function loadModel(
                     // if PBRMaterial, set emissive 
                     if (mesh.material instanceof BABYLON.PBRMaterial) {
                         const newPbrMaterial = mesh.material as BABYLON.PBRMaterial;
-                        newPbrMaterial.emissiveColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+                        newPbrMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
                         newPbrMaterial.emissiveTexture = newPbrMaterial.albedoTexture;
                         mesh.material = newPbrMaterial;
                     }
+                } else {
+                    // mesh.material = defaultMaterial;
+                    // console.log("Applied default material", mesh.material.name, mesh.material);
+                    const newMaterial = new BABYLON.StandardMaterial("defaultMaterial", scene);
+                    newMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
+                    newMaterial.diffuseTexture = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
+                    newMaterial.bumpTexture = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
+                    mesh.material = newMaterial;
+                    console.log("Applied default material", mesh.material.name, mesh.material);
                 }
-                mesh.material = defaultMaterial;
-                console.log("mesh.material", mesh.material.name, mesh.material);
             });
 
             // Switch to 3D display mode

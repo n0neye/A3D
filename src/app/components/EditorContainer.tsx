@@ -203,33 +203,8 @@ export default function EditorContainer() {
         currentIndex={currentGalleryIndex}
         onSelectImage={setCurrentGalleryIndex}
       />
-      {/* <DebugLayer /> */}
+      <DebugLayer />
 
-      <button onClick={async () => {
-        // blob:http://localhost:3030/d24b3612-d9bf-47be-bee0-a502bbc44f9b
-        // LoadMesh
-        if (!scene) return;
-
-        const blobUrl = "blob:http://localhost:3030/d24b3612-d9bf-47be-bee0-a502bbc44f9b";
-
-        const result = await BABYLON.SceneLoader.ImportMeshAsync("", "", blobUrl, scene, function (progress) {
-          console.log("progress", progress);
-        }, ".glb", ".glb")
-        const mesh = result.meshes[0];
-
-        // const mesh = await BABYLON.ImportMeshAsync(
-        //   blobUrl,
-        //   scene,
-        //   {
-        //     onProgress: (progress) => {
-        //       console.log("progress", progress);
-        //     },
-        //     name: "test.glb"
-        //   }
-        // );
-        console.log("mesh", mesh);
-      }}
-        className='fixed bottom-10 left-2 panel-shape p-1'>Test</button>
     </div>
   );
 } 
