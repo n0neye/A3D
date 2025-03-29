@@ -124,8 +124,9 @@ const EntityPanel: React.FC = () => {
   const handleInputFieldKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Shift + Enter
     if (e.shiftKey && e.key === "Enter" && !e.ctrlKey) {
-      e.preventDefault();
+      console.log("handleInputFieldKeyDown: shift + enter");
       handleGenerate3D();
+      e.preventDefault();
       return;
     }
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {

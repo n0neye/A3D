@@ -336,7 +336,7 @@ export async function generate3DModel_Runpod(
         entity.setProcessingState({
             isGenerating2D: false,
             isGenerating3D: true,
-            progressMessage: 'Submitting to RunPod...'
+            progressMessage: 'Submitting...'
         });
 
         // Submit job

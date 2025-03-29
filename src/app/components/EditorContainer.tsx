@@ -123,15 +123,12 @@ export default function EditorContainer() {
 
     // Set up gizmo manager
     const gizmoManager = new BABYLON.GizmoManager(scene, 1.5);
-    gizmoManager.positionGizmoEnabled = false;
-    gizmoManager.rotationGizmoEnabled = false;
-    gizmoManager.scaleGizmoEnabled = false;
-    gizmoManager.boundingBoxGizmoEnabled = false;
     gizmoManager.usePointerToAttachGizmos = false;
-
+    
+    gizmoManager.scaleGizmoEnabled = true;
     // Scale gizmo sensitivity
     if (gizmoManager.gizmos.scaleGizmo) {
-      gizmoManager.gizmos.scaleGizmo.sensitivity = 2.0;
+      gizmoManager.gizmos.scaleGizmo.sensitivity = 5.0;
     }
 
     setGizmoManager(gizmoManager);
