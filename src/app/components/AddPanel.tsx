@@ -121,7 +121,7 @@ const AddPanel: React.FC = () => {
 
           {/* Shapes dropdown menu */}
           {showShapesMenu && (
-            <div className="absolute left-14 bottom-0 pl-2">
+            <div className="absolute left-14 top-0 pl-2">
               <Card className="p-2 w-44 grid grid-cols-2 gap-2 panel-shape">
                 {primitiveShapes.map((shape) => (
                   <Button

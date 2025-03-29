@@ -4,6 +4,7 @@ import { createEntity, EntityNode } from "../extensions/entityNode";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation-util';
 import { TriPlanarMaterial } from "@babylonjs/materials/TriPlanar/triPlanarMaterial";
+import { EquiRectangularCubeTexture } from "@babylonjs/core";
 
 // Store environment objects
 export interface EnvironmentObjects {
@@ -72,10 +73,10 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
 
     // Create a background entity
-    createEntity(scene, "aiObject", {
-        aiObjectType: "background",
-        imageUrl: "./demoAssets/skybox/qwantani_puresky_4k.jpg"
-    });
+    // createEntity(scene, "aiObject", {
+    //     aiObjectType: "background",
+    //     imageUrl: "./demoAssets/skybox/qwantani_puresky_4k.jpg"
+    // });
 
     // Create world grid
     createWorldGrid(scene, 20, 10);
@@ -98,9 +99,22 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
         shapeType: "floor",
         position: new BABYLON.Vector3(0, 0, 0),
     });
+
+    createSkybox(scene);
 }
 
-export let defaultMaterial: TriPlanarMaterial;
+export const createSkybox = (scene: BABYLON.Scene) => {
+    
+    // Create environment texture
+    const texture = new EquiRectangularCubeTexture("./demoAssets/skybox/qwantani_puresky_4k.jpg", scene, 100);
+    scene.environmentTexture = texture;
+    // scene.createDefaultEnvironment();
+    scene.createDefaultSkybox(texture, true, 100, 0.5, true);
+
+}
+
+export let defaultMaterial: BABYLON.Material;
+export let defaultPBRMaterial: BABYLON.PBRMaterial;
 export const createDefaultMaterial = (scene: BABYLON.Scene) => {
     const material = new TriPlanarMaterial(`BasicTriPlanarMaterial`, scene);
     material.diffuseColor = new BABYLON.Color3(1, 1, 1);
@@ -112,7 +126,15 @@ export const createDefaultMaterial = (scene: BABYLON.Scene) => {
     material.normalTextureY = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
     material.normalTextureZ = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
     material.tileSize = 3;
+
+    const material2 = new BABYLON.PBRMaterial(`BasicPBRMaterial`, scene);
+    material2.albedoColor = new BABYLON.Color3(1, 1, 1);
+    material2.backFaceCulling = false;
+    material2.albedoTexture = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
+    material2.bumpTexture = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
+
     defaultMaterial = material;
+    defaultPBRMaterial = material2;
     return material;
 }
 
@@ -150,8 +172,7 @@ export const createEquirectangularSkybox = (
     // Create texture
     const skyTexture = new BABYLON.Texture(url, scene);
     skyMaterial.emissiveTexture = skyTexture;
-    // skyTexture.proje
-
+    
     // Apply material
     skyDome.material = skyMaterial;
 

@@ -6,7 +6,7 @@ import { EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
-import { defaultMaterial } from "./editor/editor-util";
+import { defaultMaterial, defaultPBRMaterial } from "./editor/editor-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "./storage-util";
 
@@ -22,7 +22,7 @@ export async function loadModel(
     try {
         onProgress?.({ message: 'Downloading 3D model...' });
 
-        console.log("loading model", modelUrl);
+        console.log("loadModel", modelUrl);
 
         // Load the model
         const result = await BABYLON.ImportMeshAsync(
@@ -49,10 +49,10 @@ export async function loadModel(
         }
 
         onProgress?.({ message: 'Processing 3D model...' });
-        console.log("replaceWithModel. meshes", meshes);
+        console.log("loadModel: replaceWithModel. meshes", meshes);
 
         if (meshes.length > 0) {
-            console.log("meshes length", meshes.length);
+            console.log("loadModel: meshes length", meshes.length);
 
             // Create a root container mesh if needed
             let rootModelMesh: BABYLON.Mesh;
@@ -85,22 +85,24 @@ export async function loadModel(
             meshes.forEach((mesh) => {
                 if (mesh.material) {
                     // if PBRMaterial, set emissive 
-                    if (mesh.material instanceof BABYLON.PBRMaterial) {
-                        const newPbrMaterial = mesh.material as BABYLON.PBRMaterial;
-                        newPbrMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-                        newPbrMaterial.emissiveTexture = newPbrMaterial.albedoTexture;
-                        mesh.material = newPbrMaterial;
-                    }
-                } else {
-                    // mesh.material = defaultMaterial;
-                    // console.log("Applied default material", mesh.material.name, mesh.material);
-                    const newMaterial = new BABYLON.StandardMaterial("defaultMaterial", scene);
-                    newMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
-                    newMaterial.diffuseTexture = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
-                    newMaterial.bumpTexture = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
-                    mesh.material = newMaterial;
-                    console.log("Applied default material", mesh.material.name, mesh.material);
+                    // if (mesh.material instanceof BABYLON.PBRMaterial) {
+                    //     const newPbrMaterial = mesh.material as BABYLON.PBRMaterial;
+                    //     newPbrMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+                    //     newPbrMaterial.emissiveTexture = newPbrMaterial.albedoTexture;
+                    //     mesh.material = newPbrMaterial;
+                    // }
                 }
+                mesh.material = defaultPBRMaterial;
+                // console.log("loadModel: Applied default TriplanarMaterial", mesh.material.name, mesh.material);
+
+                // const newMaterial = new BABYLON.StandardMaterial("dm_"+mesh.name, scene);
+                // newMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
+                // newMaterial.diffuseTexture = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
+                // newMaterial.bumpTexture = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
+                // newMaterial.diffuseTexture.scale(10);
+                // newMaterial.bumpTexture.scale(10);
+                // mesh.material = newMaterial;
+                console.log("loadModel: Applied default material", mesh.material.name, mesh.material);
             });
 
             // Switch to 3D display mode

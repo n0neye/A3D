@@ -193,7 +193,7 @@ export default function EditorContainer() {
       </div>
 
       {/* Ratio Panel */}
-      <RatioPanel />
+      {/* <RatioPanel /> */}
 
       {/* Gallery Panel - now uses context for images */}
       <GalleryPanel
@@ -203,7 +203,7 @@ export default function EditorContainer() {
         currentIndex={currentGalleryIndex}
         onSelectImage={setCurrentGalleryIndex}
       />
-      <DebugLayer />
+      {/* <DebugLayer /> */}
 
     </div>
   );

@@ -37,9 +37,7 @@ function DebugLayer() {
     }, [scene])
 
     return (
-        <div>
-            Enter
-        </div>
+        <></>
     );
 }
 

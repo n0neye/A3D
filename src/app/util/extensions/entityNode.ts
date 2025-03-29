@@ -297,7 +297,7 @@ export class EntityNode extends BABYLON.TransformNode {
         } else if (log.assetType === 'model' && log.fileUrl) {
             // For model assets, we need to set 3D display mode
             // (Assuming the model is already loaded and attached to this entity)
-            loadModel(this, log.fileUrl, this.getScene(),  (progress) => {
+            loadModel(this, log.fileUrl, this.getScene(), (progress) => {
                 console.log("loadModel progress", progress);
             });
             this.setDisplayMode('3d');
@@ -643,8 +643,8 @@ export function serializeEntityNode(entity: EntityNode): any {
 }
 
 // Redesigned deserialization function for EntityNode
-export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): EntityNode {
-    
+export async function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): Promise<EntityNode> {
+
     console.log('deserializeEntityNode', data.name);
     // First create a base EntityNode directly
     const entity = new EntityNode(data.name, scene, data.metadata.entityType);
@@ -695,10 +695,8 @@ export function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON
             // If we have a 3D model and display mode is 3D, we need to load it
             if (has3DModel && entity.displayMode === '3d') {
                 // Schedule the model loading (to avoid blocking)
-                setTimeout(() => {
-                    loadModel(entity, currentGeneration.fileUrl!, scene);
-                    entity.setDisplayMode('3d');
-                }, 0);
+                await loadModel(entity, currentGeneration.fileUrl!, scene);
+                entity.setDisplayMode('3d');
             } else {
                 // Apply current 2D texture if available
                 if (currentGeneration && currentGeneration.assetType === 'image' && currentGeneration.fileUrl) {
