@@ -7,8 +7,8 @@ import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
-import { SerializedRenderSettings } from '../util/editor/project-util';
-import { useRenderSettings } from '../context/RenderSettingsContext';
+import { SerializedProjectSettings } from '../util/editor/project-util';
+import { useProjectSettings } from '../context/ProjectSettingsContext';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ interface RenderPanelProps {
 
 const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager } = useEditorContext();
-  const { renderSettings, updateRenderSettings, addRenderLog } = useRenderSettings();
+  const { ProjectSettings, updateProjectSettings, addRenderLog } = useProjectSettings();
 
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -45,11 +45,11 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     useRandomSeed,
     selectedLoras
     , renderLogs
-  } = renderSettings;
+  } = ProjectSettings;
 
   // Find the selected API object from its ID in the context
   const [selectedAPI, setSelectedAPI] = useState(() => {
-    const api = availableAPIs.find(api => api.id === renderSettings.selectedAPI);
+    const api = availableAPIs.find(api => api.id === ProjectSettings.selectedAPI);
     return api || availableAPIs[0];
   });
 
@@ -57,18 +57,18 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
 
   // Update functions that modify the context
-  const setPrompt = (value: string) => updateRenderSettings({ prompt: value });
-  const setPromptStrength = (value: number) => updateRenderSettings({ promptStrength: value });
-  const setDepthStrength = (value: number) => updateRenderSettings({ depthStrength: value });
-  const setNoiseStrength = (value: number) => updateRenderSettings({ noiseStrength: value });
-  const setSeed = (value: number) => updateRenderSettings({ seed: value });
-  const setUseRandomSeed = (value: boolean) => updateRenderSettings({ useRandomSeed: value });
-  const setSelectedLoras = (loras: LoraConfig[]) => updateRenderSettings({ selectedLoras: loras });
+  const setPrompt = (value: string) => updateProjectSettings({ prompt: value });
+  const setPromptStrength = (value: number) => updateProjectSettings({ promptStrength: value });
+  const setDepthStrength = (value: number) => updateProjectSettings({ depthStrength: value });
+  const setNoiseStrength = (value: number) => updateProjectSettings({ noiseStrength: value });
+  const setSeed = (value: number) => updateProjectSettings({ seed: value });
+  const setUseRandomSeed = (value: boolean) => updateProjectSettings({ useRandomSeed: value });
+  const setSelectedLoras = (loras: LoraConfig[]) => updateProjectSettings({ selectedLoras: loras });
 
   // Instead, modify the setSelectedAPI function to update context at the same time
   const handleAPIChange = (newAPI: API_Info) => {
     setSelectedAPI(newAPI);
-    updateRenderSettings({ selectedAPI: newAPI.id });
+    updateProjectSettings({ selectedAPI: newAPI.id });
   };
 
   // Add keyboard shortcut for Ctrl/Cmd+Enter
@@ -221,13 +221,13 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     if (result && result.imageUrl) {
       addRenderLog({
         imageUrl: result.imageUrl,
-        prompt: renderSettings.prompt,
+        prompt: ProjectSettings.prompt,
         model: selectedAPI.name,
         timestamp: new Date(),
         seed: currentSeed,
-        promptStrength: renderSettings.promptStrength,
-        depthStrength: selectedAPI.useDepthImage ? renderSettings.depthStrength : 0,
-        selectedLoras: renderSettings.selectedLoras,
+        promptStrength: ProjectSettings.promptStrength,
+        depthStrength: selectedAPI.useDepthImage ? ProjectSettings.depthStrength : 0,
+        selectedLoras: ProjectSettings.selectedLoras,
       });
     }
   };

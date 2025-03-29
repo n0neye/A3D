@@ -6,7 +6,7 @@ import { API_Info } from '../image-render-api';
 import { LoraConfig } from '../lora';
 
 // Interface for serialized render settings
-export interface SerializedRenderSettings {
+export interface SerializedProjectSettings {
     prompt: string;
     promptStrength: number;
     depthStrength: number;
@@ -134,7 +134,7 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
 export function deserializeScene(
     data: any,
     scene: BABYLON.Scene,
-    applyRenderSettings?: (settings: SerializedRenderSettings) => void
+    applyProjectSettings?: (settings: SerializedProjectSettings) => void
 ): void {
     // Clear existing entities if needed
     const existingEntities = scene.rootNodes.filter(node => isEntity(node));
@@ -153,8 +153,8 @@ export function deserializeScene(
     }
 
     // Apply render settings if available and callback provided
-    if (data.renderSettings && applyRenderSettings) {
-        applyRenderSettings(data.renderSettings);
+    if (data.ProjectSettings && applyProjectSettings) {
+        applyProjectSettings(data.ProjectSettings);
     }
 }
 
@@ -163,10 +163,10 @@ export function deserializeScene(
 // Save scene to a JSON file for download with Save As dialog 
 export async function saveProjectToFile(
     scene: BABYLON.Scene,
-    renderSettings?: SerializedRenderSettings,
+    ProjectSettings?: SerializedProjectSettings,
     fileName: string = 'scene-project.json'
 ): Promise<void> {
-    const projectData = serializeScene(scene, renderSettings);
+    const projectData = serializeScene(scene, ProjectSettings);
     const jsonString = JSON.stringify(projectData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
 
@@ -226,7 +226,7 @@ export async function saveProjectToFile(
 export async function loadProjectFromFile(
     file: File,
     scene: BABYLON.Scene,
-    applyRenderSettings?: (settings: SerializedRenderSettings) => void
+    applyProjectSettings?: (settings: SerializedProjectSettings) => void
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -235,7 +235,7 @@ export async function loadProjectFromFile(
             try {
                 if (event.target && typeof event.target.result === 'string') {
                     const projectData = JSON.parse(event.target.result);
-                    deserializeScene(projectData, scene, applyRenderSettings);
+                    deserializeScene(projectData, scene, applyProjectSettings);
                     resolve();
                 }
             } catch (error) {
@@ -254,7 +254,7 @@ export async function loadProjectFromFile(
 // Serialize all EntityNodes in a scene to a project JSON structure
 export function serializeScene(
     scene: BABYLON.Scene,
-    renderSettings?: SerializedRenderSettings
+    ProjectSettings?: SerializedProjectSettings
 ): any {
     const entityNodes: EntityNode[] = [];
 
@@ -274,7 +274,7 @@ export function serializeScene(
         timestamp: new Date().toISOString(),
         entities: entityNodes.map(entity => serializeEntityNode(entity)),
         environment: environment,
-        renderSettings: renderSettings
+        ProjectSettings: ProjectSettings
     };
 
     return project;

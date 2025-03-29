@@ -14,7 +14,7 @@ import EnvironmentPanel from './EnvironmentPanel';
 import GizmoModeSelector from './GizmoModeSelector';
 import FileMenu from './FileMenu';
 import RatioPanel from './RatioPanel';
-import { useRenderSettings } from '../context/RenderSettingsContext';
+import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
 
 export default function EditorContainer() {
@@ -32,7 +32,7 @@ export default function EditorContainer() {
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
 
-  const { renderSettings } = useRenderSettings();
+  const { ProjectSettings } = useProjectSettings();
 
   // Remove local gallery state since it's now in the context
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
@@ -40,9 +40,9 @@ export default function EditorContainer() {
 
   // Modified function to open the gallery
   const openGallery = () => {
-    console.log("openGallery", renderSettings.renderLogs.length);
-    if (renderSettings.renderLogs.length === 0) return;
-    setCurrentGalleryIndex(renderSettings.renderLogs.length - 1); // Show the most recent image
+    console.log("openGallery", ProjectSettings.renderLogs.length);
+    if (ProjectSettings.renderLogs.length === 0) return;
+    setCurrentGalleryIndex(ProjectSettings.renderLogs.length - 1); // Show the most recent image
     setIsGalleryOpen(true);
   };
 
@@ -183,7 +183,7 @@ export default function EditorContainer() {
         />
 
         {/* Environment Panel */}
-        <EnvironmentPanel />
+        {/* <EnvironmentPanel /> */}
       </div>
 
       {/* Top Toolbar */}
@@ -199,7 +199,7 @@ export default function EditorContainer() {
       <GalleryPanel
         isOpen={isGalleryOpen}
         onClose={() => setIsGalleryOpen(false)}
-        images={renderSettings.renderLogs}
+        images={ProjectSettings.renderLogs}
         currentIndex={currentGalleryIndex}
         onSelectImage={setCurrentGalleryIndex}
       />

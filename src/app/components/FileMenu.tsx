@@ -2,21 +2,21 @@
 
 import React, { useRef, useEffect } from 'react';
 import { useEditorContext } from '../context/EditorContext';
-import { saveProjectToFile, loadProjectFromFile, SerializedRenderSettings } from '../util/editor/project-util';
+import { saveProjectToFile, loadProjectFromFile, SerializedProjectSettings } from '../util/editor/project-util';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import RenderPanel from './RenderPanel';
-import { useRenderSettings } from '../context/RenderSettingsContext';
+import { useProjectSettings } from '../context/ProjectSettingsContext';
 
 export default function FileMenu() {
   const { scene } = useEditorContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { renderSettings, updateRenderSettings } = useRenderSettings();
+  const { ProjectSettings, updateProjectSettings } = useProjectSettings();
 
   const handleSaveProject = () => {
     if (scene) {
       const projectName = `projectAI-${new Date().toISOString().split('T')[0]}.json`;
-      saveProjectToFile(scene, renderSettings, projectName);
+      saveProjectToFile(scene, ProjectSettings, projectName);
     }
   };
 
@@ -29,9 +29,9 @@ export default function FileMenu() {
     
     try {
       const file = e.target.files[0];
-      await loadProjectFromFile(file, scene, (settings: SerializedRenderSettings) => {
+      await loadProjectFromFile(file, scene, (settings: SerializedProjectSettings) => {
         // Apply all settings at once via context
-        updateRenderSettings(settings);
+        updateProjectSettings(settings);
       });
       // Reset file input so the same file can be loaded again
       e.target.value = '';
@@ -64,7 +64,7 @@ export default function FileMenu() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [scene, renderSettings]); // Re-attach when scene or settings change
+  }, [scene, ProjectSettings]); // Re-attach when scene or settings change
 
   return (
     <div className="flex gap-2 items-center">

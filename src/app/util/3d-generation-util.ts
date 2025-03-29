@@ -6,7 +6,7 @@ import { EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
-import { defaultMaterial, defaultPBRMaterial } from "./editor/editor-util";
+import { defaultMaterial, defaultPBRMaterial, setupMeshShadows } from "./editor/editor-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "./storage-util";
 
@@ -48,7 +48,7 @@ export async function loadModel(
             entity.modelMesh = null;
         }
 
-        onProgress?.({ message: 'Processing 3D model...' });
+        onProgress?.({ message: 'Generating...' });
         console.log("loadModel: replaceWithModel. meshes", meshes);
 
         if (meshes.length > 0) {
@@ -107,6 +107,8 @@ export async function loadModel(
 
             // Switch to 3D display mode
             entity.setDisplayMode('3d');
+
+            setupMeshShadows(entity.modelMesh);
 
             onProgress?.({ message: '3D model loaded successfully!' });
             return true;
@@ -375,7 +377,7 @@ export async function generate3DModel_Runpod(
             entity.setProcessingState({
                 isGenerating2D: false,
                 isGenerating3D: true,
-                progressMessage: `Processing 3D model... (${elapsedSeconds}s)`
+                progressMessage: `Generating... (${elapsedSeconds}s)`
             });
 
             // Check job status

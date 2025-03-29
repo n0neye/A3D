@@ -595,7 +595,7 @@
       "padding": 10
     }
   },
-  "renderSettings": {
+  "ProjectSettings": {
     "prompt": "still life oil painting, a messy table top, a screen with green console interface, a gaming keyboard with glowing red light, a skull, dying flowers in a vase, bear cans",
     "promptStrength": 1,
     "depthStrength": 0.9,

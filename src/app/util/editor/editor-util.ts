@@ -104,7 +104,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 }
 
 export const createSkybox = (scene: BABYLON.Scene) => {
-    
+
     // Create environment texture
     const texture = new EquiRectangularCubeTexture("./demoAssets/skybox/qwantani_puresky_4k.jpg", scene, 100);
     scene.environmentTexture = texture;
@@ -172,7 +172,7 @@ export const createEquirectangularSkybox = (
     // Create texture
     const skyTexture = new BABYLON.Texture(url, scene);
     skyMaterial.emissiveTexture = skyTexture;
-    
+
     // Apply material
     skyDome.material = skyMaterial;
 
@@ -404,7 +404,7 @@ const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON
 };
 
 export const createBasicLights = (scene: BABYLON.Scene) => {
-    
+
     // Sun
     // createSunEntity(scene);
 
@@ -418,6 +418,13 @@ export const createBasicLights = (scene: BABYLON.Scene) => {
     ambientLight.shadowEnabled = true;
     createShadowGenerator(ambientLight, scene);
     environmentObjects.ambientLight = ambientLight;
+
+    // const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);
+    // warmLight.position = new BABYLON.Vector3(0, 5, -0.5);
+    // warmLight.intensity = 0.3;
+    // warmLight.diffuse = new BABYLON.Color3(0.3, 0.5, 1);
+    // warmLight.specular = warmLight.diffuse;
+    // environmentObjects.pointLights.push(warmLight);
 
     // // Create two point lights with warm and cold colors
     // const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);

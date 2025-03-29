@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState } from 'react';
-import { SerializedRenderSettings } from '../util/editor/project-util';
+import { SerializedProjectSettings } from '../util/editor/project-util';
 import { availableAPIs } from '../util/image-render-api';
 import { RenderLog } from '../util/editor/project-util';
 
 // Default settings
-const defaultSettings: SerializedRenderSettings = {
+const defaultSettings: SerializedProjectSettings = {
   prompt: 'flooded office, fire, dark night, a female warrior with a spear',
   promptStrength: 0.9,
   depthStrength: 0.9,
@@ -17,52 +17,52 @@ const defaultSettings: SerializedRenderSettings = {
 };
 
 // Define the context interface
-interface RenderSettingsContextType {
-  renderSettings: SerializedRenderSettings;
-  updateRenderSettings: (settings: Partial<SerializedRenderSettings>) => void;
+interface ProjectSettingsContextType {
+  ProjectSettings: SerializedProjectSettings;
+  updateProjectSettings: (settings: Partial<SerializedProjectSettings>) => void;
   addRenderLog: (image: RenderLog) => void;
 }
 
 // Create context with default values
-const RenderSettingsContext = createContext<RenderSettingsContextType>({
-  renderSettings: defaultSettings,
-  updateRenderSettings: () => { },
+const ProjectSettingsContext = createContext<ProjectSettingsContextType>({
+  ProjectSettings: defaultSettings,
+  updateProjectSettings: () => { },
   addRenderLog: () => { }
 });
 
 // Custom hook to use the render settings context
-export const useRenderSettings = () => useContext(RenderSettingsContext);
+export const useProjectSettings = () => useContext(ProjectSettingsContext);
 
 // Provider component that will wrap the app
-export const RenderSettingsProvider: React.FC<{
+export const ProjectSettingsProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [renderSettings, setRenderSettings] = useState<SerializedRenderSettings>(defaultSettings);
+  const [ProjectSettings, setProjectSettings] = useState<SerializedProjectSettings>(defaultSettings);
 
-  const updateRenderSettings = (newSettings: Partial<SerializedRenderSettings>) => {
-    setRenderSettings(prev => ({
+  const updateProjectSettings = (newSettings: Partial<SerializedProjectSettings>) => {
+    setProjectSettings(prev => ({
       ...prev,
       ...newSettings
     }));
   };
 
   const addRenderLog = (image: RenderLog) => {
-    console.log("RenderSettingsContext: addRenderLog", image);
-    setRenderSettings(prev => ({
+    console.log("ProjectSettingsContext: addRenderLog", image);
+    setProjectSettings(prev => ({
       ...prev,
       renderLogs: [...prev.renderLogs, image]
     }));
   };
 
   return (
-    <RenderSettingsContext.Provider
+    <ProjectSettingsContext.Provider
       value={{
-        renderSettings,
-        updateRenderSettings,
+        ProjectSettings,
+        updateProjectSettings,
         addRenderLog
       }}
     >
       {children}
-    </RenderSettingsContext.Provider>
+    </ProjectSettingsContext.Provider>
   );
 }; 

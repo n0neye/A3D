@@ -2,14 +2,14 @@
 
 import { EditorProvider } from './context/EditorContext';
 import EditorContainer from './components/EditorContainer';
-import { RenderSettingsProvider } from './context/RenderSettingsContext';
+import { ProjectSettingsProvider } from './context/ProjectSettingsContext';
 
 export default function Home() {
   return (
     <EditorProvider>
-      <RenderSettingsProvider>
+      <ProjectSettingsProvider>
         <EditorContainer />
-      </RenderSettingsProvider>
+      </ProjectSettingsProvider>
     </EditorProvider>
   );
 }

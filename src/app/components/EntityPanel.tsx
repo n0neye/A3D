@@ -8,6 +8,7 @@ import { useEditorContext } from '../context/EditorContext';
 import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
 import { ImageRatio } from '../util/generation-util';
 import RatioSelector from './RatioSelector';
+import { Button } from '@/components/ui/button';
 
 let prevEntity: EntityNode | null = null;
 
@@ -300,7 +301,7 @@ const EntityPanel: React.FC = () => {
             return (
               <>
                 <div className="flex flex-col space-y-2">
-    
+
                   {/* Prompt */}
                   <div className="space-y-2 flex flex-row space-x-2">
                     <div className="flex flex-col m-0">
@@ -314,16 +315,16 @@ const EntityPanel: React.FC = () => {
                         disabled={isGenerating}
                         rows={3}
                       />
-    
+
                       {/* Bottom row */}
                       <div className="flex justify-start space-x-1 h-6 pr-2">
-    
+
                         {isObject && !isBackground && <RatioSelector
                           value={currentRatio}
                           onChange={handleRatioChange}
                           disabled={isGenerating}
                         />}
-    
+
                         {/* History navigation buttons */}
                         {generationHistory.length > 1 && (
                           <>
@@ -358,28 +359,31 @@ const EntityPanel: React.FC = () => {
                         </button>
                       </div>
                     </div>
-    
+
                     <div className="flex flex-row space-x-1">
-                      <button
-                        className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'} rounded text-white`}
+                      <Button
+                        variant={"outline"}
+                        className={`relative text-xs whitespace-normal w-20 h-full flex-col `}
                         onClick={handleGenerate2D}
                         disabled={isGenerating || !promptInput.trim()}
                       >
-                        {isGenerating2D && !progressMessage.includes('background') && renderSpinner('Generating')}
-                        {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={12} className='inline' /></span></>}
-                      </button>
-    
-                      {isObject && <button
-                        className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating3D ? 'bg-gray-600' : currentGenLog?.assetType === 'image' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600'} rounded text-white`}
+                        {isGenerating2D && renderSpinner('Generating')}
+                        {!isGenerating2D && <>Generate {isBackground ? 'Background' : 'Image'}<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={10} className='inline' /></span></>}
+                      </Button>
+
+                      {isObject && <Button
+                        className={`relative text-xs whitespace-normal w-20 h-full flex-col p-1`}
                         onClick={handleGenerate3D}
                         disabled={isGenerating || !currentGenLog || currentGenLog.assetType !== 'image'}
                       >
                         {isGenerating3D && renderSpinner('')}
-                        {!isGenerating3D && <>Convert to 3D<span className="mx-1 text-xxs opacity-50 block">Shift+<IconCornerDownLeft size={12} className='inline' /></span></>}
+                        {!isGenerating3D && <>Convert 3D
+                          <span className="mx-1 text-[10px] opacity-50 block">Shift+<IconCornerDownLeft size={10} className='inline' /></span>
+                        </>}
                         {isGenerating3D &&
                           <span>{progressMessage}</span>}
-                      </button>}
-    
+                      </Button>}
+
                       {/* Remove Background button. Temporarily disabled */}
                       {/* {canRemoveBackground && (
                         <button
@@ -398,7 +402,7 @@ const EntityPanel: React.FC = () => {
                         </button>
                       )} */}
                     </div>
-    
+
                   </div>
                 </div>
               </>
