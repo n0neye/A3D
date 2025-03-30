@@ -16,7 +16,9 @@ import FileMenu from './FileMenu';
 import FramePanel from './FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
-import { DeleteMeshCommand, TransformCommand } from '../lib/commands';
+import { DeleteMeshCommand, TransformCommand, CreateEntityCommand } from '../lib/commands';
+import { v4 as uuidv4 } from 'uuid';
+import { createEntity } from '../util/extensions/entityNode';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -40,6 +42,10 @@ export default function EditorContainer() {
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
   const prevRenderLogsLength = useRef(0);
 
+  // Add state to track middle click start time
+  const middleClickStartTimeRef = useRef<number | null>(null);
+  const clickThreshold = 300; // Milliseconds to consider a "click" vs a "hold"
+
   // Track when new images are added to renderLogs
   useEffect(() => {
     if (ProjectSettings.renderLogs.length > prevRenderLogsLength.current && shouldOpenGallery) {
@@ -48,7 +54,7 @@ export default function EditorContainer() {
       setIsGalleryOpen(true);
       setShouldOpenGallery(false);
     }
-    
+
     // Update previous length
     prevRenderLogsLength.current = ProjectSettings.renderLogs.length;
   }, [ProjectSettings.renderLogs.length]);
@@ -56,9 +62,9 @@ export default function EditorContainer() {
   // Modified function to open the gallery
   const openGallery = (shouldAutoOpen?: boolean) => {
     console.log("openGallery called", ProjectSettings.renderLogs.length);
-    
+
     if (ProjectSettings.renderLogs.length === 0) return;
-    
+
     // If we're opening immediately
     if (shouldAutoOpen === undefined) {
       setCurrentGalleryIndex(ProjectSettings.renderLogs.length - 1);
@@ -82,6 +88,68 @@ export default function EditorContainer() {
         } else {
           // Clear selection when clicking on background
           setSelectedEntity(null);
+        }
+      } else if (pointerInfo.event.button === 1) { // Middle button down
+        // Store the time when the middle button was pressed
+        middleClickStartTimeRef.current = Date.now();
+      }
+    } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
+      if (pointerInfo.event.button === 1) {  // Middle click release
+        // Check if we have a starting time and it was a short click
+        if (middleClickStartTimeRef.current) {
+          const clickDuration = Date.now() - middleClickStartTimeRef.current;
+          
+          // Only create if it was a short click, not a hold
+          if (clickDuration < clickThreshold) {
+            // Cast a ray from the camera through the mouse position
+            const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+            let position: BABYLON.Vector3;
+
+            if (pickInfo.hit) {
+              // If we hit something, use that point
+              position = pickInfo.pickedPoint!.clone();
+            } else {
+              // Create at the position where the user clicked, but at a fixed distance from camera
+              const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
+              if (!camera) return;
+
+              // Camera center
+              const cameraCenter = camera.getTarget();
+              const cameraPosition = camera.position;
+              const distance = cameraPosition.subtract(cameraCenter).length();
+
+              // Create a ray from the camera through the clicked point on the screen
+              const ray = scene.createPickingRay(
+                scene.pointerX,
+                scene.pointerY,
+                BABYLON.Matrix.Identity(),
+                camera
+              );
+
+              // Use a fixed distance from camera (2 units)
+
+              // Calculate position along the ray at the specified distance
+              position = ray.origin.add(ray.direction.scale(distance));
+            }
+
+            // Create entity command
+            const createCommand = new CreateEntityCommand(
+              () => createEntity(scene, 'aiObject', {
+                aiObjectType: 'shape',
+                shapeType: 'cube', // Default to cube
+                position: position,
+                name: `cube-${uuidv4().substring(0, 8)}`
+              }),
+              scene
+            );
+
+            // Execute command and select the new entity
+            historyManager.executeCommand(createCommand);
+            setSelectedEntity(createCommand.getEntity());
+          }
+          
+          // Reset the tracking state
+          middleClickStartTimeRef.current = null;
         }
       }
     }
@@ -108,11 +176,11 @@ export default function EditorContainer() {
       // Create and execute a delete command
       const deleteCommand = new DeleteMeshCommand(currentEntity, gizmoManager);
       historyManager.executeCommand(deleteCommand);
-      
+
       // Clear the selection state
       setSelectedEntity(null);
     }
-    
+
     // Handle undo (Ctrl+Z or Command+Z)
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
       console.log("Undo triggered");
@@ -123,10 +191,10 @@ export default function EditorContainer() {
       }
       event.preventDefault(); // Prevent browser's default undo
     }
-    
+
     // Handle redo (Ctrl+Shift+Z or Command+Shift+Z or Ctrl+Y)
-    if (((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'z') || 
-        ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y')) {
+    if (((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'z') ||
+      ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y')) {
       console.log("Redo triggered");
       historyManager.redo();
       // Force scene update
