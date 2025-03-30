@@ -14,7 +14,7 @@
     "@babylonjs/gui-editor": "^7.53.3",
     "@babylonjs/inspector": "^7.53.3",
     "@babylonjs/loaders": "^7.52.3",
-    "@babylonjs/materials": "^7.54.3",
+    "@babylonjs/materials": "^5.x.x",
     "@babylonjs/serializers": "^7.53.3",
     "@fal-ai/client": "^1.2.3",
     "@fal-ai/server-proxy": "^1.1.1",
