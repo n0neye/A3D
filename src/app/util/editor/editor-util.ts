@@ -3,7 +3,7 @@ import { GridMaterial } from "@babylonjs/materials/grid";
 import { createEntity, EntityNode, ShapeType } from "../extensions/entityNode";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation-util';
-import { TriPlanarMaterial } from "@babylonjs/materials/TriPlanar/triPlanarMaterial";
+import * as Materials from "@babylonjs/materials";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/components/HistoryManager";
@@ -136,7 +136,7 @@ export const createSkybox = (scene: BABYLON.Scene) => {
 export let defaultMaterial: BABYLON.Material;
 export let defaultPBRMaterial: BABYLON.PBRMaterial;
 export const createDefaultMaterial = (scene: BABYLON.Scene) => {
-    const material = new TriPlanarMaterial(`BasicTriPlanarMaterial`, scene);
+    const material = new Materials.TriPlanarMaterial(`BasicTriPlanarMaterial`, scene);
     material.diffuseColor = new BABYLON.Color3(1, 1, 1);
     material.backFaceCulling = false;
     material.diffuseTextureX = new BABYLON.Texture(defaultTex.color, scene);
