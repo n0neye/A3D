@@ -177,7 +177,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         isDebugMode,
         setIsDebugMode,
         currentGizmoMode,
-        setGizmoMode
+        setGizmoMode,
       }}
     >
       {children}

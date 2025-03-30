@@ -16,6 +16,8 @@ import FileMenu from './FileMenu';
 import FramePanel from './FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
+import { HistoryManager } from './HistoryManager';
+import { DeleteMeshCommand } from '../lib/commands';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,6 +39,7 @@ export default function EditorContainer() {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
   const prevRenderLogsLength = useRef(0);
+  const [historyManager] = useState(new HistoryManager());
 
   // Track when new images are added to renderLogs
   useEffect(() => {
@@ -103,25 +106,23 @@ export default function EditorContainer() {
       const currentEntity = getCurrentSelectedEntity();
       if (!currentEntity) return;
 
-      // First detach any gizmos
-      if (gizmoManager) {
-        gizmoManager.attachToMesh(null);
-      }
-
-      // Get all child meshes to properly dispose them
-      const meshesToDispose = currentEntity.getChildMeshes();
-      // Dispose Material
-      meshesToDispose.forEach(mesh => {
-        // if (currentEntity.metadata.aiData?.aiObjectType !== "shape" && mesh.material) {
-        //   mesh.material.dispose(true, true);
-        // }
-      });
-      // Dispose the entity itself
-      currentEntity.dispose();
-
+      // Create and execute a delete command instead of directly deleting
+      const deleteCommand = new DeleteMeshCommand(currentEntity, gizmoManager);
+      historyManager.executeCommand(deleteCommand);
+      
       // Clear the selection state
       setSelectedEntity(null);
-
+    }
+    
+    // Add undo/redo keyboard shortcuts
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+      if (event.shiftKey) {
+        // Ctrl+Shift+Z or Cmd+Shift+Z for redo
+        historyManager.redo();
+      } else {
+        // Ctrl+Z or Cmd+Z for undo
+        historyManager.undo();
+      }
       // Force scene update
       if (scene) {
         scene.render();
@@ -230,7 +231,7 @@ export default function EditorContainer() {
         currentIndex={currentGalleryIndex}
         onSelectImage={setCurrentGalleryIndex}
       />
-      <DebugLayer />
+      {/* <DebugLayer /> */}
 
     </div>
   );

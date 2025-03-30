@@ -1,6 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { Command } from '../components/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
+import { EntityNode } from '../util/extensions/entityNode';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {
@@ -93,23 +94,47 @@ export class DeleteMeshCommand implements Command {
   private isVisible: boolean;
   private gizmoManager: BABYLON.GizmoManager | null;
 
-  constructor(private mesh: BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
-    this.isVisible = mesh.isEnabled();
+  constructor(private entity: EntityNode | BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
+    // Check if it's an EntityNode or a Mesh
+    if ('getPrimaryMesh' in entity) {
+      const primaryMesh = entity.getPrimaryMesh();
+      this.isVisible = primaryMesh ? primaryMesh.isEnabled() : false;
+    } else {
+      this.isVisible = entity.isEnabled();
+    }
     this.gizmoManager = gizmoManager;
   }
 
   public execute(): void {
-    // Hide the mesh rather than actually deleting it
-    this.mesh.setEnabled(false);
+    // Hide the entity or mesh
+    if ('getPrimaryMesh' in this.entity) {
+      // It's an EntityNode
+      const primaryMesh = this.entity.getPrimaryMesh();
+      if (primaryMesh) primaryMesh.setEnabled(false);
+    } else {
+      // It's a Mesh
+      this.entity.setEnabled(false);
+    }
     
-    // Detach gizmo if this mesh was selected
-    if (this.gizmoManager && this.gizmoManager.gizmos.positionGizmo?.attachedMesh === this.mesh) {
-      this.gizmoManager.attachToMesh(null);
+    // Detach gizmo if needed
+    if (this.gizmoManager) {
+      // Get the mesh to check against gizmo
+      const meshToCheck = 'getPrimaryMesh' in this.entity ? 
+        this.entity.getPrimaryMesh() : this.entity;
+      
+      if (this.gizmoManager.gizmos.positionGizmo?.attachedMesh === meshToCheck) {
+        this.gizmoManager.attachToMesh(null);
+      }
     }
   }
 
   public undo(): void {
-    // Restore the mesh's previous visibility
-    this.mesh.setEnabled(this.isVisible);
+    // Restore visibility
+    if ('getPrimaryMesh' in this.entity) {
+      const primaryMesh = this.entity.getPrimaryMesh();
+      if (primaryMesh) primaryMesh.setEnabled(this.isVisible);
+    } else {
+      this.entity.setEnabled(this.isVisible);
+    }
   }
 } 
