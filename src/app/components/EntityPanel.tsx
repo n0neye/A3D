@@ -306,17 +306,6 @@ const EntityPanel: React.FC = () => {
                   {/* Prompt */}
                   <div className="space-y-2 flex flex-row space-x-2">
                     <div className="flex flex-col m-0">
-                      <textarea
-                        ref={inputElementRef}
-                        placeholder="Enter prompt..."
-                        className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
-                        value={promptInput}
-                        onKeyDown={handleInputFieldKeyDown}
-                        onChange={(e) => setPromptInput(e.target.value)}
-                        disabled={isGenerating}
-                        rows={3}
-                      />
-
                       {/* Bottom row */}
                       <div className="flex justify-start space-x-1 h-6 pr-2">
 
@@ -350,7 +339,7 @@ const EntityPanel: React.FC = () => {
                             </button>
                           </>
                         )}
-                        {/* <div className='flex-grow'></div> */}
+                        <div className='flex-grow'></div>
                         <button className="p-1 rounded text-white hover:bg-gray-700"
                           onClick={handleDownload}
                           disabled={!currentGenLog?.fileUrl}
@@ -359,6 +348,17 @@ const EntityPanel: React.FC = () => {
                           <IconDownload size={16} />
                         </button>
                       </div>
+                      <textarea
+                        ref={inputElementRef}
+                        placeholder="Enter prompt..."
+                        className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
+                        value={promptInput}
+                        onKeyDown={handleInputFieldKeyDown}
+                        onChange={(e) => setPromptInput(e.target.value)}
+                        disabled={isGenerating}
+                        rows={3}
+                      />
+
                     </div>
 
                     <div className="flex flex-row space-x-1">

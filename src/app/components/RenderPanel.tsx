@@ -353,8 +353,8 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         selectedLoraIds={selectedLoras.map(lora => lora.info.id)}
       />
 
-      <div className='fixed right-4 h-full flex justify-center items-center'>
-        <Card className={`panel-shape z-40   w-64 border-border max-h-[90vh] overflow-y-auto gap-2 ${isDebugMode ? 'right-80' : ''}`}>
+      <div className={`fixed right-4 h-full flex justify-center items-center ${isDebugMode ? 'right-80' : ''}`}>
+        <Card className={`panel-shape z-40   w-64 border-border max-h-[90vh] overflow-y-auto gap-2 `}>
           <CardHeader className="">
             <CardTitle className="text-lg font-medium">Render</CardTitle>
           </CardHeader>

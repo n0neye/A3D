@@ -151,6 +151,14 @@ export default function EditorContainer() {
     if (gizmoManager.gizmos.scaleGizmo) {
       gizmoManager.gizmos.scaleGizmo.sensitivity = 5.0;
     }
+    
+    gizmoManager.positionGizmoEnabled = true;
+    if (gizmoManager.gizmos.positionGizmo) {
+      gizmoManager.gizmos.positionGizmo.planarGizmoEnabled = true;
+      gizmoManager.gizmos.positionGizmo.xPlaneGizmo.coloredMaterial.alpha = 0.3;
+      gizmoManager.gizmos.positionGizmo.yPlaneGizmo.coloredMaterial.alpha = 0.3;
+      gizmoManager.gizmos.positionGizmo.zPlaneGizmo.coloredMaterial.alpha = 0.3;
+    }
 
     setGizmoManager(gizmoManager);
 
@@ -222,7 +230,7 @@ export default function EditorContainer() {
         currentIndex={currentGalleryIndex}
         onSelectImage={setCurrentGalleryIndex}
       />
-      {/* <DebugLayer /> */}
+      <DebugLayer />
 
     </div>
   );

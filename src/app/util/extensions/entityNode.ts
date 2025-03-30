@@ -313,36 +313,7 @@ export class EntityNode extends BABYLON.TransformNode {
 
         // Get the new dimensions based on ratio
         const { width, height } = getPlaneSize(ratio);
-
-        // Update the mesh dimensions
-        // We need to create a new geometry with the new dimensions
-        const scene = this.getScene();
-        const oldMaterial = this.planeMesh.material;
-
-        // Create a new plane with the new aspect ratio
-        const newPlaneMesh = BABYLON.MeshBuilder.CreatePlane(
-            `${this.name}-plane-new`,
-            { width, height },
-            scene
-        );
-
-        // Copy position, rotation, and parent
-        newPlaneMesh.position = this.planeMesh.position.clone();
-        newPlaneMesh.rotation = this.planeMesh.rotation.clone();
-        newPlaneMesh.parent = this;
-
-        // Apply the existing material
-        newPlaneMesh.material = oldMaterial;
-
-        // Update metadata
-        newPlaneMesh.metadata = {
-            rootEntity: this
-        };
-
-        // Dispose of the old plane mesh
-        const oldMesh = this.planeMesh;
-        this.planeMesh = newPlaneMesh;
-        oldMesh.dispose();
+        this.planeMesh.scaling = new BABYLON.Vector3(width, height, 1);
     }
 }
 
