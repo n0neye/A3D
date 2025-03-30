@@ -787,8 +787,8 @@ export const setRatioOverlayRightPadding = (padding: number, scene: BABYLON.Scen
 };
 
 
-export const initGizmo = (scene: BABYLON.Scene, historyManager: HistoryManager) => {
-    const gizmoManager = new BABYLON.GizmoManager(scene);
+export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) {
+    const gizmoManager = new BABYLON.GizmoManager(scene, 1.5);
     gizmoManager.usePointerToAttachGizmos = false;
 
     gizmoManager.scaleGizmoEnabled = true;

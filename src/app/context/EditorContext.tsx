@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { EntityNode } from '../util/extensions/entityNode';
+import { HistoryManager } from '../components/HistoryManager';
 
 interface EditorContextType {
   scene: BABYLON.Scene | null;
@@ -16,6 +17,7 @@ interface EditorContextType {
   setIsDebugMode: (isDebugMode: boolean) => void;
   currentGizmoMode: GizmoMode;
   setGizmoMode: (mode: GizmoMode) => void;
+  historyManager: HistoryManager;
 }
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 const EditorContext = createContext<EditorContextType | null>(null);
@@ -27,6 +29,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [gizmoManager, setGizmoManager] = useState<BABYLON.GizmoManager | null>(null);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [currentGizmoMode, setCurrentGizmoMode] = useState<GizmoMode>('position');
+  const [historyManager] = useState(new HistoryManager());
 
   // Use a ref to always track current selected entity
   const selectedEntityRef = useRef<EntityNode | null>(null);
@@ -178,6 +181,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setIsDebugMode,
         currentGizmoMode,
         setGizmoMode,
+        historyManager
       }}
     >
       {children}

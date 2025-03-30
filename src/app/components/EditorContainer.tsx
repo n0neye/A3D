@@ -16,7 +16,6 @@ import FileMenu from './FileMenu';
 import FramePanel from './FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
-import { HistoryManager } from './HistoryManager';
 import { DeleteMeshCommand, TransformCommand } from '../lib/commands';
 
 export default function EditorContainer() {
@@ -30,7 +29,8 @@ export default function EditorContainer() {
     getCurrentSelectedEntity,
     gizmoManager,
     isDebugMode,
-    scene
+    scene,
+    historyManager
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
 
@@ -39,7 +39,6 @@ export default function EditorContainer() {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
   const prevRenderLogsLength = useRef(0);
-  const [historyManager] = useState(new HistoryManager());
 
   // Track when new images are added to renderLogs
   useEffect(() => {

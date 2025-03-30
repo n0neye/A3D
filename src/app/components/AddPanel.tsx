@@ -6,6 +6,7 @@ import { AiObjectType, createEntity, EntityType } from '../util/extensions/entit
 import { ImageSize } from '../util/generation-util';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CreateEntityCommand } from '../lib/commands';
 import {
   IconCube,
   IconSphere,
@@ -17,42 +18,36 @@ import {
   IconSquare
 } from '@tabler/icons-react';
 
-type PrimitiveShape = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'torus';
+type PrimitiveShape = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'torus' | 'floor';
 
 const AddPanel: React.FC = () => {
-  const { scene, setSelectedEntity } = useEditorContext();
+  const { scene, setSelectedEntity, historyManager } = useEditorContext();
   const [imageSize, setImageSize] = useState<ImageSize>('medium');
   const [showShapesMenu, setShowShapesMenu] = useState(false);
 
-  // Create an entity
+  // Create an entity with command pattern
   const handleCreateEntity = (entityType: EntityType, aiObjectType: AiObjectType) => {
     if (!scene) return;
 
     console.log(`Creating ${entityType} entity`);
 
-    // Create entity facing camera
-    const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
-    if (!camera) {
-      return;
-    }
-
-    // Calculate position in front of camera
-    // const distance = 3;
-    // const direction = camera.getTarget().subtract(camera.position).normalize();
-    // const position = camera.position.add(direction.scale(distance));
-
     const position = new BABYLON.Vector3(0, 0, 0);
-    const rotation = new BABYLON.Vector3(0, 0, 0);
-
-    // Create entity with the selected ratio and size
-    const entity = createEntity(scene, entityType, {
-      aiObjectType,
-      position,
-      imageSize
-    });
-
-    // Select the entity
-    setSelectedEntity(entity);
+    
+    // Create a command with factory function
+    const createCommand = new CreateEntityCommand(
+      () => createEntity(scene, entityType, {
+        aiObjectType,
+        position,
+        imageSize
+      }),
+      scene
+    );
+    
+    // Execute the command through history manager
+    historyManager.executeCommand(createCommand);
+    
+    // Select the newly created entity
+    setSelectedEntity(createCommand.getEntity());
   };
 
   // Create a primitive shape
@@ -61,16 +56,22 @@ const AddPanel: React.FC = () => {
 
     console.log(`Creating ${shapeType} primitive`);
 
-    // Create entity with shape type
-    const entity = createEntity(scene, 'aiObject', {
-      aiObjectType: 'shape',
-      shapeType: shapeType,
-      position: new BABYLON.Vector3(0, 0, 0),
-      name: `${shapeType}-${uuidv4().substring(0, 8)}`
-    });
-
-    // Select the entity
-    setSelectedEntity(entity);
+    // Create a command with factory function
+    const createCommand = new CreateEntityCommand(
+      () => createEntity(scene, 'aiObject', {
+        aiObjectType: 'shape',
+        shapeType: shapeType,
+        position: new BABYLON.Vector3(0, 0, 0),
+        name: `${shapeType}-${uuidv4().substring(0, 8)}`
+      }),
+      scene
+    );
+    
+    // Execute the command through history manager
+    historyManager.executeCommand(createCommand);
+    
+    // Select the newly created entity
+    setSelectedEntity(createCommand.getEntity());
 
     // Hide the shapes menu after creation
     setShowShapesMenu(false);

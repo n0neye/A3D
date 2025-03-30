@@ -137,4 +137,33 @@ export class DeleteMeshCommand implements Command {
       this.entity.setEnabled(this.isVisible);
     }
   }
+}
+
+// Command for creating new entities
+export class CreateEntityCommand implements Command {
+  private entity: EntityNode;
+
+  constructor(
+    private entityFactory: () => EntityNode,
+    private scene: BABYLON.Scene
+  ) {
+    // Create the entity but don't make it visible yet
+    this.entity = this.entityFactory();
+    this.entity.setEnabled(false);
+  }
+
+  public execute(): void {
+    // Make the entity visible
+    this.entity.setEnabled(true);
+  }
+
+  public undo(): void {
+    // Hide the entity (more efficient than disposing and recreating)
+    this.entity.setEnabled(false);
+  }
+
+  // Helper to get the created entity
+  public getEntity(): EntityNode {
+    return this.entity;
+  }
 } 
