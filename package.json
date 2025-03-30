@@ -32,6 +32,8 @@
     "install": "^0.13.0",
     "lucide-react": "^0.483.0",
     "next": "15.2.2",
+    "posthog-js": "^1.234.1",
+    "posthog-node": "^4.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "replicate": "^1.0.1",

@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { PostHogProvider } from './components/PostHogProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -17,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-gray-900 text-gray-200`}>
-        {children}
+        <PostHogProvider>
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   )
