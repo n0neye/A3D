@@ -56,12 +56,13 @@ export default function Guide() {
                         </Button>
 
                         <CardHeader>
-                            <CardTitle className="text-2xl">Hi!</CardTitle>
+                            <CardTitle className="text-2xl">{"Hi :)"}</CardTitle>
                         </CardHeader>
 
                         <CardContent className="space-y-6">
                             <p className="text-gray-300">
-                                {/* This is a simple demo and playground for the 3D AI editor. */}
+                                Welcome to this 3D AI editor demo.
+                                Please notice that this is not a product and may stop working in anytime for maintenance. Enjoy!
                             </p>
                             <hr className="border-gray-500" />
 
