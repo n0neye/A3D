@@ -135,10 +135,9 @@ export default function EditorContainer() {
             // Create entity command
             const createCommand = new CreateEntityCommand(
               () => createEntity(scene, 'aiObject', {
-                aiObjectType: 'shape',
-                shapeType: 'cube', // Default to cube
+                aiObjectType: 'generativeObject',
                 position: position,
-                name: `cube-${uuidv4().substring(0, 8)}`
+                name: `gen-${uuidv4().substring(0, 8)}`
               }),
               scene
             );

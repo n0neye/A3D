@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';
-import { AiObjectType, createEntity, EntityType } from '../util/extensions/entityNode';
+import { AiObjectType, createEntity, EntityType, ShapeType } from '../util/extensions/entityNode';
 import { ImageSize } from '../util/generation-util';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,7 +18,6 @@ import {
   IconSquare
 } from '@tabler/icons-react';
 
-type PrimitiveShape = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'torus' | 'floor';
 
 const AddPanel: React.FC = () => {
   const { scene, setSelectedEntity, historyManager } = useEditorContext();
@@ -51,7 +50,7 @@ const AddPanel: React.FC = () => {
   };
 
   // Create a primitive shape
-  const handleCreateShape = (shapeType: PrimitiveShape) => {
+  const handleCreateShape = (shapeType: ShapeType) => {
     if (!scene) return;
 
     console.log(`Creating ${shapeType} primitive`);
@@ -78,14 +77,13 @@ const AddPanel: React.FC = () => {
   };
 
   // List of primitive shapes with icons
-  const primitiveShapes = [
+  const primitiveShapes: { type: ShapeType, label: string, icon: React.ReactNode }[] = [
     { type: 'cube', label: 'Cube', icon: <IconCube size={20} /> },
     { type: 'sphere', label: 'Sphere', icon: <IconSphere size={20} /> },
     { type: 'cylinder', label: 'Cylinder', icon: <IconCylinder size={20} /> },
     { type: 'cone', label: 'Cone', icon: <IconPyramid size={20} /> },
     { type: 'plane', label: 'Plane', icon: <IconSquare size={20} /> },
     { type: 'floor', label: 'Floor', icon: <IconSquareRotated size={20} /> },
-    { type: 'torus', label: 'Torus', icon: <IconOvalVertical size={20} /> },
   ];
 
   return (
@@ -130,7 +128,7 @@ const AddPanel: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="flex items-center justify-start gap-2 h-10"
-                    onClick={() => handleCreateShape(shape.type as PrimitiveShape)}
+                    onClick={() => handleCreateShape(shape.type)}
                   >
                     {shape.icon}
                     <span className="text-xs">{shape.label}</span>

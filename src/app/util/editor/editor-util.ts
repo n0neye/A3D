@@ -1,12 +1,13 @@
 import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
-import { createEntity, EntityNode } from "../extensions/entityNode";
+import { createEntity, EntityNode, ShapeType } from "../extensions/entityNode";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation-util';
 import { TriPlanarMaterial } from "@babylonjs/materials/TriPlanar/triPlanarMaterial";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/components/HistoryManager";
+import { loadShapeMeshes } from "./shape-util";
 
 // Store environment objects
 export interface EnvironmentObjects {
@@ -32,6 +33,7 @@ export interface EnvironmentObjects {
         };
     };
     shadowGenerators: BABYLON.ShadowGenerator[];
+    cachedShapeMeshes?: Map<string, BABYLON.Mesh>;
 }
 
 // Global environment reference
@@ -47,7 +49,7 @@ export const getEnvironmentObjects = (): EnvironmentObjects => {
 // Default ratio
 const DEFAULT_RATIO: ImageRatio = '16:9';
 
-export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
+export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     // Camera
     const camera = new BABYLON.ArcRotateCamera(
         "camera",
@@ -64,7 +66,7 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     camera.lowerRadiusLimit = 1;
     camera.upperRadiusLimit = 20;
     camera.attachControl(canvas, true);
-    camera.position = new BABYLON.Vector3(0, 0, 5);
+    camera.position = new BABYLON.Vector3(0, 1, 5);
     camera.minZ = 0.01;
     camera.maxZ = 20;
 
@@ -89,6 +91,9 @@ export const initScene = (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
 
     // Create default material
     createDefaultMaterial(scene);
+
+    // Load shape meshes before creating any shapes
+    await loadShapeMeshes(scene);
 
     // Create shapes
     createEntity(scene, "aiObject", {
@@ -329,7 +334,7 @@ export const createWorldGrid = (
         { width: size, height: size, subdivisions: 1 },
         scene
     );
-    gridGround.position.y = -0.501;
+    gridGround.position.y = -0.001;
 
     // Create a grid material
     const gridMaterial = new GridMaterial("gridMaterial", scene);
@@ -870,4 +875,3 @@ export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) 
 
     return gizmoManager;
 }
-

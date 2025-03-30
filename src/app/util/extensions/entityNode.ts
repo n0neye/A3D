@@ -1,15 +1,16 @@
 import * as BABYLON from '@babylonjs/core';
 import { TriPlanarMaterial } from '@babylonjs/materials/TriPlanar';
 import { v4 as uuidv4 } from 'uuid';
-import { create2DBackground, createEquirectangularSkybox, defaultMaterial, setupMeshShadows } from '../editor/editor-util';
+import { create2DBackground, createEquirectangularSkybox, defaultMaterial, setupMeshShadows, getEnvironmentObjects } from '../editor/editor-util';
 import { ImageRatio, ImageSize } from '../generation-util';
 import { loadModel } from '../3d-generation-util';
+import { createShapeEntity, createShapeMesh } from '../editor/shape-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
 export type AssetType = 'image' | 'model';
 // Add shape type definition
-export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'floor' | 'torus';
+export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'floor' | 'tube' | 'capsule' | 'pyramid' | 'wall';
 
 // Progress event handling
 export type ProgressListener = (state: EntityProcessingState) => void;
@@ -426,24 +427,19 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         });
     } else if (options.aiObjectType === 'shape' && options.shapeType) {
         // Create a primitive shape based on shapeType
-        newMesh = createShapeMesh(entity, scene, options.shapeType);
-        if (options.shapeType === 'floor') {
-            entity.position.y = -0.5;
-        }
+        newMesh = createShapeEntity(entity, scene, options.shapeType);
     } else if (options.aiObjectType === 'generativeObject') {
         // Default object - create a plane with the right aspect ratio
         const ratio = options.ratio || '1:1';
         const { width, height } = getPlaneSize(ratio);
-
-        newMesh = BABYLON.MeshBuilder.CreatePlane(`${name}-plane`, {
-            width,
-            height
-        }, scene);
+        
+        newMesh = createShapeMesh(scene, "plane");
 
         // Create default material
         const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
-        material.diffuseColor = new BABYLON.Color3(1, 1, 1);
-        material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+        material.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+        material.specularColor = new BABYLON.Color3(0, 0, 0);
         material.backFaceCulling = false;
 
         // Apply material to mesh
@@ -644,7 +640,7 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
             if (!shapeType) {
                 throw new Error('Shape type is required for shape entities');
             }
-            createShapeMesh(entity, scene, shapeType);
+            createShapeEntity(entity, scene, shapeType);
         }
         else if (aiData.aiObjectType === 'generativeObject') {
             // For generative objects, we need to handle both 2D and 3D modes
@@ -712,52 +708,6 @@ function createBackgroundMesh(entity: EntityNode, scene: BABYLON.Scene): void {
     entity.planeMesh = skybox;
 }
 
-// Create shape mesh for entity
-function createShapeMesh(entity: EntityNode, scene: BABYLON.Scene, shapeType: ShapeType): BABYLON.Mesh {
-    // Create the shape mesh
-    let shapeMesh: BABYLON.Mesh;
-
-    switch (shapeType) {
-        case 'sphere':
-            shapeMesh = BABYLON.MeshBuilder.CreateSphere(`${entity.name}-sphere`, { diameter: 1 }, scene);
-            break;
-        case 'cylinder':
-            shapeMesh = BABYLON.MeshBuilder.CreateCylinder(`${entity.name}-cylinder`, { height: 1, diameter: 1 }, scene);
-            break;
-        case 'cone':
-            shapeMesh = BABYLON.MeshBuilder.CreateCylinder(`${entity.name}-cone`, { height: 1, diameterTop: 0, diameterBottom: 1 }, scene);
-            break;
-        case 'plane':
-            shapeMesh = BABYLON.MeshBuilder.CreatePlane(`${entity.name}-plane`, { width: 1, height: 1 }, scene);
-            break;
-        case 'floor':
-            shapeMesh = BABYLON.MeshBuilder.CreatePlane(`${entity.name}-floor`, { width: 10, height: 10 }, scene);
-            shapeMesh.rotation.x = Math.PI / 2;
-            break;
-        case 'torus':
-            shapeMesh = BABYLON.MeshBuilder.CreateTorus(`${entity.name}-torus`, { diameter: 1, thickness: 0.2 }, scene);
-            break;
-        case 'cube':
-        default:
-            shapeMesh = BABYLON.MeshBuilder.CreateBox(`${entity.name}-box`, { size: 1 }, scene);
-    }
-
-    // Apply the material
-    shapeMesh.material = defaultMaterial;
-
-    // Setup the mesh
-    shapeMesh.parent = entity;
-    shapeMesh.metadata = { rootEntity: entity };
-
-    // Setup shadows for the mesh
-    setupMeshShadows(shapeMesh);
-
-    // Store reference
-    entity.modelMesh = shapeMesh;
-    entity.metadata.shapeType = shapeType;
-    entity.setDisplayMode('3d');
-    return shapeMesh;
-}
 
 // Create plane mesh for generative objects
 function createPlaneMesh(entity: EntityNode, scene: BABYLON.Scene, ratio: ImageRatio): void {

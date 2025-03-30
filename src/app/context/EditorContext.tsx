@@ -121,7 +121,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (selectedEntity) {
-      console.log("EditorContext: selectedEntity", selectedEntity.name, selectedEntity);
+      console.log("EditorContext: selectedEntity", selectedEntity.name, selectedEntity, selectedEntity.getPrimaryMesh());
       // Get the primary mesh for this entity
       const primaryMesh = selectedEntity.getPrimaryMesh();
 
