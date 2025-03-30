@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-gray-900 text-gray-200`}>
+      <body className={`${inter.className} bg-black text-gray-200`}>
         <PostHogProvider>
           {children}
         </PostHogProvider>
