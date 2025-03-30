@@ -5,13 +5,13 @@ import { RenderLog } from '../util/editor/project-util';
 
 // Default settings
 const defaultSettings: SerializedProjectSettings = {
-  prompt: 'flooded office, fire, dark night, a female warrior with a spear',
+  prompt: '',
   promptStrength: 0.9,
   depthStrength: 0.9,
   noiseStrength: 0,
   selectedAPI: availableAPIs[0].id,
   seed: Math.floor(Math.random() * 2147483647),
-  useRandomSeed: false,
+  useRandomSeed: true,
   selectedLoras: [],
   renderLogs: [],
   openOnRendered: true

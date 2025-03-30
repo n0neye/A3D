@@ -10,7 +10,10 @@ import { ImageRatio } from '../util/generation-util';
 import RatioSelector from './RatioSelector';
 import { Button } from '@/components/ui/button';
 
-let prevEntity: EntityNode | null = null;
+
+// TODO: This is a hack to get the current entity.
+// It's used to remove the event handler from the previous entity when the selected entity changes.
+let CURRENT_ENTITY: EntityNode | null = null;
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager, setSelectedEntity } = useEditorContext();
@@ -28,23 +31,34 @@ const EntityPanel: React.FC = () => {
 
   // Update when selected entity changes
   useEffect(() => {
-    const handleProgress = (progress: EntityProcessingState) => {
-      setIsGenerating2D(progress.isGenerating2D);
-      setIsGenerating3D(progress.isGenerating3D);
-      setProgressMessage(progress.progressMessage);
+    const handleProgress = (param: { entity: EntityNode, state: EntityProcessingState }) => {
+      if (param.entity.name === CURRENT_ENTITY?.name) {
+        setIsGenerating2D(param.state.isGenerating2D);
+        setIsGenerating3D(param.state.isGenerating3D);
+        setProgressMessage(param.state.progressMessage);
+      }
     }
 
-    if (prevEntity) {
-      prevEntity.tempPrompt = promptInput;
-      prevEntity.onProgress.remove(handleProgress);
+    // Remove the event handler from the previous entity
+    if (CURRENT_ENTITY) {
+      // Save the prompt input
+      CURRENT_ENTITY.tempPrompt = promptInput;
+      // Remove the event handler
+      CURRENT_ENTITY.onProgress.remove(handleProgress);
+      console.log("Removed handleProgress from prevEntity: ", CURRENT_ENTITY.name, CURRENT_ENTITY);
     }
-    prevEntity = selectedEntity;
+
+    // Set the new entity
+    CURRENT_ENTITY = selectedEntity;
 
     if (selectedEntity) {
       // Initial state update
-      handleProgress(selectedEntity.getProcessingState());
+      const newState = selectedEntity.getProcessingState();
+      handleProgress({ entity: selectedEntity, state: newState });
       // Add event handler
       selectedEntity.onProgress.add(handleProgress);
+      console.log("Added handleProgress to selectedEntity: ", selectedEntity.name, selectedEntity);
+
 
       // Get the current generation and set the prompt if available
       const currentGen = selectedEntity.getCurrentGenerationLog();

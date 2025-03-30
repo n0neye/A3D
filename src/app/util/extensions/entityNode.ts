@@ -93,7 +93,7 @@ export class EntityNode extends BABYLON.TransformNode {
     public tempPrompt: string | null = null;
 
     // Progress event - public event handler
-    public readonly onProgress = new EventHandler<EntityProcessingState>();
+    public readonly onProgress = new EventHandler<{entity: EntityNode, state: EntityProcessingState}>();
 
     constructor(
         name: string,
@@ -141,7 +141,7 @@ export class EntityNode extends BABYLON.TransformNode {
         this.metadata.processingState = state;
 
         // Notify all listeners
-        this.onProgress.trigger(state);
+        this.onProgress.trigger({entity: this, state});
     }
 
     // Get the processing state
