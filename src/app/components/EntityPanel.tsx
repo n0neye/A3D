@@ -288,6 +288,7 @@ const EntityPanel: React.FC = () => {
     const a = document.createElement('a');
     a.href = currentGenLog.fileUrl;
     a.download = currentGenLog.fileUrl.split('/').pop() || 'image.png';
+    a.target = '_blank';
     a.click();
   }
 

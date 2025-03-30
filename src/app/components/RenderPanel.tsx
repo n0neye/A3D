@@ -322,7 +322,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       }
     } catch (error) {
       console.error("Error generating preview:", error);
-      alert("Failed to generate preview. Please try again.");
+      alert("Failed to generate Render. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -385,6 +385,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
                       const a = document.createElement('a');
                       a.href = imageUrl;
                       a.download = imageUrl.split('/').pop() || 'image.png';
+                      a.target = '_blank';
                       a.click();
                     }}
                   >

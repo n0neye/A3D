@@ -75,7 +75,7 @@ export const fluxDevLoraIds: string[] = [
     // Anime
     "832858", // Anime art
     "128568", // Cyberpunk Anime Style
-    "721039", // Retro Anime Flux
+    // "721039", // Retro Anime Flux // 1G
     "658958",
     "938811", 
     "651694",
