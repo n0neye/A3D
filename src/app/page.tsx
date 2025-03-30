@@ -1,19 +1,75 @@
-import SceneViewer from './components/SceneViewer';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { EditorProvider } from './context/EditorContext';
+import EditorContainer from './components/EditorContainer';
+import { ProjectSettingsProvider } from './context/ProjectSettingsContext';
+import { Laptop } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-8">
-      <div className="w-full max-w-5xl">
-        <h1 className="text-3xl font-bold mb-6">3D-to-Image Generator</h1>
-        
-        <p className="mb-6 text-gray-600">
-          Create 3D scenes and generate high-quality images using AI.
-        </p>
-        
-        <div className="p-4 bg-white rounded-lg shadow-md">
-          <SceneViewer />
-        </div>
+  const [isMobile, setIsMobile] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Function to check if device is mobile based on screen width
+    const checkIfMobile = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 1024); // Consider devices with width less than 1024px as mobile
+    };
+
+    // Check initially
+    checkIfMobile();
+
+    // Add event listener to check on resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Only render content after client-side hydration
+  if (!isClient) return null;
+
+  if (isMobile) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-black text-gray-200 p-4">
+        <Card className="max-w-md w-full  bg-white/10">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              Mobile not supported ATM
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>
+              The editor is designed for desktop use with a mouse and keyboard. 
+              Please access it from a computer.
+            </p>
+            <div className="flex justify-center">
+              <Laptop className="h-24 w-24 text-gray-400" />
+            </div>
+            {/* <p className="text-sm text-gray-400">
+              If you'd still like to continue on mobile, you may experience limited functionality and usability issues.
+            </p>
+            <button 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition-colors"
+              onClick={() => setIsMobile(false)}
+            >
+              Continue Anyway
+            </button> */}
+          </CardContent>
+        </Card>
       </div>
-    </main>
+    );
+  }
+
+  return (
+    <EditorProvider>
+      <ProjectSettingsProvider>
+        <EditorContainer />
+      </ProjectSettingsProvider>
+    </EditorProvider>
   );
 }

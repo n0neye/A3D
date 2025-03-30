@@ -1,0 +1,754 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-03-28T04:19:19.929Z",
+  "entities": [
+    {
+      "id": "sunTransform",
+      "name": "sunTransform",
+      "position": {
+        "_isDirty": true,
+        "_x": 0,
+        "_y": 0.5,
+        "_z": 0
+      },
+      "rotation": {
+        "_isDirty": true,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": true,
+        "_x": 1,
+        "_y": 1,
+        "_z": 1
+      },
+      "metadata": {
+        "entityType": "light",
+        "created": "2025-03-26T06:12:18.156Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        }
+      },
+      "created": "2025-03-26T06:12:18.156Z",
+      "displayMode": "2d"
+    },
+    {
+      "id": "aiObject-d74dcb28",
+      "name": "aiObject-d74dcb28",
+      "position": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 1,
+        "_y": 1,
+        "_z": 1
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-26T06:12:18.157Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "background",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": [
+            {
+              "id": "a6e924c4-8259-49c9-ad20-283cb8d5bb93",
+              "timestamp": 1742969538162,
+              "prompt": "",
+              "assetType": "image",
+              "fileUrl": "./demoAssets/skybox/qwantani_puresky_4k.jpg"
+            }
+          ]
+        }
+      },
+      "created": "2025-03-26T06:12:18.157Z",
+      "displayMode": "2d"
+    },
+    {
+      "id": "plane-989ae1c1",
+      "name": "plane-989ae1c1",
+      "position": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": -3.401482105255127
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 3.141155005520555,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 32.624781871966,
+        "_y": 13.563272476196289,
+        "_z": 13.563269006750607
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-26T06:12:29.607Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "plane"
+      },
+      "created": "2025-03-26T06:12:29.607Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "cylinder-ff0ef49c",
+      "name": "cylinder-ff0ef49c",
+      "position": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": -0.13421784341335297
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 0.1805647760629654,
+        "_y": 1.068280577659607,
+        "_z": 0.09948831051588058
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-26T06:15:40.011Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "cylinder"
+      },
+      "created": "2025-03-26T06:15:40.011Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "sphere-0e6d7b44",
+      "name": "sphere-0e6d7b44",
+      "position": {
+        "_isDirty": false,
+        "_x": 0.9381278157234192,
+        "_y": -0.1744784265756607,
+        "_z": 0
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 0.7010812759399414,
+        "_y": 0.7010812759399414,
+        "_z": 0.7010812759399414
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-26T06:12:59.804Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "sphere"
+      },
+      "created": "2025-03-26T06:12:59.804Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "cube-e6700a73",
+      "name": "cube-e6700a73",
+      "position": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0.9428462386131287,
+        "_z": 0
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 2.208503007888794,
+        "_y": 1.3093736171722412,
+        "_z": 0.22138486802577972
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-26T06:14:25.402Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "cube"
+      },
+      "created": "2025-03-26T06:14:25.402Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "cube-64c82a88",
+      "name": "cube-64c82a88",
+      "position": {
+        "_isDirty": false,
+        "_x": 1.8030622005462646,
+        "_y": -0.10482653230428696,
+        "_z": 0.04675695672631264
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0.7388733700928686,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 0.46636661857831857,
+        "_y": 0.6628337502479553,
+        "_z": 0.6628339476910395
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-26T06:14:03.215Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "cube"
+      },
+      "created": "2025-03-26T06:14:03.215Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "aiObject-562ebe32",
+      "name": "aiObject-562ebe32",
+      "position": {
+        "_isDirty": false,
+        "_x": -1.1837519407272339,
+        "_y": -0.1004628911614418,
+        "_z": 0.6093572378158569
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 1,
+        "_y": 1,
+        "_z": 1
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-27T03:36:47.517Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "generativeObject",
+          "currentStateId": "5c9988b8-f3c9-4d20-979e-7f79b66bac20",
+          "ratio": "9:16",
+          "imageSize": "medium",
+          "generationLogs": [
+            {
+              "id": "6ba7a848-77bd-4ebe-a370-c009d4a06f44",
+              "timestamp": 1743046617873,
+              "prompt": "a vase with dying flowers",
+              "assetType": "image",
+              "fileUrl": "https://im.runware.ai/image/ws/2/ii/ea74109b-9b89-43b8-81d2-30f564b721a6.webp",
+              "imageParams": {
+                "ratio": "1:1",
+                "imageSize": "medium"
+              }
+            },
+            {
+              "id": "c882abce-7da5-4534-9beb-61329524d061",
+              "timestamp": 1743046643610,
+              "prompt": "a vase with dying flowers, full body, white 3d model, ",
+              "assetType": "image",
+              "fileUrl": "https://im.runware.ai/image/ws/2/ii/837dc549-b5f0-4882-b43b-45af93c2b74d.webp",
+              "imageParams": {
+                "ratio": "9:16",
+                "imageSize": "medium"
+              }
+            },
+            {
+              "id": "6c279bb0-9e8c-4211-a25e-5eeb242af111",
+              "timestamp": 1743046667180,
+              "prompt": "an ancient broken vase with dying flowers, full body, white 3d model, ",
+              "assetType": "image",
+              "fileUrl": "https://im.runware.ai/image/ws/2/ii/0fe32759-feb1-495e-b275-db6f38d35d70.webp",
+              "imageParams": {
+                "ratio": "9:16",
+                "imageSize": "medium"
+              }
+            },
+            {
+              "id": "50f6938c-b4f3-4042-a1f6-9d65ca9dd0f8",
+              "timestamp": 1743046677499,
+              "prompt": "an ancient stone-age vase with dying flowers, full body, white 3d model, ",
+              "assetType": "image",
+              "fileUrl": "https://im.runware.ai/image/ws/2/ii/da635b2d-6577-4d90-bde7-2c87fb29087c.webp",
+              "imageParams": {
+                "ratio": "9:16",
+                "imageSize": "medium"
+              }
+            },
+            {
+              "id": "4423f9ef-91f6-40b3-96d9-805cca981d93",
+              "timestamp": 1743046687100,
+              "prompt": "an ancient stone-age vase with dead flowers, full body, white 3d model, ",
+              "assetType": "image",
+              "fileUrl": "https://im.runware.ai/image/ws/2/ii/70e6b5e9-9b2b-47e6-8a28-acb5e8bc1a6d.webp",
+              "imageParams": {
+                "ratio": "9:16",
+                "imageSize": "medium"
+              }
+            },
+            {
+              "id": "42d63281-ffe9-45d4-8867-68e86cbe4aab",
+              "timestamp": 1743046696468,
+              "prompt": "an primitive stone-age vase with dead flowers, full body, white 3d model, ",
+              "assetType": "image",
+              "fileUrl": "https://im.runware.ai/image/ws/2/ii/e7b10338-710e-4835-a190-6b4211efb581.webp",
+              "imageParams": {
+                "ratio": "9:16",
+                "imageSize": "medium"
+              }
+            },
+            {
+              "id": "d06a2c15-a2ef-4dee-85c4-f232d6064941",
+              "timestamp": 1743046715984,
+              "prompt": "an primitive stone-age vase with dead flowers, full body, white 3d model, ",
+              "assetType": "image",
+              "fileUrl": "https://storage.googleapis.com/isolate-dev-hot-rooster_toolkit_bucket/github_110602490/9411ce524d93438093e24647fd4346c3_4abe3951fd4f46dbb2d3c640a8c6061f.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=GOOG1EEBKROPDBU3DT4T2J7OT2WSRVO2Y7OAW7FKPOUVTV5DCK4QLAZC7YDAA%2F20250327%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250327T033832Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=c5ec0e25cf6ff8d1a0cc038e0e6606839d9d37cfc5fe770b96d8c8b7673bc124",
+              "derivedFromId": "42d63281-ffe9-45d4-8867-68e86cbe4aab",
+              "imageParams": {
+                "ratio": "9:16",
+                "imageSize": "medium"
+              }
+            },
+            {
+              "id": "5c9988b8-f3c9-4d20-979e-7f79b66bac20",
+              "timestamp": 1743046760962,
+              "prompt": "an primitive stone-age vase with dead flowers, full body, white 3d model, ",
+              "assetType": "model",
+              "fileUrl": "https://v3.fal.media/files/monkey/QrvTShFWcEfNfOTpQAZ5o_model.glb",
+              "derivedFromId": "d06a2c15-a2ef-4dee-85c4-f232d6064941"
+            }
+          ]
+        }
+      },
+      "created": "2025-03-27T03:36:47.517Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "cube-df0a9485",
+      "name": "cube-df0a9485",
+      "position": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": -0.40007418394088745,
+        "_z": 1.2422946691513062
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 1,
+        "_y": 0.1146874725818634,
+        "_z": 0.6173828840255737
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-26T06:15:05.913Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "cube"
+      },
+      "created": "2025-03-26T06:15:05.913Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "cube-3a66bc02",
+      "name": "cube-3a66bc02",
+      "position": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": -0.9691935777664185,
+        "_z": -0.04641271382570267
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 9.647123336791992,
+        "_y": 1,
+        "_z": 6.853397369384766
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-27T03:16:56.562Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "cube"
+      },
+      "created": "2025-03-27T03:16:56.562Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "cylinder-8b30373a",
+      "name": "cylinder-8b30373a",
+      "position": {
+        "_isDirty": false,
+        "_x": -0.3738900125026703,
+        "_y": -0.3141784369945526,
+        "_z": 0
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 0.18077687919139862,
+        "_y": 0.26753470301628113,
+        "_z": 0.18077687919139862
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-27T03:26:37.073Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "cylinder"
+      },
+      "created": "2025-03-27T03:26:37.073Z",
+      "displayMode": "3d"
+    },
+    {
+      "id": "cylinder-e6f94014",
+      "name": "cylinder-e6f94014",
+      "position": {
+        "_isDirty": false,
+        "_x": -0.6402846574783325,
+        "_y": -0.2979884743690491,
+        "_z": -0.02820332534611225
+      },
+      "rotation": {
+        "_isDirty": false,
+        "_x": 0,
+        "_y": 0,
+        "_z": 0
+      },
+      "scaling": {
+        "_isDirty": false,
+        "_x": 0.19936038553714752,
+        "_y": 0.3785782754421234,
+        "_z": 0.19936038553714752
+      },
+      "metadata": {
+        "entityType": "aiObject",
+        "created": "2025-03-27T03:27:03.318Z",
+        "processingState": {
+          "isGenerating2D": false,
+          "isGenerating3D": false,
+          "progressMessage": ""
+        },
+        "aiData": {
+          "aiObjectType": "shape",
+          "currentStateId": null,
+          "ratio": "1:1",
+          "imageSize": "medium",
+          "generationLogs": []
+        },
+        "shapeType": "cylinder"
+      },
+      "created": "2025-03-27T03:27:03.318Z",
+      "displayMode": "3d"
+    }
+  ],
+  "environment": {
+    "ambientLight": {
+      "intensity": 1,
+      "diffuse": {
+        "r": 1,
+        "g": 1,
+        "b": 1
+      }
+    },
+    "ratioOverlay": {
+      "visible": true,
+      "ratio": "16:9",
+      "padding": 10
+    }
+  },
+  "ProjectSettings": {
+    "prompt": "still life oil painting, a messy table top, a screen with green console interface, a gaming keyboard with glowing red light, a skull, dying flowers in a vase, bear cans",
+    "promptStrength": 1,
+    "depthStrength": 0.9,
+    "noiseStrength": 0,
+    "selectedAPI": "fal-ai/flux-control-lora-depth",
+    "seed": 1480844411,
+    "useRandomSeed": false,
+    "selectedLoras": [
+      {
+        "info": {
+          "id": "nontech-01",
+          "name": "nontech",
+          "description": "",
+          "modelUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
+          "thumbUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
+          "author": "nontech",
+          "authorLinkUrl": "https://nontech.net",
+          "linkUrl": "https://nontech.net"
+        },
+        "strength": 0.5
+      },
+      {
+        "info": {
+          "id": "707582",
+          "civitaiId": 707582,
+          "name": "Bex_flux_max",
+          "thumbUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/85f68d16-b3f0-4845-a773-903640907dc4/width=512/27120844.jpeg",
+          "modelUrl": "https://civitai.com/api/download/models/791443",
+          "author": "3d3d3d3d",
+          "authorLinkUrl": "https://lh3.googleusercontent.com/a/ACg8ocLtyttfuJoFmtAtMT7QpGiXuq4AIC9mBvqUQ41DLp6SDhElh3Fh=s96-c",
+          "linkUrl": "https://civitai.com/models/707582",
+          "description": "<p>bex</p>"
+        },
+        "strength": 0.5
+      }
+    ],
+    "renderLogs": [
+      {
+        "imageUrl": "https://fal.media/files/zebra/4PoUDPdfi_fm4kVM-W90v_07638df62bda4d3f8719af8490fa1c5d.jpg",
+        "prompt": "still life oil painting, a messy table top, a screen with green console interface, a gaming keyboard with glowing red light, a skull, dying flowers in a vase, bear cans",
+        "model": "LoRA Dev Depth",
+        "timestamp": "2025-03-27T10:15:05.208Z",
+        "seed": 1480844411,
+        "promptStrength": 1,
+        "depthStrength": 0,
+        "selectedLoras": [
+          {
+            "info": {
+              "id": "nontech-01",
+              "name": "nontech",
+              "description": "",
+              "modelUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
+              "thumbUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
+              "author": "nontech",
+              "authorLinkUrl": "https://nontech.net",
+              "linkUrl": "https://nontech.net"
+            },
+            "strength": 0.5
+          },
+          {
+            "info": {
+              "id": "707582",
+              "civitaiId": 707582,
+              "name": "Bex_flux_max",
+              "thumbUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/85f68d16-b3f0-4845-a773-903640907dc4/width=512/27120844.jpeg",
+              "modelUrl": "https://civitai.com/api/download/models/791443",
+              "author": "3d3d3d3d",
+              "authorLinkUrl": "https://lh3.googleusercontent.com/a/ACg8ocLtyttfuJoFmtAtMT7QpGiXuq4AIC9mBvqUQ41DLp6SDhElh3Fh=s96-c",
+              "linkUrl": "https://civitai.com/models/707582",
+              "description": "<p>bex</p>"
+            },
+            "strength": 0.5
+          }
+        ]
+      },
+      {
+        "imageUrl": "https://v3.fal.media/files/panda/3wOs_rCxReRNMOOiP7wET_b3b2371e36494eae87b935a2f5d3bc25.jpg",
+        "prompt": "still life oil painting, a messy table top, a screen with green console interface, a gaming keyboard with glowing red light, a skull, dying flowers in a vase, bear cans",
+        "model": "LoRA Depth(T2I)",
+        "timestamp": "2025-03-27T10:15:51.631Z",
+        "seed": 1480844411,
+        "promptStrength": 1,
+        "depthStrength": 0.9,
+        "selectedLoras": [
+          {
+            "info": {
+              "id": "nontech-01",
+              "name": "nontech",
+              "description": "",
+              "modelUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
+              "thumbUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
+              "author": "nontech",
+              "authorLinkUrl": "https://nontech.net",
+              "linkUrl": "https://nontech.net"
+            },
+            "strength": 0.5
+          },
+          {
+            "info": {
+              "id": "707582",
+              "civitaiId": 707582,
+              "name": "Bex_flux_max",
+              "thumbUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/85f68d16-b3f0-4845-a773-903640907dc4/width=512/27120844.jpeg",
+              "modelUrl": "https://civitai.com/api/download/models/791443",
+              "author": "3d3d3d3d",
+              "authorLinkUrl": "https://lh3.googleusercontent.com/a/ACg8ocLtyttfuJoFmtAtMT7QpGiXuq4AIC9mBvqUQ41DLp6SDhElh3Fh=s96-c",
+              "linkUrl": "https://civitai.com/models/707582",
+              "description": "<p>bex</p>"
+            },
+            "strength": 0.5
+          }
+        ]
+      }
+    ],
+    "galleryImages": [
+      {
+        "imageUrl": "https://v3.fal.media/files/elephant/IjiVNOi_hyYwZBoufOyjG_6bc83880c58d4ae0bb63f08b79369db7.jpg",
+        "prompt": "still life oil painting, a messy table top, a screen with green console interface, a gaming keyboard with glowing red light, a skull, dying flowers in a vase, bear cans",
+        "model": "LoRA Depth(T2I)",
+        "timestamp": "2025-03-27T10:03:24.765Z",
+        "seed": 1480844411,
+        "promptStrength": 1,
+        "depthStrength": 0.9,
+        "selectedLoras": [
+          {
+            "info": {
+              "id": "nontech-01",
+              "name": "nontech",
+              "description": "",
+              "modelUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
+              "thumbUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
+              "author": "nontech",
+              "authorLinkUrl": "https://nontech.net",
+              "linkUrl": "https://nontech.net"
+            },
+            "strength": 0.5
+          },
+          {
+            "info": {
+              "id": "707582",
+              "civitaiId": 707582,
+              "name": "Bex_flux_max",
+              "thumbUrl": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/85f68d16-b3f0-4845-a773-903640907dc4/width=512/27120844.jpeg",
+              "modelUrl": "https://civitai.com/api/download/models/791443",
+              "author": "3d3d3d3d",
+              "authorLinkUrl": "https://lh3.googleusercontent.com/a/ACg8ocLtyttfuJoFmtAtMT7QpGiXuq4AIC9mBvqUQ41DLp6SDhElh3Fh=s96-c",
+              "linkUrl": "https://civitai.com/models/707582",
+              "description": "<p>bex</p>"
+            },
+            "strength": 0.5
+          }
+        ]
+      }
+    ]
+  }
+}

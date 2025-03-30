@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 3D AI Scene Editor
+
+This project is a browser-based 3D scene editor that leverages AI for content generation. It allows users to create, manipulate and render 3D scenes using Babylon.js with AI-assisted generation capabilities.
+
+## System Architecture
+
+The application follows a simplified architecture centered around React components and context-based state management:
+
+```
+App
+├── EditorProvider (Context)
+└── EditorContainer
+    ├── Canvas (Babylon.js)
+    ├── GenerationMenu
+    ├── EntityPanel
+    └── RenderPanel
+```
+
+### Key Components
+
+- **EditorContainer**: The main container that initializes the Babylon.js scene and handles core interactions
+- **GenerationMenu**: Creates AI-generated entities based on user input
+- **EntityPanel**: Displays and manages properties of the selected entity
+- **RenderPanel**: Handles scene rendering and image export functions
+
+## State Management
+
+We use React Context (`EditorContext`) as the central state management solution. This context provides:
+
+- Scene and engine references
+- Selected entity state
+- Gizmo manager for 3D manipulations
+- Entity selection utilities
+
+The context is accessible throughout the application using the `useEditorContext` hook.
+
+## Entity System
+
+The core of the application revolves around `EntityNode` objects, which are extensions of Babylon.js `TransformNode` with additional metadata and capabilities:
+
+```typescript
+// Basic entity structure
+interface EntityNode extends BABYLON.TransformNode {
+  metadata: EntityMetadata;
+  primaryMesh: BABYLON.AbstractMesh;
+  
+  // Methods
+  getCurrentGeneration(): GenerationData;
+  getEntityType(): EntityType;
+  getProcessingState(): EntityProcessingState;
+  setProcessingState(state: EntityProcessingState): void;
+  // ...
+}
+```
+
+Entities can be created, manipulated, and deleted through the UI. Each entity maintains its own generation history and metadata.
+
+## Interaction Flow
+
+1. **Creation**: Users create entities via the GenerationMenu
+2. **Selection**: Clicking on entities selects them and shows the EntityPanel
+3. **Manipulation**: Selected entities can be moved, rotated, and scaled using gizmos
+4. **Generation**: Entity appearances can be modified with AI-generated content
+5. **Rendering**: The scene can be rendered and exported using the RenderPanel
+
+## Key Features
+
+- **AI Generation**: Create and modify 3D objects with AI-generated images
+- **3D Manipulation**: Move, rotate, and scale entities with intuitive controls
+- **Image-to-3D**: Convert 2D images to 3D models with depth estimation
+- **Scene Export**: Take screenshots and export rendered scenes
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies: `npm install`
+2. Run the development server: `npm run dev`
+3. Open your browser to `http://localhost:3000`
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Usage
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Click "Add" buttons to create new entities
+- Click on entities to select them
+- Use gizmos to move, rotate, and scale entities
+- Delete selected entities with the Delete key
+- Use the Render panel to take screenshots and generate AI variations
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The project uses:
+- Next.js for the React framework
+- Babylon.js for 3D rendering
+- TailwindCSS for styling
+- Various AI services for content generation
