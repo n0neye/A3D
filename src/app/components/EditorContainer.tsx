@@ -42,10 +42,6 @@ export default function EditorContainer() {
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
   const prevRenderLogsLength = useRef(0);
 
-  // Add state to track middle click start time
-  const middleClickStartTimeRef = useRef<number | null>(null);
-  const clickThreshold = 300; // Milliseconds to consider a "click" vs a "hold"
-
   // Track when new images are added to renderLogs
   useEffect(() => {
     if (ProjectSettings.renderLogs.length > prevRenderLogsLength.current && shouldOpenGallery) {
@@ -78,77 +74,63 @@ export default function EditorContainer() {
   const onPointerObservable = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
     if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
       if (pointerInfo.event.button === 0) {  // Left click
-        const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-        const mesh = pickInfo.pickedMesh;
-
-        if (mesh) {
-          // Find entity from mesh
-          const entity = resolveEntity(mesh);
-          setSelectedEntity(entity);
-        } else {
-          // Clear selection when clicking on background
-          setSelectedEntity(null);
-        }
-      } else if (pointerInfo.event.button === 1) { // Middle button down
-        // Store the time when the middle button was pressed
-        middleClickStartTimeRef.current = Date.now();
-      }
-    } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
-      if (pointerInfo.event.button === 1) {  // Middle click release
-        // Check if we have a starting time and it was a short click
-        if (middleClickStartTimeRef.current) {
-          const clickDuration = Date.now() - middleClickStartTimeRef.current;
+        // Check if Ctrl key is pressed
+        if (pointerInfo.event.ctrlKey || pointerInfo.event.metaKey) { // Ctrl+Left click (or Cmd+Left click on Mac)
+          // Cast a ray from the camera through the mouse position
+          const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+          let position: BABYLON.Vector3;
           
-          // Only create if it was a short click, not a hold
-          if (clickDuration < clickThreshold) {
-            // Cast a ray from the camera through the mouse position
-            const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-            let position: BABYLON.Vector3;
+          if (pickInfo.hit) {
+            // If we hit something, use that point
+            position = pickInfo.pickedPoint!.clone();
+          } else {
+            // Create at the position where the user clicked, but at a fixed distance from camera
+            const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
+            if (!camera) return;
 
-            if (pickInfo.hit) {
-              // If we hit something, use that point
-              position = pickInfo.pickedPoint!.clone();
-            } else {
-              // Create at the position where the user clicked, but at a fixed distance from camera
-              const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
-              if (!camera) return;
+            // Camera center
+            const cameraCenter = camera.getTarget();
+            const cameraPosition = camera.position;
+            const distance = cameraPosition.subtract(cameraCenter).length();
 
-              // Camera center
-              const cameraCenter = camera.getTarget();
-              const cameraPosition = camera.position;
-              const distance = cameraPosition.subtract(cameraCenter).length();
-
-              // Create a ray from the camera through the clicked point on the screen
-              const ray = scene.createPickingRay(
-                scene.pointerX,
-                scene.pointerY,
-                BABYLON.Matrix.Identity(),
-                camera
-              );
-
-              // Use a fixed distance from camera (2 units)
-
-              // Calculate position along the ray at the specified distance
-              position = ray.origin.add(ray.direction.scale(distance));
-            }
-
-            // Create entity command
-            const createCommand = new CreateEntityCommand(
-              () => createEntity(scene, 'aiObject', {
-                aiObjectType: 'generativeObject',
-                position: position,
-                name: `gen-${uuidv4().substring(0, 8)}`
-              }),
-              scene
+            // Create a ray from the camera through the clicked point on the screen
+            const ray = scene.createPickingRay(
+              scene.pointerX, 
+              scene.pointerY, 
+              BABYLON.Matrix.Identity(), 
+              camera
             );
-
-            // Execute command and select the new entity
-            historyManager.executeCommand(createCommand);
-            setSelectedEntity(createCommand.getEntity());
+            
+            // Calculate position along the ray at the specified distance
+            position = ray.origin.add(ray.direction.scale(distance));
           }
           
-          // Reset the tracking state
-          middleClickStartTimeRef.current = null;
+          // Create entity command
+          const createCommand = new CreateEntityCommand(
+            () => createEntity(scene, 'aiObject', {
+              aiObjectType: 'generativeObject',
+              position: position,
+              name: `gen-${uuidv4().substring(0, 8)}`
+            }),
+            scene
+          );
+          
+          // Execute command and select the new entity
+          historyManager.executeCommand(createCommand);
+          setSelectedEntity(createCommand.getEntity());
+        } else {
+          // Normal left click (without Ctrl) - handle selection
+          const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+          const mesh = pickInfo.pickedMesh;
+
+          if (mesh) {
+            // Find entity from mesh
+            const entity = resolveEntity(mesh);
+            setSelectedEntity(entity);
+          } else {
+            // Clear selection when clicking on background
+            setSelectedEntity(null);
+          }
         }
       }
     }
