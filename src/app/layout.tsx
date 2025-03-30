@@ -42,6 +42,12 @@ export default function RootLayout({
             }
           `}
         </Script>
+        <title>Playground | NONTECH</title>
+        <link rel="icon" href="/favicon.ico" />
+        <meta name="description" content="3D Playground with AI Rendering" />
+        {/* OG Image */}
+        <meta property="og:image" content="/og.jpg" />
+
       </head>
       <body className={`${inter.className} bg-black text-gray-200`}>
         <PostHogProvider>
