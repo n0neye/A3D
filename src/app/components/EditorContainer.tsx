@@ -16,7 +16,7 @@ import FileMenu from './FileMenu';
 import FramePanel from './FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
-import { DeleteMeshCommand, TransformCommand, CreateEntityCommand } from '../lib/commands';
+import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityAsyncCommand } from '../lib/commands';
 import { v4 as uuidv4 } from 'uuid';
 import { createEntity } from '../util/extensions/entityNode';
 
@@ -264,13 +264,11 @@ export default function EditorContainer() {
       if (!currentEntity || !currentScene) return;
       
       // Create the duplicate entity
-      const duplicateCommand = new CreateEntityCommand(
-        () => {
+      const duplicateCommand = new CreateEntityAsyncCommand(
+        async () => {
           console.log("Creating duplicate entity", currentEntity.getEntityType(), currentEntity.metadata?.aiData?.aiObjectType);
-
-          const duplicate = duplicateEntity(currentScene, currentEntity);
+          const duplicate = await duplicateEntity(currentScene, currentEntity);
           duplicate.position.x += 0.2;
-          
           return duplicate;
         },
         currentScene

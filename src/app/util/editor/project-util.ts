@@ -261,7 +261,7 @@ export function serializeScene(
 
     // Find all EntityNodes in the scene
     scene.rootNodes.forEach(node => {
-        if (isEntity(node)) {
+        if (isEntity(node) && node.isEnabled()) {
             entityNodes.push(node);
         }
     });

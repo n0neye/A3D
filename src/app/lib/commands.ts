@@ -179,3 +179,44 @@ export class CreateEntityCommand implements Command {
     return this.entity;
   }
 } 
+
+
+export class CreateEntityAsyncCommand implements Command {
+  private entity: EntityNode | null = null;
+  private factory: () => Promise<EntityNode>;
+  private scene: BABYLON.Scene;
+
+  constructor(factory: () => Promise<EntityNode>, scene: BABYLON.Scene) {
+    this.factory = factory;
+    this.scene = scene;
+  }
+
+  async execute(): Promise<void> {
+    console.log("CreateEntityCommand: executing"); // Add debug log
+    if (!this.entity) {
+      try {
+        this.entity = await this.factory();
+        console.log("Entity created successfully", this.entity);
+      } catch (error) {
+        console.error("Error creating entity:", error);
+      }
+    } else {
+      // Re-add the entity to the scene if it was removed
+      this.entity.setEnabled(true);
+    }
+  }
+
+  undo(): void {
+    if (this.entity) {
+      this.entity.setEnabled(false);
+    }
+  }
+
+  redo(): void {
+    this.execute();
+  }
+
+  getEntity(): EntityNode | null {
+    return this.entity;
+  }
+} 

@@ -283,7 +283,7 @@ export class EntityNode extends BABYLON.TransformNode {
     }
 
     // Apply a specific generation log 
-    public applyGenerationLog(log: GenerationLog): void {
+    public async applyGenerationLog(log: GenerationLog): Promise<void> {
         if (!log || !this.metadata.aiData) return;
 
         console.log("applyGenerationLog", log);
@@ -298,7 +298,7 @@ export class EntityNode extends BABYLON.TransformNode {
         } else if (log.assetType === 'model' && log.fileUrl) {
             // For model assets, we need to set 3D display mode
             // (Assuming the model is already loaded and attached to this entity)
-            loadModel(this, log.fileUrl, this.getScene(), (progress) => {
+            await loadModel(this, log.fileUrl, this.getScene(), (progress) => {
                 console.log("loadModel progress", progress);
             });
             this.setDisplayMode('3d');
@@ -379,10 +379,11 @@ export function createEntity(
 }
 
 
-export function duplicateEntity(
+// TODO: This is a temporary function to duplicate an entity. Must have clear plan to for entity creation.
+export async function duplicateEntity(
     scene: BABYLON.Scene,
     sourceEntity: EntityNode,
-): EntityNode {
+): Promise<EntityNode> {
     const name = sourceEntity.name + "-copy";
     const newEntity = new EntityNode(name, scene, sourceEntity.getEntityType(), {
         position: sourceEntity.position.clone(),
@@ -395,28 +396,46 @@ export function duplicateEntity(
     // Copy metadata
     newEntity.metadata = { ...sourceEntity.metadata };
 
-    const sourceMeshs = sourceEntity.getChildMeshes();
-    for (const sourceMesh of sourceMeshs) {
-        if (sourceMesh instanceof BABYLON.Mesh) {
-            duplicateMesh(sourceMesh, scene);
+    if (newEntity.metadata.aiData?.aiObjectType === 'generativeObject') {
+        createGenerativeObject(scene, newEntity, {
+            ratio: newEntity.metadata.aiData?.ratio,
+        });
+        if (newEntity.metadata.aiData?.generationLogs && newEntity.metadata.aiData?.generationLogs.length > 0) {
+            // Apply the last generation log
+            await newEntity.applyGenerationLog(newEntity.metadata.aiData.generationLogs[newEntity.metadata.aiData?.generationLogs.length - 1]);
         }
+        const primaryMesh = newEntity.getPrimaryMesh();
+        const sourcePrimaryMesh = sourceEntity.getPrimaryMesh();
+        if (primaryMesh && sourcePrimaryMesh) {
+            primaryMesh.scaling = sourcePrimaryMesh.scaling.clone();
+            primaryMesh.rotation = sourcePrimaryMesh.rotation.clone();
+            primaryMesh.position = sourcePrimaryMesh.position.clone();
+        }
+    } else if (newEntity.metadata.aiData?.aiObjectType === 'shape') {
+        console.log("Duplicate shape", newEntity.metadata.shapeType);
+        if(!newEntity.metadata.shapeType){
+            throw new Error("No shapeType");
+        }
+        const childMeshes = sourceEntity.getChildMeshes();
+        for (const childMesh of childMeshes) {
+            const newChildMesh = duplicateMesh(childMesh as BABYLON.Mesh,  newEntity);
+            newChildMesh.parent = newEntity;
+        }
+        newEntity.modelMesh = newEntity.getChildMeshes()[0] as BABYLON.Mesh;
+        newEntity.displayMode = '3d';
     }
-
-    if (newEntity.metadata.aiData?.generationLogs && newEntity.metadata.aiData?.generationLogs.length > 0) {
-        // Apply the last generation log
-        newEntity.applyGenerationLog(newEntity.metadata.aiData.generationLogs[newEntity.metadata.aiData?.generationLogs.length - 1]);
-    } 
 
     return newEntity;
 }
 
-const duplicateMesh = (sourceMesh: BABYLON.Mesh, scene: BABYLON.Scene): BABYLON.Mesh => {
+const duplicateMesh = (sourceMesh: BABYLON.Mesh, parent: EntityNode): BABYLON.Mesh => {
     const newMesh = sourceMesh.clone(`${sourceMesh.name}-copy`);
-    newMesh.parent = sourceMesh.parent;
     newMesh.metadata = { ...sourceMesh.metadata };
     newMesh.scaling = sourceMesh.scaling.clone();
     newMesh.rotation = sourceMesh.rotation.clone();
     newMesh.position = sourceMesh.position.clone();
+    newMesh.parent = parent;
+    newMesh.metadata.rootEntity = parent;
     return newMesh;
 }
 
@@ -474,28 +493,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         // Create a primitive shape based on shapeType
         newMesh = createShapeEntity(entity, scene, options.shapeType);
     } else if (options.aiObjectType === 'generativeObject') {
-        // Default object - create a plane with the right aspect ratio
-        const ratio = options.ratio || '1:1';
-        const { width, height } = getPlaneSize(ratio);
-
-        newMesh = createShapeMesh(scene, "plane");
-
-        // Create default material
-        const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
-        material.diffuseColor = new BABYLON.Color3(0, 0, 0);
-        material.emissiveColor = new BABYLON.Color3(1, 1, 1);
-        material.specularColor = new BABYLON.Color3(0, 0, 0);
-        material.backFaceCulling = false;
-
-        // Apply material to mesh
-        newMesh.material = material;
-
-        // Always face the camera
-        newMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-
-        // Set up plane mesh
-        entity.planeMesh = newMesh;
-
+        newMesh = createGenerativeObject(scene, entity, options);
     } else {
         throw new Error('Invalid aiObjectType');
     }
@@ -510,6 +508,34 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         rootEntity: entity
     };
 }
+
+const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, options: {
+    ratio?: ImageRatio;
+}) => {
+            
+    // Default object - create a plane with the right aspect ratio
+    const ratio = options.ratio || '1:1';
+    const { width, height } = getPlaneSize(ratio);
+
+    const newMesh = createShapeMesh(scene, "plane");
+
+    // Create default material
+    const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
+    material.diffuseColor = new BABYLON.Color3(0, 0, 0);
+    material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+    material.specularColor = new BABYLON.Color3(0, 0, 0);
+    material.backFaceCulling = false;
+
+    // Apply material to mesh
+    newMesh.material = material;
+
+    // Always face the camera
+    newMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+
+    // Set up plane mesh
+    entity.planeMesh = newMesh;
+    return newMesh;
+    }
 
 // Apply image to entity
 export const applyImageToEntity = async (
