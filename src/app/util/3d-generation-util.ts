@@ -83,25 +83,7 @@ export async function loadModel(
 
             // Find all materials
             meshes.forEach((mesh) => {
-                if (mesh.material) {
-                    // if PBRMaterial, set emissive 
-                    // if (mesh.material instanceof BABYLON.PBRMaterial) {
-                    //     const newPbrMaterial = mesh.material as BABYLON.PBRMaterial;
-                    //     newPbrMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-                    //     newPbrMaterial.emissiveTexture = newPbrMaterial.albedoTexture;
-                    //     mesh.material = newPbrMaterial;
-                    // }
-                }
                 mesh.material = defaultPBRMaterial;
-                // console.log("loadModel: Applied default TriplanarMaterial", mesh.material.name, mesh.material);
-
-                // const newMaterial = new BABYLON.StandardMaterial("dm_"+mesh.name, scene);
-                // newMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
-                // newMaterial.diffuseTexture = new BABYLON.Texture("./textures/concrete_1/color_2k.jpg", scene);
-                // newMaterial.bumpTexture = new BABYLON.Texture("./textures/concrete_1/normal_2k.jpg", scene);
-                // newMaterial.diffuseTexture.scale(10);
-                // newMaterial.bumpTexture.scale(10);
-                // mesh.material = newMaterial;
                 console.log("loadModel: Applied default material", mesh.material.name, mesh.material);
             });
 
