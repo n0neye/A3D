@@ -23,6 +23,7 @@ export class HistoryManager {
   }
 
   redo(): void {
+    console.log("redo");
     if (this.redoStack.length === 0) return;
     
     const command = this.redoStack.pop()!;

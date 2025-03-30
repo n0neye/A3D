@@ -9,7 +9,7 @@ import { resolveEntity } from '../util/extensions/entityNode';
 import { initializeRealtimeConnection } from '../util/realtime-generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
-import { initScene } from '../util/editor/editor-util';
+import { initGizmo, initScene } from '../util/editor/editor-util';
 import EnvironmentPanel from './EnvironmentPanel';
 import GizmoModeSelector from './GizmoModeSelector';
 import FileMenu from './FileMenu';
@@ -17,7 +17,7 @@ import FramePanel from './FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
 import { HistoryManager } from './HistoryManager';
-import { DeleteMeshCommand } from '../lib/commands';
+import { DeleteMeshCommand, TransformCommand } from '../lib/commands';
 
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,7 +90,7 @@ export default function EditorContainer() {
 
   // Handle keyboard shortcuts
   const handleKeyDown = (event: KeyboardEvent) => {
-    // Don't process delete if a text input or textarea is focused
+    // Don't process if a text input or textarea is focused
     const activeElement = document.activeElement;
     if (activeElement &&
       (activeElement.tagName === 'INPUT' ||
@@ -101,12 +101,12 @@ export default function EditorContainer() {
     // Don't process keyboard shortcuts when gallery is open
     if (isGalleryOpen) return;
 
-    // Delete selected entity - using getCurrentSelectedEntity to get the latest value
+    // Delete selected entity
     if (event.key === 'Delete') {
       const currentEntity = getCurrentSelectedEntity();
       if (!currentEntity) return;
 
-      // Create and execute a delete command instead of directly deleting
+      // Create and execute a delete command
       const deleteCommand = new DeleteMeshCommand(currentEntity, gizmoManager);
       historyManager.executeCommand(deleteCommand);
       
@@ -114,19 +114,27 @@ export default function EditorContainer() {
       setSelectedEntity(null);
     }
     
-    // Add undo/redo keyboard shortcuts
-    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-      if (event.shiftKey) {
-        // Ctrl+Shift+Z or Cmd+Shift+Z for redo
-        historyManager.redo();
-      } else {
-        // Ctrl+Z or Cmd+Z for undo
-        historyManager.undo();
-      }
+    // Handle undo (Ctrl+Z or Command+Z)
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+      console.log("Undo triggered");
+      historyManager.undo();
       // Force scene update
       if (scene) {
         scene.render();
       }
+      event.preventDefault(); // Prevent browser's default undo
+    }
+    
+    // Handle redo (Ctrl+Shift+Z or Command+Shift+Z or Ctrl+Y)
+    if (((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'z') || 
+        ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y')) {
+      console.log("Redo triggered");
+      historyManager.redo();
+      // Force scene update
+      if (scene) {
+        scene.render();
+      }
+      event.preventDefault(); // Prevent browser's default redo
     }
   };
 
@@ -144,23 +152,7 @@ export default function EditorContainer() {
     initScene(canvasRef.current, scene);
 
     // Set up gizmo manager
-    const gizmoManager = new BABYLON.GizmoManager(scene, 1.5);
-    gizmoManager.usePointerToAttachGizmos = false;
-
-    gizmoManager.scaleGizmoEnabled = true;
-    // Scale gizmo sensitivity
-    if (gizmoManager.gizmos.scaleGizmo) {
-      gizmoManager.gizmos.scaleGizmo.sensitivity = 5.0;
-    }
-    
-    gizmoManager.positionGizmoEnabled = true;
-    if (gizmoManager.gizmos.positionGizmo) {
-      gizmoManager.gizmos.positionGizmo.planarGizmoEnabled = true;
-      gizmoManager.gizmos.positionGizmo.xPlaneGizmo.coloredMaterial.alpha = 0.3;
-      gizmoManager.gizmos.positionGizmo.yPlaneGizmo.coloredMaterial.alpha = 0.3;
-      gizmoManager.gizmos.positionGizmo.zPlaneGizmo.coloredMaterial.alpha = 0.3;
-    }
-
+    const gizmoManager = initGizmo(scene, historyManager);
     setGizmoManager(gizmoManager);
 
     // Start the render loop

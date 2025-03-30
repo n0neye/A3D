@@ -13,13 +13,13 @@ export class TransformCommand implements Command {
   private newRotation: Quaternion; 
   private newScaling: Vector3;
 
-  constructor(private mesh: BABYLON.Mesh) {
+  constructor(private node: BABYLON.TransformNode) {
     // Store initial state
-    this.initialPosition = mesh.position.clone();
-    this.initialRotation = mesh.rotationQuaternion ? 
-                         mesh.rotationQuaternion.clone() : 
-                         Quaternion.FromEulerAngles(mesh.rotation.x, mesh.rotation.y, mesh.rotation.z);
-    this.initialScaling = mesh.scaling.clone();
+    this.initialPosition = node.position.clone();
+    this.initialRotation = node.rotationQuaternion ? 
+                         node.rotationQuaternion.clone() : 
+                         Quaternion.FromEulerAngles(node.rotation.x, node.rotation.y, node.rotation.z);
+    this.initialScaling = node.scaling.clone();
     
     // The new state will be set later
     this.newPosition = this.initialPosition.clone();
@@ -29,33 +29,33 @@ export class TransformCommand implements Command {
 
   // Call this after the transform is complete to capture the final state
   public updateFinalState() {
-    this.newPosition = this.mesh.position.clone();
-    this.newRotation = this.mesh.rotationQuaternion ? 
-                      this.mesh.rotationQuaternion.clone() : 
-                      Quaternion.FromEulerAngles(this.mesh.rotation.x, this.mesh.rotation.y, this.mesh.rotation.z);
-    this.newScaling = this.mesh.scaling.clone();
+    this.newPosition = this.node.position.clone();
+    this.newRotation = this.node.rotationQuaternion ? 
+                      this.node.rotationQuaternion.clone() : 
+                      Quaternion.FromEulerAngles(this.node.rotation.x, this.node.rotation.y, this.node.rotation.z);
+    this.newScaling = this.node.scaling.clone();
   }
 
   public execute(): void {
-    this.mesh.position = this.newPosition.clone();
-    if (this.mesh.rotationQuaternion) {
-      this.mesh.rotationQuaternion = this.newRotation.clone();
+    this.node.position = this.newPosition.clone();
+    if (this.node.rotationQuaternion) {
+      this.node.rotationQuaternion = this.newRotation.clone();
     } else {
       const euler = this.newRotation.toEulerAngles();
-      this.mesh.rotation = new Vector3(euler.x, euler.y, euler.z);
+      this.node.rotation = new Vector3(euler.x, euler.y, euler.z);
     }
-    this.mesh.scaling = this.newScaling.clone();
+    this.node.scaling = this.newScaling.clone();
   }
 
   public undo(): void {
-    this.mesh.position = this.initialPosition.clone();
-    if (this.mesh.rotationQuaternion) {
-      this.mesh.rotationQuaternion = this.initialRotation.clone();
+    this.node.position = this.initialPosition.clone();
+    if (this.node.rotationQuaternion) {
+      this.node.rotationQuaternion = this.initialRotation.clone();
     } else {
       const euler = this.initialRotation.toEulerAngles();
-      this.mesh.rotation = new Vector3(euler.x, euler.y, euler.z);
+      this.node.rotation = new Vector3(euler.x, euler.y, euler.z);
     }
-    this.mesh.scaling = this.initialScaling.clone();
+    this.node.scaling = this.initialScaling.clone();
   }
 }
 

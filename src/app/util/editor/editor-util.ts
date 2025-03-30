@@ -5,6 +5,8 @@ import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation-util';
 import { TriPlanarMaterial } from "@babylonjs/materials/TriPlanar/triPlanarMaterial";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
+import { TransformCommand } from "@/app/lib/commands";
+import { HistoryManager } from "@/app/components/HistoryManager";
 
 // Store environment objects
 export interface EnvironmentObjects {
@@ -783,3 +785,89 @@ export const setRatioOverlayRightPadding = (padding: number, scene: BABYLON.Scen
     // Update overlay
     updateRatioOverlay(scene);
 };
+
+
+export const initGizmo = (scene: BABYLON.Scene, historyManager: HistoryManager) => {
+    const gizmoManager = new BABYLON.GizmoManager(scene);
+    gizmoManager.usePointerToAttachGizmos = false;
+
+    gizmoManager.scaleGizmoEnabled = true;
+    gizmoManager.positionGizmoEnabled = true;
+    gizmoManager.rotationGizmoEnabled = true;
+
+    // Scale gizmo sensitivity
+    if (gizmoManager.gizmos.scaleGizmo) {
+      gizmoManager.gizmos.scaleGizmo.sensitivity = 5.0;
+    }
+    
+    if (gizmoManager.gizmos.positionGizmo) {
+      gizmoManager.gizmos.positionGizmo.planarGizmoEnabled = true;
+      gizmoManager.gizmos.positionGizmo.xPlaneGizmo.coloredMaterial.alpha = 0.3;
+      gizmoManager.gizmos.positionGizmo.yPlaneGizmo.coloredMaterial.alpha = 0.3;
+      gizmoManager.gizmos.positionGizmo.zPlaneGizmo.coloredMaterial.alpha = 0.3;
+    }
+
+    // Track the active transform command
+    let activeTransformCommand: TransformCommand | null = null;
+
+    // Set up event listeners for position gizmo
+    if (gizmoManager.gizmos.positionGizmo) {
+      console.log("init position gizmo")
+      gizmoManager.gizmos.positionGizmo.onDragStartObservable.add((event) => {
+        const node = gizmoManager.gizmos.positionGizmo?.attachedNode;
+        if (node && node instanceof BABYLON.TransformNode) {
+          // Create a new transform command when dragging starts
+          activeTransformCommand = new TransformCommand(node);
+        }
+      });
+
+      gizmoManager.gizmos.positionGizmo.onDragEndObservable.add((event) => {
+        if (activeTransformCommand) {
+          // Update the final state and add to history
+          activeTransformCommand.updateFinalState();
+          historyManager.executeCommand(activeTransformCommand);
+          activeTransformCommand = null;
+        }
+      });
+    }
+
+    // Set up event listeners for rotation gizmo 
+    if (gizmoManager.gizmos.rotationGizmo) {
+      console.log("init rotation gizmo")
+      gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add((event) => {
+        const node = gizmoManager.gizmos.rotationGizmo?.attachedNode;
+        if (node&& node instanceof BABYLON.TransformNode) {
+          activeTransformCommand = new TransformCommand(node);
+        }
+      });
+
+      gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add((event) => {
+        if (activeTransformCommand) {
+          activeTransformCommand.updateFinalState();
+          historyManager.executeCommand(activeTransformCommand);
+          activeTransformCommand = null;
+        }
+      });
+    }
+
+    // Set up event listeners for scale gizmo
+    if (gizmoManager.gizmos.scaleGizmo) {
+      gizmoManager.gizmos.scaleGizmo.onDragStartObservable.add((event) => {
+        const node = gizmoManager.gizmos.scaleGizmo?.attachedNode;
+        if (node&& node instanceof BABYLON.TransformNode) {
+          activeTransformCommand = new TransformCommand(node);
+        }
+      });
+
+      gizmoManager.gizmos.scaleGizmo.onDragEndObservable.add((event) => {
+        if (activeTransformCommand) {
+          activeTransformCommand.updateFinalState();
+          historyManager.executeCommand(activeTransformCommand);
+          activeTransformCommand = null;
+        }
+      });
+    }
+
+    return gizmoManager;
+}
+
