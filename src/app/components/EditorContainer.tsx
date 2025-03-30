@@ -20,6 +20,11 @@ import { DeleteMeshCommand, TransformCommand, CreateEntityCommand } from '../lib
 import { v4 as uuidv4 } from 'uuid';
 import { createEntity } from '../util/extensions/entityNode';
 
+// Temp hack to handle e and r key presses
+let isWKeyPressed = false;
+let isEKeyPressed = false;
+let isRKeyPressed = false;
+
 export default function EditorContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const {
@@ -41,6 +46,7 @@ export default function EditorContainer() {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
   const prevRenderLogsLength = useRef(0);
+  const [keysPressed, setKeysPressed] = useState<Record<number, boolean>>({});
 
   // Track when new images are added to renderLogs
   useEffect(() => {
@@ -79,7 +85,7 @@ export default function EditorContainer() {
           // Cast a ray from the camera through the mouse position
           const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
           let position: BABYLON.Vector3;
-          
+
           if (pickInfo.hit) {
             // If we hit something, use that point
             position = pickInfo.pickedPoint!.clone();
@@ -95,16 +101,16 @@ export default function EditorContainer() {
 
             // Create a ray from the camera through the clicked point on the screen
             const ray = scene.createPickingRay(
-              scene.pointerX, 
-              scene.pointerY, 
-              BABYLON.Matrix.Identity(), 
+              scene.pointerX,
+              scene.pointerY,
+              BABYLON.Matrix.Identity(),
               camera
             );
-            
+
             // Calculate position along the ray at the specified distance
             position = ray.origin.add(ray.direction.scale(distance));
           }
-          
+
           // Create entity command
           const createCommand = new CreateEntityCommand(
             () => createEntity(scene, 'aiObject', {
@@ -114,7 +120,7 @@ export default function EditorContainer() {
             }),
             scene
           );
-          
+
           // Execute command and select the new entity
           historyManager.executeCommand(createCommand);
           setSelectedEntity(createCommand.getEntity());
@@ -134,10 +140,97 @@ export default function EditorContainer() {
         }
       }
     }
+
+    // Handle mouse wheel events for scaling and rotation
+    else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERWHEEL) {
+      const currentEntity = getCurrentSelectedEntity();
+      if (!currentEntity) return;
+
+      // @ts-ignore
+      const wheelDelta = pointerInfo.event.deltaY;
+      const scaleFactor = 0.001; // Adjust this for sensitivity
+      const rotationFactor = 0.0025; // Adjust this for sensitivity
+
+
+      if (isEKeyPressed || isRKeyPressed || isWKeyPressed) {
+        // Disable camera zoom
+        const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
+        camera.inputs.remove(camera.inputs.attached.mousewheel);
+
+        // W+Wheel: Move the selected entity up
+        if (isWKeyPressed) {
+          currentEntity.position.y += wheelDelta * -0.001;
+        }
+
+        // E+Wheel: Scale the selected entity
+        if (isEKeyPressed) {
+          // Create scale command - record the starting state
+          const scaleCommand = new TransformCommand(currentEntity);
+
+          // Calculate scale factor based on wheel direction
+          const delta = -wheelDelta * scaleFactor;
+          const newScale = currentEntity.scaling.clone();
+
+          // Apply uniform scaling
+          newScale.x += newScale.x * delta;
+          newScale.y += newScale.y * delta;
+          newScale.z += newScale.z * delta;
+
+          // Apply the new scale
+          currentEntity.scaling = newScale;
+
+          // Update the final state and record the command
+          scaleCommand.updateFinalState();
+          historyManager.executeCommand(scaleCommand);
+
+          // Prevent default browser zoom
+          pointerInfo.event.preventDefault();
+        }
+
+        // R+Wheel: Rotate the selected entity around Y axis
+        else if (isRKeyPressed) {
+          // Create rotation command - record the starting state
+          const rotationCommand = new TransformCommand(currentEntity);
+
+          // Calculate rotation amount based on wheel direction
+          const delta = wheelDelta * rotationFactor;
+
+          // Apply rotation around y-axis
+          currentEntity.rotate(BABYLON.Vector3.Up(), delta);
+
+          // Update the final state and record the command
+          rotationCommand.updateFinalState();
+          historyManager.executeCommand(rotationCommand);
+
+          // Prevent default browser behavior
+          pointerInfo.event.preventDefault();
+        }
+
+        // Enable camera zoom
+        setTimeout(() => {
+          camera.inputs.add(new BABYLON.ArcRotateCameraMouseWheelInput);
+          camera.wheelPrecision = 40;
+        }, 50);
+      }
+    }
   }
 
   // Handle keyboard shortcuts
   const handleKeyDown = (event: KeyboardEvent) => {
+
+
+    switch (event.key) {
+      case 'e':
+        isEKeyPressed = true;
+        break;
+      case 'r':
+        isRKeyPressed = true;
+        break;
+      case 'w':
+        isWKeyPressed = true;
+        break;
+    }
+
     // Don't process if a text input or textarea is focused
     const activeElement = document.activeElement;
     if (activeElement &&
@@ -186,6 +279,21 @@ export default function EditorContainer() {
     }
   };
 
+  
+  const handleKeyUp = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case 'e':
+        isEKeyPressed = false;
+        break;
+      case 'r':
+        isRKeyPressed = false;
+        break;
+      case 'w':
+        isWKeyPressed = false;
+        break;
+    }
+  };
+
   // Initialize BabylonJS engine and scene
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -221,12 +329,30 @@ export default function EditorContainer() {
     // Initialize API connection
     initializeRealtimeConnection();
 
+    // Add event listener to prevent default browser zoom behavior when using Ctrl+Wheel
+    const preventDefaultZoom = (event: WheelEvent) => {
+      const isEKeyPressed = keysPressed[69]; // 'e' key code
+      const isRKeyPressed = keysPressed[82]; // 'r' key code
+
+      if (isEKeyPressed || isRKeyPressed) {
+        event.preventDefault();
+      }
+    };
+    canvasRef.current.addEventListener('wheel', preventDefaultZoom, { passive: false });
+
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('keydown', handleKeyDown);
       scene.dispose();
       engine.dispose();
+      if (canvasRef.current) {
+        canvasRef.current.removeEventListener('wheel', preventDefaultZoom);
+      }
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
 
