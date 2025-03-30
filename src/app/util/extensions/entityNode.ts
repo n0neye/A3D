@@ -4,6 +4,7 @@ import { create2DBackground, createEquirectangularSkybox,  setupMeshShadows, get
 import { ImageRatio, ImageSize } from '../generation-util';
 import { loadModel } from '../3d-generation-util';
 import { createShapeEntity, createShapeMesh } from '../editor/shape-util';
+import { placeholderMaterial } from '../editor/material-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
@@ -518,15 +519,8 @@ const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, option
 
     const newMesh = createShapeMesh(scene, "plane");
 
-    // Create default material
-    const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
-    material.diffuseColor = new BABYLON.Color3(0, 0, 0);
-    material.emissiveColor = new BABYLON.Color3(1, 1, 1);
-    material.specularColor = new BABYLON.Color3(0, 0, 0);
-    material.backFaceCulling = false;
-
     // Apply material to mesh
-    newMesh.material = material;
+    newMesh.material = placeholderMaterial;
 
     // Always face the camera
     newMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
@@ -546,6 +540,16 @@ export const applyImageToEntity = async (
     // Get the plane mesh
     const planeMesh = entity.planeMesh;
     if (!planeMesh) return;
+
+    if(planeMesh.material === placeholderMaterial){
+        // Create material
+        const newMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
+        newMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        newMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
+        newMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+        newMaterial.backFaceCulling = false;
+        planeMesh.material = newMaterial;
+    }
 
     console.log('applyImageToEntity', imageUrl);
 

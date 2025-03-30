@@ -8,7 +8,7 @@ import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/components/HistoryManager";
 import { loadShapeMeshes } from "./shape-util";
-import { createDefaultMaterial } from "./material-util";
+import { createDefaultMaterials } from "./material-util";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
@@ -90,7 +90,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
     createRatioOverlay(scene);
 
     // Create default material
-    createDefaultMaterial(scene);
+    createDefaultMaterials(scene);
 
     // Load shape meshes before creating any shapes
     await loadShapeMeshes(scene);
