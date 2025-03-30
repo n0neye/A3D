@@ -2,6 +2,7 @@ import * as BABYLON from '@babylonjs/core';
 import { Command } from '../components/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
 import { EntityNode } from '../util/extensions/entityNode';
+import { usePostHog } from 'posthog-js/react';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {

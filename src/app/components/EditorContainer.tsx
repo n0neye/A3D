@@ -19,6 +19,7 @@ import GalleryPanel from './GalleryPanel';
 import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityAsyncCommand } from '../lib/commands';
 import { v4 as uuidv4 } from 'uuid';
 import { createEntity } from '../util/extensions/entityNode';
+import Guide from './Guide';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -441,6 +442,8 @@ export default function EditorContainer() {
       />
       {/* <DebugLayer /> */}
 
+      {/* Add the Guide component */}
+      <Guide />
     </div>
   );
 } 
