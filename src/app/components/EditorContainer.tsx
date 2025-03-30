@@ -5,7 +5,7 @@ import * as BABYLON from '@babylonjs/core';
 import AddPanel from './AddPanel';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
-import { resolveEntity } from '../util/extensions/entityNode';
+import { duplicateEntity, resolveEntity } from '../util/extensions/entityNode';
 import { initializeRealtimeConnection } from '../util/realtime-generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
@@ -47,6 +47,9 @@ export default function EditorContainer() {
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
   const prevRenderLogsLength = useRef(0);
   const [keysPressed, setKeysPressed] = useState<Record<number, boolean>>({});
+
+  // At the component level, add a ref to track the scene
+  const sceneRef = useRef<BABYLON.Scene | null>(null);
 
   // Track when new images are added to renderLogs
   useEffect(() => {
@@ -122,8 +125,17 @@ export default function EditorContainer() {
           );
 
           // Execute command and select the new entity
+          console.log("About to execute command", createCommand);
           historyManager.executeCommand(createCommand);
-          setSelectedEntity(createCommand.getEntity());
+          console.log("Command executed");
+          const newEntity = createCommand.getEntity();
+          console.log("Got entity from command", newEntity);
+          setSelectedEntity(newEntity);
+          if (newEntity) {
+            newEntity.setEnabled(true);
+          } else {
+            console.error("No entity returned from createCommand");
+          }
         } else {
           // Normal left click (without Ctrl) - handle selection
           const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
@@ -217,9 +229,7 @@ export default function EditorContainer() {
 
   // Handle keyboard shortcuts
   const handleKeyDown = (event: KeyboardEvent) => {
-
-
-    switch (event.key) {
+    switch (event.key.toLocaleLowerCase()) {
       case 'e':
         isEKeyPressed = true;
         break;
@@ -241,6 +251,39 @@ export default function EditorContainer() {
 
     // Don't process keyboard shortcuts when gallery is open
     if (isGalleryOpen) return;
+
+    // Duplicate selected entity (Ctrl+D)
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
+      event.preventDefault(); // Prevent browser's bookmark dialog
+      
+      const currentEntity = getCurrentSelectedEntity();
+      const currentScene = sceneRef.current;
+
+      console.log("Duplicate selected entity", currentEntity, currentScene);
+      
+      if (!currentEntity || !currentScene) return;
+      
+      // Create the duplicate entity
+      const duplicateCommand = new CreateEntityCommand(
+        () => {
+          console.log("Creating duplicate entity", currentEntity.getEntityType(), currentEntity.metadata?.aiData?.aiObjectType);
+
+          const duplicate = duplicateEntity(currentScene, currentEntity);
+          duplicate.position.x += 0.2;
+          
+          return duplicate;
+        },
+        currentScene
+      );
+      
+      // Execute command and select the new entity
+      historyManager.executeCommand(duplicateCommand);
+      const newEntity = duplicateCommand.getEntity();
+      console.log("New entity", newEntity);
+      if (newEntity) {
+        setSelectedEntity(newEntity);
+      }
+    }
 
     // Delete selected entity
     if (event.key === 'Delete') {
@@ -301,6 +344,7 @@ export default function EditorContainer() {
     // Initialize BabylonJS engine and scene
     const engine = new BABYLON.Engine(canvasRef.current, true);
     const scene = new BABYLON.Scene(engine);
+    sceneRef.current = scene; // Store reference to scene
 
     // Update context
     setEngine(engine);

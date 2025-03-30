@@ -55,6 +55,7 @@ export function createShapeEntity(entity: EntityNode, scene: BABYLON.Scene, shap
     newMesh.parent = entity;
     newMesh.metadata = { rootEntity: entity };
     entity.modelMesh = newMesh;
+    entity.metadata.shapeType = shapeType;
     entity.setDisplayMode('3d');
 
     // Return the created mesh

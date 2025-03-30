@@ -379,6 +379,46 @@ export function createEntity(
 }
 
 
+export function duplicateEntity(
+    scene: BABYLON.Scene,
+    sourceEntity: EntityNode,
+): EntityNode {
+    const name = sourceEntity.name + "-copy";
+    const newEntity = new EntityNode(name, scene, sourceEntity.getEntityType(), {
+        position: sourceEntity.position.clone(),
+        ratio: sourceEntity.metadata.aiData?.ratio,
+        imageSize: sourceEntity.metadata.aiData?.imageSize,
+    });
+    newEntity.rotation = sourceEntity.rotation.clone();
+    newEntity.scaling = sourceEntity.scaling.clone();
+
+    // Copy metadata
+    newEntity.metadata = { ...sourceEntity.metadata };
+
+    const sourceMeshs = sourceEntity.getChildMeshes();
+    for (const sourceMesh of sourceMeshs) {
+        if (sourceMesh instanceof BABYLON.Mesh) {
+            duplicateMesh(sourceMesh, scene);
+        }
+    }
+
+    if (newEntity.metadata.aiData?.generationLogs && newEntity.metadata.aiData?.generationLogs.length > 0) {
+        // Apply the last generation log
+        newEntity.applyGenerationLog(newEntity.metadata.aiData.generationLogs[newEntity.metadata.aiData?.generationLogs.length - 1]);
+    } 
+
+    return newEntity;
+}
+
+const duplicateMesh = (sourceMesh: BABYLON.Mesh, scene: BABYLON.Scene): BABYLON.Mesh => {
+    const newMesh = sourceMesh.clone(`${sourceMesh.name}-copy`);
+    newMesh.parent = sourceMesh.parent;
+    newMesh.metadata = { ...sourceMesh.metadata };
+    newMesh.scaling = sourceMesh.scaling.clone();
+    newMesh.rotation = sourceMesh.rotation.clone();
+    newMesh.position = sourceMesh.position.clone();
+    return newMesh;
+}
 
 const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, options: {
     aiObjectType?: AiObjectType;
@@ -393,6 +433,8 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
         options.aiObjectType = "generativeObject";
         console.warn(`No aiObjectType specified for entity ${name}, defaulting to "generativeObject"`);
     }
+
+    console.log("createAiObject", name, options.aiObjectType);
 
     if (entity.metadata.aiData) {
         entity.metadata.aiData.aiObjectType = options.aiObjectType;
@@ -425,14 +467,17 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
             assetType: 'image',
             fileUrl: placeholderUrl,
         });
-    } else if (options.aiObjectType === 'shape' && options.shapeType) {
+    } else if (options.aiObjectType === 'shape') {
+        if (!options.shapeType) {
+            throw new Error('Shape type is required for shape entities');
+        }
         // Create a primitive shape based on shapeType
         newMesh = createShapeEntity(entity, scene, options.shapeType);
     } else if (options.aiObjectType === 'generativeObject') {
         // Default object - create a plane with the right aspect ratio
         const ratio = options.ratio || '1:1';
         const { width, height } = getPlaneSize(ratio);
-        
+
         newMesh = createShapeMesh(scene, "plane");
 
         // Create default material

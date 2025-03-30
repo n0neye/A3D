@@ -141,29 +141,41 @@ export class DeleteMeshCommand implements Command {
 
 // Command for creating new entities
 export class CreateEntityCommand implements Command {
-  private entity: EntityNode;
+  private entity: EntityNode | null = null;
+  private factory: () => EntityNode;
+  private scene: BABYLON.Scene;
 
-  constructor(
-    private entityFactory: () => EntityNode,
-    private scene: BABYLON.Scene
-  ) {
-    // Create the entity but don't make it visible yet
-    this.entity = this.entityFactory();
-    this.entity.setEnabled(false);
+  constructor(factory: () => EntityNode, scene: BABYLON.Scene) {
+    this.factory = factory;
+    this.scene = scene;
   }
 
-  public execute(): void {
-    // Make the entity visible
-    this.entity.setEnabled(true);
+  execute(): void {
+    console.log("CreateEntityCommand: executing"); // Add debug log
+    if (!this.entity) {
+      try {
+        this.entity = this.factory();
+        console.log("Entity created successfully", this.entity);
+      } catch (error) {
+        console.error("Error creating entity:", error);
+      }
+    } else {
+      // Re-add the entity to the scene if it was removed
+      this.entity.setEnabled(true);
+    }
   }
 
-  public undo(): void {
-    // Hide the entity (more efficient than disposing and recreating)
-    this.entity.setEnabled(false);
+  undo(): void {
+    if (this.entity) {
+      this.entity.setEnabled(false);
+    }
   }
 
-  // Helper to get the created entity
-  public getEntity(): EntityNode {
+  redo(): void {
+    this.execute();
+  }
+
+  getEntity(): EntityNode | null {
     return this.entity;
   }
 } 
