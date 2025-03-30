@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getHeaders, getStatusUrl } from '../../utils';
 
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    // Make sure params is awaited if it's a promise
-    const resolvedParams = params instanceof Promise ? await params : params;
-    const jobId = resolvedParams.jobId;
-    
+    const { jobId } = await params;
+
     if (!jobId) {
       return NextResponse.json(
         { error: 'Job ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // check jobid is string
+    if (typeof jobId !== 'string') {
+      return NextResponse.json(
+        { error: 'Job ID must be a string' },
         { status: 400 }
       );
     }
@@ -45,4 +52,5 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}
+// --- END OF FILE route.ts ---

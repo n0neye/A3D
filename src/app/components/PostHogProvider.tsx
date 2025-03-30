@@ -32,7 +32,7 @@ function PostHogPageView() {
   useEffect(() => {
     if (pathname && posthog) {
       let url = window.origin + pathname
-      const search = searchParams.toString()
+      const search = searchParams?.toString()
       if (search) {
         url += "?" + search
       }
