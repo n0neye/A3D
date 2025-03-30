@@ -1,5 +1,4 @@
 import * as BABYLON from '@babylonjs/core';
-import { TriPlanarMaterial } from '@babylonjs/materials/TriPlanar';
 import { v4 as uuidv4 } from 'uuid';
 import { create2DBackground, createEquirectangularSkybox, defaultMaterial, setupMeshShadows, getEnvironmentObjects } from '../editor/editor-util';
 import { ImageRatio, ImageSize } from '../generation-util';
