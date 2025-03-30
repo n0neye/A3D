@@ -7,8 +7,15 @@ import Script from 'next/script'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '3D-to-Image Generator',
-  description: 'Create 3D scenes and generate images using AI',
+  title: '3D Playground | NONTECH',
+  description: '3D Playground with AI Rendering',
+  icons: {
+    icon: '/img/favicon.ico',
+  },
+  // og
+  openGraph: {
+    images: '/img/og.jpg',
+  },
 }
 
 export default function RootLayout({
@@ -42,12 +49,6 @@ export default function RootLayout({
             }
           `}
         </Script>
-        <title>Playground | NONTECH</title>
-        <link rel="icon" href="/favicon.ico" />
-        <meta name="description" content="3D Playground with AI Rendering" />
-        {/* OG Image */}
-        <meta property="og:image" content="/og.jpg" />
-
       </head>
       <body className={`${inter.className} bg-black text-gray-200`}>
         <PostHogProvider>
