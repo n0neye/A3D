@@ -187,8 +187,8 @@ export const GetDepthMap = async (scene: BABYLON.Scene, engine: BABYLON.Engine) 
         );
 
         // Adjust camera clip planes for better depth resolution if needed
-        scene.activeCamera.minZ = 0.1;  // Set to a reasonable near clip distance
-        scene.activeCamera.maxZ = 20;  // Set to a reasonable far clip distance
+        // scene.activeCamera.minZ = 0.1;  // Set to a reasonable near clip distance
+        // scene.activeCamera.maxZ = 20;  // Set to a reasonable far clip distance
 
         // Force a render to update the depth values
         scene.render();

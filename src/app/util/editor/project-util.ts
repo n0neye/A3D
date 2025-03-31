@@ -278,7 +278,7 @@ export async function saveProjectToFile(
 ): Promise<void> {
     const projectData = serializeScene(scene, ProjectSettings);
     const jsonString = JSON.stringify(projectData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    const blob = new Blob([jsonString], { type: 'application/mud' });
 
     // Try to use the File System Access API if available (modern browsers)
     if ('showSaveFilePicker' in window) {
@@ -287,8 +287,8 @@ export async function saveProjectToFile(
             const fileHandle = await window.showSaveFilePicker({
                 suggestedName: fileName,
                 types: [{
-                    description: 'JSON Files',
-                    accept: { 'application/json': ['.mud'] },
+                    description: 'MUD Files',
+                    accept: { 'application/mud': ['.mud'] },
                 }],
             });
 
