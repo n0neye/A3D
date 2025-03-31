@@ -426,6 +426,7 @@ export default function EditorContainer() {
         <div className=" panel-shape p-1 flex gap-2">
           <FileMenu />
           <GizmoModeSelector />
+          <FramePanel />
         </div>
       </div>
 

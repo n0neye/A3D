@@ -64,7 +64,7 @@ const GizmoModeSelector: React.FC = () => {
         </Tooltip>
 
 
-        <Tooltip>
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant={currentGizmoMode === 'boundingBox' ? 'default' : 'outline'}
@@ -78,7 +78,7 @@ const GizmoModeSelector: React.FC = () => {
           <TooltipContent>
             <p>Bounding Box (T)</p>
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
       </TooltipProvider>
     </>
   );
