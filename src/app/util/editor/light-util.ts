@@ -58,6 +58,7 @@ export const createShadowGenerator = (
     light: BABYLON.IShadowLight,
     scene: BABYLON.Scene
 ): BABYLON.ShadowGenerator => {
+    console.log("Creating shadow generator for light", light);
     // Create with higher resolution for better quality
     const shadowGenerator = new BABYLON.ShadowGenerator(2048, light);
 
@@ -82,6 +83,7 @@ export const createShadowGenerator = (
  * @param mesh The mesh to add
  */
 export const addMeshToShadowCasters = (mesh: BABYLON.AbstractMesh): void => {
+    console.log("Adding mesh to shadow casters", mesh.name);
     environmentObjects.shadowGenerators.forEach(generator => {
         generator.addShadowCaster(mesh);
     });
@@ -120,7 +122,7 @@ export const createPointLightEntity = (
     const position = options.position || new BABYLON.Vector3(0, 2, 0);
     const intensity = options.intensity !== undefined ? options.intensity : 0.7;
     const baseColor = options.color || new BABYLON.Color3(1, 1, 1);
-    const shadowEnabled = options.shadowEnabled !== undefined ? options.shadowEnabled : true;
+    const shadowEnabled = options.shadowEnabled !== undefined ? options.shadowEnabled : false;
 
     // Create the entity node of type 'light'
     const lightEntity = new EntityNode(name, scene, 'light', {
@@ -134,7 +136,8 @@ export const createPointLightEntity = (
             g: baseColor.g,
             b: baseColor.b
         },
-        intensity: intensity
+        intensity: intensity,
+        shadowEnabled: shadowEnabled
     };
 
     // Create the actual point light

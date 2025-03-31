@@ -235,8 +235,25 @@ export function deserializeScene(
 
     // Create entities from the saved data
     if (data.entities && Array.isArray(data.entities)) {
-        data.entities.forEach((entityData: any) => {
-            deserializeEntityNode(entityData, scene);
+        // First create all light entities so shadow generators are ready
+        const lightEntities = data.entities.filter((entityData: any) => 
+            entityData.metadata.entityType === 'light'
+        );
+        
+        // Then create all other entities
+        const otherEntities = data.entities.filter((entityData: any) => 
+            entityData.metadata.entityType !== 'light'
+        );
+        
+        // Process lights first, then other entities
+        const promises = [
+            ...lightEntities.map((entityData: any) => deserializeEntityNode(entityData, scene)),
+            ...otherEntities.map((entityData: any) => deserializeEntityNode(entityData, scene))
+        ];
+        
+        // Process all deserialization promises
+        Promise.all(promises).catch(error => {
+            console.error("Error deserializing entities:", error);
         });
     }
 

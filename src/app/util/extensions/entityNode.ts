@@ -5,7 +5,7 @@ import { ImageRatio, ImageSize } from '../generation-util';
 import { loadModel } from '../3d-generation-util';
 import { createShapeEntity, createShapeMesh } from '../editor/shape-util';
 import { placeholderMaterial } from '../editor/material-util';
-import { setupMeshShadows } from '../editor/light-util';
+import { createPointLightEntity, setupMeshShadows } from '../editor/light-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
@@ -88,6 +88,7 @@ export interface EntityMetadata {
             b: number;
         };
         intensity: number;
+        shadowEnabled?: boolean;
     };
 }
 
@@ -702,7 +703,8 @@ export function serializeEntityNode(entity: EntityNode): any {
                     g: pointLight.diffuse.g,
                     b: pointLight.diffuse.b
                 },
-                intensity: pointLight.intensity
+                intensity: pointLight.intensity,
+                shadowEnabled: pointLight.shadowEnabled
             };
         }
     }
@@ -739,12 +741,12 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
         
         // Use the light creation utility to create the light
         // This will create both the point light and its visual representation
-        const lightCreator = await import('../editor/light-util');
-        const newEntity = lightCreator.createPointLightEntity(scene, {
+        const newEntity = createPointLightEntity(scene, {
             name: data.name,
             position: toBabylonVector3(data.position),
             color: color,
-            intensity: intensity
+            intensity: intensity,
+            shadowEnabled: lightProperties.shadowEnabled
         });
         
         // Copy important properties from the newly created entity to our existing one
