@@ -97,46 +97,20 @@ export class DeleteMeshCommand implements Command {
 
   constructor(private entity: EntityNode | BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
     // Check if it's an EntityNode or a Mesh
-    if ('getPrimaryMesh' in entity) {
-      const primaryMesh = entity.getPrimaryMesh();
-      this.isVisible = primaryMesh ? primaryMesh.isEnabled() : false;
-    } else {
-      this.isVisible = entity.isEnabled();
-    }
+    this.isVisible = entity.isEnabled();
     this.gizmoManager = gizmoManager;
   }
 
   public execute(): void {
     // Hide the entity or mesh
-    if ('getPrimaryMesh' in this.entity) {
-      // It's an EntityNode
-      const primaryMesh = this.entity.getPrimaryMesh();
-      if (primaryMesh) primaryMesh.setEnabled(false);
-    } else {
-      // It's a Mesh
-      this.entity.setEnabled(false);
-    }
-    
-    // Detach gizmo if needed
+    this.entity.setEnabled(false);
     if (this.gizmoManager) {
-      // Get the mesh to check against gizmo
-      const meshToCheck = 'getPrimaryMesh' in this.entity ? 
-        this.entity.getPrimaryMesh() : this.entity;
-      
-      if (this.gizmoManager.gizmos.positionGizmo?.attachedMesh === meshToCheck) {
-        this.gizmoManager.attachToMesh(null);
-      }
+      this.gizmoManager.attachToMesh(null);
     }
   }
 
   public undo(): void {
-    // Restore visibility
-    if ('getPrimaryMesh' in this.entity) {
-      const primaryMesh = this.entity.getPrimaryMesh();
-      if (primaryMesh) primaryMesh.setEnabled(this.isVisible);
-    } else {
-      this.entity.setEnabled(this.isVisible);
-    }
+    this.entity.setEnabled(this.isVisible);
   }
 }
 

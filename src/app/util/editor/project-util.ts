@@ -1,6 +1,6 @@
 import { isEntity, EntityNode, deserializeEntityNode, serializeEntityNode } from "../extensions/entityNode";
 import * as BABYLON from '@babylonjs/core';
-import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility } from './editor-util';
+import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
 import { ImageRatio } from '../generation-util';
 import { API_Info } from '../image-render-api';
 import { LoraConfig } from '../lora';
@@ -45,6 +45,16 @@ interface SerializedEnvironment {
         visible: boolean;
         ratio: ImageRatio;
         padding: number;
+        rightExtraPadding?: number;
+    };
+    camera?: {
+        fov: number;
+        farClip: number;
+        position: { x: number, y: number, z: number };
+        target: { x: number, y: number, z: number };
+        radius: number;
+        alpha: number;
+        beta: number;
     };
 }
 
@@ -87,8 +97,50 @@ export function serializeEnvironment(scene: BABYLON.Scene): SerializedEnvironmen
         serializedEnv.ratioOverlay = {
             visible: env.ratioOverlay.frame.isVisible,
             ratio: env.ratioOverlay.ratio,
-            padding: env.ratioOverlay.padding
+            padding: env.ratioOverlay.padding,
+            rightExtraPadding: env.ratioOverlay.rightExtraPadding || 0
         };
+    }
+
+    // Serialize camera settings
+    if (scene.activeCamera) {
+        const camera = scene.activeCamera;
+        
+        if (camera instanceof BABYLON.ArcRotateCamera) {
+            // For ArcRotateCamera, save radius, alpha, beta, and target
+            serializedEnv.camera = {
+                fov: camera.fov,
+                farClip: camera.maxZ,
+                position: {
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z
+                },
+                target: {
+                    x: camera.target.x,
+                    y: camera.target.y,
+                    z: camera.target.z
+                },
+                radius: camera.radius,
+                alpha: camera.alpha,
+                beta: camera.beta
+            };
+        } else {
+            // For other camera types, just save position and fov
+            serializedEnv.camera = {
+                fov: camera.fov,
+                farClip: camera.maxZ,
+                position: {
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z
+                },
+                target: { x: 0, y: 0, z: 0 }, // Default values
+                radius: 0,
+                alpha: 0,
+                beta: 0
+            };
+        }
     }
 
     return serializedEnv;
@@ -128,6 +180,46 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
         setRatioOverlayVisibility(data.ratioOverlay.visible);
         setRatioOverlayRatio(data.ratioOverlay.ratio, scene);
         setRatioOverlayPadding(data.ratioOverlay.padding, scene);
+        
+        if (data.ratioOverlay.rightExtraPadding !== undefined) {
+            setRatioOverlayRightPadding(data.ratioOverlay.rightExtraPadding, scene);
+        }
+    }
+
+    // Apply camera settings
+    if (data.camera && scene.activeCamera) {
+        // Apply FOV and far clip
+        scene.activeCamera.fov = data.camera.fov;
+        if (data.camera.farClip !== undefined) {
+            scene.activeCamera.maxZ = data.camera.farClip;
+        }
+        
+        if (scene.activeCamera instanceof BABYLON.ArcRotateCamera) {
+            const arcCamera = scene.activeCamera as BABYLON.ArcRotateCamera;
+            
+            // Restore target position
+            if (data.camera.target) {
+                arcCamera.setTarget(new BABYLON.Vector3(
+                    data.camera.target.x,
+                    data.camera.target.y,
+                    data.camera.target.z
+                ));
+            }
+            
+            // Restore camera angles and distance
+            if (data.camera.alpha !== undefined) arcCamera.alpha = data.camera.alpha;
+            if (data.camera.beta !== undefined) arcCamera.beta = data.camera.beta;
+            if (data.camera.radius !== undefined) arcCamera.radius = data.camera.radius;
+        } else {
+            // For other camera types, just set position
+            if (data.camera.position) {
+                scene.activeCamera.position = new BABYLON.Vector3(
+                    data.camera.position.x,
+                    data.camera.position.y,
+                    data.camera.position.z
+                );
+            }
+        }
     }
 }
 
@@ -279,4 +371,39 @@ export function serializeScene(
     };
 
     return project;
+}
+
+// Utility function to download an image from a URL
+export async function downloadImage(imageUrl: string, filename?: string): Promise<void> {
+  if (!imageUrl) return;
+  
+  // Create default filename if not provided
+  const defaultFilename = imageUrl.split('/').pop() || `render-${new Date().toISOString()}.png`;
+  const downloadFilename = filename || defaultFilename;
+  
+  try {
+    // Convert the dataURL to a blob
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    
+    // Fallback method for browsers that don't support File System Access API
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadFilename;
+    a.target = '_blank';
+    
+    // Append to body and click (to ensure it works in all browsers)
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+  } catch (error) {
+    console.error("Error downloading image:", error);
+  }
 }

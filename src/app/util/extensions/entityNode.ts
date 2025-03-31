@@ -1,10 +1,10 @@
 import * as BABYLON from '@babylonjs/core';
-import { TriPlanarMaterial } from '@babylonjs/materials/TriPlanar';
 import { v4 as uuidv4 } from 'uuid';
-import { create2DBackground, createEquirectangularSkybox, defaultMaterial, setupMeshShadows, getEnvironmentObjects } from '../editor/editor-util';
+import { create2DBackground, createEquirectangularSkybox,  setupMeshShadows, getEnvironmentObjects } from '../editor/editor-util';
 import { ImageRatio, ImageSize } from '../generation-util';
 import { loadModel } from '../3d-generation-util';
 import { createShapeEntity, createShapeMesh } from '../editor/shape-util';
+import { placeholderMaterial } from '../editor/material-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
@@ -94,7 +94,7 @@ export class EntityNode extends BABYLON.TransformNode {
     public tempPrompt: string | null = null;
 
     // Progress event - public event handler
-    public readonly onProgress = new EventHandler<EntityProcessingState>();
+    public readonly onProgress = new EventHandler<{entity: EntityNode, state: EntityProcessingState}>();
 
     constructor(
         name: string,
@@ -142,7 +142,7 @@ export class EntityNode extends BABYLON.TransformNode {
         this.metadata.processingState = state;
 
         // Notify all listeners
-        this.onProgress.trigger(state);
+        this.onProgress.trigger({entity: this, state});
     }
 
     // Get the processing state
@@ -358,6 +358,7 @@ export function createEntity(
     options: {
         aiObjectType?: AiObjectType;
         position?: BABYLON.Vector3;
+        scale?: BABYLON.Vector3;
         ratio?: ImageRatio;
         imageSize?: ImageSize;
         name?: string;
@@ -446,6 +447,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     imageSize?: ImageSize;
     imageUrl?: string;
     shapeType?: ShapeType;
+    scale?: BABYLON.Vector3;
 }) => {
     if (!options.aiObjectType) {
         // Instead of throwing an error, set a default aiObjectType
@@ -491,7 +493,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
             throw new Error('Shape type is required for shape entities');
         }
         // Create a primitive shape based on shapeType
-        newMesh = createShapeEntity(entity, scene, options.shapeType);
+        newMesh = createShapeEntity(entity, scene, options.shapeType, options);
     } else if (options.aiObjectType === 'generativeObject') {
         newMesh = createGenerativeObject(scene, entity, options);
     } else {
@@ -519,15 +521,8 @@ const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, option
 
     const newMesh = createShapeMesh(scene, "plane");
 
-    // Create default material
-    const material = new BABYLON.StandardMaterial(`${name}-material`, scene);
-    material.diffuseColor = new BABYLON.Color3(0, 0, 0);
-    material.emissiveColor = new BABYLON.Color3(1, 1, 1);
-    material.specularColor = new BABYLON.Color3(0, 0, 0);
-    material.backFaceCulling = false;
-
     // Apply material to mesh
-    newMesh.material = material;
+    newMesh.material = placeholderMaterial;
 
     // Always face the camera
     newMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
@@ -547,6 +542,16 @@ export const applyImageToEntity = async (
     // Get the plane mesh
     const planeMesh = entity.planeMesh;
     if (!planeMesh) return;
+
+    if(planeMesh.material === placeholderMaterial){
+        // Create material
+        const newMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
+        newMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        newMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
+        newMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+        newMaterial.backFaceCulling = false;
+        planeMesh.material = newMaterial;
+    }
 
     console.log('applyImageToEntity', imageUrl);
 

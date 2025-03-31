@@ -3,24 +3,12 @@ import { GridMaterial } from "@babylonjs/materials/grid";
 import { createEntity, EntityNode, ShapeType } from "../extensions/entityNode";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation-util';
-import { TriPlanarMaterial } from "@babylonjs/materials/TriPlanar/triPlanarMaterial";
+import * as Materials from "@babylonjs/materials";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/components/HistoryManager";
 import { loadShapeMeshes } from "./shape-util";
-
-export const defaultTex={
-    // Concrete
-    color: "./textures/concrete_1/color_2k.jpg",
-    normal: "./textures/concrete_1/normal_2k.jpg",
-    // Plaster
-    // color: "./textures/white_rough_plaster_ao_2k.jpg",
-    // normal: "./textures/white_rough_plaster_nor_gl_2k.jpg",
-    // Clay
-    // color: "./textures/patterned_clay_plaster_ao_2k.jpg",
-    // normal: "./textures/patterned_clay_plaster_nor_gl_2k.jpg",
-}
-
+import { createDefaultMaterials } from "./material-util";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
@@ -102,7 +90,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
     createRatioOverlay(scene);
 
     // Create default material
-    createDefaultMaterial(scene);
+    createDefaultMaterials(scene);
 
     // Load shape meshes before creating any shapes
     await loadShapeMeshes(scene);
@@ -118,6 +106,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
         aiObjectType: "shape",
         shapeType: "floor",
         position: new BABYLON.Vector3(0, 0, 0),
+        scale: new BABYLON.Vector3(50, 50, 50),
     });
 
     createSkybox(scene);
@@ -133,30 +122,6 @@ export const createSkybox = (scene: BABYLON.Scene) => {
 
 }
 
-export let defaultMaterial: BABYLON.Material;
-export let defaultPBRMaterial: BABYLON.PBRMaterial;
-export const createDefaultMaterial = (scene: BABYLON.Scene) => {
-    const material = new TriPlanarMaterial(`BasicTriPlanarMaterial`, scene);
-    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
-    material.backFaceCulling = false;
-    material.diffuseTextureX = new BABYLON.Texture(defaultTex.color, scene);
-    material.diffuseTextureY = new BABYLON.Texture(defaultTex.color, scene);
-    material.diffuseTextureZ = new BABYLON.Texture(defaultTex.color, scene);
-    material.normalTextureX = new BABYLON.Texture(defaultTex.normal, scene);
-    material.normalTextureY = new BABYLON.Texture(defaultTex.normal, scene);
-    material.normalTextureZ = new BABYLON.Texture(defaultTex.normal, scene);
-    material.tileSize = 3;
-
-    const material2 = new BABYLON.PBRMaterial(`BasicPBRMaterial`, scene);
-    material2.albedoColor = new BABYLON.Color3(1, 1, 1);
-    material2.backFaceCulling = false;
-    material2.albedoTexture = new BABYLON.Texture(defaultTex.color, scene);
-    material2.bumpTexture = new BABYLON.Texture(defaultTex.normal, scene);
-
-    defaultMaterial = material;
-    defaultPBRMaterial = material2;
-    return material;
-}
 
 /**
  * Creates an equirectangular skybox (more suitable for 21:9 panoramic images)
@@ -886,4 +851,50 @@ export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) 
     }
 
     return gizmoManager;
+}
+
+/**
+ * Sets the field of view (FOV) for the active camera in the scene
+ * @param fov The FOV in radians
+ * @param scene The Babylon.js scene
+ */
+export function setCameraFOV(fov: number, scene: BABYLON.Scene): void {
+  if (!scene.activeCamera) return;
+  
+  // Make sure the FOV is within reasonable bounds (about 20-90 degrees)
+  const clampedFOV = Math.max(0.35, Math.min(1.57, fov));
+  scene.activeCamera.fov = clampedFOV;
+}
+
+/**
+ * Gets the current field of view (FOV) from the active camera in the scene
+ * @param scene The Babylon.js scene
+ * @returns The current FOV in radians, or a default value if no camera is available
+ */
+export function getCameraFOV(scene: BABYLON.Scene): number {
+  if (!scene.activeCamera) return 0.8; // Default FOV (approximately 45 degrees)
+  return scene.activeCamera.fov;
+}
+
+/**
+ * Sets the far clip plane distance for the active camera in the scene
+ * @param farClip The far clip distance
+ * @param scene The Babylon.js scene
+ */
+export function setCameraFarClip(farClip: number, scene: BABYLON.Scene): void {
+  if (!scene.activeCamera) return;
+  
+  // Make sure the far clip is within reasonable bounds
+  const clampedFarClip = Math.max(10, Math.min(1000, farClip));
+  scene.activeCamera.maxZ = clampedFarClip;
+}
+
+/**
+ * Gets the current far clip plane distance from the active camera in the scene
+ * @param scene The Babylon.js scene
+ * @returns The current far clip distance, or a default value if no camera is available
+ */
+export function getCameraFarClip(scene: BABYLON.Scene): number {
+  if (!scene.activeCamera) return 20; // Default far clip
+  return scene.activeCamera.maxZ;
 }

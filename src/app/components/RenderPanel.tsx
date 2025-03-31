@@ -7,7 +7,7 @@ import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
-import { SerializedProjectSettings } from '../util/editor/project-util';
+import { SerializedProjectSettings, downloadImage } from '../util/editor/project-util';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 
 // Import Shadcn components
@@ -322,7 +322,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       }
     } catch (error) {
       console.error("Error generating preview:", error);
-      alert("Failed to generate preview. Please try again.");
+      alert("Failed to generate Render. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -382,10 +382,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                     onClick={() => {
                       if (!imageUrl) return;
-                      const a = document.createElement('a');
-                      a.href = imageUrl;
-                      a.download = imageUrl.split('/').pop() || 'image.png';
-                      a.click();
+                      downloadImage(imageUrl);
                     }}
                   >
                     <IconDownload size={16} />

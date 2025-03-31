@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconArrowRight, IconX, IconDownload } from '@tabler/icons-react';
-import { RenderLog } from '../util/editor/project-util';
+import { RenderLog, downloadImage } from '../util/editor/project-util';
 
 interface GalleryPanelProps {
   isOpen: boolean;
@@ -91,11 +91,7 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
               size="icon"
               className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
               onClick={() => {
-                const a = document.createElement('a');
-                a.href = currentImage.imageUrl;
-                a.download = `render-${new Date().toISOString()}.png`;
-                a.target = '_blank';
-                a.click();
+                downloadImage(currentImage.imageUrl, `render-${new Date().toISOString()}.png`);
               }}
             >
               <IconDownload size={20} />

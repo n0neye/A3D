@@ -7,8 +7,15 @@ import Script from 'next/script'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '3D-to-Image Generator',
-  description: 'Create 3D scenes and generate images using AI',
+  title: '3D Playground | NONTECH',
+  description: '3D Playground with AI Rendering',
+  icons: {
+    icon: '/img/favicon.ico',
+  },
+  // og
+  openGraph: {
+    images: '/img/og.jpg',
+  },
 }
 
 export default function RootLayout({
