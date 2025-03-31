@@ -15,7 +15,9 @@ import {
   setRatioOverlayPadding,
   setRatioOverlayRightPadding,
   setRatioOverlayVisibility,
-  getEnvironmentObjects
+  getEnvironmentObjects,
+  setCameraFOV,
+  getCameraFOV
 } from '../util/editor/editor-util';
 import { TakeFramedScreenshot } from '../util/render-util';
 
@@ -25,6 +27,7 @@ const FramePanel: React.FC = () => {
   const [padding, setPadding] = useState(10); // Default padding
   const [rightExtraPadding, setRightExtraPadding] = useState(0); // Default extra right padding
   const [ratio, setRatio] = useState<ImageRatio>('16:9'); // Default ratio
+  const [fov, setFov] = useState(0.8); // Default FOV in radians (approximately 45 degrees)
 
   // Update the actual overlay when state changes
   useEffect(() => {
@@ -36,6 +39,12 @@ const FramePanel: React.FC = () => {
     setRatioOverlayRatio(ratio, scene);
   }, [overlayVisible, padding, rightExtraPadding, ratio, scene]);
 
+  // Update the camera FOV when state changes
+  useEffect(() => {
+    if (!scene) return;
+    setCameraFOV(fov, scene);
+  }, [fov, scene]);
+
   // Initialize state from current environment overlay settings
   useEffect(() => {
     if (!scene) return;
@@ -46,6 +55,12 @@ const FramePanel: React.FC = () => {
       setPadding(env.ratioOverlay.padding);
       setRightExtraPadding(env.ratioOverlay.rightExtraPadding || 0);
       setRatio(env.ratioOverlay.ratio);
+    }
+    
+    // Initialize FOV from current camera
+    const currentFOV = getCameraFOV(scene);
+    if (currentFOV) {
+      setFov(currentFOV);
     }
   }, [scene]);
 
@@ -65,6 +80,13 @@ const FramePanel: React.FC = () => {
     setOverlayVisible(checked);
   };
 
+  const handleFovChange = (newValues: number[]) => {
+    setFov(newValues[0]);
+  };
+
+  // Convert radians to degrees for display
+  const fovDegrees = Math.round(fov * 180 / Math.PI);
+
   return (
     <div className='group relative'>
       <Button
@@ -79,6 +101,23 @@ const FramePanel: React.FC = () => {
       <div className="panel-shape max-w-sm p-4 space-y-4 w-48 ">
 
         <div className="space-y-4">
+          
+        <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="fov-slider" className="text-sm">Field of View</Label>
+              <span className="text-xs text-gray-400">{fovDegrees}°</span>
+            </div>
+            <Slider
+              id="fov-slider"
+              value={[fov]}
+              min={0.35}
+              max={1.57}
+              step={0.01}
+              onValueChange={handleFovChange}
+            />
+          </div>
+
+          <Separator />
           <div className="flex justify-between items-center">
             <Label htmlFor="overlay-visibility" className="text-sm">Show Frame</Label>
             <Switch
@@ -88,7 +127,7 @@ const FramePanel: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="ratio-selector" className="text-sm">Aspect Ratio</Label>
               <RatioSelector
@@ -97,7 +136,7 @@ const FramePanel: React.FC = () => {
                 disabled={!overlayVisible}
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -115,7 +154,7 @@ const FramePanel: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="right-extra-padding-slider" className="text-sm">Right Extra Padding</Label>
               <span className="text-xs text-gray-400">{rightExtraPadding}%</span>
@@ -129,7 +168,8 @@ const FramePanel: React.FC = () => {
               step={1}
               onValueChange={handleRightExtraPaddingChange}
             />
-          </div>
+          </div> */}
+
         </div>
       </div></div></div>
   );

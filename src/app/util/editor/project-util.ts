@@ -1,6 +1,6 @@
 import { isEntity, EntityNode, deserializeEntityNode, serializeEntityNode } from "../extensions/entityNode";
 import * as BABYLON from '@babylonjs/core';
-import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility } from './editor-util';
+import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
 import { ImageRatio } from '../generation-util';
 import { API_Info } from '../image-render-api';
 import { LoraConfig } from '../lora';
@@ -45,6 +45,10 @@ interface SerializedEnvironment {
         visible: boolean;
         ratio: ImageRatio;
         padding: number;
+        rightExtraPadding?: number;
+    };
+    camera?: {
+        fov: number;
     };
 }
 
@@ -87,7 +91,16 @@ export function serializeEnvironment(scene: BABYLON.Scene): SerializedEnvironmen
         serializedEnv.ratioOverlay = {
             visible: env.ratioOverlay.frame.isVisible,
             ratio: env.ratioOverlay.ratio,
-            padding: env.ratioOverlay.padding
+            padding: env.ratioOverlay.padding,
+            rightExtraPadding: env.ratioOverlay.rightExtraPadding || 0
+        };
+    }
+
+    // Serialize camera settings
+    if (scene.activeCamera) {
+        const fov = scene.activeCamera.fov;
+        serializedEnv.camera = {
+            fov: fov
         };
     }
 
@@ -128,6 +141,15 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
         setRatioOverlayVisibility(data.ratioOverlay.visible);
         setRatioOverlayRatio(data.ratioOverlay.ratio, scene);
         setRatioOverlayPadding(data.ratioOverlay.padding, scene);
+        
+        if (data.ratioOverlay.rightExtraPadding !== undefined) {
+            setRatioOverlayRightPadding(data.ratioOverlay.rightExtraPadding, scene);
+        }
+    }
+
+    // Apply camera settings
+    if (data.camera && scene.activeCamera) {
+        scene.activeCamera.fov = data.camera.fov;
     }
 }
 

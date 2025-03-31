@@ -851,3 +851,26 @@ export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) 
 
     return gizmoManager;
 }
+
+/**
+ * Sets the field of view (FOV) for the active camera in the scene
+ * @param fov The FOV in radians
+ * @param scene The Babylon.js scene
+ */
+export function setCameraFOV(fov: number, scene: BABYLON.Scene): void {
+  if (!scene.activeCamera) return;
+  
+  // Make sure the FOV is within reasonable bounds (about 20-90 degrees)
+  const clampedFOV = Math.max(0.35, Math.min(1.57, fov));
+  scene.activeCamera.fov = clampedFOV;
+}
+
+/**
+ * Gets the current field of view (FOV) from the active camera in the scene
+ * @param scene The Babylon.js scene
+ * @returns The current FOV in radians, or a default value if no camera is available
+ */
+export function getCameraFOV(scene: BABYLON.Scene): number {
+  if (!scene.activeCamera) return 0.8; // Default FOV (approximately 45 degrees)
+  return scene.activeCamera.fov;
+}
