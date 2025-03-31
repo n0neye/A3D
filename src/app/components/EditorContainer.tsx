@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { createEntity } from '../util/extensions/entityNode';
 import Guide from './Guide';
 import { availableAPIs } from '../util/image-render-api';
-import { RenderLog } from '../util/editor/project-util';
+import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -258,14 +258,14 @@ export default function EditorContainer() {
     // Duplicate selected entity (Ctrl+D)
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
       event.preventDefault(); // Prevent browser's bookmark dialog
-      
+
       const currentEntity = getCurrentSelectedEntity();
       const currentScene = sceneRef.current;
 
       console.log("Duplicate selected entity", currentEntity, currentScene);
-      
+
       if (!currentEntity || !currentScene) return;
-      
+
       // Create the duplicate entity
       const duplicateCommand = new CreateEntityAsyncCommand(
         async () => {
@@ -276,7 +276,7 @@ export default function EditorContainer() {
         },
         currentScene
       );
-      
+
       // Execute command and select the new entity
       historyManager.executeCommand(duplicateCommand);
       const newEntity = duplicateCommand.getEntity();
@@ -323,7 +323,7 @@ export default function EditorContainer() {
     }
   };
 
-  
+
   const handleKeyUp = (e: KeyboardEvent) => {
     switch (e.key) {
       case 'e':
@@ -335,6 +335,20 @@ export default function EditorContainer() {
       case 'w':
         isWKeyPressed = false;
         break;
+    }
+  };
+
+  const loadDefaultProject = async (scene: BABYLON.Scene) => {
+    try {
+      const url = "/demoAssets/default.json";
+      await loadProjectFromUrl(url, scene, (settings: SerializedProjectSettings) => {
+        // Apply all settings at once via context
+        updateProjectSettings(settings);
+      });
+      console.log("Default project loaded successfully");
+    } catch (error) {
+      console.error("Failed to load default project:", error);
+      // Continue without the default project if it fails to load
     }
   };
 
@@ -351,6 +365,8 @@ export default function EditorContainer() {
     setEngine(engine);
     setScene(scene);
     initScene(canvasRef.current, scene);
+
+    loadDefaultProject(scene);
 
     // Set up gizmo manager
     const gizmoManager = initGizmo(scene, historyManager);
@@ -412,7 +428,7 @@ export default function EditorContainer() {
       // Find the API by name
       selectedAPI: availableAPIs.find(api => api.name === renderLog.model)?.id || availableAPIs[0].id
     };
-    
+
     // Update the project settings
     updateProjectSettings(settings);
   };

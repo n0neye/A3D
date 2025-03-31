@@ -424,3 +424,31 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
     console.error("Error downloading image:", error);
   }
 }
+
+// Load project from a URL
+export async function loadProjectFromUrl(
+  url: string,
+  scene: BABYLON.Scene,
+  applyProjectSettings?: (settings: SerializedProjectSettings) => void
+): Promise<void> {
+  try {
+    // Fetch the project data from the URL
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load project from URL: ${response.status} ${response.statusText}`);
+    }
+    
+    // Parse the JSON data
+    const projectData = await response.json();
+    
+    // Deserialize the scene using the data
+    deserializeScene(projectData, scene, applyProjectSettings);
+    
+    console.log(`Project loaded successfully from ${url}`);
+    return Promise.resolve();
+  } catch (error) {
+    console.error("Error loading project from URL:", error);
+    return Promise.reject(error);
+  }
+}
