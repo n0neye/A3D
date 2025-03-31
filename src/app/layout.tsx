@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { PostHogProvider } from './components/PostHogProvider'
 import Script from 'next/script'
+import { initAnalytics } from './util/analytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,6 +24,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Initialize analytics on client side
+  if (typeof window !== 'undefined') {
+    initAnalytics();
+  }
+
   return (
     <html lang="en" className="dark">
       <head>

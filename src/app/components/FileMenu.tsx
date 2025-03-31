@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import RenderPanel from './RenderPanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
+import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
+import { isEntity } from '../util/extensions/entityNode';
 
 export default function FileMenu() {
   const { scene } = useEditorContext();
@@ -18,6 +20,12 @@ export default function FileMenu() {
     if (scene) {
       const projectName = `proj-${new Date().toISOString().split('T')[0]}.mud`;
       saveProjectToFile(scene, ProjectSettings, projectName);
+      
+      // Track save event
+      trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
+        entities_count: scene.rootNodes.filter(node => isEntity(node)).length,
+        has_settings: !!ProjectSettings,
+      });
     }
   };
 
@@ -31,14 +39,26 @@ export default function FileMenu() {
     try {
       const file = e.target.files[0];
       await loadProjectFromFile(file, scene, (settings: SerializedProjectSettings) => {
-        // Apply all settings at once via context
         updateProjectSettings(settings);
       });
-      // Reset file input so the same file can be loaded again
+      // Reset file input
       e.target.value = '';
+      
+      // Track load event
+      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+        file_size: file.size,
+        file_name: file.name,
+        success: true,
+      });
     } catch (error) {
       console.error('Error loading project:', error);
       alert('Failed to load project. See console for details.');
+      
+      // Track load failure
+      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+        error_message: error instanceof Error ? error.message : String(error),
+        success: false,
+      });
     }
   };
   
