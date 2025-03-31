@@ -76,7 +76,7 @@ export default function FileMenu() {
         title="Save Project (Ctrl+S)"
       >
         <IconDeviceFloppy size={18} />
-        <span>Save</span>
+        {/* <span>Save</span> */}
       </Button>
       
       {/* Open Button with Tabler icon */}
@@ -87,7 +87,7 @@ export default function FileMenu() {
         title="Open Project (Ctrl+O)"
       >
         <IconFolderOpen size={18} />
-        <span>Open</span>
+        {/* <span>Open</span> */}
       </Button>
       
       {/* Hidden file input for opening files */}
@@ -95,7 +95,7 @@ export default function FileMenu() {
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileChange} 
-        accept=".json" 
+        accept=".mud" 
         className="hidden" 
       />
     </div>

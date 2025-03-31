@@ -425,8 +425,8 @@ export default function EditorContainer() {
       <div className='fixed top-2  w-full flex justify-center items-center'>
         <div className=" panel-shape p-1 flex gap-2">
           <FileMenu />
-          <GizmoModeSelector />
           <FramePanel />
+          <GizmoModeSelector />
         </div>
       </div>
 

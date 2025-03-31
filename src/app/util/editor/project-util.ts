@@ -274,7 +274,7 @@ export function deserializeScene(
 export async function saveProjectToFile(
     scene: BABYLON.Scene,
     ProjectSettings?: SerializedProjectSettings,
-    fileName: string = 'scene-project.json'
+    fileName: string = 'scene-project.mud'
 ): Promise<void> {
     const projectData = serializeScene(scene, ProjectSettings);
     const jsonString = JSON.stringify(projectData, null, 2);
@@ -288,7 +288,7 @@ export async function saveProjectToFile(
                 suggestedName: fileName,
                 types: [{
                     description: 'JSON Files',
-                    accept: { 'application/json': ['.json'] },
+                    accept: { 'application/json': ['.mud'] },
                 }],
             });
 
