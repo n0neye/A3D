@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   // og
   openGraph: {
-    images: '/img/og.jpg',
+    images: '/img/og2.jpg',
   },
 }
 
