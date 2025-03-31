@@ -364,13 +364,16 @@ export default function EditorContainer() {
     // Update context
     setEngine(engine);
     setScene(scene);
-    initScene(canvasRef.current, scene);
 
-    loadDefaultProject(scene);
+    const init = async (canvas: HTMLCanvasElement) => {
+      await initScene(canvas, scene);
+      await loadDefaultProject(scene);
+      // Set up gizmo manager
+      const gizmoManager = initGizmo(scene, historyManager);
+      setGizmoManager(gizmoManager);
+    }
 
-    // Set up gizmo manager
-    const gizmoManager = initGizmo(scene, historyManager);
-    setGizmoManager(gizmoManager);
+    init(canvasRef.current);
 
     // Start the render loop
     engine.runRenderLoop(() => {
