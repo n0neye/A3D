@@ -775,7 +775,7 @@ export function getCameraFarClip(scene: BABYLON.Scene): number {
 
 
   // Add a utility function to toggle gizmo visibility
-  export const setGizmoVisibility = (visible: boolean, scene: BABYLON.Scene | null) => {
+  export const UpdateGizmoVisibility = (visible: boolean, scene: BABYLON.Scene) => {
     if (!scene) return;
 
     // Hide/show light entity gizmos
