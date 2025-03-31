@@ -20,6 +20,8 @@ import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityA
 import { v4 as uuidv4 } from 'uuid';
 import { createEntity } from '../util/extensions/entityNode';
 import Guide from './Guide';
+import { availableAPIs } from '../util/image-render-api';
+import { RenderLog } from '../util/editor/project-util';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -42,7 +44,7 @@ export default function EditorContainer() {
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
 
-  const { ProjectSettings } = useProjectSettings();
+  const { ProjectSettings, updateProjectSettings } = useProjectSettings();
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
@@ -399,6 +401,22 @@ export default function EditorContainer() {
     };
   }, []);
 
+  const handleApplyRenderSettings = (renderLog: RenderLog) => {
+    // Extract settings from the renderLog
+    const settings = {
+      prompt: renderLog.prompt,
+      seed: renderLog.seed,
+      promptStrength: renderLog.promptStrength,
+      depthStrength: renderLog.depthStrength,
+      selectedLoras: renderLog.selectedLoras || [],
+      // Find the API by name
+      selectedAPI: availableAPIs.find(api => api.name === renderLog.model)?.id || availableAPIs[0].id
+    };
+    
+    // Update the project settings
+    updateProjectSettings(settings);
+  };
+
   return (
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
       <div className="flex h-full">
@@ -440,6 +458,7 @@ export default function EditorContainer() {
         images={ProjectSettings.renderLogs}
         currentIndex={currentGalleryIndex}
         onSelectImage={setCurrentGalleryIndex}
+        onApplySettings={handleApplyRenderSettings}
       />
       {/* <DebugLayer /> */}
 

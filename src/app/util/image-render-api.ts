@@ -95,6 +95,20 @@ export async function renderImage(params: ImageToImageParams): Promise<ImageToIm
 
   console.log('renderImage', params.modelApiInfo.id, params);
 
+  if (!params.negativePrompt) {
+    // Split prompt input by "--no"
+    const promptParts = params.prompt.split("--no");
+    const positivePrompt = promptParts[0];
+
+    let negativePrompt = promptParts[1] ? promptParts[1] + ", " : "";
+    negativePrompt += 'watermark, logo';
+
+    console.log("renderImage: promptParts", positivePrompt, "negativePrompt: ", negativePrompt);
+
+    params.negativePrompt = negativePrompt;
+    params.prompt = positivePrompt;
+  }
+  
   switch (params.modelApiInfo.id) {
     case 'fal-turbo':
       return generateFalTurboImage(params);
