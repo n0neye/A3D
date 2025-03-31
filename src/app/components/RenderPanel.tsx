@@ -26,7 +26,7 @@ interface RenderPanelProps {
 }
 
 const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
-  const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager } = useEditorContext();
+  const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setGizmoVisible } = useEditorContext();
   const { ProjectSettings, updateProjectSettings, addRenderLog } = useProjectSettings();
 
   // State variables
@@ -241,6 +241,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     }
   };
 
+
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null);
@@ -248,6 +249,9 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     if (gizmoManager) {
       gizmoManager.attachToNode(null);
     }
+    
+    // Hide gizmos before rendering
+    setGizmoVisible(false);
 
     try {
       // Start measuring time
@@ -285,6 +289,8 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       const preProcessingTime = Date.now();
       console.log(`%cPre-processing time: ${(preProcessingTime - startTime) / 1000} seconds`, "color: #4CAF50; font-weight: bold;");
 
+      // Restore gizmos after rendering
+      setGizmoVisible(true);
 
       if (isTest) {
         return;

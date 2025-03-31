@@ -1,8 +1,9 @@
 import * as BABYLON from '@babylonjs/core';
-import { getEnvironmentObjects, setupMeshShadows } from './editor-util';
+import { getEnvironmentObjects } from './editor-util';
 import { EntityNode } from '../extensions/entityNode';
 import { ShapeType } from '../extensions/entityNode';
 import { defaultMaterial } from './material-util';
+import { setupMeshShadows } from './light-util';
 
 // Add this function to load all shape meshes once
 export async function loadShapeMeshes(scene: BABYLON.Scene): Promise<void> {

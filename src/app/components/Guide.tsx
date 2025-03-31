@@ -22,8 +22,8 @@ export default function Guide() {
 
     // Show welcome message on first visit
     useEffect(() => {
-        // const hasVisited = localStorage.getItem('hasVisitedBefore');
-        const hasVisited = false;
+        const hasVisited = localStorage.getItem('hasVisitedBefore');
+        // const hasVisited = false;
         if (!hasVisited) {
             setShowWelcome(true);
             localStorage.setItem('hasVisitedBefore', 'true');

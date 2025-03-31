@@ -15,8 +15,10 @@ import {
   IconPlus,
   IconSquareRotated,
   IconOvalVertical,
-  IconSquare
+  IconSquare,
+  IconBulb,
 } from '@tabler/icons-react';
+import { createPointLightEntity } from '../util/editor/light-util';
 
 
 const AddPanel: React.FC = () => {
@@ -74,6 +76,29 @@ const AddPanel: React.FC = () => {
 
     // Hide the shapes menu after creation
     setShowShapesMenu(false);
+  };
+
+  // Handle light entity creation
+  const handleCreateLight = () => {
+    if (!scene) return;
+
+    console.log('Creating point light entity');
+
+    // Create a command with factory function
+    const createCommand = new CreateEntityCommand(
+      () => createPointLightEntity(scene, {
+        position: new BABYLON.Vector3(0, 2, 0),
+        name: `light-${uuidv4().substring(0, 8)}`,
+        color: new BABYLON.Color3(1, 0.8, 0.4) // Warm light color by default
+      }),
+      scene
+    );
+    
+    // Execute the command through history manager
+    historyManager.executeCommand(createCommand);
+    
+    // Select the newly created entity
+    setSelectedEntity(createCommand.getEntity());
   };
 
   // List of primitive shapes with icons
@@ -137,6 +162,19 @@ const AddPanel: React.FC = () => {
               </Card></div>
           )}
         </div>
+
+        
+        <Button
+          onClick={handleCreateLight}
+          variant="secondary"
+          className="h-14 w-14 rounded-md"
+        >
+          <div className="flex flex-col items-center justify-center">
+            <IconBulb size={20} className="mb-1" />
+            <span className="text-xs">Light</span>
+          </div>
+        </Button>
+
       </div>
     </div>
   );

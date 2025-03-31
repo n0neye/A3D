@@ -1,10 +1,11 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { create2DBackground, createEquirectangularSkybox,  setupMeshShadows, getEnvironmentObjects } from '../editor/editor-util';
+import { create2DBackground, createEquirectangularSkybox, getEnvironmentObjects } from '../editor/editor-util';
 import { ImageRatio, ImageSize } from '../generation-util';
 import { loadModel } from '../3d-generation-util';
 import { createShapeEntity, createShapeMesh } from '../editor/shape-util';
 import { placeholderMaterial } from '../editor/material-util';
+import { createPointLightEntity, setupMeshShadows } from '../editor/light-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
@@ -78,6 +79,17 @@ export interface EntityMetadata {
 
     // For shape entities
     shapeType?: ShapeType;
+    
+    // For light entities
+    lightProperties?: {
+        color: {
+            r: number;
+            g: number;
+            b: number;
+        };
+        intensity: number;
+        shadowEnabled?: boolean;
+    };
 }
 
 // Custom Entity Class that extends TransformNode
@@ -86,7 +98,7 @@ export class EntityNode extends BABYLON.TransformNode {
     public metadata: EntityMetadata;
 
     // Entity mesh properties
-    public planeMesh: BABYLON.AbstractMesh | null = null;
+    public gizmoMesh: BABYLON.AbstractMesh | null = null;
     public modelMesh: BABYLON.AbstractMesh | null = null;
     public displayMode: '2d' | '3d' = '2d';
 
@@ -159,7 +171,7 @@ export class EntityNode extends BABYLON.TransformNode {
         if (this.displayMode === '3d' && this.modelMesh) {
             return this.modelMesh;
         }
-        return this.planeMesh;
+        return this.gizmoMesh;
     }
 
     // Toggle between 2D and 3D modes
@@ -167,8 +179,8 @@ export class EntityNode extends BABYLON.TransformNode {
         this.displayMode = mode;
 
         // Set visibility based on mode
-        if (this.planeMesh) {
-            this.planeMesh.setEnabled(mode === '2d');
+        if (this.gizmoMesh) {
+            this.gizmoMesh.setEnabled(mode === '2d');
         }
 
         if (this.modelMesh) {
@@ -178,7 +190,7 @@ export class EntityNode extends BABYLON.TransformNode {
 
     // Get the entity type
     public getEntityType(): EntityType {
-        return this.metadata.entityType;
+        return this.metadata?.entityType;
     }
 
     // Get entity metadata
@@ -307,14 +319,14 @@ export class EntityNode extends BABYLON.TransformNode {
 
     // Update aspect ratio of the entity
     public updateAspectRatio(ratio: ImageRatio): void {
-        if (!this.metadata.aiData || !this.planeMesh) return;
+        if (!this.metadata.aiData || !this.gizmoMesh) return;
 
         // Save the new ratio in metadata
         this.metadata.aiData.ratio = ratio;
 
         // Get the new dimensions based on ratio
         const { width, height } = getPlaneSize(ratio);
-        this.planeMesh.scaling = new BABYLON.Vector3(width, height, 1);
+        this.gizmoMesh.scaling = new BABYLON.Vector3(width, height, 1);
     }
 }
 
@@ -528,7 +540,7 @@ const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, option
     newMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
     // Set up plane mesh
-    entity.planeMesh = newMesh;
+    entity.gizmoMesh = newMesh;
     return newMesh;
     }
 
@@ -540,7 +552,7 @@ export const applyImageToEntity = async (
     ratio?: ImageRatio
 ): Promise<void> => {
     // Get the plane mesh
-    const planeMesh = entity.planeMesh;
+    const planeMesh = entity.gizmoMesh;
     if (!planeMesh) return;
 
     if(planeMesh.material === placeholderMaterial){
@@ -576,7 +588,7 @@ export const applyImageToEntity = async (
 
     if (isBackground) {
         // For backgrounds, we'll replace the entire mesh
-        const oldMesh = entity.planeMesh;
+        const oldMesh = entity.gizmoMesh;
 
         // Create a new background with the new image
         const newBackground = create2DBackground(scene, imageDataUrl);
@@ -586,7 +598,7 @@ export const applyImageToEntity = async (
         newBackground.metadata = { rootEntity: entity };
 
         // Replace the reference
-        entity.planeMesh = newBackground;
+        entity.gizmoMesh = newBackground;
 
         // Dispose the old mesh
         if (oldMesh) {
@@ -634,8 +646,6 @@ export const applyImageToEntity = async (
     entity.setDisplayMode('2d');
 }
 
-// Serialization and deserialization functions for projects
-
 // Serialize an EntityNode to a JSON-compatible object
 
 type Vector3Data = {
@@ -682,13 +692,67 @@ export function serializeEntityNode(entity: EntityNode): any {
         displayMode: entity.displayMode
     };
 
+    // Add light-specific properties if this is a light entity
+    if (entity.getEntityType() === 'light') {
+        // Find the point light
+        const pointLight = findEntityPointLight(entity);
+        if (pointLight) {
+            serialized.metadata.lightProperties = {
+                color: {
+                    r: pointLight.diffuse.r,
+                    g: pointLight.diffuse.g,
+                    b: pointLight.diffuse.b
+                },
+                intensity: pointLight.intensity,
+                shadowEnabled: pointLight.shadowEnabled
+            };
+        }
+    }
+
     return serialized;
+}
+
+// Helper function to find a point light in an entity
+function findEntityPointLight(entity: EntityNode): BABYLON.PointLight | null {
+    const children = entity.getChildren();
+    for (const child of children) {
+        if (child instanceof BABYLON.PointLight) {
+            return child;
+        }
+    }
+    return null;
 }
 
 // Redesigned deserialization function for EntityNode
 export async function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): Promise<EntityNode> {
-
     console.log('deserializeEntityNode', data.name);
+
+    if (data.metadata.entityType === 'light') {
+        // For light entities, recreate the light using the point light entity creator
+        const lightProperties = data.metadata.lightProperties;
+        if (!lightProperties) {
+            throw new Error('Light properties are required for light entities');
+        }
+        const color = lightProperties.color ? 
+            new BABYLON.Color3(lightProperties.color.r, lightProperties.color.g, lightProperties.color.b) : 
+            new BABYLON.Color3(1, 1, 1);
+        
+        const intensity = lightProperties.intensity !== undefined ? lightProperties.intensity : 0.7;
+        
+        // Use the light creation utility to create the light
+        // This will create both the point light and its visual representation
+        const newEntity = createPointLightEntity(scene, {
+            name: data.name,
+            position: toBabylonVector3(data.position),
+            color: color,
+            intensity: intensity,
+            shadowEnabled: lightProperties.shadowEnabled
+        });
+        
+        // Copy important properties from the newly created entity to our existing one
+        return newEntity;
+    }
+    
     // First create a base EntityNode directly
     const entity = new EntityNode(data.name, scene, data.metadata.entityType);
 
@@ -701,7 +765,7 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
     // Handle display mode
     entity.displayMode = data.displayMode || '2d';
 
-    // Recreate visual representation based on entityType and aiObjectType
+    // Recreate visual representation based on entityType
     if (data.metadata.entityType === 'aiObject' && data.metadata.aiData) {
         const aiData = data.metadata.aiData;
 
@@ -750,13 +814,13 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
                 entity.setDisplayMode(entity.displayMode);
             }
         }
-    }
+    } 
 
     const mesh = entity.getPrimaryMesh();
     console.log('deserializeEntityNode', entity.name, mesh?.name);
     entity.position = toBabylonVector3(data.position);
     entity.rotation = toBabylonVector3(data.rotation);
-    // TODO: Temp hack. Entity scale must stay uniform. 
+    // Apply scaling to the mesh if it exists
     if (mesh) {
         mesh.scaling = toBabylonVector3(data.scaling);
     }
@@ -781,7 +845,7 @@ function createBackgroundMesh(entity: EntityNode, scene: BABYLON.Scene): void {
     skybox.metadata = { rootEntity: entity };
 
     // Store reference
-    entity.planeMesh = skybox;
+    entity.gizmoMesh = skybox;
 }
 
 
@@ -816,7 +880,7 @@ function createPlaneMesh(entity: EntityNode, scene: BABYLON.Scene, ratio: ImageR
     planeMesh.receiveShadows = true;
 
     // Store reference
-    entity.planeMesh = planeMesh;
+    entity.gizmoMesh = planeMesh;
 }
 
 // Helper to create a mock 3D model (for demonstration purposes)

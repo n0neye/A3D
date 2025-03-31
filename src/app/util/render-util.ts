@@ -62,8 +62,8 @@ export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.En
         );
 
         // Adjust camera clip planes for better depth resolution
-        scene.activeCamera.minZ = 0.1;
-        scene.activeCamera.maxZ = 20.0;
+        // scene.activeCamera.minZ = 0.1;
+        // scene.activeCamera.maxZ = 20.0;
 
         // Force a render to update the depth values
         scene.render();

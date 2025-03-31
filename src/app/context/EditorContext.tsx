@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import * as BABYLON from '@babylonjs/core';
 import { EntityNode } from '../util/extensions/entityNode';
 import { HistoryManager } from '../components/HistoryManager';
+import { UpdateGizmoVisibility } from '../util/editor/editor-util';
 
 interface EditorContextType {
   scene: BABYLON.Scene | null;
@@ -18,6 +19,8 @@ interface EditorContextType {
   currentGizmoMode: GizmoMode;
   setGizmoMode: (mode: GizmoMode) => void;
   historyManager: HistoryManager;
+  isGizmoVisible: boolean;
+  setGizmoVisible: (isVisible: boolean) => void;
 }
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 const EditorContext = createContext<EditorContextType | null>(null);
@@ -30,6 +33,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [currentGizmoMode, setCurrentGizmoMode] = useState<GizmoMode>('position');
   const [historyManager] = useState(new HistoryManager());
+  const [isGizmoVisible, setIsGizmoVisible] = useState<boolean>(true);
 
   // Use a ref to always track current selected entity
   const selectedEntityRef = useRef<EntityNode | null>(null);
@@ -123,40 +127,61 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (selectedEntity) {
       console.log("EditorContext: selectedEntity", selectedEntity.name, selectedEntity, selectedEntity.getPrimaryMesh());
       // Get the primary mesh for this entity
-      const primaryMesh = selectedEntity.getPrimaryMesh();
 
-      if (primaryMesh) {
-        // Setup gizmo
-        if (selectedEntity.getEntityType() === 'aiObject' && selectedEntity.metadata.aiData?.aiObjectType !== 'background') {
-          // Apply current gizmo mode instead of enabling all gizmos
-          setGizmoMode(currentGizmoMode);
-
-          console.log("EditorContext: currentGizmoMode", currentGizmoMode);
-          
-          // TODO: Temp hack. Entity scale must stay uniform.
-          if (currentGizmoMode === 'boundingBox' || currentGizmoMode==="scale") {
-            gizmoManager.attachToMesh(primaryMesh);
-          } else {
-            gizmoManager.attachToNode(selectedEntity);
+      switch (selectedEntity.getEntityType()) {
+        case 'aiObject':
+          const aiObjectType = selectedEntity.metadata.aiData?.aiObjectType!;
+          switch (aiObjectType) {
+            case 'background':
+              // gizmoManager.attachToNode(selectedEntity);
+              break;
+            case 'generativeObject':
+              const primaryMesh = selectedEntity.getPrimaryMesh();
+              if (primaryMesh) {
+                setGizmoMode(currentGizmoMode);
+                // TODO: Temp hack. Entity scale must stay uniform.
+                if (currentGizmoMode === 'boundingBox' || currentGizmoMode === "scale") {
+                  gizmoManager.attachToMesh(primaryMesh);
+                } else {
+                  gizmoManager.attachToNode(selectedEntity);
+                }
+              }
+              break;
+            case 'shape':
+              const shapeMesh = selectedEntity.getPrimaryMesh();
+              if (shapeMesh) {
+                // TODO: Temp hack. Entity scale must stay uniform.
+                if (currentGizmoMode === 'boundingBox' || currentGizmoMode === "scale") {
+                  gizmoManager.attachToMesh(shapeMesh);
+                } else {
+                  gizmoManager.attachToNode(selectedEntity);
+                }
+              }
+              break;
           }
-          // Store reference to entity on gizmo
-          gizmoManager.metadata = {
-            ...gizmoManager.metadata || {},
-            selectedEntity
-          };
-        }
-
-        // Setup bounding box if needed
-        if (isDebugMode) {
-          primaryMesh.showBoundingBox = true;
-        }
-
-        // Force a render
-        scene.render();
+          break;
+        case 'light':
+          console.log("EditorContext: light", selectedEntity);
+          setGizmoMode("position");
+          gizmoManager.attachToNode(selectedEntity);
+          break;
+        default:
+          gizmoManager.attachToNode(selectedEntity);
+          break;
       }
+
+
+      // Store reference to entity on gizmo
+      gizmoManager.metadata = {
+        ...gizmoManager.metadata || {},
+        selectedEntity
+      };
     } else {
       gizmoManager.attachToMesh(null);
     }
+
+    // Force a render
+    scene.render();
 
     return () => {
       if (gizmoManager) {
@@ -164,6 +189,35 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [selectedEntity, gizmoManager, scene, isDebugMode, currentGizmoMode]);
+
+  // Add keyboard shortcut for toggling gizmo visibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keyboard shortcuts if an input element is focused
+      if (document.activeElement instanceof HTMLInputElement ||
+        document.activeElement instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Toggle gizmo visibility with 'x' key
+      if (e.key.toLowerCase() === 'x') {
+        setIsGizmoVisible(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+
+    // Apply the visibility change
+    if (scene) {
+      UpdateGizmoVisibility(isGizmoVisible, scene);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isGizmoVisible, scene]);
 
   return (
     <EditorContext.Provider
@@ -181,7 +235,9 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setIsDebugMode,
         currentGizmoMode,
         setGizmoMode,
-        historyManager
+        historyManager,
+        isGizmoVisible,
+        setGizmoVisible: setIsGizmoVisible,
       }}
     >
       {children}

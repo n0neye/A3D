@@ -6,7 +6,7 @@ import { EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
-import { setupMeshShadows } from "./editor/editor-util";
+import { setupMeshShadows } from "./editor/light-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "./storage-util";
 import { defaultPBRMaterial } from "./editor/material-util";
