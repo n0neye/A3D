@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
+import { setGizmoVisibility } from '../util/editor/editor-util';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
@@ -241,6 +242,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     }
   };
 
+
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null);
@@ -248,6 +250,9 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     if (gizmoManager) {
       gizmoManager.attachToNode(null);
     }
+    
+    // Hide gizmos before rendering
+    setGizmoVisibility(false, scene);
 
     try {
       // Start measuring time
@@ -285,6 +290,8 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       const preProcessingTime = Date.now();
       console.log(`%cPre-processing time: ${(preProcessingTime - startTime) / 1000} seconds`, "color: #4CAF50; font-weight: bold;");
 
+      // Restore gizmos after rendering
+      setGizmoVisibility(true, scene);
 
       if (isTest) {
         return;

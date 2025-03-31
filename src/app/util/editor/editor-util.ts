@@ -772,3 +772,26 @@ export function getCameraFarClip(scene: BABYLON.Scene): number {
   if (!scene.activeCamera) return 20; // Default far clip
   return scene.activeCamera.maxZ;
 }
+
+
+  // Add a utility function to toggle gizmo visibility
+  export const setGizmoVisibility = (visible: boolean, scene: BABYLON.Scene | null) => {
+    if (!scene) return;
+
+    // Hide/show light entity gizmos
+    const lightEntities = scene.rootNodes.filter(node => 
+      node instanceof EntityNode && node.getEntityType() === 'light'
+    ) as EntityNode[];
+    
+    lightEntities.forEach(entity => {
+      if (entity.gizmoMesh) {
+        entity.gizmoMesh.isVisible = visible;
+      }
+    });
+    
+    // Hide/show world grid
+    const worldGrid = getEnvironmentObjects().grid;
+    if (worldGrid) {
+      worldGrid.isVisible = visible;
+    }
+  };
