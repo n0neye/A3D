@@ -1,10 +1,11 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { create2DBackground, createEquirectangularSkybox,  setupMeshShadows, getEnvironmentObjects } from '../editor/editor-util';
+import { create2DBackground, createEquirectangularSkybox, getEnvironmentObjects } from '../editor/editor-util';
 import { ImageRatio, ImageSize } from '../generation-util';
 import { loadModel } from '../3d-generation-util';
 import { createShapeEntity, createShapeMesh } from '../editor/shape-util';
 import { placeholderMaterial } from '../editor/material-util';
+import { setupMeshShadows } from '../editor/light-util';
 // Entity types and metadata structures
 export type EntityType = 'aiObject' | 'light';
 export type AiObjectType = "generativeObject" | "background" | "shape";
