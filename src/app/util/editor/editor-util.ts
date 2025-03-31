@@ -56,7 +56,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
         "camera",
         -Math.PI / 2,
         Math.PI / 2.5,
-        3,
+        100,
         new BABYLON.Vector3(0, 0, 0),
         scene
     );
@@ -69,7 +69,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
     camera.attachControl(canvas, true);
     camera.position = new BABYLON.Vector3(0, 1, 5);
     camera.minZ = 0.01;
-    camera.maxZ = 20;
+    camera.maxZ = 50;
 
     // Ambient Light
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);

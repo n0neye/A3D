@@ -9,7 +9,8 @@ import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extens
 import { ImageRatio } from '../util/generation-util';
 import RatioSelector from './RatioSelector';
 import { Button } from '@/components/ui/button';
-
+import { Slider } from '@/components/ui/slider';
+import * as BABYLON from '@babylonjs/core';
 
 // TODO: This is a hack to get the current entity.
 // It's used to remove the event handler from the previous entity when the selected entity changes.
@@ -28,6 +29,10 @@ const EntityPanel: React.FC = () => {
   const [isGenerating2D, setIsGenerating2D] = useState(false);
   const [isGenerating3D, setIsGenerating3D] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
+
+  // State for light settings
+  const [lightColor, setLightColor] = useState('#FFFFFF');
+  const [lightIntensity, setLightIntensity] = useState(0.7);
 
   // Update when selected entity changes
   useEffect(() => {
@@ -59,33 +64,108 @@ const EntityPanel: React.FC = () => {
       selectedEntity.onProgress.add(handleProgress);
       console.log("Added handleProgress to selectedEntity: ", selectedEntity.name, selectedEntity);
 
-
-      // Get the current generation and set the prompt if available
-      const currentGen = selectedEntity.getCurrentGenerationLog();
-      // setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
-      trySetPrompt('onEntityChange', selectedEntity.tempPrompt || currentGen?.prompt || "");
-      setCurrentGenLog(currentGen);
-
-      // Load generation history
-      const history = selectedEntity.getGenerationHistory ? selectedEntity.getGenerationHistory() : [];
-      setGenerationHistory(history);
-
-      // Set current index to the latest generation
-      if (currentGen && history.length > 0) {
-        const index = history.findIndex(log => log.id === currentGen.id);
-        setCurrentHistoryIndex(index !== -1 ? index : history.length - 1);
+      // Handle light entity initialization
+      if (selectedEntity.getEntityType() === 'light') {
+        // Find the point light that's a child of this entity
+        const pointLight = findPointLight(selectedEntity);
+        if (pointLight) {
+          // Initialize color state
+          const color = pointLight.diffuse;
+          setLightColor(rgbToHex(color.r, color.g, color.b));
+          
+          // Initialize intensity state
+          setLightIntensity(pointLight.intensity);
+        }
       } else {
-        setCurrentHistoryIndex(-1);
-      }
+        // Get the current generation and set the prompt if available
+        const currentGen = selectedEntity.getCurrentGenerationLog();
+        // setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
+        trySetPrompt('onEntityChange', selectedEntity.tempPrompt || currentGen?.prompt || "");
+        setCurrentGenLog(currentGen);
 
-      // Set the current ratio from entity metadata
-      if (selectedEntity.metadata.aiData?.ratio) {
-        setCurrentRatio(selectedEntity.metadata.aiData.ratio);
-      } else {
-        setCurrentRatio('1:1'); // Default
+        // Load generation history
+        const history = selectedEntity.getGenerationHistory ? selectedEntity.getGenerationHistory() : [];
+        setGenerationHistory(history);
+
+        // Set current index to the latest generation
+        if (currentGen && history.length > 0) {
+          const index = history.findIndex(log => log.id === currentGen.id);
+          setCurrentHistoryIndex(index !== -1 ? index : history.length - 1);
+        } else {
+          setCurrentHistoryIndex(-1);
+        }
+
+        // Set the current ratio from entity metadata
+        if (selectedEntity.metadata.aiData?.ratio) {
+          setCurrentRatio(selectedEntity.metadata.aiData.ratio);
+        } else {
+          setCurrentRatio('1:1'); // Default
+        }
       }
     }
   }, [selectedEntity]);
+
+  // Helper function to find the point light in a light entity
+  const findPointLight = (entity: EntityNode): BABYLON.PointLight | null => {
+    const children = entity.getChildren();
+    for (const child of children) {
+      if (child instanceof BABYLON.PointLight) {
+        return child;
+      }
+    }
+    return null;
+  };
+
+  // Convert RGB to hex color
+  const rgbToHex = (r: number, g: number, b: number): string => {
+    return "#" + ((1 << 24) + (Math.round(r * 255) << 16) + (Math.round(g * 255) << 8) + Math.round(b * 255)).toString(16).slice(1);
+  };
+
+  // Convert hex color to RGB
+  const hexToRgb = (hex: string): { r: number, g: number, b: number } => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16) / 255,
+      g: parseInt(result[2], 16) / 255,
+      b: parseInt(result[3], 16) / 255
+    } : { r: 1, g: 1, b: 1 };
+  };
+
+  // Handle light color change
+  const handleLightColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newColor = e.target.value;
+    setLightColor(newColor);
+    
+    // Update the actual light
+    if (selectedEntity && selectedEntity.getEntityType() === 'light') {
+      const pointLight = findPointLight(selectedEntity);
+      if (pointLight) {
+        const rgb = hexToRgb(newColor);
+        pointLight.diffuse = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
+        pointLight.specular = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
+        
+        // Also update the visual representation
+        const lightSphere = selectedEntity.gizmoMesh;
+        if (lightSphere && lightSphere.material instanceof BABYLON.StandardMaterial) {
+          lightSphere.material.emissiveColor = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
+        }
+      }
+    }
+  };
+
+  // Handle light intensity change
+  const handleLightIntensityChange = (value: number[]) => {
+    const newIntensity = value[0];
+    setLightIntensity(newIntensity);
+    
+    // Update the actual light
+    if (selectedEntity && selectedEntity.getEntityType() === 'light') {
+      const pointLight = findPointLight(selectedEntity);
+      if (pointLight) {
+        pointLight.intensity = newIntensity;
+      }
+    }
+  };
 
   // CurrentGenLog changed, update the ratio
   useEffect(() => {
@@ -298,6 +378,7 @@ const EntityPanel: React.FC = () => {
     const isGenerating = isGenerating2D || isGenerating3D;
     const isObject = selectedEntity?.metadata.aiData?.aiObjectType === 'generativeObject';
     const isBackground = selectedEntity?.metadata.aiData?.aiObjectType === 'background';
+    const isLight = selectedEntity?.getEntityType() === 'light';
 
     // Check if we can remove background (only if we have a current image)
     const canRemoveBackground =
@@ -310,6 +391,38 @@ const EntityPanel: React.FC = () => {
     const hasPreviousGeneration = currentHistoryIndex > 0;
     const hasNextGeneration = currentHistoryIndex < generationHistory.length - 1;
 
+    // Handle light entity UI
+    if (isLight) {
+      return (
+        <div className="flex flex-col space-y-2 w-80">
+          <div className="flex items-center space-x-2">
+            <label className="text-xs text-white w-20">Color</label>
+            <input
+              type="color"
+              value={lightColor}
+              onChange={handleLightColorChange}
+              className="w-8 h-8 bg-transparent border-none cursor-pointer rounded-full"
+            />
+            <span className="text-xs text-white">{lightColor}</span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <label className="text-xs text-white w-20">Intensity</label>
+            <Slider
+              value={[lightIntensity]}
+              min={0}
+              max={2}
+              step={0.05}
+              className="w-32"
+              onValueChange={handleLightIntensityChange}
+            />
+            <span className="text-xs text-white w-10 text-right">{lightIntensity.toFixed(2)}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // For other entity types, proceed with existing logic
     switch (selectedEntity?.getEntityType()) {
       case 'aiObject':
         switch (selectedEntity.metadata.aiData?.aiObjectType) {
@@ -439,7 +552,12 @@ const EntityPanel: React.FC = () => {
   };
 
   if (!selectedEntity) return null;
-  if (selectedEntity.metadata.aiData?.aiObjectType !== 'generativeObject') return null;
+  
+  // Show panel for both generative objects and lights
+  if (selectedEntity.metadata.aiData?.aiObjectType !== 'generativeObject' && 
+      selectedEntity.getEntityType() !== 'light') {
+    return null;
+  }
 
   return (
     <div
