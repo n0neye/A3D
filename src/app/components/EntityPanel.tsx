@@ -149,6 +149,16 @@ const EntityPanel: React.FC = () => {
         if (lightSphere && lightSphere.material instanceof BABYLON.StandardMaterial) {
           lightSphere.material.emissiveColor = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
         }
+        
+        // Update metadata
+        if (!selectedEntity.metadata.lightProperties) {
+          selectedEntity.metadata.lightProperties = {
+            color: { r: rgb.r, g: rgb.g, b: rgb.b },
+            intensity: pointLight.intensity
+          };
+        } else {
+          selectedEntity.metadata.lightProperties.color = { r: rgb.r, g: rgb.g, b: rgb.b };
+        }
       }
     }
   };
@@ -163,6 +173,20 @@ const EntityPanel: React.FC = () => {
       const pointLight = findPointLight(selectedEntity);
       if (pointLight) {
         pointLight.intensity = newIntensity;
+        
+        // Update metadata
+        if (!selectedEntity.metadata.lightProperties) {
+          selectedEntity.metadata.lightProperties = {
+            color: { 
+              r: pointLight.diffuse.r, 
+              g: pointLight.diffuse.g, 
+              b: pointLight.diffuse.b 
+            },
+            intensity: newIntensity
+          };
+        } else {
+          selectedEntity.metadata.lightProperties.intensity = newIntensity;
+        }
       }
     }
   };
@@ -554,8 +578,8 @@ const EntityPanel: React.FC = () => {
   if (!selectedEntity) return null;
   
   // Show panel for both generative objects and lights
-  if (selectedEntity.metadata.aiData?.aiObjectType !== 'generativeObject' && 
-      selectedEntity.getEntityType() !== 'light') {
+  if (selectedEntity.getEntityType() !== 'light' && 
+      (!selectedEntity.metadata.aiData || selectedEntity.metadata.aiData.aiObjectType !== 'generativeObject')) {
     return null;
   }
 

@@ -127,6 +127,16 @@ export const createPointLightEntity = (
         position: position
     });
 
+    // Initialize light properties in metadata
+    lightEntity.metadata.lightProperties = {
+        color: {
+            r: baseColor.r,
+            g: baseColor.g,
+            b: baseColor.b
+        },
+        intensity: intensity
+    };
+
     // Create the actual point light
     const pointLight = new BABYLON.PointLight(`${name}-light`, new BABYLON.Vector3(0, 0, 0), scene);
     pointLight.intensity = intensity;

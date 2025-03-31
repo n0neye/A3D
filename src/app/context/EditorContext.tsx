@@ -158,6 +158,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           break;
         case 'light':
           console.log("EditorContext: light", selectedEntity);
+          setGizmoMode("position");
           gizmoManager.attachToNode(selectedEntity);
           break;
         default:
