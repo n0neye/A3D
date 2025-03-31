@@ -9,7 +9,7 @@ import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/components/HistoryManager";
 import { loadShapeMeshes } from "./shape-util";
 import { createDefaultMaterials } from "./material-util";
-import { createBasicLights } from "./light-util";
+import { createDefaultLights } from "./light-util";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
@@ -75,7 +75,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
 
     // Create Ambient Light
-    createBasicLights(scene);
+    createDefaultLights(scene);
 
 
     // Create a background entity

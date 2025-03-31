@@ -2,47 +2,15 @@ import * as BABYLON from '@babylonjs/core';
 import { environmentObjects } from './editor-util';
 import { EntityNode } from '../extensions/entityNode';
 
-export const createBasicLights = (scene: BABYLON.Scene) => {
-
-    // Sun
-    // createSunEntity(scene);
-
-
-    // const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
-    const ambientLight = new BABYLON.PointLight("ambientLight", new BABYLON.Vector3(0, 2, 0), scene);
-    ambientLight.position = new BABYLON.Vector3(0, 2, 2);
-    ambientLight.intensity = 0.7; // Reduced to make shadows more visible
-    ambientLight.diffuse = new BABYLON.Color3(1, 1, 1);
-    ambientLight.specular = new BABYLON.Color3(1, 1, 1);
-    ambientLight.shadowEnabled = true;
-    createShadowGenerator(ambientLight, scene);
-    environmentObjects.ambientLight = ambientLight;
-
-    // const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);
-    // warmLight.position = new BABYLON.Vector3(0, 5, -0.5);
-    // warmLight.intensity = 0.3;
-    // warmLight.diffuse = new BABYLON.Color3(0.3, 0.5, 1);
-    // warmLight.specular = warmLight.diffuse;
-    // environmentObjects.pointLights.push(warmLight);
-
-    // // Create two point lights with warm and cold colors
-    // const warmLight = new BABYLON.PointLight("warmLight", new BABYLON.Vector3(0, 1, 0), scene);
-    // warmLight.position = new BABYLON.Vector3(5, 2, 3);
-    // warmLight.intensity = 0.5;
-    // warmLight.diffuse = new BABYLON.Color3(1, 0.33, 0.33);
-    // warmLight.specular = new BABYLON.Color3(1, 0.33, 0.33);
-    // environmentObjects.pointLights.push(warmLight);
-    // warmLight.shadowEnabled = true;
-    // createShadowGenerator(warmLight, scene);
-
-    // const coldLight = new BABYLON.PointLight("coldLight", new BABYLON.Vector3(0, 1, 0), scene);
-    // coldLight.intensity = 0.5;
-    // coldLight.position = new BABYLON.Vector3(-5, 2, 3);
-    // coldLight.diffuse = new BABYLON.Color3(0, 0.5, 1);
-    // coldLight.specular = new BABYLON.Color3(0, 0.5, 1);
-    // environmentObjects.pointLights.push(coldLight);
-    // coldLight.shadowEnabled = true;
-    // createShadowGenerator(coldLight, scene);
+export const createDefaultLights = (scene: BABYLON.Scene) => {
+    // Create a default point light using our entity function
+    createPointLightEntity(scene, {
+        name: "ambientLight",
+        position: new BABYLON.Vector3(0, 2, 2),
+        intensity: 0.7,
+        color: new BABYLON.Color3(1, 1, 1),
+        shadowEnabled: true
+    });
 
     return;
 };
@@ -143,9 +111,7 @@ export const createPointLightEntity = (
         name?: string;
         position?: BABYLON.Vector3;
         intensity?: number;
-        diffuseColor?: BABYLON.Color3;
-        specularColor?: BABYLON.Color3;
-        radius?: number;
+        color?: BABYLON.Color3;
         shadowEnabled?: boolean;
     } = {}
 ): EntityNode => {
@@ -153,9 +119,7 @@ export const createPointLightEntity = (
     const name = options.name || `pointLight-${Date.now()}`;
     const position = options.position || new BABYLON.Vector3(0, 2, 0);
     const intensity = options.intensity !== undefined ? options.intensity : 0.7;
-    const diffuseColor = options.diffuseColor || new BABYLON.Color3(1, 1, 1);
-    const specularColor = options.specularColor || diffuseColor.clone();
-    const radius = options.radius || 0.2;
+    const baseColor = options.color || new BABYLON.Color3(1, 1, 1);
     const shadowEnabled = options.shadowEnabled !== undefined ? options.shadowEnabled : true;
 
     // Create the entity node of type 'light'
@@ -166,8 +130,8 @@ export const createPointLightEntity = (
     // Create the actual point light
     const pointLight = new BABYLON.PointLight(`${name}-light`, new BABYLON.Vector3(0, 0, 0), scene);
     pointLight.intensity = intensity;
-    pointLight.diffuse = diffuseColor;
-    pointLight.specular = specularColor;
+    pointLight.diffuse = baseColor;
+    pointLight.specular = baseColor;
     pointLight.shadowEnabled = shadowEnabled;
     pointLight.parent = lightEntity;
 
@@ -179,13 +143,13 @@ export const createPointLightEntity = (
     // Create a visual representation for the light (a glowing sphere)
     const lightSphere = BABYLON.MeshBuilder.CreateSphere(
         `${name}-visual`,
-        { diameter: radius * 2 },
+        { diameter: 0.2 },
         scene
     );
     
     // Create an emissive material for the sphere
     const lightMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
-    lightMaterial.emissiveColor = diffuseColor;
+    lightMaterial.emissiveColor = baseColor;
     lightMaterial.disableLighting = true;
     lightSphere.material = lightMaterial;
     
@@ -199,7 +163,7 @@ export const createPointLightEntity = (
     lightSphere.metadata = { rootEntity: lightEntity };
 
     // Store references in the entity for easy access
-    lightEntity.planeMesh = lightSphere;
+    lightEntity.gizmoMesh = lightSphere;
     
     // Store the light in the environmentObjects for scene management
     environmentObjects.pointLights.push(pointLight);

@@ -123,40 +123,60 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (selectedEntity) {
       console.log("EditorContext: selectedEntity", selectedEntity.name, selectedEntity, selectedEntity.getPrimaryMesh());
       // Get the primary mesh for this entity
-      const primaryMesh = selectedEntity.getPrimaryMesh();
 
-      if (primaryMesh) {
-        // Setup gizmo
-        if (selectedEntity.getEntityType() === 'aiObject' && selectedEntity.metadata.aiData?.aiObjectType !== 'background') {
-          // Apply current gizmo mode instead of enabling all gizmos
-          setGizmoMode(currentGizmoMode);
-
-          console.log("EditorContext: currentGizmoMode", currentGizmoMode);
-          
-          // TODO: Temp hack. Entity scale must stay uniform.
-          if (currentGizmoMode === 'boundingBox' || currentGizmoMode==="scale") {
-            gizmoManager.attachToMesh(primaryMesh);
-          } else {
-            gizmoManager.attachToNode(selectedEntity);
+      switch (selectedEntity.getEntityType()) {
+        case 'aiObject':
+          const aiObjectType = selectedEntity.metadata.aiData?.aiObjectType!;
+          switch (aiObjectType) {
+            case 'background':
+              // gizmoManager.attachToNode(selectedEntity);
+              break;
+            case 'generativeObject':
+              const primaryMesh = selectedEntity.getPrimaryMesh();
+              if (primaryMesh) {
+                setGizmoMode(currentGizmoMode);
+                // TODO: Temp hack. Entity scale must stay uniform.
+                if (currentGizmoMode === 'boundingBox' || currentGizmoMode === "scale") {
+                  gizmoManager.attachToMesh(primaryMesh);
+                } else {
+                  gizmoManager.attachToNode(selectedEntity);
+                }
+              }
+              break;
+            case 'shape':
+              const shapeMesh = selectedEntity.getPrimaryMesh();
+              if (shapeMesh) {
+                // TODO: Temp hack. Entity scale must stay uniform.
+                if (currentGizmoMode === 'boundingBox' || currentGizmoMode === "scale") {
+                  gizmoManager.attachToMesh(shapeMesh);
+                } else {
+                  gizmoManager.attachToNode(selectedEntity);
+                }
+              }
+              break;
           }
-          // Store reference to entity on gizmo
-          gizmoManager.metadata = {
-            ...gizmoManager.metadata || {},
-            selectedEntity
-          };
-        }
-
-        // Setup bounding box if needed
-        if (isDebugMode) {
-          primaryMesh.showBoundingBox = true;
-        }
-
-        // Force a render
-        scene.render();
+          break;
+        case 'light':
+          console.log("EditorContext: light", selectedEntity);
+          gizmoManager.attachToNode(selectedEntity);
+          break;
+        default:
+          gizmoManager.attachToNode(selectedEntity);
+          break;
       }
+
+
+      // Store reference to entity on gizmo
+      gizmoManager.metadata = {
+        ...gizmoManager.metadata || {},
+        selectedEntity
+      };
     } else {
       gizmoManager.attachToMesh(null);
     }
+
+    // Force a render
+    scene.render();
 
     return () => {
       if (gizmoManager) {

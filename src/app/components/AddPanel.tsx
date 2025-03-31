@@ -89,7 +89,7 @@ const AddPanel: React.FC = () => {
       () => createPointLightEntity(scene, {
         position: new BABYLON.Vector3(0, 2, 0),
         name: `light-${uuidv4().substring(0, 8)}`,
-        diffuseColor: new BABYLON.Color3(1, 0.8, 0.4) // Warm light color by default
+        color: new BABYLON.Color3(1, 0.8, 0.4) // Warm light color by default
       }),
       scene
     );

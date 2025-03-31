@@ -87,7 +87,7 @@ export class EntityNode extends BABYLON.TransformNode {
     public metadata: EntityMetadata;
 
     // Entity mesh properties
-    public planeMesh: BABYLON.AbstractMesh | null = null;
+    public gizmoMesh: BABYLON.AbstractMesh | null = null;
     public modelMesh: BABYLON.AbstractMesh | null = null;
     public displayMode: '2d' | '3d' = '2d';
 
@@ -160,7 +160,7 @@ export class EntityNode extends BABYLON.TransformNode {
         if (this.displayMode === '3d' && this.modelMesh) {
             return this.modelMesh;
         }
-        return this.planeMesh;
+        return this.gizmoMesh;
     }
 
     // Toggle between 2D and 3D modes
@@ -168,8 +168,8 @@ export class EntityNode extends BABYLON.TransformNode {
         this.displayMode = mode;
 
         // Set visibility based on mode
-        if (this.planeMesh) {
-            this.planeMesh.setEnabled(mode === '2d');
+        if (this.gizmoMesh) {
+            this.gizmoMesh.setEnabled(mode === '2d');
         }
 
         if (this.modelMesh) {
@@ -308,14 +308,14 @@ export class EntityNode extends BABYLON.TransformNode {
 
     // Update aspect ratio of the entity
     public updateAspectRatio(ratio: ImageRatio): void {
-        if (!this.metadata.aiData || !this.planeMesh) return;
+        if (!this.metadata.aiData || !this.gizmoMesh) return;
 
         // Save the new ratio in metadata
         this.metadata.aiData.ratio = ratio;
 
         // Get the new dimensions based on ratio
         const { width, height } = getPlaneSize(ratio);
-        this.planeMesh.scaling = new BABYLON.Vector3(width, height, 1);
+        this.gizmoMesh.scaling = new BABYLON.Vector3(width, height, 1);
     }
 }
 
@@ -529,7 +529,7 @@ const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, option
     newMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
     // Set up plane mesh
-    entity.planeMesh = newMesh;
+    entity.gizmoMesh = newMesh;
     return newMesh;
     }
 
@@ -541,7 +541,7 @@ export const applyImageToEntity = async (
     ratio?: ImageRatio
 ): Promise<void> => {
     // Get the plane mesh
-    const planeMesh = entity.planeMesh;
+    const planeMesh = entity.gizmoMesh;
     if (!planeMesh) return;
 
     if(planeMesh.material === placeholderMaterial){
@@ -577,7 +577,7 @@ export const applyImageToEntity = async (
 
     if (isBackground) {
         // For backgrounds, we'll replace the entire mesh
-        const oldMesh = entity.planeMesh;
+        const oldMesh = entity.gizmoMesh;
 
         // Create a new background with the new image
         const newBackground = create2DBackground(scene, imageDataUrl);
@@ -587,7 +587,7 @@ export const applyImageToEntity = async (
         newBackground.metadata = { rootEntity: entity };
 
         // Replace the reference
-        entity.planeMesh = newBackground;
+        entity.gizmoMesh = newBackground;
 
         // Dispose the old mesh
         if (oldMesh) {
@@ -782,7 +782,7 @@ function createBackgroundMesh(entity: EntityNode, scene: BABYLON.Scene): void {
     skybox.metadata = { rootEntity: entity };
 
     // Store reference
-    entity.planeMesh = skybox;
+    entity.gizmoMesh = skybox;
 }
 
 
@@ -817,7 +817,7 @@ function createPlaneMesh(entity: EntityNode, scene: BABYLON.Scene, ratio: ImageR
     planeMesh.receiveShadows = true;
 
     // Store reference
-    entity.planeMesh = planeMesh;
+    entity.gizmoMesh = planeMesh;
 }
 
 // Helper to create a mock 3D model (for demonstration purposes)
