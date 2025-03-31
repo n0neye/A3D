@@ -312,7 +312,7 @@ export const createWorldGrid = (
         { width: size, height: size, subdivisions: 1 },
         scene
     );
-    gridGround.position.y = -0.001;
+    gridGround.position.y = -0.01;
 
     // Create a grid material
     const gridMaterial = new GridMaterial("gridMaterial", scene);

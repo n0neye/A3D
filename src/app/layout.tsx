@@ -7,7 +7,7 @@ import Script from 'next/script'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '3D Playground | NONTECH',
+  title: 'PLAYMUD',
   description: '3D Playground with AI Rendering',
   icons: {
     icon: '/img/favicon.ico',

@@ -39,16 +39,16 @@ export const availableAPIs: API_Info[] = [
   //   useDepthImage: true,
   // },
   {
-    id: "fal-ai/flux-control-lora-depth",
-    name: 'Flux Dev Depth',
-    description: 'With style transformations',
-    useDepthImage: true,
-  },
-  {
     id: 'flux-lora-depth',
     name: 'Flux Dev',
     description: 'With style transformations',
     useDepthImage: false,
+  },
+  {
+    id: "fal-ai/flux-control-lora-depth",
+    name: 'Flux Dev Depth',
+    description: 'With style transformations',
+    useDepthImage: true,
   },
   // {
   //   id: 'flux-pro-depth',
