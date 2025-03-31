@@ -44,13 +44,18 @@ export async function loadShapeMeshes(scene: BABYLON.Scene): Promise<void> {
 }
 
 // Create shape mesh for entity
-export function createShapeEntity(entity: EntityNode, scene: BABYLON.Scene, shapeType: ShapeType): BABYLON.Mesh {
+export function createShapeEntity(entity: EntityNode, scene: BABYLON.Scene, shapeType: ShapeType, options?: { scale?: BABYLON.Vector3 }): BABYLON.Mesh {
 
     const newMesh = createShapeMesh(scene, shapeType);
 
     // Apply the material and setup shadows
     newMesh.material = defaultMaterial;
     setupMeshShadows(newMesh);
+
+    // scale
+    if (options?.scale) {
+        newMesh.scaling = options.scale;
+    }
 
     // Entity settings
     newMesh.parent = entity;

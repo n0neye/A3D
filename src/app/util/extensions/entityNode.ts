@@ -358,6 +358,7 @@ export function createEntity(
     options: {
         aiObjectType?: AiObjectType;
         position?: BABYLON.Vector3;
+        scale?: BABYLON.Vector3;
         ratio?: ImageRatio;
         imageSize?: ImageSize;
         name?: string;
@@ -446,6 +447,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     imageSize?: ImageSize;
     imageUrl?: string;
     shapeType?: ShapeType;
+    scale?: BABYLON.Vector3;
 }) => {
     if (!options.aiObjectType) {
         // Instead of throwing an error, set a default aiObjectType
@@ -491,7 +493,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
             throw new Error('Shape type is required for shape entities');
         }
         // Create a primitive shape based on shapeType
-        newMesh = createShapeEntity(entity, scene, options.shapeType);
+        newMesh = createShapeEntity(entity, scene, options.shapeType, options);
     } else if (options.aiObjectType === 'generativeObject') {
         newMesh = createGenerativeObject(scene, entity, options);
     } else {

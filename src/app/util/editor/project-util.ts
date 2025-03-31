@@ -49,6 +49,12 @@ interface SerializedEnvironment {
     };
     camera?: {
         fov: number;
+        farClip: number;
+        position: { x: number, y: number, z: number };
+        target: { x: number, y: number, z: number };
+        radius: number;
+        alpha: number;
+        beta: number;
     };
 }
 
@@ -98,10 +104,43 @@ export function serializeEnvironment(scene: BABYLON.Scene): SerializedEnvironmen
 
     // Serialize camera settings
     if (scene.activeCamera) {
-        const fov = scene.activeCamera.fov;
-        serializedEnv.camera = {
-            fov: fov
-        };
+        const camera = scene.activeCamera;
+        
+        if (camera instanceof BABYLON.ArcRotateCamera) {
+            // For ArcRotateCamera, save radius, alpha, beta, and target
+            serializedEnv.camera = {
+                fov: camera.fov,
+                farClip: camera.maxZ,
+                position: {
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z
+                },
+                target: {
+                    x: camera.target.x,
+                    y: camera.target.y,
+                    z: camera.target.z
+                },
+                radius: camera.radius,
+                alpha: camera.alpha,
+                beta: camera.beta
+            };
+        } else {
+            // For other camera types, just save position and fov
+            serializedEnv.camera = {
+                fov: camera.fov,
+                farClip: camera.maxZ,
+                position: {
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z
+                },
+                target: { x: 0, y: 0, z: 0 }, // Default values
+                radius: 0,
+                alpha: 0,
+                beta: 0
+            };
+        }
     }
 
     return serializedEnv;
@@ -149,7 +188,38 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
 
     // Apply camera settings
     if (data.camera && scene.activeCamera) {
+        // Apply FOV and far clip
         scene.activeCamera.fov = data.camera.fov;
+        if (data.camera.farClip !== undefined) {
+            scene.activeCamera.maxZ = data.camera.farClip;
+        }
+        
+        if (scene.activeCamera instanceof BABYLON.ArcRotateCamera) {
+            const arcCamera = scene.activeCamera as BABYLON.ArcRotateCamera;
+            
+            // Restore target position
+            if (data.camera.target) {
+                arcCamera.setTarget(new BABYLON.Vector3(
+                    data.camera.target.x,
+                    data.camera.target.y,
+                    data.camera.target.z
+                ));
+            }
+            
+            // Restore camera angles and distance
+            if (data.camera.alpha !== undefined) arcCamera.alpha = data.camera.alpha;
+            if (data.camera.beta !== undefined) arcCamera.beta = data.camera.beta;
+            if (data.camera.radius !== undefined) arcCamera.radius = data.camera.radius;
+        } else {
+            // For other camera types, just set position
+            if (data.camera.position) {
+                scene.activeCamera.position = new BABYLON.Vector3(
+                    data.camera.position.x,
+                    data.camera.position.y,
+                    data.camera.position.z
+                );
+            }
+        }
     }
 }
 

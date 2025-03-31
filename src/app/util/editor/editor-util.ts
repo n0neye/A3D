@@ -106,6 +106,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
         aiObjectType: "shape",
         shapeType: "floor",
         position: new BABYLON.Vector3(0, 0, 0),
+        scale: new BABYLON.Vector3(50, 50, 50),
     });
 
     createSkybox(scene);
@@ -873,4 +874,27 @@ export function setCameraFOV(fov: number, scene: BABYLON.Scene): void {
 export function getCameraFOV(scene: BABYLON.Scene): number {
   if (!scene.activeCamera) return 0.8; // Default FOV (approximately 45 degrees)
   return scene.activeCamera.fov;
+}
+
+/**
+ * Sets the far clip plane distance for the active camera in the scene
+ * @param farClip The far clip distance
+ * @param scene The Babylon.js scene
+ */
+export function setCameraFarClip(farClip: number, scene: BABYLON.Scene): void {
+  if (!scene.activeCamera) return;
+  
+  // Make sure the far clip is within reasonable bounds
+  const clampedFarClip = Math.max(10, Math.min(1000, farClip));
+  scene.activeCamera.maxZ = clampedFarClip;
+}
+
+/**
+ * Gets the current far clip plane distance from the active camera in the scene
+ * @param scene The Babylon.js scene
+ * @returns The current far clip distance, or a default value if no camera is available
+ */
+export function getCameraFarClip(scene: BABYLON.Scene): number {
+  if (!scene.activeCamera) return 20; // Default far clip
+  return scene.activeCamera.maxZ;
 }

@@ -17,7 +17,9 @@ import {
   setRatioOverlayVisibility,
   getEnvironmentObjects,
   setCameraFOV,
-  getCameraFOV
+  getCameraFOV,
+  setCameraFarClip,
+  getCameraFarClip
 } from '../util/editor/editor-util';
 import { TakeFramedScreenshot } from '../util/render-util';
 
@@ -28,6 +30,7 @@ const FramePanel: React.FC = () => {
   const [rightExtraPadding, setRightExtraPadding] = useState(0); // Default extra right padding
   const [ratio, setRatio] = useState<ImageRatio>('16:9'); // Default ratio
   const [fov, setFov] = useState(0.8); // Default FOV in radians (approximately 45 degrees)
+  const [farClip, setFarClip] = useState(20); // Default far clip distance
 
   // Update the actual overlay when state changes
   useEffect(() => {
@@ -45,6 +48,12 @@ const FramePanel: React.FC = () => {
     setCameraFOV(fov, scene);
   }, [fov, scene]);
 
+  // Update the camera far clip when state changes
+  useEffect(() => {
+    if (!scene) return;
+    setCameraFarClip(farClip, scene);
+  }, [farClip, scene]);
+
   // Initialize state from current environment overlay settings
   useEffect(() => {
     if (!scene) return;
@@ -61,6 +70,12 @@ const FramePanel: React.FC = () => {
     const currentFOV = getCameraFOV(scene);
     if (currentFOV) {
       setFov(currentFOV);
+    }
+
+    // Initialize far clip from current camera
+    const currentFarClip = getCameraFarClip(scene);
+    if (currentFarClip) {
+      setFarClip(currentFarClip);
     }
   }, [scene]);
 
@@ -82,6 +97,10 @@ const FramePanel: React.FC = () => {
 
   const handleFovChange = (newValues: number[]) => {
     setFov(newValues[0]);
+  };
+
+  const handleFarClipChange = (newValues: number[]) => {
+    setFarClip(newValues[0]);
   };
 
   // Convert radians to degrees for display
@@ -114,6 +133,21 @@ const FramePanel: React.FC = () => {
               max={1.57}
               step={0.01}
               onValueChange={handleFovChange}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="far-clip-slider" className="text-sm">Far Clip</Label>
+              <span className="text-xs text-gray-400">{farClip}</span>
+            </div>
+            <Slider
+              id="far-clip-slider"
+              value={[farClip]}
+              min={10}
+              max={200}
+              step={10}
+              onValueChange={handleFarClipChange}
             />
           </div>
 
