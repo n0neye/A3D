@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from './EntityBase';
 import { ImageRatio } from '../generation-util';
-
+import { v4 as uuidv4 } from 'uuid';
 /**
  * Entity that represents AI-generated content
  */
@@ -85,6 +85,18 @@ export class GenerativeEntity extends EntityBase {
    */
   addGenerationLog(generation: GenerationLog): void {
     this.props.generationLogs.push(generation);
+  }
+
+  addModelGenerationLog(modelUrl: string, derivedFromId?: string): void {
+    const log: GenerationLog = {
+      id: uuidv4(),
+      timestamp: Date.now(),
+      prompt: '',
+      assetType: 'model',
+      fileUrl: modelUrl,
+      derivedFromId: derivedFromId
+    }
+    this.props.generationLogs.push(log);
   }
   
   /**
