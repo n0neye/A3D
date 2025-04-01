@@ -11,7 +11,6 @@ import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/components/HistoryManager";
 import { loadShapeMeshes } from "./shape-util";
 import { createDefaultMaterials } from "./material-util";
-import { createDefaultLights } from "./light-util";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;

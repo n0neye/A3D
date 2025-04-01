@@ -1,31 +1,43 @@
 import * as BABYLON from '@babylonjs/core';
 import { environmentObjects } from './editor-util';
-import { EntityBase } from '../extensions/entityNode';
+import { LightEntity, LightProps, SerializedColor } from '../extensions/LightEntity';
+import { EntityFactory } from '../extensions/EntityFactory';
 
-export const createDefaultLights = (scene: BABYLON.Scene) => {
-    // Create a default point light using our entity function
-    createPointLightEntity(scene, {
-        name: "ambientLight",
-        position: new BABYLON.Vector3(0, 2, 2),
-        intensity: 0.7,
-        color: new BABYLON.Color3(1, 1, 1),
+export const createSunEntity = (scene: BABYLON.Scene) => {
+    // Create the light entity
+    const lightProps: LightProps = {
+        color: { r: 0.8, g: 0.9, b: 1.0 },
+        intensity: 0.3,
         shadowEnabled: true
-    });
+    };
+    
+    // Create the sunTransform entity
+    const sunTransform = EntityFactory.createEntity(scene, 'light', {
+        name: "sunTransform",
+        position: new BABYLON.Vector3(0, 5, 0),
+        lightProps
+    }) as LightEntity;
 
-    return;
-};
+    // Configure the light as directional
+    const sunLight = new BABYLON.DirectionalLight(
+        "sun", 
+        new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), 
+        scene
+    );
+    sunLight.intensity = lightProps.intensity;
+    sunLight.diffuse = new BABYLON.Color3(
+        lightProps.color.r,
+        lightProps.color.g,
+        lightProps.color.b
+    );
+    sunLight.shadowEnabled = lightProps.shadowEnabled;
 
-export const createSunEntity = (scene: BABYLON.Scene,) => {
-    // Create a transform node to group the sun and arrow
-    const sunTransform = new EntityBase("sunTransform", scene, "light");
-    // Position the transform at an offset from the origin
-    sunTransform.position = new BABYLON.Vector3(0, 5, 0);
-
-    // Create a sun (directional light)
-    const sunLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), scene);
-    sunLight.intensity = 0.3;
-    sunLight.diffuse = new BABYLON.Color3(0.8, 0.9, 1);
-    sunLight.shadowEnabled = true;
+    // Replace the default point light with directional light
+    if (sunTransform.light) {
+        sunTransform.light.dispose();
+    }
+    sunTransform.light = sunLight;
+    sunLight.parent = sunTransform;
 
     // Create a shadow generator for the sun with specialized settings
     const sunShadowGenerator = createShadowGenerator(sunLight, scene);
@@ -35,18 +47,9 @@ export const createSunEntity = (scene: BABYLON.Scene,) => {
     sunShadowGenerator.bias = 0.0001; // Adjust as needed
     sunShadowGenerator.useBlurExponentialShadowMap = true;
 
-
-    // If artifacts still persist, can use contact hardening shadow
-    // sunShadowGenerator.useContactHardeningShadow = true;
-    // sunShadowGenerator.contactHardeningLightSizeUVRatio = 0.02;
-
-    // Parent the light to the transform node
-    sunLight.parent = sunTransform;
-
     environmentObjects.sun = sunLight;
     environmentObjects.sunTransform = sunTransform;
 }
-
 
 /**
  * Creates a shadow generator for a given light
@@ -100,87 +103,3 @@ export const setupMeshShadows = (mesh: BABYLON.AbstractMesh): void => {
     // Add mesh to all shadow generators (to cast shadows)
     addMeshToShadowCasters(mesh);
 };
-
-/**
- * Creates a point light entity that includes both a light source and a visual representation
- * @param scene The Babylon.js scene
- * @param options Configuration options for the light entity
- * @returns An EntityBase representing the point light
- */
-export const createPointLightEntity = (
-    scene: BABYLON.Scene,
-    options: {
-        name?: string;
-        position?: BABYLON.Vector3;
-        intensity?: number;
-        color?: BABYLON.Color3;
-        shadowEnabled?: boolean;
-    } = {}
-): EntityBase => {
-    // Default options
-    const name = options.name || `pointLight-${Date.now()}`;
-    const position = options.position || new BABYLON.Vector3(0, 2, 0);
-    const intensity = options.intensity !== undefined ? options.intensity : 0.7;
-    const baseColor = options.color || new BABYLON.Color3(1, 1, 1);
-    const shadowEnabled = options.shadowEnabled !== undefined ? options.shadowEnabled : false;
-
-    // Create the entity node of type 'light'
-    const lightEntity = new EntityBase(name, scene, 'light', {
-        position: position
-    });
-
-    // Initialize light properties in metadata
-    lightEntity.metadata.lightProperties = {
-        color: {
-            r: baseColor.r,
-            g: baseColor.g,
-            b: baseColor.b
-        },
-        intensity: intensity,
-        shadowEnabled: shadowEnabled
-    };
-
-    // Create the actual point light
-    const pointLight = new BABYLON.PointLight(`${name}-light`, new BABYLON.Vector3(0, 0, 0), scene);
-    pointLight.intensity = intensity;
-    pointLight.diffuse = baseColor;
-    pointLight.specular = baseColor;
-    pointLight.shadowEnabled = shadowEnabled;
-    pointLight.parent = lightEntity;
-
-    // Create shadow generator if shadows are enabled
-    if (shadowEnabled) {
-        createShadowGenerator(pointLight, scene);
-    }
-
-    // Create a visual representation for the light (a glowing sphere)
-    const lightSphere = BABYLON.MeshBuilder.CreateSphere(
-        `${name}-visual`,
-        { diameter: 0.2 },
-        scene
-    );
-    
-    // Create an emissive material for the sphere
-    const lightMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
-    lightMaterial.emissiveColor = baseColor;
-    lightMaterial.disableLighting = true;
-    lightSphere.material = lightMaterial;
-    
-    // Make the sphere not cast shadows (it's just a visual indicator)
-    lightSphere.receiveShadows = false;
-    
-    // Parent the sphere to the light entity
-    lightSphere.parent = lightEntity;
-    
-    // Add metadata to connect the mesh to its entity
-    lightSphere.metadata = { rootEntity: lightEntity };
-
-    // Store references in the entity for easy access
-    lightEntity.gizmoMesh = lightSphere;
-    
-    // Store the light in the environmentObjects for scene management
-    environmentObjects.pointLights.push(pointLight);
-
-    return lightEntity;
-};
-

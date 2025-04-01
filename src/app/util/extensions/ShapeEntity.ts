@@ -4,7 +4,7 @@ import { EntityBase } from './EntityBase';
 /**
  * Entity that represents primitive shapes
  */
-export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'pyramid';
+export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'pyramid' | 'cone' | 'floor';
 export interface ShapeEntityProps {
   shapeType: ShapeType;
 }

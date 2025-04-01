@@ -41,21 +41,18 @@ export class LightEntity extends EntityBase {
     // Create the light
     this.light = this.createLight(
       options.props?.intensity || 0.7,
-      options.props?.color || {r: 1, g: 1, b: 1},
+      options.props?.color || { r: 1, g: 1, b: 1 },
       options.props?.shadowEnabled || false
     );
 
     this.props = {
       intensity: options.props?.intensity || 0.7,
-      color: options.props?.color || {r: 1, g: 1, b: 1},
+      color: options.props?.color || { r: 1, g: 1, b: 1 },
       shadowEnabled: options.props?.shadowEnabled || false
     };
 
-    this.gizmoMesh = BABYLON.MeshBuilder.CreateSphere("gizmo", { diameter: 0.1 }, this.getScene());
-    this.gizmoMesh.parent = this;
-
     // Create light visual representation
-    this.createLightVisual();
+    this.gizmoMesh = this.createLightGizmo(scene);
   }
 
   /**
@@ -88,8 +85,27 @@ export class LightEntity extends EntityBase {
   /**
    * Create visual representation of the light
    */
-  private createLightVisual(): void {
-    // Implementation for light visual
+  private createLightGizmo(scene: BABYLON.Scene): BABYLON.Mesh {
+
+    // Create a visual representation for the light (a glowing sphere)
+    const lightSphere = BABYLON.MeshBuilder.CreateSphere(
+      `${name}-visual`,
+      { diameter: 0.2 },
+      scene
+    );
+    // Create an emissive material for the sphere
+    const lightMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
+    lightMaterial.emissiveColor = new BABYLON.Color3(this.props.color.r, this.props.color.g, this.props.color.b);
+    lightMaterial.disableLighting = true;
+    lightSphere.material = lightMaterial;
+
+    // Make the sphere not cast shadows (it's just a visual indicator)
+    lightSphere.receiveShadows = false;
+
+    // Parent the sphere to the light entity
+    lightSphere.parent = this;
+    lightSphere.metadata = { rootEntity: this };
+    return lightSphere;
   }
 
   /**

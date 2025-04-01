@@ -2,7 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';
-import { AiObjectType, createEntity, EntityType, ShapeType } from '../util/extensions/entityNode';
+import { EntityType,  } from '../util/extensions/EntityBase';
+import { ShapeType } from '../util/extensions/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
@@ -17,7 +18,7 @@ import {
   IconSquare,
   IconBulb,
 } from '@tabler/icons-react';
-import { createPointLightEntity } from '../util/editor/light-util';
+import { EntityFactory } from '../util/extensions/EntityFactory';
 
 
 const AddPanel: React.FC = () => {
@@ -25,25 +26,22 @@ const AddPanel: React.FC = () => {
   const [showShapesMenu, setShowShapesMenu] = useState(false);
 
   // Create an entity with command pattern
-  const handleCreateEntity = (entityType: EntityType, aiObjectType: AiObjectType) => {
+  const handleCreateEntity = (entityType: EntityType) => {
     if (!scene) return;
 
     console.log(`Creating ${entityType} entity`);
 
     const position = new BABYLON.Vector3(0, 0, 0);
-    
+
     // Create a command with factory function
     const createCommand = new CreateEntityCommand(
-      () => createEntity(scene, entityType, {
-        aiObjectType,
-        position,
-      }),
+      () => EntityFactory.createEntity(scene, entityType),
       scene
     );
-    
+
     // Execute the command through history manager
     historyManager.executeCommand(createCommand);
-    
+
     // Select the newly created entity
     setSelectedEntity(createCommand.getEntity());
   };
@@ -56,18 +54,17 @@ const AddPanel: React.FC = () => {
 
     // Create a command with factory function
     const createCommand = new CreateEntityCommand(
-      () => createEntity(scene, 'aiObject', {
-        aiObjectType: 'shape',
-        shapeType: shapeType,
-        position: new BABYLON.Vector3(0, 0, 0),
-        name: `${shapeType}-${uuidv4().substring(0, 8)}`
+      () => EntityFactory.createEntity(scene, 'shape', {
+        shapeProps: {
+          shapeType: shapeType,
+        }
       }),
       scene
     );
-    
+
     // Execute the command through history manager
     historyManager.executeCommand(createCommand);
-    
+
     // Select the newly created entity
     setSelectedEntity(createCommand.getEntity());
 
@@ -83,17 +80,13 @@ const AddPanel: React.FC = () => {
 
     // Create a command with factory function
     const createCommand = new CreateEntityCommand(
-      () => createPointLightEntity(scene, {
-        position: new BABYLON.Vector3(0, 2, 0),
-        name: `light-${uuidv4().substring(0, 8)}`,
-        color: new BABYLON.Color3(1, 0.8, 0.4) // Warm light color by default
-      }),
+      () => EntityFactory.createEntity(scene, 'light'),
       scene
     );
-    
+
     // Execute the command through history manager
     historyManager.executeCommand(createCommand);
-    
+
     // Select the newly created entity
     setSelectedEntity(createCommand.getEntity());
   };
@@ -115,7 +108,7 @@ const AddPanel: React.FC = () => {
       {/* Entity type buttons */}
       <div className="grid gap-2">
         <Button
-          onClick={() => handleCreateEntity('aiObject', 'generativeObject')}
+          onClick={() => handleCreateEntity('generative')}
           variant="default"
           className="h-14 w-14 rounded-md"
         >
@@ -160,7 +153,7 @@ const AddPanel: React.FC = () => {
           )}
         </div>
 
-        
+
         <Button
           onClick={handleCreateLight}
           variant="secondary"
