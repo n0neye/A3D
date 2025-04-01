@@ -1,8 +1,9 @@
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import { getImageSimulationData, } from "./simulation-data";
-import {  EntityBase, applyImageToEntity, GenerationLog } from './extensions/entityNode';
-import { ProgressCallback , IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, ImageRatio } from "./generation-util";
+import { EntityBase } from './extensions/EntityBase';
+import { GenerativeEntity, GenerationLog } from './extensions/GenerativeEntity';
+import { ProgressCallback, IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio } from "./generation-util";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
 
@@ -26,11 +27,10 @@ export function initializeRealtimeConnection(): void {
 
 export async function generateRealtimeImage(
     promptInput: string,
-    entity: EntityBase,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     options: {
         ratio?: ImageRatio,
-        imageSize?: ImageSize;
     } = {}
 ): Promise<GenerationResult> {
     const startTime = performance.now();
@@ -38,22 +38,16 @@ export async function generateRealtimeImage(
     // Split prompt input by "--no"
     const promptParts = promptInput.split("--no");
     const positivePrompt = promptParts[0];
-    let negativePrompt = promptParts[1] ? promptParts[1]+", " : "";
+    let negativePrompt = promptParts[1] ? promptParts[1] + ", " : "";
     negativePrompt += 'cropped, out of frame, blurry, blur';
     console.log("GenerateRealtimeImage: promptParts", positivePrompt, "negativePrompt: ", negativePrompt);
 
     // Use defaults if not provided
     const ratio = options.ratio || '1:1';
-    const imageSize = options.imageSize || 'medium';
     const entityType = entity.getEntityType();
-    const aiObjectType = entity.getAIData()?.aiObjectType || 'generativeObject';
 
     // Update entity state
-    entity.setProcessingState({
-        isGenerating2D: true,
-        isGenerating3D: false,
-        progressMessage: 'Starting generation...'
-    });
+    entity.setProcessingState('generating2D', 'Generating image...');
 
     // update the entity name with first word of prompt
     entity.name = positivePrompt.split(' ')[0] + "_" + entity.name;
@@ -61,7 +55,7 @@ export async function generateRealtimeImage(
 
     // Determine dimensions
     const ratioMultipliers = RATIO_MAP[ratio];
-    const baseSize = IMAGE_SIZE_MAP[imageSize];
+    const baseSize = IMAGE_SIZE_MAP["medium"];
 
     // Calculate width and height
     let width, height;
@@ -73,15 +67,9 @@ export async function generateRealtimeImage(
         width = Math.floor(baseSize * (ratioMultipliers.width / ratioMultipliers.height));
     }
 
-    console.log(`Generation with ratio ${ratio} and size ${imageSize} will be ${width}x${height}`);
 
     // Enhance prompt based on entity type
-    let enhancedPrompt = positivePrompt;
-    if (aiObjectType === 'generativeObject') {
-        enhancedPrompt = `${positivePrompt}, at the center of the frame, full-body, white 3d model, no texture, uncropped, solid black background`;
-    } else if (aiObjectType === 'background') {
-        enhancedPrompt = `expansive panoramic view of ${positivePrompt}`;
-    }
+    let enhancedPrompt = `${positivePrompt}, at the center of the frame, full-body, white 3d model, no texture, uncropped, solid black background`;
 
     // If the prompt is "_", use the test data
     let result: Generation2DRealtimResult;
@@ -93,12 +81,6 @@ export async function generateRealtimeImage(
             height: height,
             negativePrompt: negativePrompt
         });
-
-        // result = await generateRealtimeImageFal(enhancedPrompt, {
-        //     width: width,
-        //     height: height,
-        //     negativePrompt: negativePrompt
-        // });
     }
 
     const success = result.success && result.imageUrl !== undefined;
@@ -106,20 +88,14 @@ export async function generateRealtimeImage(
         console.log(`%cImage generation took ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
         // Add to history
-        const log = entity.addImageGenerationLog(promptInput, result.imageUrl, {
-            ratio: ratio,
-            imageSize: imageSize
-        });
+        const log = entity.addImageGenerationLog(promptInput, result.imageUrl, ratio);
 
-        await applyImageToEntity(entity, result.imageUrl, scene);
+        // Apply the image to the entity
+        await entity.applyGeneratedImage(result.imageUrl, scene, ratio);
 
         console.log(`%cTask completed in ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: false,
-            progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
-        });
+        entity.setProcessingState('idle', success ? 'Image generated successfully!' : 'Failed to generate image');
 
         return { success, generationLog: log };
     }
