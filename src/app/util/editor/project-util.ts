@@ -1,4 +1,4 @@
-import { isEntity, EntityNode, deserializeEntityNode, serializeEntityNode } from "../extensions/entityNode";
+import { isEntity, EntityBase, deserializeEntityBase, serializeEntityBase } from "../extensions/entityNode";
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
 import { ImageRatio } from '../generation-util';
@@ -28,7 +28,7 @@ export interface RenderLog {
     promptStrength?: number;
     depthStrength?: number;
     selectedLoras?: any[];
-  }
+}
   
 // Interface for serialized environment settings
 interface SerializedEnvironment {
@@ -223,7 +223,7 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
     }
 }
 
-// Deserialize a project JSON and recreate all EntityNodes in the scene
+// Deserialize a project JSON and recreate all EntityBases in the scene
 export function deserializeScene(
     data: any,
     scene: BABYLON.Scene,
@@ -247,8 +247,8 @@ export function deserializeScene(
         
         // Process lights first, then other entities
         const promises = [
-            ...lightEntities.map((entityData: any) => deserializeEntityNode(entityData, scene)),
-            ...otherEntities.map((entityData: any) => deserializeEntityNode(entityData, scene))
+            ...lightEntities.map((entityData: any) => deserializeEntityBase(entityData, scene)),
+            ...otherEntities.map((entityData: any) => deserializeEntityBase(entityData, scene))
         ];
         
         // Process all deserialization promises
@@ -361,14 +361,14 @@ export async function loadProjectFromFile(
     });
 }
 
-// Serialize all EntityNodes in a scene to a project JSON structure
+// Serialize all EntityBases in a scene to a project JSON structure
 export function serializeScene(
     scene: BABYLON.Scene,
     ProjectSettings?: SerializedProjectSettings
 ): any {
-    const entityNodes: EntityNode[] = [];
+    const entityNodes: EntityBase[] = [];
 
-    // Find all EntityNodes in the scene
+    // Find all EntityBases in the scene
     scene.rootNodes.forEach(node => {
         if (isEntity(node) && node.isEnabled()) {
             entityNodes.push(node);
@@ -382,7 +382,7 @@ export function serializeScene(
     const project = {
         version: "1.0.0",
         timestamp: new Date().toISOString(),
-        entities: entityNodes.map(entity => serializeEntityNode(entity)),
+        entities: entityNodes.map(entity => serializeEntityBase(entity)),
         environment: environment,
         ProjectSettings: ProjectSettings
     };

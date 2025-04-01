@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects } from './editor-util';
-import { EntityNode } from '../extensions/entityNode';
+import { EntityBase } from '../extensions/entityNode';
 import { ShapeType } from '../extensions/entityNode';
 import { defaultMaterial } from './material-util';
 import { setupMeshShadows } from './light-util';
@@ -45,7 +45,7 @@ export async function loadShapeMeshes(scene: BABYLON.Scene): Promise<void> {
 }
 
 // Create shape mesh for entity
-export function createShapeEntity(entity: EntityNode, scene: BABYLON.Scene, shapeType: ShapeType, options?: { scale?: BABYLON.Vector3 }): BABYLON.Mesh {
+export function createShapeEntity(entity: EntityBase, scene: BABYLON.Scene, shapeType: ShapeType, options?: { scale?: BABYLON.Vector3 }): BABYLON.Mesh {
 
     const newMesh = createShapeMesh(scene, shapeType);
 

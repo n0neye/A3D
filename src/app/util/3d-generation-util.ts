@@ -2,7 +2,6 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
@@ -10,12 +9,14 @@ import { setupMeshShadows } from "./editor/light-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "./storage-util";
 import { defaultPBRMaterial } from "./editor/material-util";
+import { EntityBase } from "./extensions/EntityBase";
+import { GenerativeEntity } from "./extensions/GenerativeEntity";
 
 /**
  * Load a 3D model and replace the current mesh
  */
 export async function loadModel(
-    entity: EntityNode,
+    entity: GenerativeEntity,
     modelUrl: string,
     scene: BABYLON.Scene,
     onProgress?: ProgressCallback
@@ -46,7 +47,6 @@ export async function loadModel(
         // If there's an existing model mesh, dispose it
         if (entity.modelMesh) {
             entity.modelMesh.dispose();
-            entity.modelMesh = null;
         }
 
         onProgress?.({ message: 'Generating...' });
@@ -137,7 +137,7 @@ async function processImageUrl(imageUrl: string): Promise<{ processedUrl: string
 async function finalizeModelGeneration(
     modelUrl: string,
     isPersistentUrl: boolean,
-    entity: EntityNode,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
@@ -148,11 +148,7 @@ async function finalizeModelGeneration(
     const seconds = (elapsedTime / 1000).toFixed(2);
     console.log(`%c3D conversion completed in ${seconds} seconds`, "color: #4CAF50; font-weight: bold;");
 
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: true,
-        progressMessage: 'Loading 3D model...'
-    });
+    entity.setProcessingState("generating3D", "Starting 3D conversion...");
 
     // Load the model
     await loadModel(
@@ -160,11 +156,7 @@ async function finalizeModelGeneration(
         modelUrl,
         scene,
         (progress) => {
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: true,
-                progressMessage: progress.message
-            });
+            entity.setProcessingState("generating3D", progress.message);
         }
     );
 
@@ -179,11 +171,7 @@ async function finalizeModelGeneration(
     // Add generation log
     const log = entity.addModelGenerationLog(persistentUrl, derivedFromId);
 
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: false,
-        progressMessage: ''
-    });
+    entity.setProcessingState("idle", "");
 
     return { success: true, generationLog: log };
 }
@@ -193,7 +181,7 @@ async function finalizeModelGeneration(
  */
 export async function generate3DModel_Trellis(
     imageUrl: string,
-    entity: EntityNode,
+    entity: EntityBase,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
@@ -279,7 +267,7 @@ export async function generate3DModel_Trellis(
  */
 export async function generate3DModel_Runpod(
     imageUrl: string,
-    entity: EntityNode,
+    entity: EntityBase,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
@@ -452,7 +440,7 @@ export type ModelApiProvider = 'trellis' | 'runpod';
  */
 export async function generate3DModel(
     imageUrl: string,
-    entity: EntityNode,
+    entity: EntityBase,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,

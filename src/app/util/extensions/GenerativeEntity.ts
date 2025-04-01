@@ -37,9 +37,10 @@ export interface GenerationLog {
 
 export class GenerativeEntity extends EntityBase {
   // GenerativeEntity specific properties
-  modelMeshRoot: BABYLON.Node | null;
+  modelMesh?: BABYLON.Mesh;
   placeholderMesh: BABYLON.Mesh;
   generationState: GenerationState;
+  generationStateMessage: string;
   props: GenerativeEntityProps;
   
   constructor(
@@ -59,7 +60,6 @@ export class GenerativeEntity extends EntityBase {
     });
         
     // Create initial props
-    this.modelMeshRoot = null;
     this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
     this.props = {
       generationLogs: options.props.generationLogs,
@@ -67,13 +67,23 @@ export class GenerativeEntity extends EntityBase {
     };
 
     this.generationState = 'idle';
+    this.generationStateMessage = '';
   }
   
-  
+  setDisplayMode(mode: "3d" | "2d"): void {
+    if (mode === "3d" && this.modelMesh) {
+      this.modelMesh.isVisible = true;
+      this.placeholderMesh.isVisible = false;
+    } else {
+      if(this.modelMesh) this.modelMesh.isVisible = false;
+      this.placeholderMesh.isVisible = true;
+    }
+  }
+
   /**
    * Set generation data for this entity
    */
-  setGenerationData(generation: GenerationLog): void {
+  addGenerationLog(generation: GenerationLog): void {
     this.props.generationLogs.push(generation);
   }
   
@@ -85,17 +95,11 @@ export class GenerativeEntity extends EntityBase {
   }
   
   /**
-   * Get the processing state
-   */
-  getProcessingState(): GenerationState {
-    return this.generationState;
-  }
-  
-  /**
    * Set the processing state
    */
-  setProcessingState(state: GenerationState): void {
+  setProcessingState(state: GenerationState, message?: string): void {
     this.generationState = state;
+    this.generationStateMessage = message || '';
   }
   
 
@@ -122,8 +126,8 @@ export class GenerativeEntity extends EntityBase {
    * Clean up resources
    */
   dispose(): void {
-    if (this.modelMeshRoot) {
-      this.modelMeshRoot.dispose();
+    if (this.modelMesh) {
+      this.modelMesh.dispose();
     }
     super.dispose();
   }

@@ -5,7 +5,7 @@ import { generateBackground, removeBackground } from '../util/generation-util';
 import { generate3DModel } from '../util/3d-generation-util';
 import { generateRealtimeImage, GenerationResult } from '../util/realtime-generation-util';
 import { useEditorContext } from '../context/EditorContext';
-import { EntityNode, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
+import { EntityBase, EntityProcessingState, GenerationLog } from '../util/extensions/entityNode';
 import { ImageRatio } from '../util/generation-util';
 import RatioSelector from './RatioSelector';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 // TODO: This is a hack to get the current entity.
 // It's used to remove the event handler from the previous entity when the selected entity changes.
-let CURRENT_ENTITY: EntityNode | null = null;
+let CURRENT_ENTITY: EntityBase | null = null;
 
 const EntityPanel: React.FC = () => {
   const { scene, selectedEntity, gizmoManager, setSelectedEntity } = useEditorContext();
@@ -37,7 +37,7 @@ const EntityPanel: React.FC = () => {
 
   // Update when selected entity changes
   useEffect(() => {
-    const handleProgress = (param: { entity: EntityNode, state: EntityProcessingState }) => {
+    const handleProgress = (param: { entity: EntityBase, state: EntityProcessingState }) => {
       if (param.entity.name === CURRENT_ENTITY?.name) {
         setIsGenerating2D(param.state.isGenerating2D);
         setIsGenerating3D(param.state.isGenerating3D);
@@ -107,7 +107,7 @@ const EntityPanel: React.FC = () => {
   }, [selectedEntity]);
 
   // Helper function to find the point light in a light entity
-  const findPointLight = (entity: EntityNode): BABYLON.PointLight | null => {
+  const findPointLight = (entity: EntityBase): BABYLON.PointLight | null => {
     const children = entity.getChildren();
     for (const child of children) {
       if (child instanceof BABYLON.PointLight) {

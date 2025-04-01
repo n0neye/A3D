@@ -5,7 +5,6 @@ import * as BABYLON from '@babylonjs/core';
 import AddPanel from './AddPanel';
 import EntityPanel from './EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
-import { duplicateEntity, resolveEntity } from '../util/extensions/entityNode';
 import { initializeRealtimeConnection } from '../util/realtime-generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
@@ -18,10 +17,13 @@ import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
 import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityAsyncCommand } from '../lib/commands';
 import { v4 as uuidv4 } from 'uuid';
-import { createEntity } from '../util/extensions/entityNode';
+import { EntityFactory } from '../util/extensions/EntityFactory';
+import { duplicateEntity } from '../util/extensions/entityUtils';
 import Guide from './Guide';
 import { availableAPIs } from '../util/image-render-api';
 import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
+import { GenerativeEntityProps } from '../util/extensions/GenerativeEntity';
+import { EntityBase } from '../util/extensions/EntityBase';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -117,12 +119,15 @@ export default function EditorContainer() {
             position = ray.origin.add(ray.direction.scale(distance));
           }
 
-          // Create entity command
+          // Create entity command using the new EntityFactory
           const createCommand = new CreateEntityCommand(
-            () => createEntity(scene, 'aiObject', {
-              aiObjectType: 'generativeObject',
+            () => EntityFactory.createEntity(scene, 'generative', {
+              name: `gen-${uuidv4().substring(0, 8)}`,
               position: position,
-              name: `gen-${uuidv4().substring(0, 8)}`
+              generativeProps: {
+                generationLogs: [],
+                currentGenerationIdx: 0
+              } as GenerativeEntityProps
             }),
             scene
           );
@@ -144,12 +149,10 @@ export default function EditorContainer() {
           const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
           const mesh = pickInfo.pickedMesh;
 
-          if (mesh) {
-            // Find entity from mesh
-            const entity = resolveEntity(mesh);
-            setSelectedEntity(entity);
+          // Find the entity that owns this mesh
+          if (mesh && mesh.metadata.rootEntity && mesh.metadata.rootEntity instanceof EntityBase) {
+            setSelectedEntity(mesh.metadata.rootEntity);
           } else {
-            // Clear selection when clicking on background
             setSelectedEntity(null);
           }
         }
@@ -270,7 +273,7 @@ export default function EditorContainer() {
       const duplicateCommand = new CreateEntityAsyncCommand(
         async () => {
           console.log("Creating duplicate entity", currentEntity.getEntityType(), currentEntity.metadata?.aiData?.aiObjectType);
-          const duplicate = await duplicateEntity(currentScene, currentEntity);
+          const duplicate = await duplicateEntity(currentEntity, currentScene);
           duplicate.position.x += 0.2;
           return duplicate;
         },

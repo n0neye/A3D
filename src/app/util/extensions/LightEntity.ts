@@ -21,6 +21,7 @@ export class LightEntity extends EntityBase {
   // LightEntity specific properties
   light: BABYLON.Light;
   shadowGenerator?: BABYLON.ShadowGenerator;
+  gizmoMesh: BABYLON.Mesh;
   props: LightProps;
 
   constructor(
@@ -49,6 +50,9 @@ export class LightEntity extends EntityBase {
       color: options.props?.color || {r: 1, g: 1, b: 1},
       shadowEnabled: options.props?.shadowEnabled || false
     };
+
+    this.gizmoMesh = BABYLON.MeshBuilder.CreateSphere("gizmo", { diameter: 0.1 }, this.getScene());
+    this.gizmoMesh.parent = this;
 
     // Create light visual representation
     this.createLightVisual();

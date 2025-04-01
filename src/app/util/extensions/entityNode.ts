@@ -92,7 +92,7 @@
 // }
 
 // // Custom Entity Class that extends TransformNode
-// export class EntityNode extends BABYLON.TransformNode {
+// export class EntityBase extends BABYLON.TransformNode {
 //     // Entity metadata
 //     public metadata: EntityMetadata;
 
@@ -102,7 +102,7 @@
 //     public displayMode: '2d' | '3d' = '2d';
 
 //     // Progress event - public event handler
-//     public readonly onProgress = new EventHandler<{ entity: EntityNode, state: EntityProcessingState }>();
+//     public readonly onProgress = new EventHandler<{ entity: EntityBase, state: EntityProcessingState }>();
 
 //     constructor(
 //         name: string,
@@ -323,17 +323,17 @@
 // }
 
 // // Type guard function
-// export function isEntity(node: BABYLON.Node): node is EntityNode {
-//     return node instanceof EntityNode;
+// export function isEntity(node: BABYLON.Node): node is EntityBase {
+//     return node instanceof EntityBase;
 // }
 
-// export function resolveEntity(node: BABYLON.Node): EntityNode | null {
+// export function resolveEntity(node: BABYLON.Node): EntityBase | null {
 //     if (isEntity(node)) {
 //         return node;
 //     }
 
 //     if (node instanceof BABYLON.AbstractMesh && node.metadata?.rootEntity) {
-//         return node.metadata.rootEntity as EntityNode;
+//         return node.metadata.rootEntity as EntityBase;
 //     }
 
 //     return null;
@@ -368,11 +368,11 @@
 //         imageUrl?: string;
 //         shapeType?: ShapeType;
 //     } = {}
-// ): EntityNode {
+// ): EntityBase {
 //     const name = options.name || `${type}-${uuidv4().substring(0, 8)}`;
 
 //     // Create entity object
-//     const entity = new EntityNode(name, scene, type, options);
+//     const entity = new EntityBase(name, scene, type, options);
 //     if (type === 'aiObject') {
 //         createAiObject(scene, name, entity, options);
 //     } else {
@@ -386,10 +386,10 @@
 // // TODO: This is a temporary function to duplicate an entity. Must have clear plan to for entity creation.
 // export async function duplicateEntity(
 //     scene: BABYLON.Scene,
-//     sourceEntity: EntityNode,
-// ): Promise<EntityNode> {
+//     sourceEntity: EntityBase,
+// ): Promise<EntityBase> {
 //     const name = sourceEntity.name + "-copy";
-//     const newEntity = new EntityNode(name, scene, sourceEntity.getEntityType(), {
+//     const newEntity = new EntityBase(name, scene, sourceEntity.getEntityType(), {
 //         position: sourceEntity.position.clone(),
 //         ratio: sourceEntity.metadata.aiData?.current_ratio,
 //     });
@@ -431,7 +431,7 @@
 //     return newEntity;
 // }
 
-// const duplicateMesh = (sourceMesh: BABYLON.Mesh, parent: EntityNode): BABYLON.Mesh => {
+// const duplicateMesh = (sourceMesh: BABYLON.Mesh, parent: EntityBase): BABYLON.Mesh => {
 //     const newMesh = sourceMesh.clone(`${sourceMesh.name}-copy`);
 //     newMesh.metadata = { ...sourceMesh.metadata };
 //     newMesh.scaling = sourceMesh.scaling.clone();
@@ -442,7 +442,7 @@
 //     return newMesh;
 // }
 
-// const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, options: {
+// const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityBase, options: {
 //     aiObjectType?: AiObjectType;
 //     position?: BABYLON.Vector3;
 //     ratio?: ImageRatio;
@@ -512,7 +512,7 @@
 //     };
 // }
 
-// const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, options: {
+// const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityBase, options: {
 //     ratio?: ImageRatio;
 // }) => {
 
@@ -535,7 +535,7 @@
 
 // // Apply image to entity
 // export const applyImageToEntity = async (
-//     entity: EntityNode,
+//     entity: EntityBase,
 //     imageUrl: string,
 //     scene: BABYLON.Scene,
 //     ratio?: ImageRatio
@@ -635,7 +635,7 @@
 //     entity.setDisplayMode('2d');
 // }
 
-// // Serialize an EntityNode to a JSON-compatible object
+// // Serialize an EntityBase to a JSON-compatible object
 
 // type Vector3Data = {
 //     x: number;
@@ -650,7 +650,7 @@
 // }
 
 
-// interface SerializedEntityNode {
+// interface SerializedEntityBase {
 //     id: string;
 //     name: string;
 //     displayMode: '2d' | '3d';
@@ -661,10 +661,10 @@
 //     created: string;
 // }
 
-// export function serializeEntityNode(entity: EntityNode): any {
+// export function serializeEntityBase(entity: EntityBase): any {
 //     // Create a base serialized object with core properties
 //     const mesh = entity.getPrimaryMesh();
-//     const serialized: SerializedEntityNode = {
+//     const serialized: SerializedEntityBase = {
 //         id: entity.id,
 //         name: entity.name,
 
@@ -702,7 +702,7 @@
 // }
 
 // // Helper function to find a point light in an entity
-// function findEntityPointLight(entity: EntityNode): BABYLON.PointLight | null {
+// function findEntityPointLight(entity: EntityBase): BABYLON.PointLight | null {
 //     const children = entity.getChildren();
 //     for (const child of children) {
 //         if (child instanceof BABYLON.PointLight) {
@@ -712,9 +712,9 @@
 //     return null;
 // }
 
-// // Redesigned deserialization function for EntityNode
-// export async function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): Promise<EntityNode> {
-//     console.log('deserializeEntityNode', data.name, "EntityType", data.metadata.entityType, "DisplayMode", data.displayMode, data);
+// // Redesigned deserialization function for EntityBase
+// export async function deserializeEntityBase(data: SerializedEntityBase, scene: BABYLON.Scene): Promise<EntityBase> {
+//     console.log('deserializeEntityBase', data.name, "EntityType", data.metadata.entityType, "DisplayMode", data.displayMode, data);
 
 //     if (data.metadata.entityType === 'light') {
 //         // For light entities, recreate the light using the point light entity creator
@@ -742,8 +742,8 @@
 //         return newEntity;
 //     }
 
-//     // First create a base EntityNode directly
-//     const entity = new EntityNode(data.name, scene, data.metadata.entityType);
+//     // First create a base EntityBase directly
+//     const entity = new EntityBase(data.name, scene, data.metadata.entityType);
 
 //     // Completely restore metadata (convert date strings back to Date objects)
 //     entity.metadata = {
@@ -820,7 +820,7 @@
 //     }
 
 //     const mesh = entity.getPrimaryMesh();
-//     console.log('deserializeEntityNode', entity.name, mesh?.name);
+//     console.log('deserializeEntityBase', entity.name, mesh?.name);
 //     entity.position = toBabylonVector3(data.position);
 //     entity.rotation = toBabylonVector3(data.rotation);
 //     // Apply scaling to the mesh if it exists
@@ -833,7 +833,7 @@
 
 
 // // Create background mesh for entity
-// function createBackgroundMesh(entity: EntityNode, scene: BABYLON.Scene): void {
+// function createBackgroundMesh(entity: EntityBase, scene: BABYLON.Scene): void {
 //     // Create skybox with default texture (will be replaced when applying generation)
 //     const defaultUrl = "https://playground.babylonjs.com/textures/equirectangular.jpg";
 //     const logs = entity.metadata.aiData?.generationLogs;
@@ -853,7 +853,7 @@
 
 
 // // Create plane mesh for generative objects
-// function createPlaneMesh(entity: EntityNode, scene: BABYLON.Scene, ratio: ImageRatio): void {
+// function createPlaneMesh(entity: EntityBase, scene: BABYLON.Scene, ratio: ImageRatio): void {
 //     // Get dimensions from ratio
 //     const { width, height } = getPlaneSize(ratio);
 
@@ -887,7 +887,7 @@
 // }
 
 // // Helper to create a mock 3D model (for demonstration purposes)
-// function createMockModelMesh(entity: EntityNode, scene: BABYLON.Scene): void {
+// function createMockModelMesh(entity: EntityBase, scene: BABYLON.Scene): void {
 //     // Create a box as a stand-in for the 3D model
 //     const modelMesh = BABYLON.MeshBuilder.CreateBox(`${entity.name}-model`, { size: 1 }, scene);
 
@@ -908,7 +908,7 @@
 // }
 
 // // Apply generation log to entity
-// function applyGenerationToEntity(entity: EntityNode, generation: any, scene: BABYLON.Scene): void {
+// function applyGenerationToEntity(entity: EntityBase, generation: any, scene: BABYLON.Scene): void {
 //     if (!generation || !generation.fileUrl) return;
 
 //     // Apply based on asset type

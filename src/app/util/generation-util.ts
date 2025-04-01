@@ -2,7 +2,7 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
+import { EntityBase, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 
@@ -49,7 +49,7 @@ export type ProgressCallback = (progress: GenerationProgress) => void;
  */
 export async function generateBackground(
     prompt: string,
-    entity: EntityNode,
+    entity: EntityBase,
     scene: BABYLON.Scene,
     options: {
         negativePrompt?: string;
@@ -136,7 +136,7 @@ export function blobToBase64(blob: Blob): Promise<string> {
  */
 export async function removeBackground(
     imageUrl: string,
-    entity: EntityNode,
+    entity: EntityBase,
     scene: BABYLON.Scene,
     derivedFromId: string
 ): Promise<GenerationResult> {

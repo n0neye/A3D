@@ -1,8 +1,10 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from './EntityBase';
-import { GenerativeEntity } from './GenerativeEntity';
-import { ShapeEntity } from './ShapeEntity';
-import { LightEntity } from './LightEntity';
+import { GenerativeEntity, GenerativeEntityProps } from './GenerativeEntity';
+import { ShapeEntity, ShapeEntityProps } from './ShapeEntity';
+import { LightEntity, LightProps } from './LightEntity';
+import { EntityFactory } from './EntityFactory';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Check if a node is an entity
@@ -34,8 +36,104 @@ export function isLightEntity(entity: EntityBase): entity is LightEntity {
 
 /**
  * Duplicate an entity
+ * Creates a new entity with the same properties as the original
  */
-export function duplicateEntity(entity: EntityBase, scene: BABYLON.Scene): EntityBase | null {
-  // Implementation for entity duplication
-  return null;
+export async function duplicateEntity(entity: EntityBase, scene: BABYLON.Scene): Promise<EntityBase> {
+  // Generate a new unique ID for the duplicate
+  const newId = uuidv4();
+  
+  // Create a new name based on the original
+  const newName = `${entity.name}-copy`;
+  
+  // Get the position of the original entity
+  const position = entity.position.clone();
+  
+  // Get the rotation of the original entity
+  const rotation = entity.rotation.clone();
+  
+  // Get the scaling of the original entity (will be applied to meshes)
+  const scaling = entity.scaling.clone();
+  
+  // Create a new entity based on the type of the original
+  let newEntity: EntityBase;
+  
+  if (isGenerativeEntity(entity)) {
+    // Deep clone the props for the new generative entity
+    const props: GenerativeEntityProps = {
+      generationLogs: [...entity.props.generationLogs],
+      currentGenerationIdx: entity.props.currentGenerationIdx || 0
+    };
+    
+    // Create the new generative entity
+    newEntity = EntityFactory.createEntity(scene, 'generative', {
+      id: newId,
+      name: newName,
+      position,
+      rotation,
+      generativeProps: props
+    });
+
+    // TODO: download the model if needed
+    
+    // Copy additional generative entity properties
+    const generativeEntity = newEntity as GenerativeEntity;
+    generativeEntity.generationState = entity.generationState;
+    
+    // Clone texture materials if applicable
+    if (entity.placeholderMesh && entity.placeholderMesh.material) {
+      const material = entity.placeholderMesh.material.clone(`${newName}-material`);
+      generativeEntity.placeholderMesh.material = material;
+    }
+    
+    // If there's a model mesh, try to clone it
+    if (entity.modelMesh) {
+      // This is complex and might require special handling
+      // For now, we'll leave it to be recreated from the generation logs
+      console.log("Model mesh cloning is complex - it will be recreated from logs if needed");
+    }
+  } 
+  else if (isShapeEntity(entity)) {
+    // Clone the shape entity props
+    const props: ShapeEntityProps = {
+      shapeType: entity.props.shapeType
+    };
+    
+    // Create the new shape entity
+    newEntity = EntityFactory.createEntity(scene, 'shape', {
+      id: newId,
+      name: newName,
+      position,
+      rotation,
+      shapeProps: props
+    });
+    
+  } 
+  else if (isLightEntity(entity)) {
+    // Clone the light entity props
+    const props: LightProps = {
+      color: { ...entity.props.color },
+      intensity: entity.props.intensity,
+      shadowEnabled: entity.props.shadowEnabled
+    };
+    
+    // Create the new light entity
+    newEntity = EntityFactory.createEntity(scene, 'light', {
+      id: newId,
+      name: newName,
+      position,
+      rotation,
+      lightProps: props
+    });
+  } 
+  else {
+    // Generic entity duplication (base case)
+    newEntity = new EntityBase(newName, scene, entity.entityType, {
+      id: newId,
+      position,
+      rotation,
+      scaling
+    });
+  }
+  
+  return newEntity;
 } 

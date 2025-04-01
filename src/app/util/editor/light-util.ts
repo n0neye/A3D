@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { environmentObjects } from './editor-util';
-import { EntityNode } from '../extensions/entityNode';
+import { EntityBase } from '../extensions/entityNode';
 
 export const createDefaultLights = (scene: BABYLON.Scene) => {
     // Create a default point light using our entity function
@@ -17,7 +17,7 @@ export const createDefaultLights = (scene: BABYLON.Scene) => {
 
 export const createSunEntity = (scene: BABYLON.Scene,) => {
     // Create a transform node to group the sun and arrow
-    const sunTransform = new EntityNode("sunTransform", scene, "light");
+    const sunTransform = new EntityBase("sunTransform", scene, "light");
     // Position the transform at an offset from the origin
     sunTransform.position = new BABYLON.Vector3(0, 5, 0);
 
@@ -105,7 +105,7 @@ export const setupMeshShadows = (mesh: BABYLON.AbstractMesh): void => {
  * Creates a point light entity that includes both a light source and a visual representation
  * @param scene The Babylon.js scene
  * @param options Configuration options for the light entity
- * @returns An EntityNode representing the point light
+ * @returns An EntityBase representing the point light
  */
 export const createPointLightEntity = (
     scene: BABYLON.Scene,
@@ -116,7 +116,7 @@ export const createPointLightEntity = (
         color?: BABYLON.Color3;
         shadowEnabled?: boolean;
     } = {}
-): EntityNode => {
+): EntityBase => {
     // Default options
     const name = options.name || `pointLight-${Date.now()}`;
     const position = options.position || new BABYLON.Vector3(0, 2, 0);
@@ -125,7 +125,7 @@ export const createPointLightEntity = (
     const shadowEnabled = options.shadowEnabled !== undefined ? options.shadowEnabled : false;
 
     // Create the entity node of type 'light'
-    const lightEntity = new EntityNode(name, scene, 'light', {
+    const lightEntity = new EntityBase(name, scene, 'light', {
         position: position
     });
 

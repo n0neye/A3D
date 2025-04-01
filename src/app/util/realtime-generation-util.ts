@@ -1,7 +1,7 @@
 import { fal } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import { getImageSimulationData, } from "./simulation-data";
-import {  EntityNode, applyImageToEntity, GenerationLog } from './extensions/entityNode';
+import {  EntityBase, applyImageToEntity, GenerationLog } from './extensions/entityNode';
 import { ProgressCallback , IMAGE_SIZE_MAP, RATIO_MAP, ImageSize, ImageRatio } from "./generation-util";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
@@ -26,7 +26,7 @@ export function initializeRealtimeConnection(): void {
 
 export async function generateRealtimeImage(
     promptInput: string,
-    entity: EntityNode,
+    entity: EntityBase,
     scene: BABYLON.Scene,
     options: {
         ratio?: ImageRatio,
