@@ -1,11 +1,15 @@
 import { isEntity } from "../extensions/entityUtils";
-import { EntityBase } from "../extensions/EntityBase";
+import { EntityBase, SerializedEntityData } from "../extensions/EntityBase";
+import { GenerativeEntity, SerializedGenerativeEntityData } from "../extensions/GenerativeEntity";
+import { ShapeEntity, SerializedShapeEntityData } from "../extensions/ShapeEntity";
+import { LightEntity, SerializedLightEntityData } from "../extensions/LightEntity";
 import { EntityFactory } from "../extensions/EntityFactory";
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
 import { ImageRatio } from '../generation-util';
 import { API_Info } from '../image-render-api';
 import { LoraConfig } from '../lora';
+import { GenerativeEntityProps } from "../extensions/GenerativeEntity";
 
 // Interface for serialized render settings
 export interface SerializedProjectSettings {
@@ -234,8 +238,6 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
     }
 }
 
-
-
 // Deserialize a project JSON and recreate all entities in the scene
 export function deserializeScene(
     data: any,
@@ -258,64 +260,29 @@ export function deserializeScene(
 
     // Create entities from the saved data
     if (data.entities && Array.isArray(data.entities)) {
-        // Create entities from serialized data using the EntityFactory
-        data.entities.forEach((entityData: any) => {
+        // Create entities from serialized data using entity class deserializers
+        data.entities.forEach((entityData: SerializedEntityData) => {
             try {
-                const position = entityData.position 
-                    ? new BABYLON.Vector3(entityData.position.x, entityData.position.y, entityData.position.z)
-                    : undefined;
-                
-                const rotation = entityData.rotation 
-                    ? new BABYLON.Vector3(entityData.rotation.x, entityData.rotation.y, entityData.rotation.z)
-                    : undefined;
-                
-                const scaling = entityData.scaling 
-                    ? new BABYLON.Vector3(entityData.scaling.x, entityData.scaling.y, entityData.scaling.z)
-                    : undefined;
-                
                 // Create the entity based on its type
                 let entity: EntityBase | null = null;
                 const entityType = entityData.entityType;
                 
                 switch (entityType) {
                     case 'light':
-                        entity = EntityFactory.createEntity(scene, 'light', {
-                            id: entityData.id,
-                            name: entityData.name,
-                            position,
-                            rotation,
-                            lightProps: entityData.props
-                        });
+                        entity = LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
                         break;
                         
                     case 'shape':
-                        entity = EntityFactory.createEntity(scene, 'shape', {
-                            id: entityData.id,
-                            name: entityData.name,
-                            position,
-                            rotation,
-                            shapeProps: entityData.props
-                        });
+                        entity = ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
                         break;
                         
                     case 'generative':
-                        entity = EntityFactory.createEntity(scene, 'generative', {
-                            id: entityData.id,
-                            name: entityData.name,
-                            position,
-                            rotation,
-                            generativeProps: entityData.props
-                        });
+                        entity = GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
                         break;
                         
                     default:
                         console.warn(`Unknown entity type: ${entityType}`);
                         break;
-                }
-                
-                // Apply scaling if available
-                if (entity && scaling) {
-                    entity.scaling = scaling;
                 }
                 
             } catch (error) {
@@ -480,7 +447,6 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
     console.error("Error downloading image:", error);
   }
 }
-
 
 // Load project from a URL
 export async function loadProjectFromUrl(

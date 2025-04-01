@@ -58,11 +58,19 @@ export class EntityBase extends BABYLON.TransformNode {
       id: this.id,
       name: this.name,
       entityType: this.entityType,
-      position: toBabylonVector3(this.position),
-      rotation: toBabylonVector3(this.rotation),
-      scaling: toBabylonVector3(this.scaling),
+      position: fromBabylonVector3(this.position),
+      rotation: fromBabylonVector3(this.rotation),
+      scaling: fromBabylonVector3(this.scaling),
       created: this.created.toISOString(),
     };
+  }
+
+  /**
+   * Base deserialization method (to be implemented in derived classes)
+   */
+  static deserialize(scene: BABYLON.Scene, data: SerializedEntityData): EntityBase | null {
+    // Base implementation to be overridden by subclasses
+    return null;
   }
 
   /**
@@ -96,3 +104,6 @@ const toBabylonVector3 = (v: Vector3Data): BABYLON.Vector3 => {
 const fromBabylonVector3 = (v: BABYLON.Vector3): Vector3Data => {
   return { x: v.x, y: v.y, z: v.z };
 }
+
+// Make these utility functions available for export
+export { toBabylonVector3, fromBabylonVector3 };

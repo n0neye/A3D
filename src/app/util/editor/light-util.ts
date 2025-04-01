@@ -3,53 +3,53 @@ import { environmentObjects } from './editor-util';
 import { LightEntity, LightProps, SerializedColor } from '../extensions/LightEntity';
 import { EntityFactory } from '../extensions/EntityFactory';
 
-export const createSunEntity = (scene: BABYLON.Scene) => {
-    // Create the light entity
-    const lightProps: LightProps = {
-        color: { r: 0.8, g: 0.9, b: 1.0 },
-        intensity: 0.3,
-        shadowEnabled: true
-    };
+// export const createSunEntity = (scene: BABYLON.Scene) => {
+//     // Create the light entity
+//     const lightProps: LightProps = {
+//         color: { r: 0.8, g: 0.9, b: 1.0 },
+//         intensity: 0.3,
+//         shadowEnabled: true
+//     };
     
-    // Create the sunTransform entity
-    const sunTransform = EntityFactory.createEntity(scene, 'light', {
-        name: "sunTransform",
-        position: new BABYLON.Vector3(0, 5, 0),
-        lightProps
-    }) as LightEntity;
+//     // Create the sunTransform entity
+//     const sunTransform = EntityFactory.createEntity(scene, 'light', {
+//         name: "sunTransform",
+//         position: new BABYLON.Vector3(0, 5, 0),
+//         lightProps
+//     }) as LightEntity;
 
-    // Configure the light as directional
-    const sunLight = new BABYLON.DirectionalLight(
-        "sun", 
-        new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), 
-        scene
-    );
-    sunLight.intensity = lightProps.intensity;
-    sunLight.diffuse = new BABYLON.Color3(
-        lightProps.color.r,
-        lightProps.color.g,
-        lightProps.color.b
-    );
-    sunLight.shadowEnabled = lightProps.shadowEnabled;
+//     // Configure the light as directional
+//     const sunLight = new BABYLON.DirectionalLight(
+//         "sun", 
+//         new BABYLON.Vector3(0.5, -0.5, -0.5).normalize(), 
+//         scene
+//     );
+//     sunLight.intensity = lightProps.intensity;
+//     sunLight.diffuse = new BABYLON.Color3(
+//         lightProps.color.r,
+//         lightProps.color.g,
+//         lightProps.color.b
+//     );
+//     sunLight.shadowEnabled = lightProps.shadowEnabled;
 
-    // Replace the default point light with directional light
-    if (sunTransform.light) {
-        sunTransform.light.dispose();
-    }
-    sunTransform.light = sunLight;
-    sunLight.parent = sunTransform;
+//     // Replace the default point light with directional light
+//     if (sunTransform.light) {
+//         sunTransform.light.dispose();
+//     }
+//     sunTransform.light = sunLight;
+//     sunLight.parent = sunTransform;
 
-    // Create a shadow generator for the sun with specialized settings
-    const sunShadowGenerator = createShadowGenerator(sunLight, scene);
+//     // Create a shadow generator for the sun with specialized settings
+//     const sunShadowGenerator = createShadowGenerator(sunLight, scene);
 
-    // For directional lights, use Cascaded Shadow Maps for better quality
-    sunShadowGenerator.usePoissonSampling = true; // Better sampling
-    sunShadowGenerator.bias = 0.0001; // Adjust as needed
-    sunShadowGenerator.useBlurExponentialShadowMap = true;
+//     // For directional lights, use Cascaded Shadow Maps for better quality
+//     sunShadowGenerator.usePoissonSampling = true; // Better sampling
+//     sunShadowGenerator.bias = 0.0001; // Adjust as needed
+//     sunShadowGenerator.useBlurExponentialShadowMap = true;
 
-    environmentObjects.sun = sunLight;
-    environmentObjects.sunTransform = sunTransform;
-}
+//     environmentObjects.sun = sunLight;
+//     environmentObjects.sunTransform = sunTransform;
+// }
 
 /**
  * Creates a shadow generator for a given light

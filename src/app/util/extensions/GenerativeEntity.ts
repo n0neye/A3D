@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase, SerializedEntityData } from './EntityBase';
+import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
 import { ImageRatio, ProgressCallback } from '../generation-util';
 import { v4 as uuidv4 } from 'uuid';
 import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
@@ -254,6 +254,20 @@ export class GenerativeEntity extends EntityBase {
     this.placeholderMesh.scaling = new BABYLON.Vector3(width, height, 1);
   }
 
+  /**
+   * Deserialize a generative entity from serialized data
+   */
+  static deserialize(scene: BABYLON.Scene, data: SerializedGenerativeEntityData): GenerativeEntity {
+    const position = data.position ? toBabylonVector3(data.position) : undefined;
+    const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
+    
+    return new GenerativeEntity(data.name, scene, {
+      id: data.id,
+      position,
+      rotation,
+      props: data.props
+    });
+  }
 
   /**
    * Serialize with generative-specific properties

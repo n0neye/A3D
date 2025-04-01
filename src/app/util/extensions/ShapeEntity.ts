@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase } from './EntityBase';
+import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
 import { createShapeMesh } from '../editor/shape-util';
 import { defaultMaterial } from '../editor/material-util';
 import { setupMeshShadows } from '../editor/light-util';
@@ -10,6 +10,11 @@ import { setupMeshShadows } from '../editor/light-util';
 export type ShapeType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'pyramid' | 'cone' | 'floor';
 export interface ShapeEntityProps {
   shapeType: ShapeType;
+}
+
+// Add serialized data interface
+export interface SerializedShapeEntityData extends SerializedEntityData {
+  props: ShapeEntityProps;
 }
 
 export class ShapeEntity extends EntityBase {
@@ -56,13 +61,27 @@ export class ShapeEntity extends EntityBase {
     console.log(`createShapeEntity: ${newMesh.name}`);
   }
 
-
-
+  /**
+   * Deserialize a shape entity from serialized data
+   */
+  static deserialize(scene: BABYLON.Scene, data: SerializedShapeEntityData): ShapeEntity {
+    const position = data.position ? toBabylonVector3(data.position) : undefined;
+    const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
+    const scaling = data.scaling ? toBabylonVector3(data.scaling) : undefined;
+    
+    return new ShapeEntity(data.name, scene, {
+      id: data.id,
+      position,
+      rotation,
+      scaling,
+      props: data.props
+    });
+  }
 
   /**
    * Serialize with shape-specific properties
    */
-  serialize(): any {
+  serialize(): SerializedShapeEntityData {
     const base = super.serialize();
     return {
       ...base,

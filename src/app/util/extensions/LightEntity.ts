@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase } from './EntityBase';
+import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
 /**
  * Entity that represents lights in the scene
  */
@@ -15,6 +15,11 @@ export interface LightProps {
   color: SerializedColor;
   intensity: number;
   shadowEnabled: boolean;
+}
+
+// Add serialized data interface
+export interface SerializedLightEntityData extends SerializedEntityData {
+  props: LightProps;
 }
 
 export class LightEntity extends EntityBase {
@@ -154,11 +159,27 @@ export class LightEntity extends EntityBase {
   }
 
   /**
+   * Deserialize a light entity from serialized data
+   */
+  static deserialize(scene: BABYLON.Scene, data: SerializedLightEntityData): LightEntity {
+    const position = data.position ? toBabylonVector3(data.position) : undefined;
+    
+    return new LightEntity(data.name, scene, {
+      id: data.id,
+      position,
+      props: data.props
+    });
+  }
+
+  /**
    * Serialize with light-specific properties
    */
-  serialize(): any {
+  serialize(): SerializedLightEntityData {
     const base = super.serialize();
-    return base; // Light properties already in metadata
+    return {
+      ...base,
+      props: this.props
+    };
   }
 
   /**
