@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase } from './EntityBase';
+import { EntityBase, SerializedEntityData } from './EntityBase';
 import { ImageRatio, ProgressCallback } from '../generation-util';
 import { v4 as uuidv4 } from 'uuid';
 import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
@@ -17,6 +17,10 @@ export type AssetType = 'image' | 'model';
 
 // Processing states
 export type GenerationState = 'idle' | 'generating2D' | 'generating3D' | 'error';
+
+export interface SerializedGenerativeEntityData extends SerializedEntityData {
+  props: GenerativeEntityProps;
+}
 
 export interface GenerationLog {
   id: string;
@@ -254,7 +258,7 @@ export class GenerativeEntity extends EntityBase {
   /**
    * Serialize with generative-specific properties
    */
-  serialize(): any {
+  serialize(): SerializedGenerativeEntityData {
     const base = super.serialize();
     return {
       ...base,
