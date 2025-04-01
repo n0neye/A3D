@@ -97,13 +97,11 @@ export class LightEntity extends EntityBase {
       this.light.specular = color;
 
       // Update metadata
-      if (this.metadata.lightProperties) {
-        this.metadata.lightProperties.color = {
-          r: color.r,
-          g: color.g,
-          b: color.b
-        };
-      }
+      this.props.color = {
+        r: color.r,
+        g: color.g,
+        b: color.b
+      };
     }
   }
 
@@ -114,9 +112,7 @@ export class LightEntity extends EntityBase {
     this.light.intensity = intensity;
 
     // Update metadata
-    if (this.metadata.lightProperties) {
-      this.metadata.lightProperties.intensity = intensity;
-    }
+    this.props.intensity = intensity;
   }
 
   /**
@@ -126,9 +122,7 @@ export class LightEntity extends EntityBase {
     this.light.shadowEnabled = enabled;
 
     // Update metadata
-    if (this.metadata.lightProperties) {
-      this.metadata.lightProperties.shadowEnabled = enabled;
-    }
+    this.props.shadowEnabled = enabled;
 
     // Create or dispose shadow generator
     if (enabled && !this.shadowGenerator && this.light instanceof BABYLON.ShadowLight) {

@@ -44,7 +44,7 @@ export class EntityBase extends BABYLON.TransformNode {
    * Get the entity type
    */
   getEntityType(): EntityType {
-    return this.metadata.entityType;
+    return this.entityType;
   }
   
   /**
@@ -70,10 +70,7 @@ export class EntityBase extends BABYLON.TransformNode {
         y: this.scaling.y,
         z: this.scaling.z
       },
-      metadata: {
-        ...this.metadata,
-        created: this.metadata.created.toISOString()
-      },
+      created: this.created.toISOString()
     };
   }
   

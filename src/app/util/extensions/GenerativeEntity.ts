@@ -7,8 +7,6 @@ import { ImageRatio } from '../generation-util';
  */
 
 export interface GenerativeEntityProps {
-  modelMeshRoot: BABYLON.Node | null;
-  placeholderMesh: BABYLON.Mesh;
   generationLogs: GenerationLog[];
   currentGenerationIdx?: number;
 }
@@ -39,8 +37,10 @@ export interface GenerationLog {
 
 export class GenerativeEntity extends EntityBase {
   // GenerativeEntity specific properties
-  props: GenerativeEntityProps;
+  modelMeshRoot: BABYLON.Node | null;
+  placeholderMesh: BABYLON.Mesh;
   generationState: GenerationState;
+  props: GenerativeEntityProps;
   
   constructor(
     name: string, 
@@ -59,9 +59,9 @@ export class GenerativeEntity extends EntityBase {
     });
         
     // Create initial props
+    this.modelMeshRoot = null;
+    this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
     this.props = {
-      modelMeshRoot: null,
-      placeholderMesh: BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene),
       generationLogs: options.props.generationLogs,
       currentGenerationIdx: 0
     };
@@ -74,28 +74,28 @@ export class GenerativeEntity extends EntityBase {
    * Set generation data for this entity
    */
   setGenerationData(generation: GenerationLog): void {
-    this.metadata.generation = generation;
+    this.props.generationLogs.push(generation);
   }
   
   /**
    * Get current generation data
    */
   getCurrentGeneration(): GenerationLog | null {
-    return this.metadata.generation;
+    return this.props.generationLogs.length > 0 ? this.props.generationLogs[this.props.currentGenerationIdx || 0] : null;
   }
   
   /**
    * Get the processing state
    */
   getProcessingState(): GenerationState {
-    return this.metadata.processingState;
+    return this.generationState;
   }
   
   /**
    * Set the processing state
    */
   setProcessingState(state: GenerationState): void {
-    this.metadata.processingState = state;
+    this.generationState = state;
   }
   
 
@@ -122,8 +122,8 @@ export class GenerativeEntity extends EntityBase {
    * Clean up resources
    */
   dispose(): void {
-    if (this.props.modelMeshRoot) {
-      this.props.modelMeshRoot.dispose();
+    if (this.modelMeshRoot) {
+      this.modelMeshRoot.dispose();
     }
     super.dispose();
   }
