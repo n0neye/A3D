@@ -4,6 +4,8 @@ import { ImageRatio, ProgressCallback } from '../generation-util';
 import { v4 as uuidv4 } from 'uuid';
 import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
 import { setupMeshShadows } from '../editor/light-util';
+import { createShapeMesh } from '../editor/shape-util';
+
 /**
  * Entity that represents AI-generated content
  */
@@ -77,7 +79,17 @@ export class GenerativeEntity extends EntityBase {
     });
 
     // Create initial props
-    this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
+    // this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
+    
+    const ratio ='1:1';
+    const { width, height } = getPlaneSize(ratio);
+    this.placeholderMesh = createShapeMesh(scene, "plane");
+    this.placeholderMesh.material = placeholderMaterial;
+    this.placeholderMesh.scaling = new BABYLON.Vector3(width, height, 1);
+    this.placeholderMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+    this.placeholderMesh.parent = this;
+    this.placeholderMesh.metadata = { rootEntity: this };
+
     this.props = {
       generationLogs: options.props?.generationLogs || [],
     };
@@ -89,13 +101,10 @@ export class GenerativeEntity extends EntityBase {
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
-    if (mode === "3d" && this.modelMesh) {
-      this.modelMesh.isVisible = true;
-      this.placeholderMesh.isVisible = false;
-    } else {
-      if (this.modelMesh) this.modelMesh.isVisible = false;
-      this.placeholderMesh.isVisible = true;
+    if(this.modelMesh) {
+      this.modelMesh.setEnabled(mode === '3d');
     }
+    this.placeholderMesh.setEnabled(mode === '2d');
   }
 
   addModelGenerationLog(modelUrl: string, derivedFromId?: string): GenerationLog {
@@ -232,6 +241,7 @@ export class GenerativeEntity extends EntityBase {
     if (log.assetType === 'image' && log.fileUrl) {
       // For image assets, apply the image to the entity
       this.applyGeneratedImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
+      this.setDisplayMode('2d');
     } else if (log.assetType === 'model' && log.fileUrl) {
       // For model assets, we need to set 3D display mode
       // (Assuming the model is already loaded and attached to this entity)

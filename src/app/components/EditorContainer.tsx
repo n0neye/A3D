@@ -121,12 +121,11 @@ export default function EditorContainer() {
 
           // Create entity command using the new EntityFactory
           const createCommand = new CreateEntityCommand(
-            () => EntityFactory.createEntity(scene, 'generative', {
-              name: `gen-${uuidv4().substring(0, 8)}`,
-              position: position,
-              generativeProps: {
+            () => EntityFactory.createEntity(scene, {
+              type: 'generative',
+              position,
+              gnerativeProps: {
                 generationLogs: [],
-                currentGenerationId: 0
               } as GenerativeEntityProps
             }),
             scene

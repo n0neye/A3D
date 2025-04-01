@@ -1,14 +1,12 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
-import { generateBackground, removeBackground } from '../../util/generation-util';
+import {  removeBackground } from '../../util/generation-util';
 import { generate3DModel } from '../../util/3d-generation-util';
 import { generateRealtimeImage, GenerationResult } from '../../util/realtime-generation-util';
 import { useEditorContext } from '../../context/EditorContext';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import * as BABYLON from '@babylonjs/core';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
 import { GenerationLog, GenerativeEntity, GenerationState } from '../../util/extensions/GenerativeEntity';
 
