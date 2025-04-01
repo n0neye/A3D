@@ -36,11 +36,11 @@ The context is accessible throughout the application using the `useEditorContext
 
 ## Entity System
 
-The core of the application revolves around `EntityNode` objects, which are extensions of Babylon.js `TransformNode` with additional metadata and capabilities:
+The core of the application revolves around `EntityBase` objects, which are extensions of Babylon.js `TransformNode` with additional metadata and capabilities:
 
 ```typescript
 // Basic entity structure
-interface EntityNode extends BABYLON.TransformNode {
+interface EntityBase extends BABYLON.TransformNode {
   metadata: EntityMetadata;
   primaryMesh: BABYLON.AbstractMesh;
   

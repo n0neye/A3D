@@ -1,9 +1,15 @@
-import { isEntity, EntityNode, deserializeEntityNode, serializeEntityNode } from "../extensions/entityNode";
+import { isEntity } from "../extensions/entityUtils";
+import { EntityBase, SerializedEntityData } from "../extensions/EntityBase";
+import { GenerativeEntity, SerializedGenerativeEntityData } from "../extensions/GenerativeEntity";
+import { ShapeEntity, SerializedShapeEntityData } from "../extensions/ShapeEntity";
+import { LightEntity, SerializedLightEntityData } from "../extensions/LightEntity";
+import { EntityFactory } from "../extensions/EntityFactory";
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
 import { ImageRatio } from '../generation-util';
 import { API_Info } from '../image-render-api';
 import { LoraConfig } from '../lora';
+import { GenerativeEntityProps } from "../extensions/GenerativeEntity";
 
 // Interface for serialized render settings
 export interface SerializedProjectSettings {
@@ -28,7 +34,7 @@ export interface RenderLog {
     promptStrength?: number;
     depthStrength?: number;
     selectedLoras?: any[];
-  }
+}
   
 // Interface for serialized environment settings
 interface SerializedEnvironment {
@@ -188,42 +194,51 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
 
     // Apply camera settings
     if (data.camera && scene.activeCamera) {
-        // Apply FOV and far clip
-        scene.activeCamera.fov = data.camera.fov;
-        if (data.camera.farClip !== undefined) {
-            scene.activeCamera.maxZ = data.camera.farClip;
+        const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
+        
+        // Update FOV
+        if (data.camera.fov !== undefined) {
+            camera.fov = data.camera.fov;
         }
         
-        if (scene.activeCamera instanceof BABYLON.ArcRotateCamera) {
-            const arcCamera = scene.activeCamera as BABYLON.ArcRotateCamera;
-            
-            // Restore target position
-            if (data.camera.target) {
-                arcCamera.setTarget(new BABYLON.Vector3(
-                    data.camera.target.x,
-                    data.camera.target.y,
-                    data.camera.target.z
-                ));
-            }
-            
-            // Restore camera angles and distance
-            if (data.camera.alpha !== undefined) arcCamera.alpha = data.camera.alpha;
-            if (data.camera.beta !== undefined) arcCamera.beta = data.camera.beta;
-            if (data.camera.radius !== undefined) arcCamera.radius = data.camera.radius;
-        } else {
-            // For other camera types, just set position
-            if (data.camera.position) {
-                scene.activeCamera.position = new BABYLON.Vector3(
-                    data.camera.position.x,
-                    data.camera.position.y,
-                    data.camera.position.z
-                );
-            }
+        // Update position and target
+        if (data.camera.position) {
+            camera.position = new BABYLON.Vector3(
+                data.camera.position.x,
+                data.camera.position.y,
+                data.camera.position.z
+            );
+        }
+        
+        if (data.camera.target) {
+            camera.setTarget(new BABYLON.Vector3(
+                data.camera.target.x,
+                data.camera.target.y,
+                data.camera.target.z
+            ));
+        }
+        
+        // Update alpha, beta, radius if provided
+        if (data.camera.alpha !== undefined) {
+            camera.alpha = data.camera.alpha;
+        }
+        
+        if (data.camera.beta !== undefined) {
+            camera.beta = data.camera.beta;
+        }
+        
+        if (data.camera.radius !== undefined) {
+            camera.radius = data.camera.radius;
+        }
+        
+        // Update far clip if provided
+        if (data.camera.farClip !== undefined) {
+            camera.maxZ = data.camera.farClip;
         }
     }
 }
 
-// Deserialize a project JSON and recreate all EntityNodes in the scene
+// Deserialize a project JSON and recreate all entities in the scene
 export function deserializeScene(
     data: any,
     scene: BABYLON.Scene,
@@ -233,42 +248,49 @@ export function deserializeScene(
     const existingEntities = scene.rootNodes.filter(node => isEntity(node));
     existingEntities.forEach(entity => entity.dispose());
 
-    // Create entities from the saved data
-    if (data.entities && Array.isArray(data.entities)) {
-        // First create all light entities so shadow generators are ready
-        const lightEntities = data.entities.filter((entityData: any) => 
-            entityData.metadata.entityType === 'light'
-        );
-        
-        // Then create all other entities
-        const otherEntities = data.entities.filter((entityData: any) => 
-            entityData.metadata.entityType !== 'light'
-        );
-        
-        // Process lights first, then other entities
-        const promises = [
-            ...lightEntities.map((entityData: any) => deserializeEntityNode(entityData, scene)),
-            ...otherEntities.map((entityData: any) => deserializeEntityNode(entityData, scene))
-        ];
-        
-        // Process all deserialization promises
-        Promise.all(promises).catch(error => {
-            console.error("Error deserializing entities:", error);
-        });
-    }
-
-    // Apply environment settings if available
+    // Apply environment settings if present
     if (data.environment) {
         deserializeEnvironment(data.environment, scene);
     }
 
-    // Apply render settings if available and callback provided
+    // Apply project settings if present and callback provided
     if (data.ProjectSettings && applyProjectSettings) {
         applyProjectSettings(data.ProjectSettings);
     }
-}
 
-// Utility functions for file operations
+    // Create entities from the saved data
+    if (data.entities && Array.isArray(data.entities)) {
+        // Create entities from serialized data using entity class deserializers
+        data.entities.forEach((entityData: SerializedEntityData) => {
+            try {
+                // Create the entity based on its type
+                let entity: EntityBase | null = null;
+                const entityType = entityData.entityType;
+                
+                switch (entityType) {
+                    case 'light':
+                        entity = LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
+                        break;
+                        
+                    case 'shape':
+                        entity = ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
+                        break;
+                        
+                    case 'generative':
+                        entity = GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
+                        break;
+                        
+                    default:
+                        console.warn(`Unknown entity type: ${entityType}`);
+                        break;
+                }
+                
+            } catch (error) {
+                console.error(`Error creating entity from saved data:`, error, entityData);
+            }
+        });
+    }
+}
 
 // Save scene to a JSON file for download with Save As dialog 
 export async function saveProjectToFile(
@@ -329,6 +351,7 @@ export async function saveProjectToFile(
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }, 100);
+
     }
 }
 
@@ -361,17 +384,17 @@ export async function loadProjectFromFile(
     });
 }
 
-// Serialize all EntityNodes in a scene to a project JSON structure
+// Serialize all entities in a scene to a project JSON structure
 export function serializeScene(
     scene: BABYLON.Scene,
     ProjectSettings?: SerializedProjectSettings
 ): any {
-    const entityNodes: EntityNode[] = [];
+    const entities: EntityBase[] = [];
 
-    // Find all EntityNodes in the scene
+    // Find all entities in the scene
     scene.rootNodes.forEach(node => {
         if (isEntity(node) && node.isEnabled()) {
-            entityNodes.push(node);
+            entities.push(node);
         }
     });
 
@@ -382,7 +405,7 @@ export function serializeScene(
     const project = {
         version: "1.0.0",
         timestamp: new Date().toISOString(),
-        entities: entityNodes.map(entity => serializeEntityNode(entity)),
+        entities: entities.map(entity => entity.serialize()),
         environment: environment,
         ProjectSettings: ProjectSettings
     };

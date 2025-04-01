@@ -1,6 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
-import { createEntity, EntityNode, ShapeType } from "../extensions/entityNode";
+import { EntityBase } from "../extensions/EntityBase";
+import { EntityFactory } from "../extensions/EntityFactory";
+import { isLightEntity } from "../extensions/entityUtils";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation-util';
 import * as Materials from "@babylonjs/materials";
@@ -9,7 +11,6 @@ import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/components/HistoryManager";
 import { loadShapeMeshes } from "./shape-util";
 import { createDefaultMaterials } from "./material-util";
-import { createDefaultLights } from "./light-util";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
@@ -491,7 +492,7 @@ export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
     const horizontalSpace = screenWidth - frameWidth;
     const leftPadding = (horizontalSpace - rightExtraPaddingPixels) / 2;
     const rightPadding = leftPadding + rightExtraPaddingPixels;
-    
+
     const frameLeft = leftPadding;
     const frameTop = (screenHeight - frameHeight) / 2;
 
@@ -615,7 +616,7 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
     // Calculate position (centered on screen, but adjusted for extra right padding)
     const horizontalSpace = screenWidth - frameWidth;
     const leftPadding = (horizontalSpace - rightExtraPaddingPixels) / 2;
-    
+
     return {
         left: leftPadding,
         top: (screenHeight - frameHeight) / 2,
@@ -653,14 +654,14 @@ export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) 
 
     // Scale gizmo sensitivity
     if (gizmoManager.gizmos.scaleGizmo) {
-      gizmoManager.gizmos.scaleGizmo.sensitivity = 5.0;
+        gizmoManager.gizmos.scaleGizmo.sensitivity = 5.0;
     }
-    
+
     if (gizmoManager.gizmos.positionGizmo) {
-      gizmoManager.gizmos.positionGizmo.planarGizmoEnabled = true;
-      gizmoManager.gizmos.positionGizmo.xPlaneGizmo.coloredMaterial.alpha = 0.3;
-      gizmoManager.gizmos.positionGizmo.yPlaneGizmo.coloredMaterial.alpha = 0.3;
-      gizmoManager.gizmos.positionGizmo.zPlaneGizmo.coloredMaterial.alpha = 0.3;
+        gizmoManager.gizmos.positionGizmo.planarGizmoEnabled = true;
+        gizmoManager.gizmos.positionGizmo.xPlaneGizmo.coloredMaterial.alpha = 0.3;
+        gizmoManager.gizmos.positionGizmo.yPlaneGizmo.coloredMaterial.alpha = 0.3;
+        gizmoManager.gizmos.positionGizmo.zPlaneGizmo.coloredMaterial.alpha = 0.3;
     }
 
     // Track the active transform command
@@ -668,60 +669,60 @@ export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) 
 
     // Set up event listeners for position gizmo
     if (gizmoManager.gizmos.positionGizmo) {
-      console.log("init position gizmo")
-      gizmoManager.gizmos.positionGizmo.onDragStartObservable.add((event) => {
-        const node = gizmoManager.gizmos.positionGizmo?.attachedNode;
-        if (node && node instanceof BABYLON.TransformNode) {
-          // Create a new transform command when dragging starts
-          activeTransformCommand = new TransformCommand(node);
-        }
-      });
+        console.log("init position gizmo")
+        gizmoManager.gizmos.positionGizmo.onDragStartObservable.add((event) => {
+            const node = gizmoManager.gizmos.positionGizmo?.attachedNode;
+            if (node && node instanceof BABYLON.TransformNode) {
+                // Create a new transform command when dragging starts
+                activeTransformCommand = new TransformCommand(node);
+            }
+        });
 
-      gizmoManager.gizmos.positionGizmo.onDragEndObservable.add((event) => {
-        if (activeTransformCommand) {
-          // Update the final state and add to history
-          activeTransformCommand.updateFinalState();
-          historyManager.executeCommand(activeTransformCommand);
-          activeTransformCommand = null;
-        }
-      });
+        gizmoManager.gizmos.positionGizmo.onDragEndObservable.add((event) => {
+            if (activeTransformCommand) {
+                // Update the final state and add to history
+                activeTransformCommand.updateFinalState();
+                historyManager.executeCommand(activeTransformCommand);
+                activeTransformCommand = null;
+            }
+        });
     }
 
     // Set up event listeners for rotation gizmo 
     if (gizmoManager.gizmos.rotationGizmo) {
-      console.log("init rotation gizmo")
-      gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add((event) => {
-        const node = gizmoManager.gizmos.rotationGizmo?.attachedNode;
-        if (node&& node instanceof BABYLON.TransformNode) {
-          activeTransformCommand = new TransformCommand(node);
-        }
-      });
+        console.log("init rotation gizmo")
+        gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add((event) => {
+            const node = gizmoManager.gizmos.rotationGizmo?.attachedNode;
+            if (node && node instanceof BABYLON.TransformNode) {
+                activeTransformCommand = new TransformCommand(node);
+            }
+        });
 
-      gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add((event) => {
-        if (activeTransformCommand) {
-          activeTransformCommand.updateFinalState();
-          historyManager.executeCommand(activeTransformCommand);
-          activeTransformCommand = null;
-        }
-      });
+        gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add((event) => {
+            if (activeTransformCommand) {
+                activeTransformCommand.updateFinalState();
+                historyManager.executeCommand(activeTransformCommand);
+                activeTransformCommand = null;
+            }
+        });
     }
 
     // Set up event listeners for scale gizmo
     if (gizmoManager.gizmos.scaleGizmo) {
-      gizmoManager.gizmos.scaleGizmo.onDragStartObservable.add((event) => {
-        const node = gizmoManager.gizmos.scaleGizmo?.attachedNode;
-        if (node&& node instanceof BABYLON.TransformNode) {
-          activeTransformCommand = new TransformCommand(node);
-        }
-      });
+        gizmoManager.gizmos.scaleGizmo.onDragStartObservable.add((event) => {
+            const node = gizmoManager.gizmos.scaleGizmo?.attachedNode;
+            if (node && node instanceof BABYLON.TransformNode) {
+                activeTransformCommand = new TransformCommand(node);
+            }
+        });
 
-      gizmoManager.gizmos.scaleGizmo.onDragEndObservable.add((event) => {
-        if (activeTransformCommand) {
-          activeTransformCommand.updateFinalState();
-          historyManager.executeCommand(activeTransformCommand);
-          activeTransformCommand = null;
-        }
-      });
+        gizmoManager.gizmos.scaleGizmo.onDragEndObservable.add((event) => {
+            if (activeTransformCommand) {
+                activeTransformCommand.updateFinalState();
+                historyManager.executeCommand(activeTransformCommand);
+                activeTransformCommand = null;
+            }
+        });
     }
 
     return gizmoManager;
@@ -733,11 +734,11 @@ export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) 
  * @param scene The Babylon.js scene
  */
 export function setCameraFOV(fov: number, scene: BABYLON.Scene): void {
-  if (!scene.activeCamera) return;
-  
-  // Make sure the FOV is within reasonable bounds (about 20-90 degrees)
-  const clampedFOV = Math.max(0.35, Math.min(1.57, fov));
-  scene.activeCamera.fov = clampedFOV;
+    if (!scene.activeCamera) return;
+
+    // Make sure the FOV is within reasonable bounds (about 20-90 degrees)
+    const clampedFOV = Math.max(0.35, Math.min(1.57, fov));
+    scene.activeCamera.fov = clampedFOV;
 }
 
 /**
@@ -746,8 +747,8 @@ export function setCameraFOV(fov: number, scene: BABYLON.Scene): void {
  * @returns The current FOV in radians, or a default value if no camera is available
  */
 export function getCameraFOV(scene: BABYLON.Scene): number {
-  if (!scene.activeCamera) return 0.8; // Default FOV (approximately 45 degrees)
-  return scene.activeCamera.fov;
+    if (!scene.activeCamera) return 0.8; // Default FOV (approximately 45 degrees)
+    return scene.activeCamera.fov;
 }
 
 /**
@@ -756,11 +757,11 @@ export function getCameraFOV(scene: BABYLON.Scene): number {
  * @param scene The Babylon.js scene
  */
 export function setCameraFarClip(farClip: number, scene: BABYLON.Scene): void {
-  if (!scene.activeCamera) return;
-  
-  // Make sure the far clip is within reasonable bounds
-  const clampedFarClip = Math.max(10, Math.min(1000, farClip));
-  scene.activeCamera.maxZ = clampedFarClip;
+    if (!scene.activeCamera) return;
+
+    // Make sure the far clip is within reasonable bounds
+    const clampedFarClip = Math.max(10, Math.min(1000, farClip));
+    scene.activeCamera.maxZ = clampedFarClip;
 }
 
 /**
@@ -769,29 +770,29 @@ export function setCameraFarClip(farClip: number, scene: BABYLON.Scene): void {
  * @returns The current far clip distance, or a default value if no camera is available
  */
 export function getCameraFarClip(scene: BABYLON.Scene): number {
-  if (!scene.activeCamera) return 20; // Default far clip
-  return scene.activeCamera.maxZ;
+    if (!scene.activeCamera) return 20; // Default far clip
+    return scene.activeCamera.maxZ;
 }
 
 
-  // Add a utility function to toggle gizmo visibility
-  export const UpdateGizmoVisibility = (visible: boolean, scene: BABYLON.Scene) => {
+// Add a utility function to toggle gizmo visibility
+export const UpdateGizmoVisibility = (visible: boolean, scene: BABYLON.Scene) => {
     if (!scene) return;
 
     // Hide/show light entity gizmos
-    const lightEntities = scene.rootNodes.filter(node => 
-      node instanceof EntityNode && node.getEntityType() === 'light'
-    ) as EntityNode[];
-    
+    const lightEntities = scene.rootNodes.filter(node => node instanceof EntityBase && isLightEntity(node));
+
+
     lightEntities.forEach(entity => {
-      if (entity.gizmoMesh) {
-        entity.gizmoMesh.isVisible = visible;
-      }
+        // You'll need to add a visualMesh to LightEntity or update this logic
+        if ('gizmoMesh' in entity && entity.gizmoMesh) {
+            entity.gizmoMesh.isVisible = visible;
+        }
     });
-    
+
     // Hide/show world grid
     const worldGrid = getEnvironmentObjects().grid;
     if (worldGrid) {
-      worldGrid.isVisible = visible;
+        worldGrid.isVisible = visible;
     }
-  };
+};

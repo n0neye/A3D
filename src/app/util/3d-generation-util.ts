@@ -2,7 +2,6 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { EntityNode, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
@@ -10,100 +9,9 @@ import { setupMeshShadows } from "./editor/light-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "./storage-util";
 import { defaultPBRMaterial } from "./editor/material-util";
+import { GenerativeEntity } from "./extensions/GenerativeEntity";
+import { loadModel } from "./extensions/GenerativeEntity";
 
-/**
- * Load a 3D model and replace the current mesh
- */
-export async function loadModel(
-    entity: EntityNode,
-    modelUrl: string,
-    scene: BABYLON.Scene,
-    onProgress?: ProgressCallback
-): Promise<boolean> {
-    try {
-        onProgress?.({ message: 'Downloading 3D model...' });
-
-        console.log("loadModel", modelUrl);
-
-        // Load the model
-        const result = await BABYLON.ImportMeshAsync(
-            modelUrl,
-            scene,
-            {
-                onProgress: (progressEvent) => {
-                    if (progressEvent.lengthComputable) {
-                        const progress = (progressEvent.loaded / progressEvent.total * 100).toFixed(0);
-                        onProgress?.({ message: `Downloading: ${progress}%` });
-                    }
-                },
-                pluginExtension: ".glb",
-                name: "_.glb"
-            }
-        );
-
-        const meshes = result.meshes;
-
-        // If there's an existing model mesh, dispose it
-        if (entity.modelMesh) {
-            entity.modelMesh.dispose();
-            entity.modelMesh = null;
-        }
-
-        onProgress?.({ message: 'Generating...' });
-        console.log("loadModel: replaceWithModel. meshes", meshes);
-
-        if (meshes.length > 0) {
-            console.log("loadModel: meshes length", meshes.length);
-
-            // Create a root container mesh if needed
-            let rootModelMesh: BABYLON.Mesh;
-
-            if (meshes.length === 1) {
-                rootModelMesh = meshes[0] as BABYLON.Mesh;
-            } else {
-                // Create a dummy mesh as the container
-                rootModelMesh = new BABYLON.Mesh(`${entity.name}-model-root`, scene);
-                meshes.forEach((mesh) => {
-                    mesh.parent = rootModelMesh;
-                });
-            }
-
-            // Parent the root model to the entity
-            rootModelMesh.parent = entity;
-
-            // Set up the model mesh in the entity
-            entity.modelMesh = rootModelMesh;
-
-            // Set metadata on all meshes
-            meshes.forEach((mesh) => {
-                mesh.metadata = {
-                    ...mesh.metadata,
-                    rootEntity: entity
-                };
-            });
-
-            // Find all materials
-            meshes.forEach((mesh) => {
-                mesh.material = defaultPBRMaterial;
-                console.log("loadModel: Applied default material", mesh.material.name, mesh.material);
-            });
-
-            // Switch to 3D display mode
-            entity.setDisplayMode('3d');
-
-            setupMeshShadows(entity.modelMesh);
-
-            onProgress?.({ message: '3D model loaded successfully!' });
-            return true;
-        } else {
-            throw new Error('No meshes found');
-        }
-    } catch (error) {
-        console.error("Failed to replace with model:", error);
-        onProgress?.({ message: `Failed to replace with model: ${(error as Error).message}` });
-        return false;
-    }
-}
 
 /**
  * Common helpers for 3D model generation
@@ -137,7 +45,7 @@ async function processImageUrl(imageUrl: string): Promise<{ processedUrl: string
 async function finalizeModelGeneration(
     modelUrl: string,
     isPersistentUrl: boolean,
-    entity: EntityNode,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
@@ -148,11 +56,7 @@ async function finalizeModelGeneration(
     const seconds = (elapsedTime / 1000).toFixed(2);
     console.log(`%c3D conversion completed in ${seconds} seconds`, "color: #4CAF50; font-weight: bold;");
 
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: true,
-        progressMessage: 'Loading 3D model...'
-    });
+    entity.setProcessingState("generating3D", "Starting 3D conversion...");
 
     // Load the model
     await loadModel(
@@ -160,11 +64,7 @@ async function finalizeModelGeneration(
         modelUrl,
         scene,
         (progress) => {
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: true,
-                progressMessage: progress.message
-            });
+            entity.setProcessingState("generating3D", progress.message);
         }
     );
 
@@ -177,13 +77,9 @@ async function finalizeModelGeneration(
     }
 
     // Add generation log
-    const log = entity.addModelGenerationLog(persistentUrl, derivedFromId);
+    const log = entity.onNewGeneration("model", persistentUrl, "", derivedFromId);
 
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: false,
-        progressMessage: ''
-    });
+    entity.setProcessingState("idle", "");
 
     return { success: true, generationLog: log };
 }
@@ -193,7 +89,7 @@ async function finalizeModelGeneration(
  */
 export async function generate3DModel_Trellis(
     imageUrl: string,
-    entity: EntityNode,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
@@ -214,12 +110,6 @@ export async function generate3DModel_Trellis(
         };
 
         // Call the API
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: true,
-            progressMessage: 'Starting 3D conversion...'
-        });
-
         const startTime = performance.now();
 
         let result: Result<TrellisOutput> | null = null;
@@ -236,11 +126,7 @@ export async function generate3DModel_Trellis(
                     if (update.status === "IN_PROGRESS") {
                         const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
                         const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s est`;
-                        entity.setProcessingState({
-                            isGenerating2D: false,
-                            isGenerating3D: true,
-                            progressMessage: latestLog
-                        });
+                        entity.setProcessingState("generating3D", latestLog);
                     }
                 },
             });
@@ -262,11 +148,7 @@ export async function generate3DModel_Trellis(
         throw new Error('No 3D model generated');
     } catch (error) {
         console.error("3D conversion failed:", error);
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: false,
-            progressMessage: 'Failed to generate 3D model'
-        });
+        entity.setProcessingState("idle", "Failed to generate 3D model");
         return {
             success: false,
             generationLog: null
@@ -279,7 +161,7 @@ export async function generate3DModel_Trellis(
  */
 export async function generate3DModel_Runpod(
     imageUrl: string,
-    entity: EntityNode,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
@@ -288,39 +170,21 @@ export async function generate3DModel_Runpod(
     } = {}
 ): Promise<GenerationResult> {
     try {
-        // Set entity to processing state
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: true,
-            progressMessage: 'Starting 3D conversion with RunPod...'
-        });
-
+        // Setup processing state
         const startTime = performance.now();
-
-        // Process image directly
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: true,
-            progressMessage: 'Processing image...'
-        });
-
-        console.log("Fetching image from:", imageUrl);
+        entity.setProcessingState("generating3D", "Processing image...");
+        
+        // Process source image 
+        console.log("Fetching source image from:", imageUrl);
         const response = await fetch(imageUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
         }
-
         const blob = await response.blob();
         const base64Data = await blobToBase64(blob);
         const payload = { imageBase64: base64Data };
 
-        console.log("Image processed, size:", Math.round(base64Data.length / 1024), "KB");
-
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: true,
-            progressMessage: 'Submitting...'
-        });
+        entity.setProcessingState("generating3D", "Submitting...");
 
         // Submit job
         const submitResponse = await fetch('/api/runpod/submit', {
@@ -349,7 +213,7 @@ export async function generate3DModel_Runpod(
         let completed = false;
         let resultData = null;
         let attempts = 0;
-        const maxAttempts = 300; // 5 minutes at 1-second intervals
+        const maxAttempts = 400; // 200s
 
         while (!completed && attempts < maxAttempts) {
             attempts++;
@@ -357,11 +221,7 @@ export async function generate3DModel_Runpod(
             // Update progress message with elapsed time
             const elapsedTime = performance.now() - startTime;
             const elapsedSeconds = (elapsedTime / 1000).toFixed(0);
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: true,
-                progressMessage: `Generating... (${elapsedSeconds}s)`
-            });
+            entity.setProcessingState("generating3D", `Generating... (${elapsedSeconds}s)`);
 
             // Check job status
             const statusResponse = await fetch(`/api/runpod/status/${jobId}`);
@@ -369,7 +229,7 @@ export async function generate3DModel_Runpod(
             if (!statusResponse.ok) {
                 console.warn(`Failed to check status, attempt ${attempts}: ${statusResponse.status}`);
                 // Wait and try again
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 500));
                 continue;
             }
 
@@ -386,7 +246,7 @@ export async function generate3DModel_Runpod(
             }
 
             // Wait before polling again
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         if (!completed) {
@@ -407,7 +267,6 @@ export async function generate3DModel_Runpod(
             // Create blob with the proper MIME type
             const blob = new Blob([bytes.buffer], { type: 'model/gltf-binary' });
 
-            // Instead of just creating a blob URL, let's save the model to a File object
             // with a .glb extension to help Babylon.js recognize the format
             const fileName = `model_${derivedFromId}.glb`;
             const file = new File([blob], fileName, { type: 'model/gltf-binary' });
@@ -430,11 +289,7 @@ export async function generate3DModel_Runpod(
         throw new Error('No 3D model data found in response');
     } catch (error) {
         console.error("RunPod 3D conversion failed:", error);
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: false,
-            progressMessage: `Failed to generate 3D model: ${(error as Error).message}`
-        });
+        entity.setProcessingState("idle", `Failed to generate 3D model: ${(error as Error).message}`);
         return {
             success: false,
             generationLog: null
@@ -452,7 +307,7 @@ export type ModelApiProvider = 'trellis' | 'runpod';
  */
 export async function generate3DModel(
     imageUrl: string,
-    entity: EntityNode,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,

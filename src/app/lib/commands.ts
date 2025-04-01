@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { Command } from '../components/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
-import { EntityNode } from '../util/extensions/entityNode';
+import { EntityBase } from '../util/extensions/EntityBase';
 import { usePostHog } from 'posthog-js/react';
 
 // Base class for mesh transform operations
@@ -95,8 +95,8 @@ export class DeleteMeshCommand implements Command {
   private isVisible: boolean;
   private gizmoManager: BABYLON.GizmoManager | null;
 
-  constructor(private entity: EntityNode | BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
-    // Check if it's an EntityNode or a Mesh
+  constructor(private entity: EntityBase | BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
+    // Check if it's an EntityBase or a Mesh
     this.isVisible = entity.isEnabled();
     this.gizmoManager = gizmoManager;
   }
@@ -116,11 +116,11 @@ export class DeleteMeshCommand implements Command {
 
 // Command for creating new entities
 export class CreateEntityCommand implements Command {
-  private entity: EntityNode | null = null;
-  private factory: () => EntityNode;
+  private entity: EntityBase | null = null;
+  private factory: () => EntityBase;
   private scene: BABYLON.Scene;
 
-  constructor(factory: () => EntityNode, scene: BABYLON.Scene) {
+  constructor(factory: () => EntityBase, scene: BABYLON.Scene) {
     this.factory = factory;
     this.scene = scene;
   }
@@ -150,18 +150,18 @@ export class CreateEntityCommand implements Command {
     this.execute();
   }
 
-  getEntity(): EntityNode | null {
+  getEntity(): EntityBase | null {
     return this.entity;
   }
 } 
 
 
 export class CreateEntityAsyncCommand implements Command {
-  private entity: EntityNode | null = null;
-  private factory: () => Promise<EntityNode>;
+  private entity: EntityBase | null = null;
+  private factory: () => Promise<EntityBase>;
   private scene: BABYLON.Scene;
 
-  constructor(factory: () => Promise<EntityNode>, scene: BABYLON.Scene) {
+  constructor(factory: () => Promise<EntityBase>, scene: BABYLON.Scene) {
     this.factory = factory;
     this.scene = scene;
   }
@@ -191,7 +191,7 @@ export class CreateEntityAsyncCommand implements Command {
     this.execute();
   }
 
-  getEntity(): EntityNode | null {
+  getEntity(): EntityBase | null {
     return this.entity;
   }
 } 
