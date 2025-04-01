@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { IconCrop, IconCamera } from '@tabler/icons-react';
+import { IconVideo } from '@tabler/icons-react';
 import { ImageRatio } from '../util/generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import {
@@ -21,7 +21,6 @@ import {
   setCameraFarClip,
   getCameraFarClip  
 } from '../util/editor/editor-util';
-import { TakeFramedScreenshot } from '../util/render-util';
 
 const FramePanel: React.FC = () => {
   const { scene, engine, isGizmoVisible, setGizmoVisible } = useEditorContext();
@@ -118,7 +117,7 @@ const FramePanel: React.FC = () => {
         aria-label="position gizmo"
         className='relative'
       >
-        <IconCamera className="h-4 w-4" />
+        <IconVideo className="h-4 w-4" />
       </Button>
       <div className="hidden group-hover:block absolute top-8 pt-5 left-1/2 -translate-x-1/2">
       <div className="panel-shape max-w-sm p-4 space-y-4 w-48 ">

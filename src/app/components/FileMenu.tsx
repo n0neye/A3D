@@ -5,8 +5,11 @@ import { useEditorContext } from '../context/EditorContext';
 import { saveProjectToFile, loadProjectFromFile, SerializedProjectSettings } from '../util/editor/project-util';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import RenderPanel from './RenderPanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
+import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
+import { isEntity } from '../util/extensions/entityNode';
 
 export default function FileMenu() {
   const { scene } = useEditorContext();
@@ -15,8 +18,14 @@ export default function FileMenu() {
 
   const handleSaveProject = () => {
     if (scene) {
-      const projectName = `projectAI-${new Date().toISOString().split('T')[0]}.json`;
+      const projectName = `proj-${new Date().toISOString().split('T')[0]}.mud`;
       saveProjectToFile(scene, ProjectSettings, projectName);
+      
+      // Track save event
+      trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
+        entities_count: scene.rootNodes.filter(node => isEntity(node)).length,
+        has_settings: !!ProjectSettings,
+      });
     }
   };
 
@@ -30,14 +39,26 @@ export default function FileMenu() {
     try {
       const file = e.target.files[0];
       await loadProjectFromFile(file, scene, (settings: SerializedProjectSettings) => {
-        // Apply all settings at once via context
         updateProjectSettings(settings);
       });
-      // Reset file input so the same file can be loaded again
+      // Reset file input
       e.target.value = '';
+      
+      // Track load event
+      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+        file_size: file.size,
+        file_name: file.name,
+        success: true,
+      });
     } catch (error) {
       console.error('Error loading project:', error);
       alert('Failed to load project. See console for details.');
+      
+      // Track load failure
+      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+        error_message: error instanceof Error ? error.message : String(error),
+        success: false,
+      });
     }
   };
   
@@ -68,34 +89,46 @@ export default function FileMenu() {
 
   return (
     <div className="flex gap-2 items-center">
-      {/* Save Button with Tabler icon */}
-      <Button 
-        variant="outline"
-        onClick={handleSaveProject} 
-        className=""
-        title="Save Project (Ctrl+S)"
-      >
-        <IconDeviceFloppy size={18} />
-        <span>Save</span>
-      </Button>
-      
-      {/* Open Button with Tabler icon */}
-      <Button 
-        variant="outline"
-        onClick={handleOpenProject} 
-        className=""
-        title="Open Project (Ctrl+O)"
-      >
-        <IconFolderOpen size={18} />
-        <span>Open</span>
-      </Button>
+      <TooltipProvider>
+        {/* Save Button with Tooltip */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline"
+              onClick={handleSaveProject} 
+              className=""
+            >
+              <IconDeviceFloppy size={18} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Save Project (Ctrl+S)</p>
+          </TooltipContent>
+        </Tooltip>
+        
+        {/* Open Button with Tooltip */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline"
+              onClick={handleOpenProject} 
+              className=""
+            >
+              <IconFolderOpen size={18} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Open Project (Ctrl+O)</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       
       {/* Hidden file input for opening files */}
       <input 
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileChange} 
-        accept=".json" 
+        accept=".mud" 
         className="hidden" 
       />
     </div>

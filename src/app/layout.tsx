@@ -3,18 +3,19 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { PostHogProvider } from './components/PostHogProvider'
 import Script from 'next/script'
+import { initAnalytics } from './util/analytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '3D Playground | NONTECH',
+  title: 'PLAYMUD',
   description: '3D Playground with AI Rendering',
   icons: {
     icon: '/img/favicon.ico',
   },
   // og
   openGraph: {
-    images: '/img/og.jpg',
+    images: '/img/og2.jpg',
   },
 }
 
@@ -23,6 +24,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Initialize analytics on client side
+  if (typeof window !== 'undefined') {
+    initAnalytics();
+  }
+
   return (
     <html lang="en" className="dark">
       <head>

@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { IconArrowLeft, IconArrowRight, IconX, IconDownload } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconX, IconDownload, IconSettings } from '@tabler/icons-react';
 import { RenderLog, downloadImage } from '../util/editor/project-util';
+// import { useToast } from "@/components/ui/use-toast";
 
 interface GalleryPanelProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface GalleryPanelProps {
   images: RenderLog[];
   currentIndex: number;
   onSelectImage: (index: number) => void;
+  onApplySettings: (settings: RenderLog) => void;
 }
 
 const GalleryPanel: React.FC<GalleryPanelProps> = ({
@@ -19,6 +21,7 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
   images,
   currentIndex,
   onSelectImage,
+  onApplySettings,
 }) => {
   const [localIndex, setLocalIndex] = useState(currentIndex);
   
@@ -50,6 +53,12 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
     
     setLocalIndex(newIndex);
     onSelectImage(newIndex);
+  };
+
+  const handleApplySettings = () => {
+    onApplySettings(images[localIndex]);
+    // Close the gallery panel
+    onClose();
   };
 
   if (!isOpen || images.length === 0) return null;
@@ -110,7 +119,7 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
 
         {/* Info panel */}
         <div className="w-full md:w-80 p-4 overflow-y-auto flex flex-col justify-center items-center">
-          <div className="space-y-4">
+          <div className="space-y-4 w-full">
             <div>
               <h3 className="text-white text-sm font-medium mb-1">Date</h3>
               <p className="text-gray-300 text-sm">{currentImage.timestamp.toLocaleString()}</p>
@@ -160,6 +169,17 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Apply Settings Button - add at bottom of info panel */}
+            <div className="pt-4">
+              <Button 
+                variant="secondary" 
+                className="w-full"
+                onClick={handleApplySettings}
+              >
+                Apply Settings
+              </Button>
+            </div>
           </div>
         </div>
       </div>

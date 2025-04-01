@@ -75,7 +75,7 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
 
     // Create Ambient Light
-    createDefaultLights(scene);
+    // createDefaultLights(scene);
 
 
     // Create a background entity
@@ -97,18 +97,18 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
     await loadShapeMeshes(scene);
 
     // Create shapes
-    createEntity(scene, "aiObject", {
-        aiObjectType: "shape",
-        shapeType: "sphere",
-        position: new BABYLON.Vector3(0, 0.25, 0),
-    });
+    // createEntity(scene, "aiObject", {
+    //     aiObjectType: "shape",
+    //     shapeType: "sphere",
+    //     position: new BABYLON.Vector3(0, 0.25, 0),
+    // });
 
-    createEntity(scene, "aiObject", {
-        aiObjectType: "shape",
-        shapeType: "floor",
-        position: new BABYLON.Vector3(0, 0, 0),
-        scale: new BABYLON.Vector3(50, 50, 50),
-    });
+    // createEntity(scene, "aiObject", {
+    //     aiObjectType: "shape",
+    //     shapeType: "floor",
+    //     position: new BABYLON.Vector3(0, 0, 0),
+    //     scale: new BABYLON.Vector3(50, 50, 50),
+    // });
 
     createSkybox(scene);
 }
@@ -312,7 +312,7 @@ export const createWorldGrid = (
         { width: size, height: size, subdivisions: 1 },
         scene
     );
-    gridGround.position.y = -0.001;
+    gridGround.position.y = -0.01;
 
     // Create a grid material
     const gridMaterial = new GridMaterial("gridMaterial", scene);

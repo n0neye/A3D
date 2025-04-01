@@ -20,6 +20,8 @@ import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityA
 import { v4 as uuidv4 } from 'uuid';
 import { createEntity } from '../util/extensions/entityNode';
 import Guide from './Guide';
+import { availableAPIs } from '../util/image-render-api';
+import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -42,7 +44,7 @@ export default function EditorContainer() {
   } = useEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
 
-  const { ProjectSettings } = useProjectSettings();
+  const { ProjectSettings, updateProjectSettings } = useProjectSettings();
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
@@ -256,14 +258,14 @@ export default function EditorContainer() {
     // Duplicate selected entity (Ctrl+D)
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
       event.preventDefault(); // Prevent browser's bookmark dialog
-      
+
       const currentEntity = getCurrentSelectedEntity();
       const currentScene = sceneRef.current;
 
       console.log("Duplicate selected entity", currentEntity, currentScene);
-      
+
       if (!currentEntity || !currentScene) return;
-      
+
       // Create the duplicate entity
       const duplicateCommand = new CreateEntityAsyncCommand(
         async () => {
@@ -274,7 +276,7 @@ export default function EditorContainer() {
         },
         currentScene
       );
-      
+
       // Execute command and select the new entity
       historyManager.executeCommand(duplicateCommand);
       const newEntity = duplicateCommand.getEntity();
@@ -321,7 +323,7 @@ export default function EditorContainer() {
     }
   };
 
-  
+
   const handleKeyUp = (e: KeyboardEvent) => {
     switch (e.key) {
       case 'e':
@@ -333,6 +335,20 @@ export default function EditorContainer() {
       case 'w':
         isWKeyPressed = false;
         break;
+    }
+  };
+
+  const loadDefaultProject = async (scene: BABYLON.Scene) => {
+    try {
+      const url = "/demoAssets/default.json";
+      await loadProjectFromUrl(url, scene, (settings: SerializedProjectSettings) => {
+        // Apply all settings at once via context
+        updateProjectSettings(settings);
+      });
+      console.log("Default project loaded successfully");
+    } catch (error) {
+      console.error("Failed to load default project:", error);
+      // Continue without the default project if it fails to load
     }
   };
 
@@ -348,11 +364,16 @@ export default function EditorContainer() {
     // Update context
     setEngine(engine);
     setScene(scene);
-    initScene(canvasRef.current, scene);
 
-    // Set up gizmo manager
-    const gizmoManager = initGizmo(scene, historyManager);
-    setGizmoManager(gizmoManager);
+    const init = async (canvas: HTMLCanvasElement) => {
+      await initScene(canvas, scene);
+      await loadDefaultProject(scene);
+      // Set up gizmo manager
+      const gizmoManager = initGizmo(scene, historyManager);
+      setGizmoManager(gizmoManager);
+    }
+
+    init(canvasRef.current);
 
     // Start the render loop
     engine.runRenderLoop(() => {
@@ -399,6 +420,22 @@ export default function EditorContainer() {
     };
   }, []);
 
+  const handleApplyRenderSettings = (renderLog: RenderLog) => {
+    // Extract settings from the renderLog
+    const settings = {
+      prompt: renderLog.prompt,
+      seed: renderLog.seed,
+      promptStrength: renderLog.promptStrength,
+      depthStrength: renderLog.depthStrength,
+      selectedLoras: renderLog.selectedLoras || [],
+      // Find the API by name
+      selectedAPI: availableAPIs.find(api => api.name === renderLog.model)?.id || availableAPIs[0].id
+    };
+
+    // Update the project settings
+    updateProjectSettings(settings);
+  };
+
   return (
     <div className="flex flex-col w-full h-screen bg-gray-900 text-gray-200 overflow-hidden">
       <div className="flex h-full">
@@ -425,8 +462,8 @@ export default function EditorContainer() {
       <div className='fixed top-2  w-full flex justify-center items-center'>
         <div className=" panel-shape p-1 flex gap-2">
           <FileMenu />
-          <GizmoModeSelector />
           <FramePanel />
+          <GizmoModeSelector />
         </div>
       </div>
 
@@ -440,6 +477,7 @@ export default function EditorContainer() {
         images={ProjectSettings.renderLogs}
         currentIndex={currentGalleryIndex}
         onSelectImage={setCurrentGalleryIndex}
+        onApplySettings={handleApplyRenderSettings}
       />
       {/* <DebugLayer /> */}
 

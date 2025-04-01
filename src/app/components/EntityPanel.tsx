@@ -11,6 +11,7 @@ import RatioSelector from './RatioSelector';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import * as BABYLON from '@babylonjs/core';
+import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 // TODO: This is a hack to get the current entity.
 // It's used to remove the event handler from the previous entity when the selected entity changes.
@@ -270,25 +271,51 @@ const EntityPanel: React.FC = () => {
 
   // Convert to 3D model
   const handleGenerate3D = async () => {
-    console.log('handleGenerate3D');
-    if (!selectedEntity || !scene) return;
-
-    // Get current generation
-    const currentGen = selectedEntity.getCurrentGenerationLog();
-    if (!currentGen || currentGen.assetType !== 'image' || !currentGen.fileUrl) {
-      alert('Please generate an image first');
-      return;
-    }
-
-    // Call the 3D conversion service
-    const result = await generate3DModel(currentGen.fileUrl, selectedEntity, scene, gizmoManager, currentGen.id, {
-      prompt: promptInput,
-      // apiProvider: 'trellis'
+    const startTime = Date.now();
+    
+    // Track start of 3D conversion
+    trackEvent(ANALYTICS_EVENTS.CONVERT_TO_3D + '_started', {
+      entity_type: selectedEntity?.getEntityType() || 'unknown',
+      has_image: !!selectedEntity?.getCurrentGenerationLog()?.fileUrl,
     });
+    
+    try {
+      console.log('handleGenerate3D');
+      if (!selectedEntity || !scene) return;
 
-    if (result.success && result.generationLog) {
-      onNewGeneration(result.generationLog);
-      setSelectedEntity(selectedEntity);
+      // Get current generation
+      const currentGen = selectedEntity.getCurrentGenerationLog();
+      if (!currentGen || currentGen.assetType !== 'image' || !currentGen.fileUrl) {
+        alert('Please generate an image first');
+        return;
+      }
+
+      // Call the 3D conversion service
+      const result = await generate3DModel(currentGen.fileUrl, selectedEntity, scene, gizmoManager, currentGen.id, {
+        prompt: promptInput,
+        // apiProvider: 'trellis'
+      });
+
+      if (result.success && result.generationLog) {
+        onNewGeneration(result.generationLog);
+        setSelectedEntity(selectedEntity);
+      }
+
+      // Track successful 3D conversion
+      trackEvent(ANALYTICS_EVENTS.CONVERT_TO_3D + '_completed', {
+        execution_time_ms: Date.now() - startTime,
+        success: true,
+        entity_type: selectedEntity?.getEntityType() || 'unknown',
+      });
+    } catch (error) {
+      // Track conversion error
+      trackEvent(ANALYTICS_EVENTS.CONVERT_TO_3D + '_error', {
+        execution_time_ms: Date.now() - startTime,
+        error_message: error instanceof Error ? error.message : String(error),
+        entity_type: selectedEntity?.getEntityType() || 'unknown',
+      });
+      
+      console.error('Error generating 3D:', error);
     }
   };
 

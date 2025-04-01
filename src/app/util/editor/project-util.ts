@@ -274,11 +274,11 @@ export function deserializeScene(
 export async function saveProjectToFile(
     scene: BABYLON.Scene,
     ProjectSettings?: SerializedProjectSettings,
-    fileName: string = 'scene-project.json'
+    fileName: string = 'scene-project.mud'
 ): Promise<void> {
     const projectData = serializeScene(scene, ProjectSettings);
     const jsonString = JSON.stringify(projectData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    const blob = new Blob([jsonString], { type: 'application/mud' });
 
     // Try to use the File System Access API if available (modern browsers)
     if ('showSaveFilePicker' in window) {
@@ -287,8 +287,8 @@ export async function saveProjectToFile(
             const fileHandle = await window.showSaveFilePicker({
                 suggestedName: fileName,
                 types: [{
-                    description: 'JSON Files',
-                    accept: { 'application/json': ['.json'] },
+                    description: 'MUD Files',
+                    accept: { 'application/mud': ['.mud'] },
                 }],
             });
 
@@ -422,5 +422,33 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
     
   } catch (error) {
     console.error("Error downloading image:", error);
+  }
+}
+
+// Load project from a URL
+export async function loadProjectFromUrl(
+  url: string,
+  scene: BABYLON.Scene,
+  applyProjectSettings?: (settings: SerializedProjectSettings) => void
+): Promise<void> {
+  try {
+    // Fetch the project data from the URL
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load project from URL: ${response.status} ${response.statusText}`);
+    }
+    
+    // Parse the JSON data
+    const projectData = await response.json();
+    
+    // Deserialize the scene using the data
+    deserializeScene(projectData, scene, applyProjectSettings);
+    
+    console.log(`Project loaded successfully from ${url}`);
+    return Promise.resolve();
+  } catch (error) {
+    console.error("Error loading project from URL:", error);
+    return Promise.reject(error);
   }
 }

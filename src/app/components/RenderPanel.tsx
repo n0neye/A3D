@@ -9,6 +9,7 @@ import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
 import { SerializedProjectSettings, downloadImage } from '../util/editor/project-util';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
+import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -246,6 +247,18 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     setIsLoading(true);
     setExecutionTime(null);
     setSelectedEntity(null);
+    
+    // Start measuring time
+    const startTime = Date.now();
+    
+    // Track that render started
+    trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_started', {
+      test_mode: isTest,
+      model: selectedAPI.name,
+      prompt_length: prompt.length,
+      use_depth: selectedAPI.useDepthImage,
+    });
+    
     if (gizmoManager) {
       gizmoManager.attachToNode(null);
     }
@@ -254,8 +267,6 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     setGizmoVisible(false);
 
     try {
-      // Start measuring time
-      const startTime = Date.now();
       // First, take a screenshot of the current scene
       if (!scene || !engine) throw new Error("Scene or engine not found");
       const screenshot = await TakeFramedScreenshot(scene, engine);
@@ -317,7 +328,20 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
 
       // Calculate execution time
       const endTime = Date.now();
-      setExecutionTime(endTime - startTime);
+      const executionTimeMs = endTime - startTime;
+      setExecutionTime(executionTimeMs);
+
+      // Track successful render
+      trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_completed', {
+        test_mode: isTest,
+        model: selectedAPI.name,
+        seed: currentSeed,
+        execution_time_ms: executionTimeMs,
+        prompt_length: prompt.length,
+        success: true,
+        use_depth: selectedAPI.useDepthImage,
+        depth_strength: selectedAPI.useDepthImage ? depthStrength : 0,
+      });
 
       // Update the preview with the generated image
       setImageUrl(result.imageUrl);
@@ -327,9 +351,19 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         handleSuccessfulRender(result, currentSeed);
       }
     } catch (error) {
+      // Track failed render
+      trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_error', {
+        test_mode: isTest,
+        model: selectedAPI.name,
+        error_message: error instanceof Error ? error.message : String(error),
+        prompt_length: prompt.length,
+      });
+      
       console.error("Error generating preview:", error);
       alert("Failed to generate Render. Please try again.");
     } finally {
+      // Restore gizmos after rendering
+      setGizmoVisible(true);
       setIsLoading(false);
     }
   };
