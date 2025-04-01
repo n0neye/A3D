@@ -1,15 +1,16 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from './EntityBase';
-import { ImageRatio } from '../generation-util';
+import { ImageRatio, ProgressCallback } from '../generation-util';
 import { v4 as uuidv4 } from 'uuid';
-import { placeholderMaterial } from '../editor/material-util';
+import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
+import { setupMeshShadows } from '../editor/light-util';
 /**
  * Entity that represents AI-generated content
  */
 
 export interface GenerativeEntityProps {
   generationLogs: GenerationLog[];
-  currentGenerationIdx?: number;
+  currentGenerationId?: string;
 }
 // Asset types
 export type AssetType = 'image' | 'model';
@@ -37,12 +38,23 @@ export interface GenerationLog {
 }
 
 export class GenerativeEntity extends EntityBase {
-  // GenerativeEntity specific properties
+
+  // EntityBase properties
+  props: GenerativeEntityProps;
+
   modelMesh?: BABYLON.Mesh;
   placeholderMesh: BABYLON.Mesh;
-  generationState: GenerationState;
-  generationStateMessage: string;
-  props: GenerativeEntityProps;
+
+  status: GenerationState;
+  statusMessage: string;
+
+  temp_prompt: string;
+  temp_ratio: ImageRatio;
+
+  public readonly onProgress = new EventHandler<{ entity: EntityBase, state: GenerationState, message: string }>();
+  getGenerationState(): GenerationState {
+    return this.status;
+  }
 
   constructor(
     name: string,
@@ -64,11 +76,12 @@ export class GenerativeEntity extends EntityBase {
     this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
     this.props = {
       generationLogs: options.props.generationLogs,
-      currentGenerationIdx: 0
     };
 
-    this.generationState = 'idle';
-    this.generationStateMessage = '';
+    this.status = 'idle';
+    this.statusMessage = '';
+    this.temp_prompt = '';
+    this.temp_ratio = '1:1';
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
@@ -112,16 +125,16 @@ export class GenerativeEntity extends EntityBase {
   /**
    * Get current generation data
    */
-  getCurrentGeneration(): GenerationLog | null {
-    return this.props.generationLogs.length > 0 ? this.props.generationLogs[this.props.currentGenerationIdx || 0] : null;
+  getCurrentGenerationLog(): GenerationLog | null {
+    return this.props.generationLogs.find(log => log.id === this.props.currentGenerationId) || null;
   }
 
   /**
    * Set the processing state
    */
   setProcessingState(state: GenerationState, message?: string): void {
-    this.generationState = state;
-    this.generationStateMessage = message || '';
+    this.status = state;
+    this.statusMessage = message || '';
   }
 
   // Apply image to entity
@@ -202,6 +215,42 @@ export class GenerativeEntity extends EntityBase {
     return true;
   }
 
+
+  // Apply a specific generation log 
+  public async applyGenerationLog(log: GenerationLog): Promise<void> {
+
+    console.log("applyGenerationLog", log);
+
+    // Set as current state
+    this.props.currentGenerationId = log.id;
+
+    // Apply based on asset type
+    if (log.assetType === 'image' && log.fileUrl) {
+      // For image assets, apply the image to the entity
+      this.applyGeneratedImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
+    } else if (log.assetType === 'model' && log.fileUrl) {
+      // For model assets, we need to set 3D display mode
+      // (Assuming the model is already loaded and attached to this entity)
+      await loadModel(this, log.fileUrl, this.getScene(), (progress) => {
+        console.log("loadModel progress", progress);
+      });
+      this.setDisplayMode('3d');
+    }
+  }
+
+  // Update aspect ratio of the entity
+  public updateAspectRatio(ratio: ImageRatio): void {
+    if (!this.placeholderMesh) return;
+
+    // Save the new ratio in metadata
+    this.temp_ratio = ratio;
+
+    // Get the new dimensions based on ratio
+    const { width, height } = getPlaneSize(ratio);
+    this.placeholderMesh.scaling = new BABYLON.Vector3(width, height, 1);
+  }
+
+
   /**
    * Serialize with generative-specific properties
    */
@@ -239,5 +288,116 @@ function getPlaneSize(ratio: ImageRatio): { width: number, height: number } {
       return { width: 1, height: 1.33 };
     default: // 1:1
       return { width: 1, height: 1 };
+  }
+}
+
+
+// Event handler class to provide add/remove interface
+export class EventHandler<T> {
+  private handlers: Set<(data: T) => void> = new Set();
+
+  public add(handler: (data: T) => void): void {
+    this.handlers.add(handler);
+  }
+
+  public remove(handler: (data: T) => void): void {
+    this.handlers.delete(handler);
+  }
+
+  public trigger(data: T): void {
+    this.handlers.forEach(handler => handler(data));
+  }
+}
+
+/**
+ * Load a 3D model and replace the current mesh
+ */
+export async function loadModel(
+  entity: GenerativeEntity,
+  modelUrl: string,
+  scene: BABYLON.Scene,
+  onProgress?: ProgressCallback
+): Promise<boolean> {
+  try {
+    onProgress?.({ message: 'Downloading 3D model...' });
+
+    console.log("loadModel", modelUrl);
+
+    // Load the model
+    const result = await BABYLON.ImportMeshAsync(
+      modelUrl,
+      scene,
+      {
+        onProgress: (progressEvent) => {
+          if (progressEvent.lengthComputable) {
+            const progress = (progressEvent.loaded / progressEvent.total * 100).toFixed(0);
+            onProgress?.({ message: `Downloading: ${progress}%` });
+          }
+        },
+        pluginExtension: ".glb",
+        name: "_.glb"
+      }
+    );
+
+    const meshes = result.meshes;
+
+    // If there's an existing model mesh, dispose it
+    if (entity.modelMesh) {
+      entity.modelMesh.dispose();
+    }
+
+    onProgress?.({ message: 'Generating...' });
+    console.log("loadModel: replaceWithModel. meshes", meshes);
+
+    if (meshes.length > 0) {
+      console.log("loadModel: meshes length", meshes.length);
+
+      // Create a root container mesh if needed
+      let rootModelMesh: BABYLON.Mesh;
+
+      if (meshes.length === 1) {
+        rootModelMesh = meshes[0] as BABYLON.Mesh;
+      } else {
+        // Create a dummy mesh as the container
+        rootModelMesh = new BABYLON.Mesh(`${entity.name}-model-root`, scene);
+        meshes.forEach((mesh) => {
+          mesh.parent = rootModelMesh;
+        });
+      }
+
+      // Parent the root model to the entity
+      rootModelMesh.parent = entity;
+
+      // Set up the model mesh in the entity
+      entity.modelMesh = rootModelMesh;
+
+      // Set metadata on all meshes
+      meshes.forEach((mesh) => {
+        mesh.metadata = {
+          ...mesh.metadata,
+          rootEntity: entity
+        };
+      });
+
+      // Find all materials
+      meshes.forEach((mesh) => {
+        mesh.material = defaultPBRMaterial;
+        console.log("loadModel: Applied default material", mesh.material.name, mesh.material);
+      });
+
+      // Switch to 3D display mode
+      entity.setDisplayMode('3d');
+
+      setupMeshShadows(entity.modelMesh);
+
+      onProgress?.({ message: '3D model loaded successfully!' });
+      return true;
+    } else {
+      throw new Error('No meshes found');
+    }
+  } catch (error) {
+    console.error("Failed to replace with model:", error);
+    onProgress?.({ message: `Failed to replace with model: ${(error as Error).message}` });
+    return false;
   }
 }

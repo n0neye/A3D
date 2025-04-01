@@ -2,7 +2,8 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { EntityBase, AiObjectType, EntityType, applyImageToEntity, GenerationLog } from './extensions/entityNode';
+import { GenerationLog, GenerativeEntity } from './extensions/GenerativeEntity';
+import { EntityBase } from './extensions/EntityBase';
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 
@@ -49,7 +50,7 @@ export type ProgressCallback = (progress: GenerationProgress) => void;
  */
 export async function generateBackground(
     prompt: string,
-    entity: EntityBase,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     options: {
         negativePrompt?: string;
@@ -58,14 +59,9 @@ export async function generateBackground(
     // Use defaults if not provided
     const startTime = performance.now();
     const entityType = entity.getEntityType();
-    const aiObjectType = entity.getAIData()?.aiObjectType || 'generativeObject';
     const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
     // Update entity state
-    entity.setProcessingState({
-        isGenerating2D: true,
-        isGenerating3D: false,
-        progressMessage: 'Starting generation...'
-    });
+    entity.setProcessingState('generating2D', 'Starting generation...');
 
     const result = await fal.subscribe("fal-ai/flux/dev", {
         input: {
@@ -91,12 +87,10 @@ export async function generateBackground(
     if (success && result.data.images[0].url) {
 
         // Apply the image to the entity mesh
-        applyImageToEntity(entity, result.data.images[0].url, scene);
+        entity.applyGeneratedImage(result.data.images[0].url, scene);
 
         // Add to history
-        log = entity.addImageGenerationLog(prompt, result.data.images[0].url, {
-            ratio: '16:9',
-        });
+        log = entity.addImageGenerationLog(prompt, result.data.images[0].url, '16:9',);
 
         // Log time
         const endTime = performance.now();
@@ -104,11 +98,7 @@ export async function generateBackground(
         console.log(`%cBackground generation took ${(duration / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
     }
 
-    entity.setProcessingState({
-        isGenerating2D: false,
-        isGenerating3D: false,
-        progressMessage: success ? 'Image generated successfully!' : 'Failed to generate image'
-    });
+    entity.setProcessingState('idle', success ? 'Image generated successfully!' : 'Failed to generate image');
 
     return { success: success, generationLog: log };
 }
@@ -136,16 +126,12 @@ export function blobToBase64(blob: Blob): Promise<string> {
  */
 export async function removeBackground(
     imageUrl: string,
-    entity: EntityBase,
+    entity: GenerativeEntity,
     scene: BABYLON.Scene,
     derivedFromId: string
 ): Promise<GenerationResult> {
     // Update entity state
-    entity.setProcessingState({
-        isGenerating2D: true,
-        isGenerating3D: false,
-        progressMessage: 'Removing background...'
-    });
+    entity.setProcessingState('generating2D', 'Removing background...');
 
     try {
         const startTime = performance.now();
@@ -167,25 +153,20 @@ export async function removeBackground(
         const success = result.data && result.data.image && result.data.image.url;
         if (success) {
             // Apply the image to the entity mesh
-            await applyImageToEntity(entity, result.data.image.url, scene, entity.metadata.aiData?.current_ratio);
+            await entity.applyGeneratedImage(result.data.image.url, scene, entity.temp_ratio);
 
             // Add to history - note this is a special case derived from another image
             const prompt = entity.getCurrentGenerationLog()?.prompt || '';
-            const log = entity.addImageGenerationLog(prompt, result.data.image.url, {
-                ratio: entity.metadata.aiData?.current_ratio || '1:1',
-                derivedFromId: derivedFromId
-            }, );
+            const log = entity.addImageGenerationLog(prompt, result.data.image.url, 
+               entity.temp_ratio || '1:1',
+            );
 
             // Log time
             const endTime = performance.now();
             const duration = endTime - startTime;
             console.log(`%cBackground removal took ${(duration / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
-            entity.setProcessingState({
-                isGenerating2D: false,
-                isGenerating3D: false,
-                progressMessage: 'Background removed successfully!'
-            });
+            entity.setProcessingState('idle', 'Background removed successfully!');
 
             return { success: true, generationLog: log };
         }
@@ -194,11 +175,7 @@ export async function removeBackground(
 
     } catch (error) {
         console.error("Background removal failed:", error);
-        entity.setProcessingState({
-            isGenerating2D: false,
-            isGenerating3D: false,
-            progressMessage: 'Failed to remove background'
-        });
+        entity.setProcessingState('idle', 'Failed to remove background');
         return {
             success: false,
             generationLog: null

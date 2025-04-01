@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import AddPanel from './AddPanel';
-import EntityPanel from './EntityPanel';
+import EntityPanel from './EntityPanels/EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
 import { initializeRealtimeConnection } from '../util/realtime-generation-util';
 import RenderPanel from './RenderPanel';
@@ -126,7 +126,7 @@ export default function EditorContainer() {
               position: position,
               generativeProps: {
                 generationLogs: [],
-                currentGenerationIdx: 0
+                currentGenerationId: 0
               } as GenerativeEntityProps
             }),
             scene

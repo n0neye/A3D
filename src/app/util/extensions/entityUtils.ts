@@ -61,7 +61,7 @@ export async function duplicateEntity(entity: EntityBase, scene: BABYLON.Scene):
     // Deep clone the props for the new generative entity
     const props: GenerativeEntityProps = {
       generationLogs: [...entity.props.generationLogs],
-      currentGenerationIdx: entity.props.currentGenerationIdx || 0
+      currentGenerationId: entity.props.currentGenerationId || 0
     };
     
     // Create the new generative entity
@@ -77,7 +77,7 @@ export async function duplicateEntity(entity: EntityBase, scene: BABYLON.Scene):
     
     // Copy additional generative entity properties
     const generativeEntity = newEntity as GenerativeEntity;
-    generativeEntity.generationState = entity.generationState;
+    generativeEntity.status = entity.status;
     
     // Clone texture materials if applicable
     if (entity.placeholderMesh && entity.placeholderMesh.material) {
