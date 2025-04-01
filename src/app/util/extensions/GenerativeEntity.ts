@@ -249,6 +249,9 @@ export class GenerativeEntity extends EntityBase {
       this.props.currentGenerationId = log.id;
       this.props.currentGenerationIdx = this.props.generationLogs.findIndex(l => l.id === log.id);
 
+      // update the temp prompt
+      this.temp_prompt = log.prompt;
+
       // Trigger the event
       this.onGenerationChanged.trigger({ entity: this });
 

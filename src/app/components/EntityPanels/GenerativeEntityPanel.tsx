@@ -8,10 +8,9 @@ import { useEditorContext } from '../../context/EditorContext';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
-import { GenerationLog, GenerativeEntity, GenerationStatus } from '../../util/extensions/GenerativeEntity';
+import { GenerativeEntity, GenerationStatus } from '../../util/extensions/GenerativeEntity';
 
 import { ImageRatio } from "../../util/generation-util";
-import { EntityBase } from "../../util/extensions/EntityBase";
 
 // TODO: This is a hack to get the previous entity.
 let PREV_ENTITY: GenerativeEntity | null = null;
@@ -46,6 +45,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
       if (param.entity.id === PREV_ENTITY?.id) {
         // Force a re-render by incrementing the counter
         setUpdateCounter(prev => prev + 1);
+        trySetPrompt('onGenerationChanged', props.entity.temp_prompt);
       }
     }
 
@@ -68,7 +68,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
     // Initial state update
     handleProgress({ entity: props.entity, state: props.entity.status, message: props.entity.statusMessage });
-    
+
     // Add event handlers
     props.entity.onProgress.add(handleProgress);
     props.entity.onGenerationChanged.add(handleGenerationChanged);
@@ -135,7 +135,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   useEffect(() => {
     console.log("generation logs changed: ", props.entity.props.generationLogs, props.entity.props.currentGenerationIdx);
   }, [props.entity.props.generationLogs, props.entity.props.currentGenerationIdx, props.entity.props.currentGenerationId, updateCounter]);
-  
+
 
   const handleInputFieldKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Shift + Enter
