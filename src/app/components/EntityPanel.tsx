@@ -46,9 +46,9 @@ const EntityPanel: React.FC = () => {
     }
 
     // Remove the event handler from the previous entity
-    if (CURRENT_ENTITY) {
+    if (CURRENT_ENTITY && CURRENT_ENTITY.metadata.aiData) {
       // Save the prompt input
-      CURRENT_ENTITY.tempPrompt = promptInput;
+      CURRENT_ENTITY.metadata.aiData.prompt = promptInput;
       // Remove the event handler
       CURRENT_ENTITY.onProgress.remove(handleProgress);
       console.log("Removed handleProgress from prevEntity: ", CURRENT_ENTITY.name, CURRENT_ENTITY);
@@ -81,7 +81,7 @@ const EntityPanel: React.FC = () => {
         // Get the current generation and set the prompt if available
         const currentGen = selectedEntity.getCurrentGenerationLog();
         // setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
-        trySetPrompt('onEntityChange', selectedEntity.tempPrompt || currentGen?.prompt || "");
+        trySetPrompt('onEntityChange', selectedEntity.metadata.aiData?.prompt || currentGen?.prompt || "");
         setCurrentGenLog(currentGen);
 
         // Load generation history

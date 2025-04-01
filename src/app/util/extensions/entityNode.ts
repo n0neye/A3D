@@ -71,15 +71,16 @@ export interface EntityMetadata {
     // For AI generated entities
     aiData?: {
         aiObjectType: AiObjectType;
+        prompt: string;
         ratio: ImageRatio;
         imageSize: ImageSize;
         generationLogs: Array<GenerationLog>;
-        currentStateId: string | null;
+        currentGenerationId: string | null;
     };
 
     // For shape entities
     shapeType?: ShapeType;
-    
+
     // For light entities
     lightProperties?: {
         color: {
@@ -102,11 +103,8 @@ export class EntityNode extends BABYLON.TransformNode {
     public modelMesh: BABYLON.AbstractMesh | null = null;
     public displayMode: '2d' | '3d' = '2d';
 
-    // Temporary storage for the prompt
-    public tempPrompt: string | null = null;
-
     // Progress event - public event handler
-    public readonly onProgress = new EventHandler<{entity: EntityNode, state: EntityProcessingState}>();
+    public readonly onProgress = new EventHandler<{ entity: EntityNode, state: EntityProcessingState }>();
 
     constructor(
         name: string,
@@ -140,7 +138,8 @@ export class EntityNode extends BABYLON.TransformNode {
         if (type === 'aiObject') {
             this.metadata.aiData = {
                 aiObjectType: "generativeObject",
-                currentStateId: null,
+                prompt: "",
+                currentGenerationId: null,
                 ratio: options.ratio || '1:1',
                 imageSize: options.imageSize || 'medium',
                 generationLogs: []
@@ -154,7 +153,7 @@ export class EntityNode extends BABYLON.TransformNode {
         this.metadata.processingState = state;
 
         // Notify all listeners
-        this.onProgress.trigger({entity: this, state});
+        this.onProgress.trigger({ entity: this, state });
     }
 
     // Get the processing state
@@ -206,8 +205,8 @@ export class EntityNode extends BABYLON.TransformNode {
     // Get the current generation
     public getCurrentGenerationLog(): GenerationLog | null {
         const aiData = this.getAIData();
-        if (!aiData || !aiData.currentStateId) return null;
-        return aiData.generationLogs.find(gen => gen.id === aiData.currentStateId) || null;
+        if (!aiData || !aiData.currentGenerationId) return null;
+        return aiData.generationLogs.find(gen => gen.id === aiData.currentGenerationId) || null;
     }
 
     // Get all generation history
@@ -231,7 +230,8 @@ export class EntityNode extends BABYLON.TransformNode {
         if (!this.metadata.aiData) {
             this.metadata.aiData = {
                 aiObjectType: "generativeObject",
-                currentStateId: null,
+                prompt: prompt,
+                currentGenerationId: null,
                 ratio: options.ratio,
                 imageSize: options.imageSize,
                 generationLogs: [],
@@ -255,7 +255,7 @@ export class EntityNode extends BABYLON.TransformNode {
 
         // Add to history
         this.metadata.aiData.generationLogs.push(newGeneration);
-        this.metadata.aiData.currentStateId = newGeneration.id;
+        this.metadata.aiData.currentGenerationId = newGeneration.id;
         this.metadata.aiData.ratio = options.ratio;
         this.metadata.aiData.imageSize = options.imageSize;
 
@@ -283,7 +283,7 @@ export class EntityNode extends BABYLON.TransformNode {
 
         // Add to history
         aiData.generationLogs.push(newGeneration);
-        aiData.currentStateId = newGeneration.id;
+        aiData.currentGenerationId = newGeneration.id;
 
         return newGeneration;
     }
@@ -301,7 +301,7 @@ export class EntityNode extends BABYLON.TransformNode {
         console.log("applyGenerationLog", log);
 
         // Set as current state
-        this.metadata.aiData.currentStateId = log.id;
+        this.metadata.aiData.currentGenerationId = log.id;
 
         // Apply based on asset type
         if (log.assetType === 'image' && log.fileUrl) {
@@ -426,12 +426,12 @@ export async function duplicateEntity(
         }
     } else if (newEntity.metadata.aiData?.aiObjectType === 'shape') {
         console.log("Duplicate shape", newEntity.metadata.shapeType);
-        if(!newEntity.metadata.shapeType){
+        if (!newEntity.metadata.shapeType) {
             throw new Error("No shapeType");
         }
         const childMeshes = sourceEntity.getChildMeshes();
         for (const childMesh of childMeshes) {
-            const newChildMesh = duplicateMesh(childMesh as BABYLON.Mesh,  newEntity);
+            const newChildMesh = duplicateMesh(childMesh as BABYLON.Mesh, newEntity);
             newChildMesh.parent = newEntity;
         }
         newEntity.modelMesh = newEntity.getChildMeshes()[0] as BABYLON.Mesh;
@@ -474,8 +474,9 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     } else {
         entity.metadata.aiData = {
             aiObjectType: options.aiObjectType,
+            prompt: "",
             generationLogs: [],
-            currentStateId: null,
+            currentGenerationId: null,
             ratio: options.ratio || '1:1',
             imageSize: options.imageSize || 'medium',
         };
@@ -526,7 +527,7 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
 const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, options: {
     ratio?: ImageRatio;
 }) => {
-            
+
     // Default object - create a plane with the right aspect ratio
     const ratio = options.ratio || '1:1';
     const { width, height } = getPlaneSize(ratio);
@@ -542,7 +543,7 @@ const createGenerativeObject = (scene: BABYLON.Scene, entity: EntityNode, option
     // Set up plane mesh
     entity.gizmoMesh = newMesh;
     return newMesh;
-    }
+}
 
 // Apply image to entity
 export const applyImageToEntity = async (
@@ -555,7 +556,7 @@ export const applyImageToEntity = async (
     const planeMesh = entity.gizmoMesh;
     if (!planeMesh) return;
 
-    if(planeMesh.material === placeholderMaterial){
+    if (planeMesh.material === placeholderMaterial) {
         // Create material
         const newMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
         newMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
@@ -725,7 +726,7 @@ function findEntityPointLight(entity: EntityNode): BABYLON.PointLight | null {
 
 // Redesigned deserialization function for EntityNode
 export async function deserializeEntityNode(data: SerializedEntityNode, scene: BABYLON.Scene): Promise<EntityNode> {
-    console.log('deserializeEntityNode', data.name);
+    console.log('deserializeEntityNode', data.name, "EntityType", data.metadata.entityType, "DisplayMode", data.displayMode, data);
 
     if (data.metadata.entityType === 'light') {
         // For light entities, recreate the light using the point light entity creator
@@ -733,12 +734,12 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
         if (!lightProperties) {
             throw new Error('Light properties are required for light entities');
         }
-        const color = lightProperties.color ? 
-            new BABYLON.Color3(lightProperties.color.r, lightProperties.color.g, lightProperties.color.b) : 
+        const color = lightProperties.color ?
+            new BABYLON.Color3(lightProperties.color.r, lightProperties.color.g, lightProperties.color.b) :
             new BABYLON.Color3(1, 1, 1);
-        
+
         const intensity = lightProperties.intensity !== undefined ? lightProperties.intensity : 0.7;
-        
+
         // Use the light creation utility to create the light
         // This will create both the point light and its visual representation
         const newEntity = createPointLightEntity(scene, {
@@ -748,11 +749,11 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
             intensity: intensity,
             shadowEnabled: lightProperties.shadowEnabled
         });
-        
+
         // Copy important properties from the newly created entity to our existing one
         return newEntity;
     }
-    
+
     // First create a base EntityNode directly
     const entity = new EntityNode(data.name, scene, data.metadata.entityType);
 
@@ -790,14 +791,28 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
             createPlaneMesh(entity, scene, ratio);
 
             // If there's a 3D model and display mode is 3D, we need to load that too
-            const currentGeneration = aiData.generationLogs.find(
-                (log: any) => log.id === aiData.currentStateId
+            let currentGeneration = aiData.generationLogs.find(
+                (log: any) => log.id === aiData.currentGenerationId
             );
+
+            // legacy Support
+            if(!currentGeneration){
+                currentGeneration = aiData.generationLogs.find(
+                    // @ts-ignore
+                    (log: any) => log.id === aiData.currentStateId
+                );
+            }
+
+            if (!currentGeneration) {
+                throw new Error('No current generation found');
+            }
 
             // Check if we have a 3D model in the current generation
             const has3DModel = currentGeneration &&
                 currentGeneration.assetType === 'model' &&
                 currentGeneration.fileUrl;
+
+            console.log("DeserializeEntity generativeObject", entity.name, has3DModel, entity.displayMode);
 
             // If we have a 3D model and display mode is 3D, we need to load it
             if (has3DModel && entity.displayMode === '3d') {
@@ -814,7 +829,7 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
                 entity.setDisplayMode(entity.displayMode);
             }
         }
-    } 
+    }
 
     const mesh = entity.getPrimaryMesh();
     console.log('deserializeEntityNode', entity.name, mesh?.name);

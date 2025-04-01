@@ -69,7 +69,7 @@
         },
         "aiData": {
           "aiObjectType": "shape",
-          "currentStateId": null,
+          "currentGenerationId": null,
           "ratio": "1:1",
           "imageSize": "medium",
           "generationLogs": []
@@ -107,7 +107,7 @@
         },
         "aiData": {
           "aiObjectType": "generativeObject",
-          "currentStateId": "bff03820-3113-431c-a18e-a527e745cfa9",
+          "currentGenerationId": "bff03820-3113-431c-a18e-a527e745cfa9",
           "ratio": "1:1",
           "imageSize": "medium",
           "generationLogs": [
@@ -175,7 +175,7 @@
         },
         "aiData": {
           "aiObjectType": "generativeObject",
-          "currentStateId": "11c5b040-cb47-44dc-8d6f-a602fc9333cb",
+          "currentGenerationId": "11c5b040-cb47-44dc-8d6f-a602fc9333cb",
           "ratio": "1:1",
           "imageSize": "medium",
           "generationLogs": [
@@ -232,7 +232,7 @@
         },
         "aiData": {
           "aiObjectType": "generativeObject",
-          "currentStateId": "41cc3107-8aeb-4e99-85b0-968ef109464f",
+          "currentGenerationId": "41cc3107-8aeb-4e99-85b0-968ef109464f",
           "ratio": "1:1",
           "imageSize": "medium",
           "generationLogs": [
@@ -300,7 +300,7 @@
         },
         "aiData": {
           "aiObjectType": "generativeObject",
-          "currentStateId": "1917911c-5680-4add-9b7b-837b809f7c27",
+          "currentGenerationId": "1917911c-5680-4add-9b7b-837b809f7c27",
           "ratio": "1:1",
           "imageSize": "medium",
           "generationLogs": [
@@ -368,7 +368,7 @@
         },
         "aiData": {
           "aiObjectType": "shape",
-          "currentStateId": null,
+          "currentGenerationId": null,
           "ratio": "1:1",
           "imageSize": "medium",
           "generationLogs": []
@@ -406,7 +406,7 @@
         },
         "aiData": {
           "aiObjectType": "shape",
-          "currentStateId": null,
+          "currentGenerationId": null,
           "ratio": "1:1",
           "imageSize": "medium",
           "generationLogs": []
