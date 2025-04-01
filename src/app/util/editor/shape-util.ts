@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects } from './editor-util';
-import { EntityBase } from '../extensions/entityNode';
-import { ShapeType } from '../extensions/entityNode';
+import { EntityBase } from '../extensions/EntityBase';
+import { ShapeType } from '../extensions/ShapeEntity';
 import { defaultMaterial } from './material-util';
 import { setupMeshShadows } from './light-util';
 
@@ -42,32 +42,6 @@ export async function loadShapeMeshes(scene: BABYLON.Scene): Promise<void> {
     } catch (error) {
         console.error("Error loading shape meshes:", error);
     }
-}
-
-// Create shape mesh for entity
-export function createShapeEntity(entity: EntityBase, scene: BABYLON.Scene, shapeType: ShapeType, options?: { scale?: BABYLON.Vector3 }): BABYLON.Mesh {
-
-    const newMesh = createShapeMesh(scene, shapeType);
-
-    // Apply the material and setup shadows
-    newMesh.material = defaultMaterial;
-    setupMeshShadows(newMesh);
-
-    // scale
-    if (options?.scale) {
-        newMesh.scaling = options.scale;
-    }
-
-    // Entity settings
-    newMesh.parent = entity;
-    newMesh.metadata = { rootEntity: entity };
-    entity.modelMesh = newMesh;
-    entity.metadata.shapeType = shapeType;
-    entity.setDisplayMode('3d');
-
-    // Return the created mesh
-    console.log(`createShapeEntity: ${newMesh.name}`);
-    return newMesh;
 }
 
 export const createShapeMesh = (scene: BABYLON.Scene, shapeType: ShapeType): BABYLON.Mesh => {

@@ -63,7 +63,7 @@ export class GenerativeEntity extends EntityBase {
       id?: string;
       position?: BABYLON.Vector3;
       rotation?: BABYLON.Vector3;
-      props: GenerativeEntityProps;
+      props?: GenerativeEntityProps;
     }
   ) {
     super(name, scene, 'generative', {
@@ -75,7 +75,7 @@ export class GenerativeEntity extends EntityBase {
     // Create initial props
     this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
     this.props = {
-      generationLogs: options.props.generationLogs,
+      generationLogs: options.props?.generationLogs || [],
     };
 
     this.status = 'idle';

@@ -1,5 +1,8 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from './EntityBase';
+import { createShapeMesh } from '../editor/shape-util';
+import { defaultMaterial } from '../editor/material-util';
+import { setupMeshShadows } from '../editor/light-util';
 
 /**
  * Entity that represents primitive shapes
@@ -12,6 +15,7 @@ export interface ShapeEntityProps {
 export class ShapeEntity extends EntityBase {
   // ShapeEntity specific properties
   props: ShapeEntityProps;
+  modelMesh: BABYLON.Mesh;
 
   constructor(
     name: string,
@@ -34,15 +38,26 @@ export class ShapeEntity extends EntityBase {
     this.props = options.props;
 
     // Create the shape mesh
-    this.createShapeMesh();
+    const newMesh = createShapeMesh(this._scene, this.props.shapeType);
+    newMesh.parent = this;
+    newMesh.metadata = { rootEntity: this };
+    this.modelMesh = newMesh;
+
+    // Apply the material and setup shadows
+    newMesh.material = defaultMaterial;
+    setupMeshShadows(newMesh);
+
+    // scale
+    if (options?.scaling) {
+      newMesh.scaling = options.scaling;
+    }
+
+    // Return the created mesh
+    console.log(`createShapeEntity: ${newMesh.name}`);
   }
 
-  /**
-   * Create the shape mesh based on shapeType
-   */
-  private createShapeMesh(): void {
-    // Implementation for shape mesh creation
-  }
+
+
 
   /**
    * Serialize with shape-specific properties

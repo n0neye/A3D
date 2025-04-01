@@ -63,15 +63,8 @@ function LightEntityPanel(props: { entity: LightEntity }) {
             lightSphere.material.emissiveColor = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
         }
 
-        // Update metadata
-        if (!props.entity.metadata.lightProperties) {
-            props.entity.metadata.lightProperties = {
-                color: { r: rgb.r, g: rgb.g, b: rgb.b },
-                intensity: pointLight.intensity
-            };
-        } else {
-            props.entity.metadata.lightProperties.color = { r: rgb.r, g: rgb.g, b: rgb.b };
-        }
+        // Update data
+        props.entity.props.color = { r: rgb.r, g: rgb.g, b: rgb.b };
     };
 
     // Handle light intensity change
@@ -83,19 +76,7 @@ function LightEntityPanel(props: { entity: LightEntity }) {
         const pointLight = props.entity.light;
         pointLight.intensity = newIntensity;
 
-        // Update metadata
-        if (!props.entity.metadata.lightProperties) {
-            props.entity.metadata.lightProperties = {
-                color: {
-                    r: pointLight.diffuse.r,
-                    g: pointLight.diffuse.g,
-                    b: pointLight.diffuse.b
-                },
-                intensity: newIntensity
-            };
-        } else {
-            props.entity.metadata.lightProperties.intensity = newIntensity;
-        }
+        props.entity.props.intensity = newIntensity;
     };
 
 
