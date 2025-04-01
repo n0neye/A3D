@@ -170,25 +170,19 @@ export async function generate3DModel_Runpod(
     } = {}
 ): Promise<GenerationResult> {
     try {
-        // Set entity to processing state
-        entity.setProcessingState("generating3D", "Starting 3D conversion with RunPod...");
-
+        // Setup processing state
         const startTime = performance.now();
-
-        // Process image directly
         entity.setProcessingState("generating3D", "Processing image...");
-
-        console.log("Fetching image from:", imageUrl);
+        
+        // Process source image 
+        console.log("Fetching source image from:", imageUrl);
         const response = await fetch(imageUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
         }
-
         const blob = await response.blob();
         const base64Data = await blobToBase64(blob);
         const payload = { imageBase64: base64Data };
-
-        console.log("Image processed, size:", Math.round(base64Data.length / 1024), "KB");
 
         entity.setProcessingState("generating3D", "Submitting...");
 
@@ -219,7 +213,7 @@ export async function generate3DModel_Runpod(
         let completed = false;
         let resultData = null;
         let attempts = 0;
-        const maxAttempts = 300; // 5 minutes at 1-second intervals
+        const maxAttempts = 400; // 200s
 
         while (!completed && attempts < maxAttempts) {
             attempts++;
@@ -235,7 +229,7 @@ export async function generate3DModel_Runpod(
             if (!statusResponse.ok) {
                 console.warn(`Failed to check status, attempt ${attempts}: ${statusResponse.status}`);
                 // Wait and try again
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 500));
                 continue;
             }
 
@@ -252,7 +246,7 @@ export async function generate3DModel_Runpod(
             }
 
             // Wait before polling again
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         if (!completed) {
@@ -273,7 +267,6 @@ export async function generate3DModel_Runpod(
             // Create blob with the proper MIME type
             const blob = new Blob([bytes.buffer], { type: 'model/gltf-binary' });
 
-            // Instead of just creating a blob URL, let's save the model to a File object
             // with a .glb extension to help Babylon.js recognize the format
             const fileName = `model_${derivedFromId}.glb`;
             const file = new File([blob], fileName, { type: 'model/gltf-binary' });

@@ -18,7 +18,7 @@ export interface GenerativeEntityProps {
 export type AssetType = 'image' | 'model';
 
 // Processing states
-export type GenerationState = 'idle' | 'generating2D' | 'generating3D' | 'error';
+export type GenerationStatus = 'idle' | 'generating2D' | 'generating3D' | 'error';
 
 export interface SerializedGenerativeEntityData extends SerializedEntityData {
   props: GenerativeEntityProps;
@@ -51,16 +51,13 @@ export class GenerativeEntity extends EntityBase {
   modelMesh?: BABYLON.Mesh;
   placeholderMesh: BABYLON.Mesh;
 
-  status: GenerationState;
+  status: GenerationStatus;
   statusMessage: string;
 
   temp_prompt: string;
   temp_ratio: ImageRatio;
 
-  public readonly onProgress = new EventHandler<{ entity: EntityBase, state: GenerationState, message: string }>();
-  getGenerationState(): GenerationState {
-    return this.status;
-  }
+  public readonly onProgress = new EventHandler<{ entity: GenerativeEntity, state: GenerationStatus, message: string }>();
 
   constructor(
     name: string,
@@ -145,9 +142,10 @@ export class GenerativeEntity extends EntityBase {
   /**
    * Set the processing state
    */
-  setProcessingState(state: GenerationState, message?: string): void {
+  setProcessingState(state: GenerationStatus, message?: string): void {
     this.status = state;
     this.statusMessage = message || '';
+    this.onProgress.trigger({ entity: this, state, message: message || '' });
   }
 
   // Apply image to entity

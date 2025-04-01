@@ -8,7 +8,7 @@ import { useEditorContext } from '../../context/EditorContext';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
-import { GenerationLog, GenerativeEntity, GenerationState } from '../../util/extensions/GenerativeEntity';
+import { GenerationLog, GenerativeEntity, GenerationStatus } from '../../util/extensions/GenerativeEntity';
 
 import { ImageRatio } from "../../util/generation-util";
 import { EntityBase } from "../../util/extensions/EntityBase";
@@ -22,7 +22,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   const { scene, gizmoManager } = useEditorContext();
 
-  const [promptInput, setPromptInput] = useState('_');
+  const [promptInput, setPromptInput] = useState('');
   const [currentGenLog, setCurrentGenLog] = useState<GenerationLog | null>(null);
   const [generationHistory, setGenerationHistory] = useState<GenerationLog[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
@@ -36,11 +36,11 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   // Update when selected entity changes
   useEffect(() => {
-    const handleProgress = (param: { entity: EntityBase, state: GenerationState }) => {
-      if (param.entity.name === CURRENT_ENTITY?.name) {
+    const handleProgress = (param: { entity: GenerativeEntity, state: GenerationStatus, message: string }) => {
+      if (param.entity.id === CURRENT_ENTITY?.id) {
         setIsGenerating2D(param.state === 'generating2D');
         setIsGenerating3D(param.state === 'generating3D');
-        setProgressMessage(param.state);
+        setProgressMessage(param.message);
       }
     }
 
@@ -59,16 +59,14 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     if (props.entity) {
 
       // Initial state update
-      const newState = props.entity.getGenerationState();
-      handleProgress({ entity: props.entity, state: newState });
+      handleProgress({ entity: props.entity, state: props.entity.status, message: props.entity.statusMessage });
       // Add event handler
       props.entity.onProgress.add(handleProgress);
       console.log("Added handleProgress to props.entity: ", props.entity.name, props.entity);
 
       // Get the current generation and set the prompt if available
       const currentGen = props.entity.getCurrentGenerationLog();
-      // setPromptInput(props.entity.tempPrompt || currentGen?.prompt || "");
-      trySetPrompt('onEntityChange', props.entity.temp_prompt || currentGen?.prompt || "");
+      trySetPrompt('onEntityChange', props.entity.temp_prompt);
       setCurrentGenLog(currentGen);
 
       // Load generation history
@@ -218,6 +216,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     console.log('onNewGeneration', log);
     setGenerationHistory(props.entity.props.generationLogs);
     setCurrentGenLog(log);
+    props.entity.temp_prompt = log.prompt || "";
     trySetPrompt('onNewGeneration', log.prompt || "");
     setCurrentHistoryIndex(generationHistory.findIndex(l => l.id === log.id));
   }

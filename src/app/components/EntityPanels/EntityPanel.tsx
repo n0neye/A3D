@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React from 'react';
 
 import { useEditorContext } from '../../context/EditorContext';
 import { LightEntity } from '../../util/extensions/LightEntity';
@@ -8,7 +8,7 @@ import LightEntityPanel from './LightEntityPanel';
 
 
 const EntityPanel: React.FC = () => {
-  const {  selectedEntity } = useEditorContext();
+  const { selectedEntity } = useEditorContext();
 
   // Show panel for both generative objects and lights
   if (!selectedEntity) return null;
@@ -24,12 +24,8 @@ const EntityPanel: React.FC = () => {
         minWidth: '150px',
       }}
     >
-      {
-        selectedEntity instanceof GenerativeEntity && <GenerativeEntityPanel entity={selectedEntity} />
-      }
-      {
-        selectedEntity instanceof LightEntity && <LightEntityPanel entity={selectedEntity} />
-      }
+      {selectedEntity instanceof GenerativeEntity && <GenerativeEntityPanel entity={selectedEntity} />}
+      {selectedEntity instanceof LightEntity && <LightEntityPanel entity={selectedEntity} />}
     </div>
   );
 };
