@@ -87,12 +87,13 @@ export async function generateRealtimeImage(
     if (success && result.imageUrl) {
         console.log(`%cImage generation took ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
-        // Add to history
-        const log = entity.addImageGenerationLog(promptInput, result.imageUrl, ratio);
-
+        
         // Apply the image to the entity
         await entity.applyGeneratedImage(result.imageUrl, scene, ratio);
-
+        
+        // Add to history
+        const log = entity.onNewGeneration("image", result.imageUrl, promptInput);
+        
         console.log(`%cTask completed in ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
         entity.setProcessingState('idle', success ? 'Image generated successfully!' : 'Failed to generate image');

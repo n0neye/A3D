@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
-import {  removeBackground } from '../../util/generation-util';
+import { removeBackground } from '../../util/generation-util';
 import { generate3DModel } from '../../util/3d-generation-util';
 import { generateRealtimeImage, GenerationResult } from '../../util/realtime-generation-util';
 import { useEditorContext } from '../../context/EditorContext';
@@ -13,19 +13,15 @@ import { GenerationLog, GenerativeEntity, GenerationStatus } from '../../util/ex
 import { ImageRatio } from "../../util/generation-util";
 import { EntityBase } from "../../util/extensions/EntityBase";
 
-// TODO: This is a hack to get the current entity.
-// It's used to remove the event handler from the previous entity when the selected entity changes.
-let CURRENT_ENTITY: GenerativeEntity | null = null;
+// TODO: This is a hack to get the previous entity.
+let PREV_ENTITY: GenerativeEntity | null = null;
 
 
 const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   const { scene, gizmoManager } = useEditorContext();
 
-  const [promptInput, setPromptInput] = useState('');
-  const [currentGenLog, setCurrentGenLog] = useState<GenerationLog | null>(null);
-  const [generationHistory, setGenerationHistory] = useState<GenerationLog[]>([]);
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
+  const [promptInput, setPromptInput] = useState(props.entity.temp_prompt);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);
   const [currentRatio, setCurrentRatio] = useState<ImageRatio>('1:1');
 
@@ -34,69 +30,65 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   const [isGenerating3D, setIsGenerating3D] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
 
+  // Add a state variable to force re-renders
+  const [updateCounter, setUpdateCounter] = useState(0);
+
   // Update when selected entity changes
   useEffect(() => {
     const handleProgress = (param: { entity: GenerativeEntity, state: GenerationStatus, message: string }) => {
-      if (param.entity.id === CURRENT_ENTITY?.id) {
+      if (param.entity.id === PREV_ENTITY?.id) {
         setIsGenerating2D(param.state === 'generating2D');
         setIsGenerating3D(param.state === 'generating3D');
         setProgressMessage(param.message);
       }
     }
-
-    // Remove the event handler from the previous entity
-    if (CURRENT_ENTITY) {
-      // Save the prompt input
-      CURRENT_ENTITY.temp_prompt = promptInput;
-      // Remove the event handler
-      CURRENT_ENTITY.onProgress.remove(handleProgress);
-      console.log("Removed handleProgress from prevEntity: ", CURRENT_ENTITY.name, CURRENT_ENTITY);
+    const handleGenerationChanged = (param: { entity: GenerativeEntity }) => {
+      if (param.entity.id === PREV_ENTITY?.id) {
+        // Force a re-render by incrementing the counter
+        setUpdateCounter(prev => prev + 1);
+      }
     }
 
-    // Set the new entity
-    CURRENT_ENTITY = props.entity;
-
-    if (props.entity) {
-
-      // Initial state update
-      handleProgress({ entity: props.entity, state: props.entity.status, message: props.entity.statusMessage });
-      // Add event handler
-      props.entity.onProgress.add(handleProgress);
-      console.log("Added handleProgress to props.entity: ", props.entity.name, props.entity);
+    // If selected entity changed
+    if (PREV_ENTITY?.id !== props.entity.id) {
+      console.log("entity changed: ", PREV_ENTITY?.id, "to", props.entity.id);
+      // Remove the event handlers
+      if (PREV_ENTITY) {
+        PREV_ENTITY.onProgress.remove(handleProgress);
+        PREV_ENTITY.onGenerationChanged.remove(handleGenerationChanged);
+      }
 
       // Get the current generation and set the prompt if available
       const currentGen = props.entity.getCurrentGenerationLog();
       trySetPrompt('onEntityChange', props.entity.temp_prompt);
-      setCurrentGenLog(currentGen);
 
-      // Load generation history
-      const history = props.entity.props.generationLogs;
-      setGenerationHistory(history);
+      // Set the new entity
+      PREV_ENTITY = props.entity;
+    }
 
-      // Set current index to the latest generation
-      if (currentGen && history.length > 0) {
-        const index = history.findIndex(log => log.id === currentGen.id);
-        setCurrentHistoryIndex(index !== -1 ? index : history.length - 1);
-      } else {
-        setCurrentHistoryIndex(-1);
-      }
+    // Initial state update
+    handleProgress({ entity: props.entity, state: props.entity.status, message: props.entity.statusMessage });
+    
+    // Add event handlers
+    props.entity.onProgress.add(handleProgress);
+    props.entity.onGenerationChanged.add(handleGenerationChanged);
 
-      // Set the current ratio from entity metadata
-      if (props.entity.temp_ratio) {
-        setCurrentRatio(props.entity.temp_ratio);
-      } else {
-        setCurrentRatio('1:1'); // Default
+    return () => {
+      console.log("unmounting entity:", props.entity.id);
+      // Clean up event handlers
+      if (PREV_ENTITY) {
+        PREV_ENTITY.onProgress.remove(handleProgress);
+        PREV_ENTITY.onGenerationChanged.remove(handleGenerationChanged);
       }
     }
   }, [props.entity]);
 
-  // CurrentGenLog changed, update the ratio
   useEffect(() => {
-    if (currentGenLog?.assetType === 'image' && currentGenLog.fileUrl) {
-      const ratio = currentGenLog.imageParams?.ratio || '1:1';
-      setCurrentRatio(ratio);
+    if (PREV_ENTITY) {
+      PREV_ENTITY.temp_prompt = promptInput;
     }
-  }, [currentGenLog, props.entity]);
+  }, [promptInput]);
+
 
   // Additional effect to handle the input field mounting
   useEffect(() => {
@@ -107,14 +99,15 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     //     console.log("Focused input");
     //   }, 50);
     // }
-  }, [props.entity, inputElementRef, generationHistory]);
+  }, [props.entity, inputElementRef]);
 
   // Add keyboard shortcut handler
   useEffect(() => {
     const handleKeyboardShortcuts = (e: KeyboardEvent) => {
       if (!props.entity) return;
-
-      if (generationHistory.length > 1 && !isGenerating2D && !isGenerating3D) {
+      const history = props.entity.props.generationLogs;
+      if (history.length > 1 && !isGenerating2D && !isGenerating3D) {
+        const currentHistoryIndex = props.entity.getCurrentGenerationLogIdx();
         if (e.shiftKey && e.key === "ArrowLeft") {
           e.preventDefault();
           if (currentHistoryIndex > 0) {
@@ -124,7 +117,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
         if (e.shiftKey && e.key === "ArrowRight") {
           e.preventDefault();
-          if (currentHistoryIndex < generationHistory.length - 1) {
+          if (currentHistoryIndex < history.length - 1) {
             goToNextGeneration();
           }
         }
@@ -136,7 +129,13 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     return () => {
       document.removeEventListener("keydown", handleKeyboardShortcuts);
     };
-  }, [props.entity, currentHistoryIndex, generationHistory.length, isGenerating2D, isGenerating3D, promptInput]);
+  }, [props.entity.props.generationLogs, props.entity.props.currentGenerationId, isGenerating2D, isGenerating3D, promptInput]);
+
+
+  useEffect(() => {
+    console.log("generation logs changed: ", props.entity.props.generationLogs, props.entity.props.currentGenerationIdx);
+  }, [props.entity.props.generationLogs, props.entity.props.currentGenerationIdx, props.entity.props.currentGenerationId, updateCounter]);
+  
 
   const handleInputFieldKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Shift + Enter
@@ -157,10 +156,6 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     if (!props.entity || !promptInput.trim() || !scene) return;
     let result: GenerationResult;
     result = await generateRealtimeImage(promptInput, props.entity, scene, { ratio: currentRatio });
-
-    if (result.success && result.generationLog) {
-      onNewGeneration(result.generationLog);
-    }
   };
 
   // Convert to 3D model
@@ -190,10 +185,6 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
         // apiProvider: 'trellis'
       });
 
-      if (result.success && result.generationLog) {
-        onNewGeneration(result.generationLog);
-      }
-
       // Track successful 3D conversion
       trackEvent(ANALYTICS_EVENTS.CONVERT_TO_3D + '_completed', {
         execution_time_ms: Date.now() - startTime,
@@ -212,46 +203,17 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     }
   };
 
-  const onNewGeneration = (log: GenerationLog) => {
-    console.log('onNewGeneration', log);
-    setGenerationHistory(props.entity.props.generationLogs);
-    setCurrentGenLog(log);
-    props.entity.temp_prompt = log.prompt || "";
-    trySetPrompt('onNewGeneration', log.prompt || "");
-    setCurrentHistoryIndex(generationHistory.findIndex(l => l.id === log.id));
-  }
+
 
   // Handle navigation through generation history
   const goToPreviousGeneration = () => {
-    if (currentHistoryIndex > 0 && generationHistory.length > 0) {
-      console.log('goToPreviousGeneration', currentHistoryIndex);
-      const newIndex = currentHistoryIndex - 1;
-      const prevLog = generationHistory[newIndex];
-      setCurrentHistoryIndex(newIndex);
-      setCurrentGenLog(prevLog);
-      trySetPrompt('previous', prevLog.prompt || "");
-
-      // Apply the generation if needed
-      if (props.entity && prevLog) {
-        props.entity.applyGenerationLog(prevLog);
-      }
-    }
+    console.log("goToPreviousGeneration");
+    props.entity.goToPreviousGeneration();
   };
 
   const goToNextGeneration = () => {
-    if (currentHistoryIndex < generationHistory.length - 1) {
-      console.log('goToNextGeneration', currentHistoryIndex);
-      const newIndex = currentHistoryIndex + 1;
-      const nextLog = generationHistory[newIndex];
-      setCurrentHistoryIndex(newIndex);
-      setCurrentGenLog(nextLog);
-      trySetPrompt('next', nextLog.prompt || "");
-
-      // Apply the generation if needed
-      if (props.entity && nextLog) {
-        props.entity.applyGenerationLog(nextLog);
-      }
-    }
+    console.log("goToNextGeneration");
+    props.entity.goToNextGeneration();
   };
 
   const renderSpinner = (message?: string) => {
@@ -284,31 +246,32 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   };
 
   // Handler for removing background
-  const handleRemoveBackground = async () => {
-    if (!props.entity || !currentGenLog || !scene) return;
-    if (currentGenLog.assetType !== 'image' || !currentGenLog.fileUrl) return;
+  // TODO: bring back later
+  // const handleRemoveBackground = async () => {
+  //   if (!props.entity || !currentGenLog || !scene) return;
+  //   if (currentGenLog.assetType !== 'image' || !currentGenLog.fileUrl) return;
 
-    // Call the background removal function
-    const result = await removeBackground(
-      currentGenLog.fileUrl,
-      props.entity,
-      scene,
-      currentGenLog.id // Pass current image ID as the derived from ID
-    );
+  //   // Call the background removal function
+  //   const result = await removeBackground(
+  //     currentGenLog.fileUrl,
+  //     props.entity,
+  //     scene,
+  //     currentGenLog.id // Pass current image ID as the derived from ID
+  //   );
 
-    if (result.success && result.generationLog) {
-      onNewGeneration(result.generationLog);
-    }
-  };
+  //   if (result.success && result.generationLog) {
+  //     onNewGeneration(result.generationLog);
+  //   }
+  // };
 
   const handleDownload = () => {
     console.log('handleDownload');
-    if (!currentGenLog?.fileUrl) return;
+    if (!props.entity?.getCurrentGenerationLog()?.fileUrl) return;
 
     // Call the download function
     const a = document.createElement('a');
-    a.href = currentGenLog.fileUrl;
-    a.download = currentGenLog.fileUrl.split('/').pop() || 'image.png';
+    a.href = props.entity.getCurrentGenerationLog()?.fileUrl || '';
+    a.download = props.entity.getCurrentGenerationLog()?.fileUrl?.split('/').pop() || 'image.png';
     a.target = '_blank';
     a.click();
   }
@@ -319,11 +282,13 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   // Check if we can remove background (only if we have a current image)
   const canRemoveBackground =
     !isGenerating &&
-    currentGenLog?.assetType === 'image' &&
-    !!currentGenLog.fileUrl;
+    props.entity.getCurrentGenerationLog()?.assetType === 'image' &&
+    !!props.entity.getCurrentGenerationLog()?.fileUrl;
 
-  const hasPreviousGeneration = currentHistoryIndex > 0;
-  const hasNextGeneration = currentHistoryIndex < generationHistory.length - 1;
+  const currentGenLogIndex = props.entity.getCurrentGenerationLogIdx();
+  const currentGenLog = props.entity.getCurrentGenerationLog();
+  const hasPreviousGeneration = currentGenLogIndex > 0;
+  const hasNextGeneration = currentGenLogIndex < props.entity.props.generationLogs.length - 1;
 
   return <div>
     <div><>
@@ -342,7 +307,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
               />}
 
               {/* History navigation buttons */}
-              {generationHistory.length > 1 && (
+              {props.entity.props.generationLogs.length > 1 && (
                 <>
                   <button
                     className={`p-1 rounded mr-0 ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
@@ -353,7 +318,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
                     <IconArrowLeft size={16} />
                   </button>
                   <span className="text-xs text-gray-400 self-center">
-                    {currentHistoryIndex + 1}/{generationHistory.length}
+                    {currentGenLogIndex + 1}/{props.entity.props.generationLogs.length}
                   </span>
                   <button
                     className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
@@ -380,7 +345,9 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
               className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
               value={promptInput}
               onKeyDown={handleInputFieldKeyDown}
-              onChange={(e) => setPromptInput(e.target.value)}
+              onChange={(e) => {
+                setPromptInput(e.target.value)
+              }}
               disabled={isGenerating}
               rows={3}
             />

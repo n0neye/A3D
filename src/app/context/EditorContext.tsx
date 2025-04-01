@@ -122,7 +122,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (selectedEntity) {
-      console.log("EditorContext: selectedEntity", selectedEntity.name, selectedEntity);
+      console.log("EditorContext: selectedEntity", selectedEntity.id);
       
       // Handle gizmo attachment based on entity type
       if (isGenerativeEntity(selectedEntity)) {
@@ -148,12 +148,6 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         // Default case
         gizmoManager.attachToNode(selectedEntity);
       }
-
-      // Store reference to entity on gizmo
-      gizmoManager.metadata = {
-        ...gizmoManager.metadata || {},
-        selectedEntity
-      };
     } else {
       gizmoManager.attachToMesh(null);
     }

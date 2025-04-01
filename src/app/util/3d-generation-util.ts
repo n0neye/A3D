@@ -77,7 +77,7 @@ async function finalizeModelGeneration(
     }
 
     // Add generation log
-    const log = entity.addModelGenerationLog(persistentUrl, derivedFromId);
+    const log = entity.onNewGeneration("model", persistentUrl, "", derivedFromId);
 
     entity.setProcessingState("idle", "");
 

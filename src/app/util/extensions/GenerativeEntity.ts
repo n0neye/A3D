@@ -13,6 +13,7 @@ import { createShapeMesh } from '../editor/shape-util';
 export interface GenerativeEntityProps {
   generationLogs: GenerationLog[];
   currentGenerationId?: string;
+  currentGenerationIdx?: number;
 }
 // Asset types
 export type AssetType = 'image' | 'model';
@@ -58,6 +59,7 @@ export class GenerativeEntity extends EntityBase {
   temp_ratio: ImageRatio;
 
   public readonly onProgress = new EventHandler<{ entity: GenerativeEntity, state: GenerationStatus, message: string }>();
+  public readonly onGenerationChanged = new EventHandler<{ entity: GenerativeEntity }>();
 
   constructor(
     name: string,
@@ -77,8 +79,8 @@ export class GenerativeEntity extends EntityBase {
 
     // Create initial props
     // this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
-    
-    const ratio ='1:1';
+
+    const ratio = '1:1';
     const { width, height } = getPlaneSize(ratio);
     this.placeholderMesh = createShapeMesh(scene, "plane");
     this.placeholderMesh.material = placeholderMaterial;
@@ -98,37 +100,29 @@ export class GenerativeEntity extends EntityBase {
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
-    if(this.modelMesh) {
+    if (this.modelMesh) {
       this.modelMesh.setEnabled(mode === '3d');
     }
     this.placeholderMesh.setEnabled(mode === '2d');
   }
 
-  addModelGenerationLog(modelUrl: string, derivedFromId?: string): GenerationLog {
-    const log: GenerationLog = {
-      id: uuidv4(),
-      timestamp: Date.now(),
-      prompt: '',
-      assetType: 'model',
-      fileUrl: modelUrl,
-      derivedFromId: derivedFromId
-    }
-    this.props.generationLogs.push(log);
-    return log;
-  }
-
-  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio): GenerationLog {
+  onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): GenerationLog {
     const log: GenerationLog = {
       id: uuidv4(),
       timestamp: Date.now(),
       prompt: prompt,
-      assetType: 'image',
-      fileUrl: imageUrl,
-      imageParams: {
-        ratio: ratio
-      }
+      assetType: assetType,
+      fileUrl: fileUrl,
+      derivedFromId: derivedFromId
     }
     this.props.generationLogs.push(log);
+
+    // Update current generation
+    this.props.currentGenerationId = log.id;
+    this.props.currentGenerationIdx = this.props.generationLogs.findIndex(l => l.id === log.id);
+
+    this.temp_prompt = prompt;
+
     return log;
   }
 
@@ -137,6 +131,10 @@ export class GenerativeEntity extends EntityBase {
    */
   getCurrentGenerationLog(): GenerationLog | null {
     return this.props.generationLogs.find(log => log.id === this.props.currentGenerationId) || null;
+  }
+
+  getCurrentGenerationLogIdx(): number {
+    return this.props.generationLogs.findIndex(log => log.id === this.props.currentGenerationId);
   }
 
   /**
@@ -228,25 +226,36 @@ export class GenerativeEntity extends EntityBase {
 
 
   // Apply a specific generation log 
-  public async applyGenerationLog(log: GenerationLog): Promise<void> {
+  async applyGenerationLog(log: GenerationLog): Promise<void> {
+    try {
 
-    console.log("applyGenerationLog", log);
+      console.log("applyGenerationLog", log);
 
-    // Set as current state
-    this.props.currentGenerationId = log.id;
+      // Apply based on asset type
+      if (log.assetType === 'image' && log.fileUrl) {
+        // For image assets, apply the image to the entity
+        this.applyGeneratedImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
+        this.setDisplayMode('2d');
+      } else if (log.assetType === 'model' && log.fileUrl) {
+        // For model assets, we need to set 3D display mode
+        // (Assuming the model is already loaded and attached to this entity)
+        await loadModel(this, log.fileUrl, this.getScene(), (progress) => {
+          console.log("loadModel progress", progress);
+        });
+        this.setDisplayMode('3d');
+      }
 
-    // Apply based on asset type
-    if (log.assetType === 'image' && log.fileUrl) {
-      // For image assets, apply the image to the entity
-      this.applyGeneratedImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
-      this.setDisplayMode('2d');
-    } else if (log.assetType === 'model' && log.fileUrl) {
-      // For model assets, we need to set 3D display mode
-      // (Assuming the model is already loaded and attached to this entity)
-      await loadModel(this, log.fileUrl, this.getScene(), (progress) => {
-        console.log("loadModel progress", progress);
-      });
-      this.setDisplayMode('3d');
+      // Set as current state
+      this.props.currentGenerationId = log.id;
+      this.props.currentGenerationIdx = this.props.generationLogs.findIndex(l => l.id === log.id);
+
+      // Trigger the event
+      this.onGenerationChanged.trigger({ entity: this });
+
+      console.log("applyGenerationLog: currentGenerationIdx", this.props.currentGenerationIdx);
+
+    } catch (error) {
+      console.error("Failed to apply generation log:", error);
     }
   }
 
@@ -268,7 +277,7 @@ export class GenerativeEntity extends EntityBase {
   static deserialize(scene: BABYLON.Scene, data: SerializedGenerativeEntityData): GenerativeEntity {
     const position = data.position ? toBabylonVector3(data.position) : undefined;
     const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
-    
+
     return new GenerativeEntity(data.name, scene, {
       id: data.id,
       position,
@@ -296,6 +305,25 @@ export class GenerativeEntity extends EntityBase {
       this.modelMesh.dispose();
     }
     super.dispose();
+  }
+
+  goToPreviousGeneration(): void {
+    if (this.props.currentGenerationIdx !== undefined && this.props.currentGenerationIdx > 0) {
+      this.props.currentGenerationIdx--;
+      this.props.currentGenerationId = this.props.generationLogs[this.props.currentGenerationIdx].id;
+      const newLog = this.props.generationLogs[this.props.currentGenerationIdx];
+      this.applyGenerationLog(newLog);
+      return
+    }
+  }
+
+  goToNextGeneration(): void {
+    if (this.props.currentGenerationIdx !== undefined && this.props.currentGenerationIdx < this.props.generationLogs.length - 1) {
+      this.props.currentGenerationIdx++;
+      this.props.currentGenerationId = this.props.generationLogs[this.props.currentGenerationIdx].id;
+      const newLog = this.props.generationLogs[this.props.currentGenerationIdx];
+      this.applyGenerationLog(newLog);
+    }
   }
 }
 
