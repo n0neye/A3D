@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
 import { create2DBackground, createEquirectangularSkybox, getEnvironmentObjects } from '../editor/editor-util';
-import { ImageRatio, ImageSize } from '../generation-util';
+import { ImageRatio } from '../generation-util';
 import { loadModel } from '../3d-generation-util';
 import { createShapeEntity, createShapeMesh } from '../editor/shape-util';
 import { placeholderMaterial } from '../editor/material-util';
@@ -56,7 +56,6 @@ export interface GenerationLog {
     imageParams?: {
         negativePrompt?: string;
         ratio: ImageRatio;
-        imageSize: ImageSize;
     }
 }
 
@@ -71,9 +70,8 @@ export interface EntityMetadata {
     // For AI generated entities
     aiData?: {
         aiObjectType: AiObjectType;
-        prompt: string;
-        ratio: ImageRatio;
-        imageSize: ImageSize;
+        current_prompt: string;
+        current_ratio: ImageRatio;
         generationLogs: Array<GenerationLog>;
         currentGenerationId: string | null;
     };
@@ -113,7 +111,6 @@ export class EntityNode extends BABYLON.TransformNode {
         options: {
             position?: BABYLON.Vector3;
             ratio?: ImageRatio;
-            imageSize?: ImageSize;
         } = {}
     ) {
         super(name, scene);
@@ -138,10 +135,9 @@ export class EntityNode extends BABYLON.TransformNode {
         if (type === 'aiObject') {
             this.metadata.aiData = {
                 aiObjectType: "generativeObject",
-                prompt: "",
+                current_prompt: "",
                 currentGenerationId: null,
-                ratio: options.ratio || '1:1',
-                imageSize: options.imageSize || 'medium',
+                current_ratio: options.ratio || '1:1',
                 generationLogs: []
             };
         }
@@ -222,7 +218,6 @@ export class EntityNode extends BABYLON.TransformNode {
         options: {
             negativePrompt?: string,
             ratio: ImageRatio;
-            imageSize: ImageSize;
             derivedFromId?: string;
         }
     ): GenerationLog {
@@ -230,10 +225,9 @@ export class EntityNode extends BABYLON.TransformNode {
         if (!this.metadata.aiData) {
             this.metadata.aiData = {
                 aiObjectType: "generativeObject",
-                prompt: prompt,
+                current_prompt: prompt,
                 currentGenerationId: null,
-                ratio: options.ratio,
-                imageSize: options.imageSize,
+                current_ratio: options.ratio,
                 generationLogs: [],
             };
         }
@@ -249,15 +243,13 @@ export class EntityNode extends BABYLON.TransformNode {
             imageParams: {
                 negativePrompt: options.negativePrompt,
                 ratio: options.ratio,
-                imageSize: options.imageSize,
             }
         };
 
         // Add to history
         this.metadata.aiData.generationLogs.push(newGeneration);
         this.metadata.aiData.currentGenerationId = newGeneration.id;
-        this.metadata.aiData.ratio = options.ratio;
-        this.metadata.aiData.imageSize = options.imageSize;
+        this.metadata.aiData.current_ratio = options.ratio;
 
         return newGeneration;
     }
@@ -322,7 +314,7 @@ export class EntityNode extends BABYLON.TransformNode {
         if (!this.metadata.aiData || !this.gizmoMesh) return;
 
         // Save the new ratio in metadata
-        this.metadata.aiData.ratio = ratio;
+        this.metadata.aiData.current_ratio = ratio;
 
         // Get the new dimensions based on ratio
         const { width, height } = getPlaneSize(ratio);
@@ -372,7 +364,6 @@ export function createEntity(
         position?: BABYLON.Vector3;
         scale?: BABYLON.Vector3;
         ratio?: ImageRatio;
-        imageSize?: ImageSize;
         name?: string;
         imageUrl?: string;
         shapeType?: ShapeType;
@@ -400,8 +391,7 @@ export async function duplicateEntity(
     const name = sourceEntity.name + "-copy";
     const newEntity = new EntityNode(name, scene, sourceEntity.getEntityType(), {
         position: sourceEntity.position.clone(),
-        ratio: sourceEntity.metadata.aiData?.ratio,
-        imageSize: sourceEntity.metadata.aiData?.imageSize,
+        ratio: sourceEntity.metadata.aiData?.current_ratio,
     });
     newEntity.rotation = sourceEntity.rotation.clone();
     newEntity.scaling = sourceEntity.scaling.clone();
@@ -411,7 +401,7 @@ export async function duplicateEntity(
 
     if (newEntity.metadata.aiData?.aiObjectType === 'generativeObject') {
         createGenerativeObject(scene, newEntity, {
-            ratio: newEntity.metadata.aiData?.ratio,
+            ratio: newEntity.metadata.aiData?.current_ratio,
         });
         if (newEntity.metadata.aiData?.generationLogs && newEntity.metadata.aiData?.generationLogs.length > 0) {
             // Apply the last generation log
@@ -456,7 +446,6 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     aiObjectType?: AiObjectType;
     position?: BABYLON.Vector3;
     ratio?: ImageRatio;
-    imageSize?: ImageSize;
     imageUrl?: string;
     shapeType?: ShapeType;
     scale?: BABYLON.Vector3;
@@ -474,11 +463,10 @@ const createAiObject = (scene: BABYLON.Scene, name: string, entity: EntityNode, 
     } else {
         entity.metadata.aiData = {
             aiObjectType: options.aiObjectType,
-            prompt: "",
+            current_prompt: "",
             generationLogs: [],
             currentGenerationId: null,
-            ratio: options.ratio || '1:1',
-            imageSize: options.imageSize || 'medium',
+            current_ratio: options.ratio || '1:1',
         };
     }
 
@@ -787,7 +775,7 @@ export async function deserializeEntityNode(data: SerializedEntityNode, scene: B
             // For generative objects, we need to handle both 2D and 3D modes
 
             // Create the 2D plane (needed regardless of display mode)
-            const ratio = aiData.ratio || '1:1';
+            const ratio = aiData.current_ratio || '1:1';
             createPlaneMesh(entity, scene, ratio);
 
             // If there's a 3D model and display mode is 3D, we need to load that too

@@ -8,7 +8,6 @@ import { TrellisOutput } from "@fal-ai/client/endpoints";
 
 
 export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
-export type ImageSize = 'small' | 'medium' | 'large' | 'xl';
 
 // Map of image sizes to actual dimensions
 export const IMAGE_SIZE_MAP = {
@@ -53,13 +52,11 @@ export async function generateBackground(
     entity: EntityNode,
     scene: BABYLON.Scene,
     options: {
-        imageSize?: ImageSize;
         negativePrompt?: string;
     } = {}
 ): Promise<GenerationResult> {
     // Use defaults if not provided
     const startTime = performance.now();
-    const imageSize = options.imageSize || 'medium';
     const entityType = entity.getEntityType();
     const aiObjectType = entity.getAIData()?.aiObjectType || 'generativeObject';
     const negativePrompt = options.negativePrompt || 'cropped, out of frame, blurry, blur';
@@ -99,7 +96,6 @@ export async function generateBackground(
         // Add to history
         log = entity.addImageGenerationLog(prompt, result.data.images[0].url, {
             ratio: '16:9',
-            imageSize: 'medium'
         });
 
         // Log time
@@ -171,13 +167,12 @@ export async function removeBackground(
         const success = result.data && result.data.image && result.data.image.url;
         if (success) {
             // Apply the image to the entity mesh
-            await applyImageToEntity(entity, result.data.image.url, scene, entity.metadata.aiData?.ratio);
+            await applyImageToEntity(entity, result.data.image.url, scene, entity.metadata.aiData?.current_ratio);
 
             // Add to history - note this is a special case derived from another image
             const prompt = entity.getCurrentGenerationLog()?.prompt || '';
             const log = entity.addImageGenerationLog(prompt, result.data.image.url, {
-                ratio: entity.metadata.aiData?.ratio || '1:1',
-                imageSize: entity.metadata.aiData?.imageSize || 'medium',
+                ratio: entity.metadata.aiData?.current_ratio || '1:1',
                 derivedFromId: derivedFromId
             }, );
 

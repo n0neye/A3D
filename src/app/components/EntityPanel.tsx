@@ -48,7 +48,7 @@ const EntityPanel: React.FC = () => {
     // Remove the event handler from the previous entity
     if (CURRENT_ENTITY && CURRENT_ENTITY.metadata.aiData) {
       // Save the prompt input
-      CURRENT_ENTITY.metadata.aiData.prompt = promptInput;
+      CURRENT_ENTITY.metadata.aiData.current_prompt = promptInput;
       // Remove the event handler
       CURRENT_ENTITY.onProgress.remove(handleProgress);
       console.log("Removed handleProgress from prevEntity: ", CURRENT_ENTITY.name, CURRENT_ENTITY);
@@ -81,7 +81,7 @@ const EntityPanel: React.FC = () => {
         // Get the current generation and set the prompt if available
         const currentGen = selectedEntity.getCurrentGenerationLog();
         // setPromptInput(selectedEntity.tempPrompt || currentGen?.prompt || "");
-        trySetPrompt('onEntityChange', selectedEntity.metadata.aiData?.prompt || currentGen?.prompt || "");
+        trySetPrompt('onEntityChange', selectedEntity.metadata.aiData?.current_prompt || currentGen?.prompt || "");
         setCurrentGenLog(currentGen);
 
         // Load generation history
@@ -97,8 +97,8 @@ const EntityPanel: React.FC = () => {
         }
 
         // Set the current ratio from entity metadata
-        if (selectedEntity.metadata.aiData?.ratio) {
-          setCurrentRatio(selectedEntity.metadata.aiData.ratio);
+        if (selectedEntity.metadata.aiData?.current_ratio) {
+          setCurrentRatio(selectedEntity.metadata.aiData.current_ratio);
         } else {
           setCurrentRatio('1:1'); // Default
         }
@@ -386,7 +386,7 @@ const EntityPanel: React.FC = () => {
 
     // Update entity metadata
     if (selectedEntity.metadata.aiData) {
-      selectedEntity.metadata.aiData.ratio = ratio;
+      selectedEntity.metadata.aiData.current_ratio = ratio;
     }
 
     // Apply the ratio to the mesh

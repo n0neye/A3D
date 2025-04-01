@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { useEditorContext } from '../context/EditorContext';
 import { AiObjectType, createEntity, EntityType, ShapeType } from '../util/extensions/entityNode';
-import { ImageSize } from '../util/generation-util';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
@@ -23,7 +22,6 @@ import { createPointLightEntity } from '../util/editor/light-util';
 
 const AddPanel: React.FC = () => {
   const { scene, setSelectedEntity, historyManager } = useEditorContext();
-  const [imageSize, setImageSize] = useState<ImageSize>('medium');
   const [showShapesMenu, setShowShapesMenu] = useState(false);
 
   // Create an entity with command pattern
@@ -39,7 +37,6 @@ const AddPanel: React.FC = () => {
       () => createEntity(scene, entityType, {
         aiObjectType,
         position,
-        imageSize
       }),
       scene
     );
