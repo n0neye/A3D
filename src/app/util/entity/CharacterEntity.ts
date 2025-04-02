@@ -198,7 +198,7 @@ export class CharacterEntity extends EntityBase {
             // Skip fingers and other small bones for cleaner visualization
             const boneName = bone.name.toLowerCase();
             if (boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky')) {
-              return;
+                return;
             }
 
             // Create a small sphere for the bone
@@ -211,6 +211,9 @@ export class CharacterEntity extends EntityBase {
             boneControl.material = this._visualizationMaterial;
             boneControl.renderingGroupId = 1;
             boneControl.isPickable = true;
+            boneControl.metadata = {
+                isBoneControl: true
+            }
 
             // Position the control at the bone
             if (bone._linkedTransformNode) {
@@ -429,7 +432,7 @@ export class CharacterEntity extends EntityBase {
         // Apply control rotation to bone
         const rotation = this._selectedControl.rotation;
         if (rotation) {
-            if(this._selectedBone._linkedTransformNode){
+            if (this._selectedBone._linkedTransformNode) {
                 this._selectedBone._linkedTransformNode.rotation = rotation.clone();
             } else {
                 this._selectedBone.rotation = rotation.clone();
@@ -461,7 +464,7 @@ export class CharacterEntity extends EntityBase {
             control.material.alpha = 0.8;
         }
 
-        
+
         // Sync rotation of the bone
         if (this._selectedBone._linkedTransformNode) {
             this._selectedControl.rotation = this._selectedBone.rotation;
