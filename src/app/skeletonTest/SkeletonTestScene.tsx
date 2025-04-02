@@ -20,12 +20,18 @@ export default function SkeletonTestScene() {
   useEffect(() => {
     // Initialize Babylon.js
     if (!canvasRef.current) return;
+    console.log("SkeletonTestScene init");
     // Create engine and scene
     const engine = new BABYLON.Engine(canvasRef.current, true);
     engineRef.current = engine;
     const scene = new BABYLON.Scene(engine);
     sceneRef.current = scene;
     // Inspector.Show(scene, { overlay: true, embedMode: false });
+
+    // Configure rendering groups to ensure bone controls render on top
+    // scene.setRenderingOrder(BABYLON.RenderingGroup.OPAQUE_RENDERINGGROUP, 
+    //                         BABYLON.RenderingGroup.OPAQUE_RENDERINGGROUP,
+    //                         BABYLON.RenderingGroup.ALPHABLEND_RENDERINGGROUP);
 
     // Setup camera
     const camera = new BABYLON.ArcRotateCamera(
@@ -84,9 +90,6 @@ export default function SkeletonTestScene() {
       rotationGizmo.onDragObservable.add(onRotationChange);
     }
 
-
-
-
     // Handle window resize
     const handleResize = () => {
       engine.resize();
@@ -98,7 +101,10 @@ export default function SkeletonTestScene() {
       scene.render();
     });
 
+    scene.onPointerObservable.add((pointerInfo) => onPointerObservable(pointerInfo, scene));
     prepareCharacter(scene);
+
+
 
     // Cleanup function
     return () => {
@@ -108,12 +114,51 @@ export default function SkeletonTestScene() {
     };
   }, []);
 
+
+  const onPointerObservable = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
+    if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+      if (pointerInfo.event.button === 0) {  // Left click
+        // First try to pick only bone controls by using a predicate function
+        const pickInfo = scene.pick(
+          scene.pointerX, 
+          scene.pointerY,
+          (mesh) => {
+            return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
+          }
+        );
+        
+        if (pickInfo.hit && pickInfo.pickedMesh) {
+          const mesh = pickInfo.pickedMesh;
+          console.log("Picked bone control:", mesh.name);
+          
+          // Find which bone this control belongs to
+          const boneName = mesh.name.replace('bone_', '');
+          if (boneMap[boneName]) {
+            selectedControl = mesh as BABYLON.Mesh;
+            selectedBone = boneMap[boneName].bone;
+            if (gizmoManager) {
+              gizmoManager.attachToMesh(mesh);
+            }
+          }
+        } else {
+          // If no bone control was hit, perform normal picking
+          const regularPickInfo = scene.pick(scene.pointerX, scene.pointerY);
+          console.log("Picked regular mesh:", regularPickInfo.pickedMesh?.name);
+        }
+      }
+    }
+  }
+
   const prepareCharacter = async (scene: BABYLON.Scene) => {
     // Load the mannequin character
+    console.log("prepareCharacter start");
     const result = await BABYLON.ImportMeshAsync(
       '/characters/mannequin_man_idle/mannequin_man_idle.gltf',
       scene,
     );
+    console.log("prepareCharacter", result);
+    const mesh = result.meshes[0];
+    mesh.scaling = new BABYLON.Vector3(1, 1, 1);
     prepareBones(result, scene);
 
     // Position the model
@@ -123,7 +168,6 @@ export default function SkeletonTestScene() {
 
   const prepareBones = (result: BABYLON.ISceneLoaderAsyncResult, scene: BABYLON.Scene) => {
     const skeletons = result.skeletons;
-    let skeleton: BABYLON.Skeleton | null = null;
     if (skeletons && skeletons.length > 0) {
       skeleton = skeletons[0];
     }
@@ -134,6 +178,12 @@ export default function SkeletonTestScene() {
 
     // Make bones selectable
     skeleton.bones.forEach((_bone, index) => {
+      // Skip the fingers
+      const boneName = _bone.name.toLowerCase();
+      if (boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky')) {
+        return;
+      }
+
       // Create a small sphere for each bone to make it selectable
       const _boneControl = BABYLON.MeshBuilder.CreateSphere(
         `bone_${_bone.name}`,
@@ -141,11 +191,16 @@ export default function SkeletonTestScene() {
         scene
       );
 
-      // BoneMap
+      // Add to BoneMap
       boneMap[_bone.name] = { bone: _bone, control: _boneControl };
 
       // Position the sphere at the bone
-      _boneControl.position = _bone.getAbsolutePosition();
+      if (_bone._linkedTransformNode) {
+        _boneControl.parent = _bone._linkedTransformNode.parent;
+      } else {
+        _boneControl.parent = _bone.parent;
+      }
+      _boneControl.position = _bone.position;
 
       // Make it nearly transparent but keep it selectable
       const material = new BABYLON.StandardMaterial(`bone_material_${index}`, scene);
@@ -153,8 +208,21 @@ export default function SkeletonTestScene() {
       material.alpha = 0.3;
       _boneControl.material = material;
 
-      // Make it pickable
+      // Make the bone control always render on top
+      _boneControl.renderingGroupId = 1;
+
+      // Important for picking - set this to the highest possible value
+      _boneControl.renderingGroupId = 1;
       _boneControl.isPickable = true;
+
+      // This ensures the mesh is considered for picking
+      material.disableDepthWrite = true;
+
+      // Increase visibility
+      material.emissiveColor = new BABYLON.Color3(0, 0.5, 0);
+
+      // Critical for picking priority
+      _boneControl.alphaIndex = 1000; // Higher value means higher picking priority
 
       // Add action on click
       _boneControl.actionManager = new BABYLON.ActionManager(scene);
@@ -201,7 +269,6 @@ export default function SkeletonTestScene() {
       skeleton.prepare();
     }
   }
-
 
   return (
     <>
