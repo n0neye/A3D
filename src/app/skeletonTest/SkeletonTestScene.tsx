@@ -151,7 +151,7 @@ export default function SkeletonTestScene() {
     if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
       if (pointerInfo.event.button === 0) {  // Left click
         // First try to pick only bone controls by using a predicate function
-        const pickInfo = scene.pick(
+        const bonePickInfo = scene.pick(
           scene.pointerX,
           scene.pointerY,
           (mesh) => {
@@ -159,8 +159,8 @@ export default function SkeletonTestScene() {
           }
         );
 
-        if (pickInfo.hit && pickInfo.pickedMesh) {
-          const mesh = pickInfo.pickedMesh;
+        if (bonePickInfo.hit && bonePickInfo.pickedMesh) {
+          const mesh = bonePickInfo.pickedMesh;
           console.log("Picked bone control:", mesh.name);
 
           // Find which bone this control belongs to
@@ -170,6 +170,13 @@ export default function SkeletonTestScene() {
             selectedBone = boneMap[boneName].bone;
             if (gizmoManager) {
               gizmoManager.attachToMesh(mesh);
+            }
+
+            
+            // Sync rotation of the bone
+            if (selectedBone._linkedTransformNode) {
+              selectedControl.rotation = selectedBone.rotation;
+              console.log(`Sync bone rotation: ${selectedControl.name}`, selectedBone.rotation);
             }
           }
         } else {
@@ -207,7 +214,6 @@ export default function SkeletonTestScene() {
       skeleton = skeletons[0];
     }
     if (!skeleton) return;
-    const bones = skeleton.bones;
     console.log('Bones:', skeleton.bones.length);
     console.log('Animations:', scene.animationGroups);
 
@@ -242,17 +248,12 @@ export default function SkeletonTestScene() {
       }
       _boneControl.position = _bone.position;
 
-      // Make it nearly transparent but keep it selectable
+      // Apply material
       _boneControl.material = material;
-
-      // Make the bone control always render on top
       _boneControl.renderingGroupId = 1;
-
-      // Important for picking - set this to the highest possible value
-      _boneControl.renderingGroupId = 1;
-      _boneControl.isPickable = true;
 
       // Critical for picking priority
+      _boneControl.isPickable = true;
       _boneControl.alphaIndex = 1000; // Higher value means higher picking priority
 
       // Add action on click
@@ -261,12 +262,24 @@ export default function SkeletonTestScene() {
         new BABYLON.ExecuteCodeAction(
           BABYLON.ActionManager.OnPickTrigger,
           () => {
-            console.log(`Selected bone: ${_bone.name}`);
-            selectedControl = _boneControl;
-            selectedBone = _bone;
-            if (gizmoManager) {
-              gizmoManager.attachToMesh(_boneControl);
-            }
+            console.log("OnPickTrigger", _boneControl.name);
+            // selectedControl = _boneControl;
+            // selectedBone = _bone;
+
+            // // Sync rotation of the bone
+            // if (selectedBone._linkedTransformNode) {
+            //   _boneControl.rotation = selectedBone._linkedTransformNode.rotation;
+            //   console.log(`Selected bone: ${_bone.name}`, selectedBone._linkedTransformNode.rotation);
+            // }
+
+            // if (gizmoManager) {
+            //   gizmoManager.attachToMesh(_boneControl);
+            //   gizmoManager.rotationGizmoEnabled = true;
+            //   gizmoManager.scaleGizmoEnabled = false;
+            //   gizmoManager.positionGizmoEnabled = false;
+            // }
+
+            
           }
         )
       );
