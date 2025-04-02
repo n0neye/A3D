@@ -29,6 +29,7 @@ export class CharacterEntity extends EntityBase {
     private _boneMap: Map<string, { bone: BABYLON.Bone, control: BABYLON.Mesh }> = new Map();
     private _boneLines: Map<string, BABYLON.LinesMesh> = new Map();
     private _visualizationMaterial: BABYLON.Material | null = null;
+    private _highlightMaterial: BABYLON.Material | null = null;
     private _boneColor = new BABYLON.Color3(0.5, 0.7, 1.0);
     private _selectedBone: BABYLON.Bone | null = null;
     private _selectedControl: BABYLON.Mesh | null = null;
@@ -191,6 +192,14 @@ export class CharacterEntity extends EntityBase {
             material.alpha = this._boneMaterialAlpha;
             material.disableDepthWrite = true;
             this._visualizationMaterial = material;
+        }
+
+        // Create highlight material if it doesn't exist
+        if (!this._highlightMaterial) {
+            const material = new BABYLON.StandardMaterial(`${this.name}_highlightMaterial`, this._scene);
+            material.emissiveColor = new BABYLON.Color3(1, 0.5, 0);
+            material.alpha = 0.8;
+            this._highlightMaterial = material;
         }
 
         // Create bone control spheres for each bone
@@ -460,8 +469,7 @@ export class CharacterEntity extends EntityBase {
 
         // Highlight the selected control
         if (control.material instanceof BABYLON.StandardMaterial) {
-            control.material.emissiveColor = new BABYLON.Color3(1, 0.5, 0);
-            control.material.alpha = 0.8;
+            control.material = this._highlightMaterial;
         }
 
 
@@ -494,8 +502,7 @@ export class CharacterEntity extends EntityBase {
         if (this._selectedBone && this._selectedControl) {
             // Reset control appearance
             if (this._selectedControl.material instanceof BABYLON.StandardMaterial) {
-                this._selectedControl.material.emissiveColor = this._boneColor;
-                this._selectedControl.material.alpha = this._boneMaterialAlpha;
+                this._selectedControl.material = this._visualizationMaterial;
             }
 
             // Detach gizmo
