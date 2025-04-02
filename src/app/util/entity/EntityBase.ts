@@ -123,6 +123,10 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   getId(): string {
     return this.id;
   }
+
+  getName(): string {
+    return this.name;
+  }
   
   applyTransformation(
     transformType: 'position' | 'rotation' | 'scale', 

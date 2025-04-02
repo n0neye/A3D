@@ -104,6 +104,10 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     return this.id;
   }
 
+  getName(): string {
+    return this.bone.name;
+  }
+
   applyTransformation(
     transformType: 'position' | 'rotation' | 'scale',
     value: BABYLON.Vector3 | BABYLON.Quaternion

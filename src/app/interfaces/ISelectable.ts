@@ -50,6 +50,8 @@ export interface ISelectable {
    * Get the unique identifier for this selectable object
    */
   getId(): string;
+
+  getName(): string;
   
   /**
    * Apply a transformation of the specified type

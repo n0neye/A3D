@@ -42,6 +42,7 @@ export class SelectionManager {
     // Configure for new selection
     if (selectable && this._gizmoManager) {
       console.log("Setting up gizmo for new selection:", 
+        selectable.getName(),
         "pos:", selectable.gizmoCapabilities.allowPosition,
         "rot:", selectable.gizmoCapabilities.allowRotation,
         "scale:", selectable.gizmoCapabilities.allowScale);
