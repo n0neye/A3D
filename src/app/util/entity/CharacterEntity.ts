@@ -236,8 +236,8 @@ export class CharacterEntity extends EntityBase {
 
             // Position the control at the bone
             if (bone._linkedTransformNode) {
-                boneControl.parent = bone._linkedTransformNode;
-                boneControl.position = BABYLON.Vector3.Zero();
+                boneControl.parent = bone._linkedTransformNode.parent;
+                boneControl.position = bone._linkedTransformNode.position;
             } else {
                 boneControl.parent = this;
                 boneControl.position = bone.getPosition(BABYLON.Space.WORLD);

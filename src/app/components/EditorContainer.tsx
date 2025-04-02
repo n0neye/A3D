@@ -150,15 +150,15 @@ export default function EditorContainer() {
           // Normal left click (without Ctrl) - handle selection
           const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
           const mesh = pickInfo.pickedMesh;
-          console.log("pickInfo mesh:", mesh?.name, mesh?.metadata.rootEntity);
-
+          
           // Skip if the mesh is a bone control, leave it to CharacterEntity to handle
           if (mesh && mesh.metadata && mesh.metadata.isBoneControl) {
             return;
           }
-
+          console.log("pickInfo mesh:", mesh?.name, mesh?.metadata["rootEntity"]);
+          
           // Find the entity that owns this mesh
-          if (mesh && mesh.metadata.rootEntity && mesh.metadata.rootEntity instanceof EntityBase) {
+          if (mesh && mesh.metadata["rootEntity"] && mesh.metadata.rootEntity instanceof EntityBase) {
             setSelectedEntity(mesh.metadata.rootEntity);
           } else {
             setSelectedEntity(null);
