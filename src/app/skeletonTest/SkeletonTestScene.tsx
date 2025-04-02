@@ -7,10 +7,10 @@ import { SkeletonViewer } from '@babylonjs/core/Debug/skeletonViewer';
 import { Inspector } from '@babylonjs/inspector';
 
 let selectedBone: BABYLON.Bone | null = null;
-let selectedSphere: BABYLON.Mesh | null = null;
+let selectedControl: BABYLON.Mesh | null = null;
 let skeleton: BABYLON.Skeleton | null = null;
 let gizmoManager: BABYLON.GizmoManager | null = null;
-let boneMap: { [name: string]: { bone: BABYLON.Bone, sphere: BABYLON.Mesh } } = {};
+let boneMap: { [name: string]: { bone: BABYLON.Bone, control: BABYLON.Mesh } } = {};
 
 export default function SkeletonTestScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -135,38 +135,38 @@ export default function SkeletonTestScene() {
     // Make bones selectable
     skeleton.bones.forEach((_bone, index) => {
       // Create a small sphere for each bone to make it selectable
-      const _boneSphere = BABYLON.MeshBuilder.CreateSphere(
+      const _boneControl = BABYLON.MeshBuilder.CreateSphere(
         `bone_${_bone.name}`,
         { diameter: 0.05 },
         scene
       );
 
       // BoneMap
-      boneMap[_bone.name] = { bone: _bone, sphere: _boneSphere };
+      boneMap[_bone.name] = { bone: _bone, control: _boneControl };
 
       // Position the sphere at the bone
-      _boneSphere.position = _bone.getAbsolutePosition();
+      _boneControl.position = _bone.getAbsolutePosition();
 
       // Make it nearly transparent but keep it selectable
       const material = new BABYLON.StandardMaterial(`bone_material_${index}`, scene);
       material.diffuseColor = new BABYLON.Color3(0, 1, 0);
       material.alpha = 0.3;
-      _boneSphere.material = material;
+      _boneControl.material = material;
 
       // Make it pickable
-      _boneSphere.isPickable = true;
+      _boneControl.isPickable = true;
 
       // Add action on click
-      _boneSphere.actionManager = new BABYLON.ActionManager(scene);
-      _boneSphere.actionManager.registerAction(
+      _boneControl.actionManager = new BABYLON.ActionManager(scene);
+      _boneControl.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(
           BABYLON.ActionManager.OnPickTrigger,
           () => {
             console.log(`Selected bone: ${_bone.name}`);
-            selectedSphere = _boneSphere;
+            selectedControl = _boneControl;
             selectedBone = _bone;
             if (gizmoManager) {
-              gizmoManager.attachToMesh(_boneSphere);
+              gizmoManager.attachToMesh(_boneControl);
             }
           }
         )
@@ -180,11 +180,11 @@ export default function SkeletonTestScene() {
   }
 
   const onRotationChange = (event: unknown) => {
-    console.log("Rotating:", selectedBone?.name, selectedSphere?.name);
-    if (!selectedBone || !selectedSphere) return;
+    console.log("Rotating:", selectedBone?.name, selectedControl?.name);
+    if (!selectedBone || !selectedControl) return;
 
     // Get the rotation quaternion from the gizmo's attached mesh
-    const rotation = selectedSphere.rotation;
+    const rotation = selectedControl.rotation;
     if (!rotation) return;
 
     console.log("Updating bone rotation", selectedBone.name, rotation.x, rotation.y, rotation.z);
