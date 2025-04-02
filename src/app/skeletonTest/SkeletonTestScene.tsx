@@ -15,6 +15,10 @@ let boneMap: { [name: string]: { bone: BABYLON.Bone, control: BABYLON.Mesh } } =
 // Create lines for bone visualization
 const boneLines: { [name: string]: BABYLON.LinesMesh } = {};
 
+// Add at the top with other global variables
+let characterSelected = false;
+let characterRootMesh: BABYLON.AbstractMesh | null = null;
+
 export default function SkeletonTestScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BABYLON.Engine | null>(null);
@@ -150,45 +154,100 @@ export default function SkeletonTestScene() {
   const onPointerObservable = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
     if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
       if (pointerInfo.event.button === 0) {  // Left click
-        // First try to pick only bone controls by using a predicate function
-        const bonePickInfo = scene.pick(
-          scene.pointerX,
-          scene.pointerY,
-          (mesh) => {
-            return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
+        // First try to pick only bone controls when character is selected
+        if (characterSelected) {
+          const bonePickInfo = scene.pick(
+            scene.pointerX,
+            scene.pointerY,
+            (mesh) => {
+              return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
+            }
+          );
+
+          if (bonePickInfo.hit && bonePickInfo.pickedMesh) {
+            // Handle bone selection - existing code
+            const mesh = bonePickInfo.pickedMesh;
+            console.log("Picked bone control:", mesh.name);
+
+            // Find which bone this control belongs to
+            const boneName = mesh.name.replace('bone_', '');
+            if (boneMap[boneName]) {
+              selectedControl = mesh as BABYLON.Mesh;
+              selectedBone = boneMap[boneName].bone;
+              if (gizmoManager) {
+                gizmoManager.attachToMesh(mesh);
+              }
+              
+              // Sync rotation of the bone
+              if (selectedBone._linkedTransformNode) {
+                selectedControl.rotation = selectedBone.rotation;
+                console.log(`Sync bone rotation: ${selectedControl.name}`, selectedBone.rotation);
+              }
+            }
+            return; // Exit after handling bone selection
           }
-        );
-
-        if (bonePickInfo.hit && bonePickInfo.pickedMesh) {
-          const mesh = bonePickInfo.pickedMesh;
-          console.log("Picked bone control:", mesh.name);
-
-          // Find which bone this control belongs to
-          const boneName = mesh.name.replace('bone_', '');
-          if (boneMap[boneName]) {
-            selectedControl = mesh as BABYLON.Mesh;
-            selectedBone = boneMap[boneName].bone;
-            if (gizmoManager) {
-              gizmoManager.attachToMesh(mesh);
-            }
-
-            
-            // Sync rotation of the bone
-            if (selectedBone._linkedTransformNode) {
-              selectedControl.rotation = selectedBone.rotation;
-              console.log(`Sync bone rotation: ${selectedControl.name}`, selectedBone.rotation);
-            }
+        }
+        
+        // No bone was selected, so try to pick the character or background
+        const regularPickInfo = scene.pick(scene.pointerX, scene.pointerY);
+        const pickedMesh = regularPickInfo.pickedMesh;
+        console.log("Picked regular mesh:", pickedMesh?.name);
+        
+        // Check if the picked mesh is the character or its child
+        if (pickedMesh && isCharacterMesh(pickedMesh)) {
+          // Character selected - show bone controls
+          console.log("Character selected!");
+          characterSelected = true;
+          setControlsVisibility(true);
+          
+          // Detach gizmo if attached
+          if (gizmoManager) {
+            gizmoManager.attachToMesh(null);
           }
         } else {
-          // If no bone control was hit, perform normal picking
-          const regularPickInfo = scene.pick(scene.pointerX, scene.pointerY);
-          console.log("Picked regular mesh:", regularPickInfo.pickedMesh?.name);
-          if (!regularPickInfo.pickedMesh) {
-            gizmoManager?.attachToNode(null);
+          // Background clicked - hide bone controls
+          console.log("Background clicked, hiding controls");
+          characterSelected = false;
+          setControlsVisibility(false);
+          
+          // Detach gizmo
+          if (gizmoManager) {
+            gizmoManager.attachToMesh(null);
           }
         }
       }
     }
+  }
+
+  // Function to determine if a mesh is part of the character
+  const isCharacterMesh = (mesh: BABYLON.AbstractMesh): boolean => {
+    if (!characterRootMesh) return false;
+    
+    // Check if it's the root mesh
+    if (mesh === characterRootMesh) return true;
+    
+    // Check if it's a child of the root mesh
+    let parent = mesh.parent;
+    while (parent) {
+      if (parent === characterRootMesh) return true;
+      parent = parent.parent;
+    }
+    
+    return false;
+  }
+
+  // Function to set visibility of all bone controls and lines
+  const setControlsVisibility = (visible: boolean) => {
+    // Set visibility for bone control spheres
+    Object.values(boneMap).forEach(({ control }) => {
+      control.isVisible = visible;
+      control.isPickable = visible; // Only pickable when visible
+    });
+    
+    // Set visibility for bone lines
+    Object.values(boneLines).forEach(line => {
+      line.isVisible = visible;
+    });
   }
 
   const prepareCharacter = async (scene: BABYLON.Scene) => {
@@ -201,11 +260,18 @@ export default function SkeletonTestScene() {
     console.log("prepareCharacter", result);
     const mesh = result.meshes[0];
     mesh.scaling = new BABYLON.Vector3(1, 1, 1);
+    
+    // Store reference to character root mesh
+    characterRootMesh = mesh;
+    
     prepareBones(result, scene);
 
     // Position the model
     const rootMesh = result.meshes[0];
     rootMesh.position = new BABYLON.Vector3(0, 0, 0);
+    
+    // Initially hide bone controls
+    setControlsVisibility(false);
   }
 
   const prepareBones = (result: BABYLON.ISceneLoaderAsyncResult, scene: BABYLON.Scene) => {
@@ -218,10 +284,11 @@ export default function SkeletonTestScene() {
     console.log('Animations:', scene.animationGroups);
 
     const material = new BABYLON.StandardMaterial(`bone_material`, scene);
-    material.diffuseColor = new BABYLON.Color3(0, 1, 0);
-    material.alpha = 0.3;
+    const boneColor = BABYLON.Color3.FromHexString("#003BFF")
+    material.diffuseColor = boneColor;
+    material.emissiveColor = boneColor;
+    material.alpha = 0.5;
     material.disableDepthWrite = true; // This ensures the mesh is considered for picking
-    material.emissiveColor = new BABYLON.Color3(0, 0.5, 0);
 
     // Make bones selectable
     skeleton.bones.forEach((_bone, index) => {
@@ -314,7 +381,7 @@ export default function SkeletonTestScene() {
             boneLines[lineName] = line;
 
             // Make line more visible
-            line.color = new BABYLON.Color3(0, 1, 0);
+            line.color = boneColor;
             line.alpha = 0.8;
             line.renderingGroupId = 1;
           }
