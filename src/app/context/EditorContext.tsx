@@ -202,12 +202,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     
     // Notify the newly selected entity
     if (entity && isCharacterEntity(entity)) {
-      // Pass the gizmo manager to the character entity
-      if (gizmoManager) {
-        entity.setGizmoManager(gizmoManager);
-      }
-      // Pass the history manager to the character entity
-      entity.setHistoryManager(historyManager);
+      // No need to pass managers explicitly - entity gets them from scene
       entity.onSelect();
     }
   };

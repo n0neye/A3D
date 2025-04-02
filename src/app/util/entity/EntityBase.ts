@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ShapeEntityProps } from './ShapeEntity';
 import { GenerativeEntityProps } from './GenerativeEntity';
 import { LightProps } from './LightEntity';
+import { HistoryManager } from '../../components/HistoryManager';
 
 /**
  * Base class for all entities in the scene
@@ -79,6 +80,20 @@ export class EntityBase extends BABYLON.TransformNode {
    */
   dispose(): void {
     super.dispose();
+  }
+
+  /**
+   * Get the GizmoManager from the scene
+   */
+  public getGizmoManager(): BABYLON.GizmoManager | null {
+    return this._scene.metadata?.gizmoManager || null;
+  }
+
+  /**
+   * Get the HistoryManager from the scene
+   */
+  public getHistoryManager(): HistoryManager | null {
+    return this._scene.metadata?.historyManager || null;
   }
 }
 

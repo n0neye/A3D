@@ -26,6 +26,7 @@ import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { EntityBase } from '../util/entity/EntityBase';
 import CharacterEditPanel from './CharacterEditPanel';
 import { isCharacterEntity } from '../util/entity/entityUtils';
+import { registerGizmoManager, registerHistoryManager } from '../util/editor/scene-managers';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -371,6 +372,9 @@ export default function EditorContainer() {
     const scene = new BABYLON.Scene(engine);
     sceneRef.current = scene; // Store reference to scene
 
+    // Register the history manager with the scene
+    registerHistoryManager(scene, historyManager);
+    
     // Update context
     setEngine(engine);
     setScene(scene);
@@ -378,8 +382,12 @@ export default function EditorContainer() {
     const init = async (canvas: HTMLCanvasElement) => {
       await initScene(canvas, scene);
       await loadDefaultProject(scene);
-      // Set up gizmo manager
+      
+      // Set up gizmo manager and register with scene
       const gizmoManager = initGizmo(scene, historyManager);
+      registerGizmoManager(scene, gizmoManager);
+      
+      // Still set in context for UI state management
       setGizmoManager(gizmoManager);
     }
 

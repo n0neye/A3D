@@ -45,14 +45,8 @@ export class CharacterEntity extends EntityBase {
     private _gizmoRotationObserver: BABYLON.Observer<any> | null = null;
     private _gizmoEndDragObserver: BABYLON.Observer<any> | null = null;
 
-    // Add this property
-    private _gizmoManager: BABYLON.GizmoManager | null = null;
-
     // Add this as a property to the CharacterEntity class
     private _currentBoneCommand: BoneRotationCommand | null = null;
-
-    // Add this property
-    private _historyManager: HistoryManager | null = null;
 
     // Add these properties for drag state tracking
     private _isDraggingBone = false;
@@ -344,22 +338,6 @@ export class CharacterEntity extends EntityBase {
     }
 
     /**
-     * Set the gizmo manager reference for this entity
-     * This must be called when the entity is selected
-     */
-    public setGizmoManager(gizmoManager: BABYLON.GizmoManager): void {
-        this._gizmoManager = gizmoManager;
-    }
-
-    /**
-     * Set the history manager reference for this entity
-     * This must be called when the entity is selected
-     */
-    public setHistoryManager(historyManager: HistoryManager): void {
-        this._historyManager = historyManager;
-    }
-
-    /**
      * Called when the entity is selected in the editor
      */
     public onSelect(): void {
@@ -377,19 +355,20 @@ export class CharacterEntity extends EntityBase {
             );
 
             // If there's a gizmo manager, observe rotation changes
-            if (this._gizmoManager && this._gizmoManager.gizmos.rotationGizmo) {
+            const gizmoManager = this.getGizmoManager();
+            if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
                 // Add observer for start of rotation (when drag begins)
-                this._gizmoStartDragObserver = this._gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
+                this._gizmoStartDragObserver = gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
                     () => this._handleGizmoRotationStart()
                 );
 
                 // Add observer for rotation changes (during drag)
-                this._gizmoRotationObserver = this._gizmoManager.gizmos.rotationGizmo.onDragObservable.add(
+                this._gizmoRotationObserver = gizmoManager.gizmos.rotationGizmo.onDragObservable.add(
                     () => this._handleGizmoRotation()
                 );
 
                 // Add observer for end of rotation (when drag ends)
-                this._gizmoEndDragObserver = this._gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(
+                this._gizmoEndDragObserver = gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(
                     () => this._finalizeBoneRotation()
                 );
             }
@@ -409,19 +388,20 @@ export class CharacterEntity extends EntityBase {
         }
 
         // Remove gizmo observers
-        if (this._gizmoManager && this._gizmoManager.gizmos.rotationGizmo) {
+        const gizmoManager = this.getGizmoManager();
+        if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
             if (this._gizmoStartDragObserver) {
-                this._gizmoManager.gizmos.rotationGizmo.onDragStartObservable.remove(this._gizmoStartDragObserver);
+                gizmoManager.gizmos.rotationGizmo.onDragStartObservable.remove(this._gizmoStartDragObserver);
                 this._gizmoStartDragObserver = null;
             }
 
             if (this._gizmoRotationObserver) {
-                this._gizmoManager.gizmos.rotationGizmo.onDragObservable.remove(this._gizmoRotationObserver);
+                gizmoManager.gizmos.rotationGizmo.onDragObservable.remove(this._gizmoRotationObserver);
                 this._gizmoRotationObserver = null;
             }
 
             if (this._gizmoEndDragObserver) {
-                this._gizmoManager.gizmos.rotationGizmo.onDragEndObservable.remove(this._gizmoEndDragObserver);
+                gizmoManager.gizmos.rotationGizmo.onDragEndObservable.remove(this._gizmoEndDragObserver);
                 this._gizmoEndDragObserver = null;
             }
         }
@@ -523,21 +503,16 @@ export class CharacterEntity extends EntityBase {
         // Only record the command if the rotation actually changed
         this._currentBoneCommand.updateFinalState();
 
-        // Add the command to history
-        if (this._historyManager) {
-            this._historyManager.executeCommand(this._currentBoneCommand);
-        }
-
-        // Reset dragging state
-        this._isDraggingBone = false;
-        this._currentBoneCommand = null;
-
         // Track rotation change
         trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
             action: 'rotate_bone',
             boneName: this._selectedBone.name,
             method: 'gizmo'
         });
+
+        // Reset dragging state
+        this._isDraggingBone = false;
+        this._currentBoneCommand = null;
     }
 
     /**
@@ -556,7 +531,6 @@ export class CharacterEntity extends EntityBase {
             control.material = this._highlightMaterial;
         }
 
-
         // Sync rotation of the bone
         if (this._selectedBone._linkedTransformNode) {
             this._selectedControl.rotation = this._selectedBone.rotation;
@@ -570,10 +544,11 @@ export class CharacterEntity extends EntityBase {
         });
 
         // Attach gizmo to the control
-        if (this._gizmoManager) {
-            this._gizmoManager.positionGizmoEnabled = false;
-            this._gizmoManager.rotationGizmoEnabled = true;
-            this._gizmoManager.attachToMesh(control);
+        const gizmoManager = this.getGizmoManager();
+        if (gizmoManager) {
+            gizmoManager.positionGizmoEnabled = false;
+            gizmoManager.rotationGizmoEnabled = true;
+            gizmoManager.attachToMesh(control);
         }
 
         console.log(`Selected bone: ${bone.name}`);
@@ -590,8 +565,9 @@ export class CharacterEntity extends EntityBase {
             }
 
             // Detach gizmo
-            if (this._gizmoManager) {
-                this._gizmoManager.attachToMesh(null);
+            const gizmoManager = this.getGizmoManager();
+            if (gizmoManager) {
+                gizmoManager.attachToMesh(null);
             }
 
             // Clear selection
@@ -737,19 +713,20 @@ export class CharacterEntity extends EntityBase {
             this._pointerObserver = null;
         }
 
-        if (this._gizmoManager && this._gizmoManager.gizmos.rotationGizmo) {
+        const gizmoManager = this.getGizmoManager();
+        if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
             if (this._gizmoStartDragObserver) {
-                this._gizmoManager.gizmos.rotationGizmo.onDragStartObservable.remove(this._gizmoStartDragObserver);
+                gizmoManager.gizmos.rotationGizmo.onDragStartObservable.remove(this._gizmoStartDragObserver);
                 this._gizmoStartDragObserver = null;
             }
 
             if (this._gizmoRotationObserver) {
-                this._gizmoManager.gizmos.rotationGizmo.onDragObservable.remove(this._gizmoRotationObserver);
+                gizmoManager.gizmos.rotationGizmo.onDragObservable.remove(this._gizmoRotationObserver);
                 this._gizmoRotationObserver = null;
             }
 
             if (this._gizmoEndDragObserver) {
-                this._gizmoManager.gizmos.rotationGizmo.onDragEndObservable.remove(this._gizmoEndDragObserver);
+                gizmoManager.gizmos.rotationGizmo.onDragEndObservable.remove(this._gizmoEndDragObserver);
                 this._gizmoEndDragObserver = null;
             }
         }
