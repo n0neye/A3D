@@ -607,7 +607,25 @@ export class CharacterEntity extends EntityBase {
 
         if (this.skeleton) {
             this.skeleton.bones.forEach(bone => {
-                const rotation = bone.getRotationQuaternion();
+                let rotation: BABYLON.Quaternion | null = null;
+                
+                // Check if bone has a linked transform node with rotation
+                if (bone._linkedTransformNode) {
+                    if (bone._linkedTransformNode.rotationQuaternion) {
+                        rotation = bone._linkedTransformNode.rotationQuaternion;
+                    } else {
+                        // Convert euler rotation to quaternion
+                        rotation = BABYLON.Quaternion.FromEulerAngles(
+                            bone._linkedTransformNode.rotation.x,
+                            bone._linkedTransformNode.rotation.y,
+                            bone._linkedTransformNode.rotation.z
+                        );
+                    }
+                } else {
+                    // Use bone's rotation directly if no linked transform
+                    rotation = bone.getRotationQuaternion();
+                }
+                
                 if (rotation) {
                     boneRotations[bone.name] = {
                         x: rotation.x,
@@ -661,7 +679,22 @@ export class CharacterEntity extends EntityBase {
                         rotation.z,
                         rotation.w
                     );
-                    bone.setRotationQuaternion(quaternion);
+                    
+                    // Apply to the linked transform node if it exists
+                    if (bone._linkedTransformNode) {
+                        if (bone._linkedTransformNode.rotationQuaternion) {
+                            bone._linkedTransformNode.rotationQuaternion = quaternion;
+                        } else {
+                            // Convert quaternion to euler for nodes using rotation
+                            const euler = quaternion.toEulerAngles();
+                            bone._linkedTransformNode.rotation = new BABYLON.Vector3(
+                                euler.x, euler.y, euler.z
+                            );
+                        }
+                    } else {
+                        // Apply directly to the bone if no linked transform
+                        bone.setRotationQuaternion(quaternion);
+                    }
                 }
             });
         }
