@@ -64,11 +64,11 @@ export class ShapeEntity extends EntityBase {
   /**
    * Deserialize a shape entity from serialized data
    */
-  static deserialize(scene: BABYLON.Scene, data: SerializedShapeEntityData): ShapeEntity {
+  static async deserialize(scene: BABYLON.Scene, data: SerializedShapeEntityData): Promise<ShapeEntity> {
     const position = data.position ? toBabylonVector3(data.position) : undefined;
     const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
     const scaling = data.scaling ? toBabylonVector3(data.scaling) : undefined;
-    
+
     return new ShapeEntity(data.name, scene, {
       id: data.id,
       position,

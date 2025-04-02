@@ -31,5 +31,7 @@ export const ANALYTICS_EVENTS = {
   SAVE_PROJECT: 'save_project',
   LOAD_PROJECT: 'load_project',
   CREATE_ENTITY: 'create_entity',
+  DELETE_ENTITY: 'delete_entity',
   CHANGE_SETTINGS: 'change_settings',
+  CHARACTER_EDIT: 'character_edit',
 }; 

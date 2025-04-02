@@ -5,6 +5,7 @@ import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from './Shap
 import { LightEntity, LightProps, SerializedLightEntityData } from './LightEntity';
 import { EntityFactory } from './EntityFactory';
 import { v4 as uuidv4 } from 'uuid';
+import { CharacterEntity, SerializedCharacterEntityData } from './CharacterEntity';
 
 /**
  * Check if a node is an entity
@@ -35,6 +36,13 @@ export function isLightEntity(entity: EntityBase): entity is LightEntity {
 }
 
 /**
+ * Check if an entity is a character entity
+ */
+export function isCharacterEntity(entity: EntityBase): entity is CharacterEntity {
+  return entity instanceof CharacterEntity;
+}
+
+/**
  * Duplicate an entity
  * Creates a new entity with the same properties as the original
  */
@@ -43,13 +51,15 @@ export async function duplicateEntity(entity: EntityBase, scene: BABYLON.Scene):
   const serializedEntityData = entity.serialize();
   let newEntity: EntityBase | null = null;
   if(entity instanceof GenerativeEntity) {
-    newEntity = GenerativeEntity.deserialize(scene, serializedEntityData as SerializedGenerativeEntityData);
+    newEntity = await GenerativeEntity.deserialize(scene, serializedEntityData as SerializedGenerativeEntityData);
   } else if(entity instanceof ShapeEntity) {
-    newEntity = ShapeEntity.deserialize(scene, serializedEntityData as SerializedShapeEntityData);
+    newEntity = await ShapeEntity.deserialize(scene, serializedEntityData as SerializedShapeEntityData);
   } else if(entity instanceof LightEntity) {
-    newEntity = LightEntity.deserialize(scene, serializedEntityData as SerializedLightEntityData);
+    newEntity = await LightEntity.deserialize(scene, serializedEntityData as SerializedLightEntityData);
+  } else if(entity instanceof CharacterEntity) {
+    newEntity = await CharacterEntity.deserialize(scene, serializedEntityData as SerializedCharacterEntityData);
   } else {
-    newEntity = EntityBase.deserialize(scene, serializedEntityData);
+    newEntity = await EntityBase.deserialize(scene, serializedEntityData);
   }
 
   if(!newEntity) {

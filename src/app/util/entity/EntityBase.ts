@@ -9,7 +9,7 @@ import { LightProps } from './LightEntity';
  * Extends TransformNode with common functionality
  */
 // Entity types
-export type EntityType = 'generative' | 'shape' | 'light';
+export type EntityType = 'generative' | 'shape' | 'light' | 'character';
 export class EntityBase extends BABYLON.TransformNode {
   // Core properties all entities share
   id: string;
@@ -68,7 +68,7 @@ export class EntityBase extends BABYLON.TransformNode {
   /**
    * Base deserialization method (to be implemented in derived classes)
    */
-  static deserialize(scene: BABYLON.Scene, data: SerializedEntityData): EntityBase | null {
+  static async deserialize(scene: BABYLON.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
     // Base implementation to be overridden by subclasses
     return null;
   }

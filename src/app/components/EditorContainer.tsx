@@ -24,6 +24,9 @@ import { availableAPIs } from '../util/generation/image-render-api';
 import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
 import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { EntityBase } from '../util/entity/EntityBase';
+import CharacterEditPanel from './CharacterEditPanel';
+import { CharacterEntity } from '../util/entity/CharacterEntity';
+import { isCharacterEntity } from '../util/entity/entityUtils';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -485,6 +488,13 @@ export default function EditorContainer() {
 
       {/* Add the Guide component */}
       <Guide />
+
+      {/* Character Edit Panel */}
+      {selectedEntity && isCharacterEntity(selectedEntity) && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2">
+          <CharacterEditPanel entity={selectedEntity} />
+        </div>
+      )}
     </div>
   );
 } 

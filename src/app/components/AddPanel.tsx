@@ -14,13 +14,15 @@ import {
   IconSquareRotated,
   IconSquare,
   IconBulb,
+  IconUser,
 } from '@tabler/icons-react';
 import { EntityFactory } from '../util/entity/EntityFactory';
-
+import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 const AddPanel: React.FC = () => {
   const { scene, setSelectedEntity, historyManager } = useEditorContext();
   const [showShapesMenu, setShowShapesMenu] = useState(false);
+  const [showCharactersMenu, setShowCharactersMenu] = useState(false);
 
   // Create an entity with command pattern
   const handleCreateGenerativeEntity = (entityType: EntityType) => {
@@ -34,6 +36,12 @@ const AddPanel: React.FC = () => {
 
     // Execute the command through history manager
     historyManager.executeCommand(createCommand);
+
+    // Track analytics
+    trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
+      method: 'button',
+      entityType: entityType
+    });
 
     // Select the newly created entity
     setSelectedEntity(createCommand.getEntity());
@@ -50,6 +58,14 @@ const AddPanel: React.FC = () => {
     );
     // Execute the command through history manager
     historyManager.executeCommand(createCommand);
+
+    // Track analytics
+    trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
+      method: 'button',
+      entityType: 'shape',
+      shapeType: shapeType
+    });
+
     // Select the newly created entity
     setSelectedEntity(createCommand.getEntity());
     // Hide the shapes menu after creation
@@ -67,8 +83,47 @@ const AddPanel: React.FC = () => {
     );
     // Execute the command through history manager
     historyManager.executeCommand(createCommand);
+
+    // Track analytics
+    trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
+      method: 'button',
+      entityType: 'light'
+    });
+
     // Select the newly created entity
     setSelectedEntity(createCommand.getEntity());
+  };
+
+  // Handle character entity creation
+  const handleCreateCharacter = (modelUrl: string, modelName: string) => {
+    if (!scene) return;
+
+    // Create a command with factory function for character
+    const createCommand = new CreateEntityCommand(
+      () => EntityFactory.createEntity(scene, { 
+        type: 'character',
+        characterProps: { 
+          url: modelUrl,
+          name: modelName
+        }
+      }),
+      scene
+    );
+
+    // Execute the command through history manager
+    historyManager.executeCommand(createCommand);
+
+    // Track analytics
+    trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
+      method: 'button',
+      entityType: 'character',
+      characterModel: modelName
+    });
+
+    // Select the newly created entity
+    setSelectedEntity(createCommand.getEntity());
+    // Hide the characters menu after creation
+    setShowCharactersMenu(false);
   };
 
   // List of primitive shapes with icons
@@ -81,10 +136,13 @@ const AddPanel: React.FC = () => {
     { type: 'floor', label: 'Floor', icon: <IconSquareRotated size={20} /> },
   ];
 
+  // List of available character models
+  const characterModels = [
+    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin (Male)' },
+  ];
+
   return (
     <div className="fixed z-50 left-4 top-1/2 -translate-y-1/2 panel-shape">
-      {/* <h3 className="text-lg font-medium mb-3 text-white">Add</h3> */}
-
       {/* Entity type buttons */}
       <div className="grid gap-2">
         <Button
@@ -129,10 +187,10 @@ const AddPanel: React.FC = () => {
                     <span className="text-xs">{shape.label}</span>
                   </Button>
                 ))}
-              </Card></div>
+              </Card>
+            </div>
           )}
         </div>
-
 
         <Button
           onClick={handleCreateLight}
@@ -145,6 +203,42 @@ const AddPanel: React.FC = () => {
           </div>
         </Button>
 
+        {/* New Character button */}
+        <div
+          className="relative"
+          onMouseEnter={() => setShowCharactersMenu(true)}
+          onMouseLeave={() => setShowCharactersMenu(false)}
+        >
+          <Button
+            variant="secondary"
+            className="h-14 w-14 rounded-md"
+          >
+            <div className="flex flex-col items-center justify-center">
+              <IconUser size={20} className="mb-1" />
+              <span className="text-xs">Character</span>
+            </div>
+          </Button>
+
+          {/* Characters dropdown menu */}
+          {showCharactersMenu && (
+            <div className="absolute left-14 top-0 pl-2">
+              <Card className="p-2 w-48 panel-shape">
+                {characterModels.map((model) => (
+                  <Button
+                    key={model.url}
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center justify-start gap-2 h-10 w-full mb-1"
+                    onClick={() => handleCreateCharacter(model.url, model.name)}
+                  >
+                    <IconUser size={16} />
+                    <span className="text-xs truncate">{model.name}</span>
+                  </Button>
+                ))}
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

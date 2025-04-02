@@ -3,6 +3,7 @@ import { EntityBase, EntityType } from './EntityBase';
 import { GenerativeEntity, GenerativeEntityProps } from './GenerativeEntity';
 import { ShapeEntity, ShapeEntityProps } from './ShapeEntity';
 import { LightEntity, LightProps } from './LightEntity';
+import { CharacterEntity, CharacterEntityProps } from './CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
 
 // Base properties common to all entities
@@ -17,7 +18,8 @@ interface BaseEntityOptions {
 export type CreateEntityOptions =
   | (BaseEntityOptions & { type: 'generative', gnerativeProps: GenerativeEntityProps })
   | (BaseEntityOptions & { type: 'shape', shapeProps: ShapeEntityProps })
-  | (BaseEntityOptions & { type: 'light', lightProps: LightProps, rotation?: BABYLON.Vector3 });
+  | (BaseEntityOptions & { type: 'light', lightProps: LightProps, rotation?: BABYLON.Vector3 })
+  | (BaseEntityOptions & { type: 'character', characterProps: CharacterEntityProps });
 
 /**
  * Factory class for creating entities
@@ -40,10 +42,15 @@ export class EntityFactory {
         });
       case 'light':
         return new LightEntity(name, scene, { id });
+      case 'character':
+        return new CharacterEntity(scene, name, id, {
+          url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb'
+        });
       default:
         throw new Error(`Unknown entity type`);
     }
   }
+  
   static createEntity(scene: BABYLON.Scene, options: CreateEntityOptions): EntityBase {
     const name = options.name || `entity-${Date.now()}`;
     switch (options.type) {
@@ -68,7 +75,8 @@ export class EntityFactory {
           position: options.position,
           props: options.lightProps
         });
-
+      case 'character':
+        return new CharacterEntity(scene, name, options.id || uuidv4(), options.characterProps);
       default:
         // This ensures exhaustive type checking
         const exhaustiveCheck: never = options;

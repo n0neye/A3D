@@ -179,7 +179,7 @@ export class LightEntity extends EntityBase {
   /**
    * Deserialize a light entity from serialized data
    */
-  static deserialize(scene: BABYLON.Scene, data: SerializedLightEntityData): LightEntity {
+  static async deserialize(scene: BABYLON.Scene, data: SerializedLightEntityData): Promise<LightEntity> {
     const position = data.position ? toBabylonVector3(data.position) : undefined;
 
     return new LightEntity(data.name, scene, {

@@ -264,20 +264,19 @@ export function deserializeScene(
         data.entities.forEach((entityData: SerializedEntityData) => {
             try {
                 // Create the entity based on its type
-                let entity: EntityBase | null = null;
                 const entityType = entityData.entityType;
                 
                 switch (entityType) {
                     case 'light':
-                        entity = LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
+                        LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
                         break;
                         
                     case 'shape':
-                        entity = ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
+                        ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
                         break;
                         
                     case 'generative':
-                        entity = GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
+                        GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
                         break;
                         
                     default:
