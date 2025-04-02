@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconArrowRight, IconX, IconDownload, IconSettings } from '@tabler/icons-react';
 import { RenderLog, downloadImage } from '../util/editor/project-util';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 // import { useToast } from "@/components/ui/use-toast";
 
 interface GalleryPanelProps {
@@ -24,7 +25,7 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
   onApplySettings,
 }) => {
   const [localIndex, setLocalIndex] = useState(currentIndex);
-  
+
   useEffect(() => {
     setLocalIndex(currentIndex);
   }, [currentIndex]);
@@ -50,7 +51,7 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
     let newIndex = localIndex + direction;
     if (newIndex < 0) newIndex = images.length - 1;
     if (newIndex >= images.length) newIndex = 0;
-    
+
     setLocalIndex(newIndex);
     onSelectImage(newIndex);
   };
@@ -80,21 +81,23 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Image display */}
         <div className="flex-1 flex items-center justify-center p-4 relative">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white"
             onClick={() => navigateImages(-1)}
           >
             <IconArrowLeft size={24} />
           </Button>
-          
+
           <div className="relative max-h-full max-w-full">
-            <img 
-              src={currentImage.imageUrl} 
-              alt="Generated image" 
-              className="max-h-[70vh] max-w-full object-contain"
-            />
+            <AspectRatio ratio={16 / 9}>
+              <img
+                src={currentImage.imageUrl}
+                alt="Generated image"
+                className="max-h-[70vh] max-w-full object-contain"
+              />
+            </AspectRatio>
             <Button
               variant="ghost"
               size="icon"
@@ -106,10 +109,10 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
               <IconDownload size={20} />
             </Button>
           </div>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
+
+          <Button
+            variant="ghost"
+            size="icon"
             className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white"
             onClick={() => navigateImages(1)}
           >
@@ -124,7 +127,7 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
               <h3 className="text-white text-sm font-medium mb-1">Date</h3>
               <p className="text-gray-300 text-sm">{currentImage.timestamp.toLocaleString()}</p>
             </div>
-            
+
             <div>
               <h3 className="text-white text-sm font-medium mb-1">Model</h3>
               <p className="text-gray-300 text-sm">{currentImage.model}</p>
@@ -172,8 +175,8 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
 
             {/* Apply Settings Button - add at bottom of info panel */}
             <div className="pt-4">
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 className="w-full"
                 onClick={handleApplySettings}
               >
@@ -188,17 +191,17 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
       <div className="p-2 bg-black/70">
         <div className="flex overflow-x-auto gap-2 p-2 justify-center items-center">
           {images.map((image, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`relative cursor-pointer flex-shrink-0 ${idx === localIndex ? 'ring-2 ring-primary' : ''}`}
               onClick={() => {
                 setLocalIndex(idx);
                 onSelectImage(idx);
               }}
             >
-              <img 
-                src={image.imageUrl} 
-                alt={`Thumbnail ${idx}`} 
+              <img
+                src={image.imageUrl}
+                alt={`Thumbnail ${idx}`}
                 className="w-24 h-16 object-cover"
               />
             </div>

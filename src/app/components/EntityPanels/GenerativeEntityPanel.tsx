@@ -22,7 +22,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   const [promptInput, setPromptInput] = useState(props.entity.temp_prompt);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);
-  const [currentRatio, setCurrentRatio] = useState<ImageRatio>('1:1');
+  const [currentRatio, setCurrentRatio] = useState<ImageRatio>('3:4');
 
   // State for processing
   const [isGenerating2D, setIsGenerating2D] = useState(false);
@@ -46,6 +46,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
         // Force a re-render by incrementing the counter
         setUpdateCounter(prev => prev + 1);
         trySetPrompt('onGenerationChanged', props.entity.temp_prompt);
+        setCurrentRatio(props.entity.temp_ratio || "3:4");
       }
     }
 
@@ -86,8 +87,9 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   useEffect(() => {
     if (PREV_ENTITY) {
       PREV_ENTITY.temp_prompt = promptInput;
+      PREV_ENTITY.temp_ratio = currentRatio;
     }
-  }, [promptInput]);
+  }, [promptInput, currentRatio]);
 
 
   // Additional effect to handle the input field mounting
@@ -342,7 +344,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
             <textarea
               ref={inputElementRef}
               placeholder="Enter prompt..."
-              className="w-96 px-2 py-1 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
+              className="w-96 p-0 mt-2 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
               value={promptInput}
               onKeyDown={handleInputFieldKeyDown}
               onChange={(e) => {

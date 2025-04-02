@@ -78,7 +78,7 @@ const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled
       styleSheet.textContent = ratioIconStyles;
       document.head.appendChild(styleSheet);
     }
-    
+
     // No need to remove on unmount, as multiple instances might be using it
     // We'll let it persist
   }, []);
@@ -101,13 +101,14 @@ const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`flex items-center justify-center p-1 w-6 h-6 rounded hover:bg-gray-700 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`flex items-center justify-center p-1 rounded  hover:bg-gray-700 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         title="Aspect Ratio"
       >
-        <div className={`${getRatioIconClass(value)}`}></div>
-        {/* <span className="text-xs text-gray-400">{value}</span> */}
+        <div className='flex items-center justify-center  h-4 mr-1 rounded'>
+          <div className={`${getRatioIconClass(value)}`}></div></div>
+        <span className="text-xs text-gray-400">{value}</span>
       </button>
-      
+
       {isOpen && !disabled && (
         <div className="absolute bottom-8 z-10 left-0 mt-1 panel-shape-dark shadow-lg rounded-md py-1 min-w-[160px]">
           {ratioOptions.map((option) => (

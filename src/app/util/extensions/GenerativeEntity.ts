@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
+import { EntityBase, fromBabylonVector3, SerializedEntityData, toBabylonVector3 } from './EntityBase';
 import { ImageRatio, ProgressCallback } from '../generation-util';
 import { v4 as uuidv4 } from 'uuid';
 import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
@@ -56,7 +56,8 @@ export class GenerativeEntity extends EntityBase {
   statusMessage: string;
 
   temp_prompt: string;
-  temp_ratio: ImageRatio;
+  temp_ratio?: ImageRatio;
+  temp_displayMode?: "3d" | "2d";
 
   public readonly onProgress = new EventHandler<{ entity: GenerativeEntity, state: GenerationStatus, message: string }>();
   public readonly onGenerationChanged = new EventHandler<{ entity: GenerativeEntity }>();
@@ -68,6 +69,7 @@ export class GenerativeEntity extends EntityBase {
       id?: string;
       position?: BABYLON.Vector3;
       rotation?: BABYLON.Vector3;
+      scaling?: BABYLON.Vector3;
       props?: GenerativeEntityProps;
     }
   ) {
@@ -80,7 +82,7 @@ export class GenerativeEntity extends EntityBase {
     // Create initial props
     // this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
 
-    const ratio = '1:1';
+    const ratio = '3:4';
     const { width, height } = getPlaneSize(ratio);
     this.placeholderMesh = createShapeMesh(scene, "plane");
     this.placeholderMesh.material = placeholderMaterial;
@@ -89,14 +91,31 @@ export class GenerativeEntity extends EntityBase {
     this.placeholderMesh.parent = this;
     this.placeholderMesh.metadata = { rootEntity: this };
 
-    this.props = {
-      generationLogs: options.props?.generationLogs || [],
+    this.props = options.props || {
+      generationLogs: []
     };
+
 
     this.status = 'idle';
     this.statusMessage = '';
     this.temp_prompt = '';
     this.temp_ratio = '1:1';
+    this.temp_displayMode = '2d';
+
+    // Apply generation log if available
+    const currentLog = this.getCurrentGenerationLog();
+    if (currentLog) {
+      console.log("Constructor: applyGenerationLog", currentLog);
+      this.applyGenerationLog(currentLog, (entity) => {
+
+        // Temp solution: update the mesh scaling
+        if (entity.modelMesh && options.scaling) {
+          console.log("Constructor: applyGenerationLog: onFinish. Apply scaling", options.scaling);
+          entity.modelMesh.scaling = options.scaling;
+        }
+      });
+    }
+
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
@@ -104,6 +123,11 @@ export class GenerativeEntity extends EntityBase {
       this.modelMesh.setEnabled(mode === '3d');
     }
     this.placeholderMesh.setEnabled(mode === '2d');
+    this.temp_displayMode = mode;
+  }
+
+  getPrimaryMesh(): BABYLON.Mesh | undefined {
+    return this.temp_displayMode === '3d' ? this.modelMesh : this.placeholderMesh;
   }
 
   onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): GenerationLog {
@@ -122,6 +146,7 @@ export class GenerativeEntity extends EntityBase {
     this.props.currentGenerationIdx = this.props.generationLogs.findIndex(l => l.id === log.id);
 
     this.temp_prompt = prompt;
+    this.temp_ratio = log.imageParams?.ratio;
 
     return log;
   }
@@ -226,7 +251,7 @@ export class GenerativeEntity extends EntityBase {
 
 
   // Apply a specific generation log 
-  async applyGenerationLog(log: GenerationLog): Promise<void> {
+  async applyGenerationLog(log: GenerationLog, onFinish?: (entity: GenerativeEntity) => void): Promise<void> {
     try {
 
       console.log("applyGenerationLog", log);
@@ -255,6 +280,8 @@ export class GenerativeEntity extends EntityBase {
       // Trigger the event
       this.onGenerationChanged.trigger({ entity: this });
 
+      onFinish && onFinish(this);
+
       console.log("applyGenerationLog: currentGenerationIdx", this.props.currentGenerationIdx);
 
     } catch (error) {
@@ -275,29 +302,33 @@ export class GenerativeEntity extends EntityBase {
   }
 
   /**
-   * Deserialize a generative entity from serialized data
-   */
-  static deserialize(scene: BABYLON.Scene, data: SerializedGenerativeEntityData): GenerativeEntity {
-    const position = data.position ? toBabylonVector3(data.position) : undefined;
-    const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
-
-    return new GenerativeEntity(data.name, scene, {
-      id: data.id,
-      position,
-      rotation,
-      props: data.props
-    });
-  }
-
-  /**
    * Serialize with generative-specific properties
    */
   serialize(): SerializedGenerativeEntityData {
     const base = super.serialize();
     return {
       ...base,
+      scaling: this.modelMesh?.scaling ? fromBabylonVector3(this.modelMesh?.scaling) : { x: 1, y: 1, z: 1 },
       props: this.props,
     };
+  }
+
+
+  /**
+   * Deserialize a generative entity from serialized data
+   */
+  static deserialize(scene: BABYLON.Scene, data: SerializedGenerativeEntityData): GenerativeEntity {
+    const position = data.position ? toBabylonVector3(data.position) : undefined;
+    const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
+    const scaling = data.scaling ? toBabylonVector3(data.scaling) : undefined;
+
+    return new GenerativeEntity(data.name, scene, {
+      id: data.id,
+      position,
+      rotation,
+      scaling,
+      props: data.props
+    });
   }
 
   /**

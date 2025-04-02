@@ -122,20 +122,21 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (selectedEntity) {
+      setGizmoMode(currentGizmoMode);
       console.log("EditorContext: selectedEntity", selectedEntity.id);
       
       // Handle gizmo attachment based on entity type
       if (isGenerativeEntity(selectedEntity)) {
         // For generative entities, attach to the entity itself or a specific mesh
-        if (selectedEntity.placeholderMesh && (currentGizmoMode === 'boundingBox' || currentGizmoMode === 'scale')) {
-          gizmoManager.attachToMesh(selectedEntity.placeholderMesh);
+        const primaryMesh = selectedEntity.getPrimaryMesh();
+        if (primaryMesh && (currentGizmoMode === 'boundingBox' || currentGizmoMode === 'scale')) {
+          gizmoManager.attachToMesh(primaryMesh);
         } else {
           gizmoManager.attachToNode(selectedEntity);
         }
       } 
       else if (isShapeEntity(selectedEntity)) {
         // For shape entities
-        setGizmoMode(currentGizmoMode);
         gizmoManager.attachToNode(selectedEntity);
       }
       else if (isLightEntity(selectedEntity)) {

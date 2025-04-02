@@ -403,7 +403,7 @@ export function serializeScene(
 
     // Create project data structure
     const project = {
-        version: "1.0.0",
+        version: "1.0.1",
         timestamp: new Date().toISOString(),
         entities: entities.map(entity => entity.serialize()),
         environment: environment,
