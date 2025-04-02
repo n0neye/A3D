@@ -21,7 +21,7 @@ import { EntityFactory } from '../util/entity/EntityFactory';
 import { duplicateEntity } from '../util/entity/entityUtils';
 import Guide from './Guide';
 import { availableAPIs } from '../util/generation/image-render-api';
-import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
+import { RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
 import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { EntityBase } from '../util/entity/EntityBase';
 import CharacterEditPanel from './CharacterEditPanel';
@@ -180,15 +180,19 @@ export default function EditorContainer() {
   }
 
   const handleRegularClick = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
+    console.log("handleRegularClick called");
     // Normal left click (without Ctrl) - handle selection
     const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
     const mesh = pickInfo.pickedMesh;
+    console.log("Picked mesh:", mesh?.name, "metadata:", mesh?.metadata);
 
     // Get the selection manager
     const selectionManager = getSelectionManager(scene);
+    console.log("Selection manager found:", !!selectionManager);
     if (!selectionManager) return;
 
     if (!mesh) {
+      console.log("No mesh picked, deselecting");
       // Clicked on empty space - deselect
       selectionManager.select(null);
       setSelectedEntity(null);
@@ -198,19 +202,30 @@ export default function EditorContainer() {
     // Find the selectable object
     let selectable: ISelectable | null = null;
 
-    // Check if mesh is directly selectable
-    if ((mesh as any).gizmoCapabilities) {
+    // FIRST check if the mesh has a rootEntity that's selectable
+    if (mesh.metadata?.rootEntity && (mesh.metadata.rootEntity as any).gizmoCapabilities) {
+      console.log("Mesh has selectable rootEntity");
+      selectable = mesh.metadata.rootEntity as ISelectable;
+      selectionManager.select(selectable);
+      
+      // If it's an EntityBase, update the selected entity in state
+      if (mesh.metadata.rootEntity instanceof EntityBase) {
+        console.log("rootEntity is EntityBase, selecting in UI");
+        setSelectedEntity(mesh.metadata.rootEntity);
+      } else {
+        setSelectedEntity(null);
+      }
+    } 
+    // THEN check if the mesh itself is directly selectable (for BoneControl etc.)
+    else if ((mesh as any).gizmoCapabilities) {
+      console.log("Mesh is directly selectable");
       selectable = mesh as unknown as ISelectable;
       selectionManager.select(selectable);
-
-      // if the mesh has a rootEntity, select it
-      if (mesh.metadata?.rootEntity && mesh.metadata.rootEntity instanceof EntityBase) {
-        selectable = mesh.metadata.rootEntity;
-        setSelectedEntity(selectable as EntityBase);
-      }
+      setSelectedEntity(null); // No entity selected for direct selectable meshes
     }
-    // Nothing selectable clicked
+    // Nothing selectable found
     else {
+      console.log("Nothing selectable found, deselecting");
       selectionManager.select(null);
       setSelectedEntity(null);
     }

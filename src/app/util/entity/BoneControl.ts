@@ -88,14 +88,15 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
 
   // ISelectable implementation
   onSelect(): void {
-    console.log(`Bone selected: ${this.bone.name}`);
+    console.log(`BoneControl.onSelect: Bone selected: ${this.bone.name}`);
   }
 
   onDeselect(): void {
-    console.log(`Bone deselected: ${this.bone.name}`);
+    console.log(`BoneControl.onDeselect: Bone deselected: ${this.bone.name}`);
   }
 
   getGizmoTarget(): BABYLON.AbstractMesh {
+    console.log(`BoneControl.getGizmoTarget: Returning mesh for bone: ${this.bone.name}`);
     return this;
   }
 

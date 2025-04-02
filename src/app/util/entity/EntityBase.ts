@@ -108,16 +108,15 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
 
   // ISelectable implementation
   onSelect(): void {
-    // Base implementation does nothing
-    console.log(`Entity selected: ${this.name}`);
+    console.log(`EntityBase.onSelect: Entity selected: ${this.name} (${this.constructor.name})`);
   }
   
   onDeselect(): void {
-    // Base implementation does nothing
-    console.log(`Entity deselected: ${this.name}`);
+    console.log(`EntityBase.onDeselect: Entity deselected: ${this.name} (${this.constructor.name})`);
   }
   
   getGizmoTarget(): BABYLON.AbstractMesh | BABYLON.TransformNode {
+    console.log(`EntityBase.getGizmoTarget: Returning this entity: ${this.name}`);
     return this; // The entity itself is the target
   }
   

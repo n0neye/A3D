@@ -22,13 +22,17 @@ export class SelectionManager {
    * Select an object
    */
   select(selectable: ISelectable | null): void {
+    console.log("SelectionManager.select called with:", selectable, selectable?.getId(), selectable?.constructor.name);
+    
     // Deselect previous selection
     if (this._currentSelection) {
+      console.log("Deselecting previous:", this._currentSelection.getId(), this._currentSelection.constructor.name);
       this._currentSelection.onDeselect();
     }
     
     // Clear gizmo
     if (this._gizmoManager) {
+      console.log("Detaching gizmo from previous selection");
       this._gizmoManager.attachToMesh(null);
     }
     
@@ -37,6 +41,11 @@ export class SelectionManager {
     
     // Configure for new selection
     if (selectable && this._gizmoManager) {
+      console.log("Setting up gizmo for new selection:", 
+        "pos:", selectable.gizmoCapabilities.allowPosition,
+        "rot:", selectable.gizmoCapabilities.allowRotation,
+        "scale:", selectable.gizmoCapabilities.allowScale);
+      
       // Configure gizmos based on capabilities
       this._gizmoManager.positionGizmoEnabled = selectable.gizmoCapabilities.allowPosition;
       this._gizmoManager.rotationGizmoEnabled = selectable.gizmoCapabilities.allowRotation;
@@ -44,6 +53,7 @@ export class SelectionManager {
       
       // Get the target to attach gizmos to
       const target = selectable.getGizmoTarget();
+      console.log("Attaching gizmo to:", target.name);
       
       // Attach gizmo to target
       if (target instanceof BABYLON.AbstractMesh) {
@@ -68,6 +78,7 @@ export class SelectionManager {
    * Set up pointer hover observer for cursor changes
    */
   private _setupHoverObserver(): void {
+    console.log("Setting up hover observer");
     this._hoverObserver = this._scene.onPointerObservable.add((pointerInfo) => {
       // Only handle pointer move events
       if (pointerInfo.type !== BABYLON.PointerEventTypes.POINTERMOVE) {
@@ -85,6 +96,7 @@ export class SelectionManager {
       
       // If hovering over a new mesh
       if (pickedMesh !== this._hoveredMesh) {
+        console.log("Hover changed to:", pickedMesh?.name);
         // Update hover state
         this._hoveredMesh = pickedMesh;
         
@@ -94,11 +106,13 @@ export class SelectionManager {
         if (pickedMesh) {
           // Check if mesh itself is selectable
           if ((pickedMesh as any).gizmoCapabilities) {
+            console.log("Mesh is directly selectable");
             selectable = pickedMesh as unknown as ISelectable;
           } 
           // Check if mesh has a selectable entity as metadata
           else if (pickedMesh.metadata?.rootEntity && 
                   (pickedMesh.metadata.rootEntity as any).gizmoCapabilities) {
+            console.log("Mesh has selectable rootEntity");
             selectable = pickedMesh.metadata.rootEntity as ISelectable;
           }
         }
@@ -135,6 +149,7 @@ export class SelectionManager {
 
 // Create and register the selection manager with the scene
 export function createSelectionManager(scene: BABYLON.Scene): SelectionManager {
+  console.log("Creating and registering selection manager");
   const selectionManager = new SelectionManager(scene);
   
   // Store in scene metadata
@@ -142,11 +157,14 @@ export function createSelectionManager(scene: BABYLON.Scene): SelectionManager {
     scene.metadata = {};
   }
   scene.metadata.selectionManager = selectionManager;
+  console.log("Selection manager registered with scene");
   
   return selectionManager;
 }
 
 // Get the selection manager from a scene
 export function getSelectionManager(scene: BABYLON.Scene): SelectionManager | null {
-  return scene.metadata?.selectionManager || null;
+  const manager = scene.metadata?.selectionManager || null;
+  console.log("Getting selection manager:", !!manager);
+  return manager;
 } 
