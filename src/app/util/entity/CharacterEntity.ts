@@ -23,7 +23,17 @@ export class CharacterEntity extends EntityBase {
     private _isLoading = false;
     private _loadingPromise: Promise<void> | null = null;
     public rootMesh: BABYLON.AbstractMesh | null = null;
-    private _initialBoneRotations: Map<string, BABYLON.Quaternion> = new Map();
+    public initialBoneRotations: Map<string, BABYLON.Quaternion> = new Map();
+    
+    // Bone visualization properties
+    private _boneMap: Map<string, { bone: BABYLON.Bone, control: BABYLON.Mesh }> = new Map();
+    private _boneLines: Map<string, BABYLON.LinesMesh> = new Map();
+    private _visualizationMaterial: BABYLON.Material | null = null;
+    private _boneColor = new BABYLON.Color3(0.5, 0.7, 1.0);
+    private _selectedBone: BABYLON.Bone | null = null;
+    private _isVisualizationVisible = false;
+    private _boneMaterialAlpha = 0.5;
+    private _linesMaterialAlpha = 0.7;
 
     constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps) {
         super(name, scene, 'character', {
@@ -49,22 +59,25 @@ export class CharacterEntity extends EntityBase {
         this._isLoading = true;
         console.log(`Loading character from: ${this.characterProps.url}`);
         try {
-            const result = await BABYLON.SceneLoader.ImportMeshAsync(
-                "", // meshNames
-                "", // rootUrl
+            const result = await BABYLON.ImportMeshAsync(
                 this.characterProps.url,
                 this._scene,
-                (event) => {
-                    // Progress handling if needed
-                    console.log(`Loading progress: ${event.loaded} / ${event.total}`);
-                }
             );
+
+            console.log("CharacterEntity: ImportMeshAsync result:", result);
 
             if (result.meshes.length > 0) {
                 const newMesh = result.meshes[0];
                 this.rootMesh = newMesh;
                 this.rootMesh.parent = this; // Attach loaded mesh hierarchy to this entity node
                 this.rootMesh.name = `${this.name}_meshRoot`;
+
+                result.meshes.forEach(mesh => {
+                    console.log("CharacterEntity: mesh:", mesh);
+                    if(mesh instanceof BABYLON.Mesh && mesh.metadata) {
+                        mesh.metadata.rootEntity = this;
+                    }
+                });
 
                 // Find the skeleton
                 if (result.skeletons.length > 0) {
@@ -74,7 +87,7 @@ export class CharacterEntity extends EntityBase {
                     // Store initial bone rotations for reset capability
                     this.skeleton.bones.forEach(bone => {
                         if (bone.getRotationQuaternion()) {
-                            this._initialBoneRotations.set(
+                            this.initialBoneRotations.set(
                                 bone.name, 
                                 bone.getRotationQuaternion()!.clone()
                             );
@@ -87,6 +100,9 @@ export class CharacterEntity extends EntityBase {
                             mesh.skeleton = this.skeleton;
                         }
                     });
+                    
+                    // Create bone visualization elements
+                    this._createBoneVisualization();
                 } else {
                     console.warn(`Character ${this.name} loaded but no skeleton found.`);
                 }
@@ -97,28 +113,21 @@ export class CharacterEntity extends EntityBase {
                     // Store animation groups for future use
                     result.animationGroups.forEach(group => {
                         console.log(`Animation: ${group.name}`);
+                        // Pause animations by default to allow manual posing
+                        group.pause();
                     });
                 }
 
                 // Position the character at origin by default
                 this.position = BABYLON.Vector3.Zero();
-                
-                // Apply proper scaling if needed
-                this.scaling = new BABYLON.Vector3(1, 1, 1);
-
             } else {
-                console.error(`Failed to load meshes from ${this.characterProps.url}`);
+                console.error(`No meshes loaded for character ${this.name}`);
             }
         } catch (error) {
-            console.error(`Error loading character ${this.name} from ${this.characterProps.url}:`, error);
+            console.error(`Error loading character model: ${error}`);
         } finally {
             this._isLoading = false;
-            console.log(`Finished loading character ${this.name}`);
         }
-    }
-
-    public getEntityType(): EntityType {
-        return 'character';
     }
 
     public async waitUntilReady(): Promise<void> {
@@ -146,7 +155,7 @@ export class CharacterEntity extends EntityBase {
         if (!this.skeleton) return;
         
         this.skeleton.bones.forEach(bone => {
-            const initialRotation = this._initialBoneRotations.get(bone.name);
+            const initialRotation = this.initialBoneRotations.get(bone.name);
             if (initialRotation) {
                 bone.setRotationQuaternion(initialRotation.clone());
             }
@@ -157,6 +166,197 @@ export class CharacterEntity extends EntityBase {
             entityType: 'character',
             action: 'reset_all_bones'
         });
+    }
+    
+    /**
+     * Creates visualization elements for the skeleton's bones
+     */
+    private _createBoneVisualization(): void {
+        if (!this.skeleton) return;
+        
+        // Create visualization material if it doesn't exist
+        if (!this._visualizationMaterial) {
+            const material = new BABYLON.StandardMaterial(`${this.name}_boneMaterial`, this._scene);
+            material.emissiveColor = this._boneColor;
+            material.diffuseColor = this._boneColor;
+            material.specularColor = BABYLON.Color3.Black();
+            material.alpha = this._boneMaterialAlpha;
+            material.disableDepthWrite = true;
+            this._visualizationMaterial = material;
+        }
+        
+        // Create bone control spheres for each bone
+        this.skeleton.bones.forEach(bone => {
+            // Skip fingers and other small bones for cleaner visualization
+            const boneName = bone.name.toLowerCase();
+            if (boneName.includes('finger') || boneName.includes('thumb') || 
+                boneName.includes('toe') || boneName.includes('eye')) {
+                return;
+            }
+            
+            // Create a small sphere for the bone
+            const boneControl = BABYLON.MeshBuilder.CreateSphere(
+                `bone_${bone.name}_${this.id}`,
+                { diameter: 0.05 },
+                this._scene
+            );
+            
+            boneControl.material = this._visualizationMaterial;
+            boneControl.renderingGroupId = 1;
+            boneControl.isPickable = true;
+            
+            // Position the control at the bone
+            if (bone._linkedTransformNode) {
+                boneControl.parent = bone._linkedTransformNode;
+                boneControl.position = BABYLON.Vector3.Zero();
+            } else {
+                boneControl.parent = this;
+                boneControl.position = bone.getPosition(BABYLON.Space.WORLD);
+            }
+            
+            // Store in bone map
+            this._boneMap.set(bone.name, { bone, control: boneControl });
+            
+            // Hide initially
+            boneControl.isVisible = false;
+        });
+        
+        // Create bone lines to visualize the skeleton structure
+        this.skeleton.bones.forEach(bone => {
+            const childBones = bone.getChildren();
+            
+            if (childBones.length > 0) {
+                childBones.forEach(childBone => {
+                    // Only create lines if both bones have controls
+                    if (this._boneMap.has(bone.name) && this._boneMap.has(childBone.name)) {
+                        const lineName = `line_${bone.name}_to_${childBone.name}_${this.id}`;
+                        
+                        // Create a line mesh
+                        const line = BABYLON.MeshBuilder.CreateLines(
+                            lineName,
+                            {
+                                points: [BABYLON.Vector3.Zero(), BABYLON.Vector3.Zero()],
+                                updatable: true
+                            },
+                            this._scene
+                        );
+                        
+                        line.color = this._boneColor;
+                        line.alpha = this._linesMaterialAlpha;
+                        line.renderingGroupId = 1;
+                        line.isVisible = false;
+                        
+                        // Store in bone lines map
+                        this._boneLines.set(lineName, line);
+                    }
+                });
+            }
+        });
+        
+        // Register an observer to update lines when the scene renders
+        this._scene.onBeforeRenderObservable.add(() => this._updateBoneLines());
+    }
+    
+    /**
+     * Updates position of all bone lines to match current skeleton pose
+     */
+    private _updateBoneLines(): void {
+        if (!this._isVisualizationVisible) return;
+        
+        this.skeleton?.bones.forEach(bone => {
+            const childBones = bone.getChildren();
+            
+            if (childBones.length > 0) {
+                childBones.forEach(childBone => {
+                    // Only update if both bones have controls
+                    if (this._boneMap.has(bone.name) && this._boneMap.has(childBone.name)) {
+                        const lineName = `line_${bone.name}_to_${childBone.name}_${this.id}`;
+                        let line = this._boneLines.get(lineName);
+                        
+                        if (line) {
+                            const parentPosition = this._boneMap.get(bone.name)!.control.getAbsolutePosition();
+                            const childPosition = this._boneMap.get(childBone.name)!.control.getAbsolutePosition();
+                            
+                            // Update line positions
+                            const points = [parentPosition, childPosition];
+                            line = BABYLON.MeshBuilder.CreateLines(
+                                line.name, 
+                                { points, instance: line }, 
+                                this._scene
+                            );
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    /**
+     * Shows or hides the bone visualization
+     */
+    public showBoneVisualization(visible: boolean): void {
+        this._isVisualizationVisible = visible;
+        
+        // Update visibility of bone controls
+        this._boneMap.forEach(({ control }) => {
+            control.isVisible = visible;
+        });
+        
+        // Update visibility of bone lines
+        this._boneLines.forEach(line => {
+            line.isVisible = visible;
+        });
+        
+        // Track visibility change
+        trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
+            action: visible ? 'show_bones' : 'hide_bones'
+        });
+    }
+    
+    /**
+     * Sets the currently selected bone
+     */
+    public selectBone(boneName: string): BABYLON.Bone | null {
+        const boneData = this._boneMap.get(boneName);
+        if (boneData) {
+            this._selectedBone = boneData.bone;
+            
+            // Highlight selected bone control
+            this._boneMap.forEach(({ control }, name) => {
+                if (name === boneName) {
+                    control.scaling = new BABYLON.Vector3(1.3, 1.3, 1.3);
+                    control.material!.alpha = 0.8;
+                } else {
+                    control.scaling = new BABYLON.Vector3(1, 1, 1);
+                    control.material!.alpha = this._boneMaterialAlpha;
+                }
+            });
+            
+            return boneData.bone;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Gets all bone names that have controls
+     */
+    public getControlledBoneNames(): string[] {
+        return Array.from(this._boneMap.keys());
+    }
+    
+    /**
+     * Handle the entity being selected in the editor
+     */
+    public onSelect(): void {
+        this.showBoneVisualization(true);
+    }
+    
+    /**
+     * Handle the entity being deselected in the editor
+     */
+    public onDeselect(): void {
+        this.showBoneVisualization(false);
     }
 
     // --- Serialization ---
@@ -228,10 +428,25 @@ export class CharacterEntity extends EntityBase {
         return entity;
     }
 
-    public dispose(doNotRecurse?: boolean | undefined, disposeMaterialAndTextures?: boolean | undefined): void {
+    public dispose(): void {
         console.log(`Disposing CharacterEntity: ${this.name}`);
+        
+        // Dispose bone visualization
+        this._boneMap.forEach(({ control }) => {
+            control.dispose();
+        });
+        
+        this._boneLines.forEach(line => {
+            line.dispose();
+        });
+        
+        if (this._visualizationMaterial) {
+            this._visualizationMaterial.dispose();
+        }
+        
         // Dispose skeleton, meshes, etc.
         this.skeleton?.dispose();
+        
         // Children meshes are disposed automatically when the parent (this entity) is disposed
         super.dispose();
     }

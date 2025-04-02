@@ -25,7 +25,6 @@ import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectF
 import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { EntityBase } from '../util/entity/EntityBase';
 import CharacterEditPanel from './CharacterEditPanel';
-import { CharacterEntity } from '../util/entity/CharacterEntity';
 import { isCharacterEntity } from '../util/entity/entityUtils';
 
 // Temp hack to handle e and r key presses
@@ -150,6 +149,7 @@ export default function EditorContainer() {
           // Normal left click (without Ctrl) - handle selection
           const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
           const mesh = pickInfo.pickedMesh;
+          console.log("pickInfo mesh:", mesh?.name, mesh?.metadata.rootEntity);
 
           // Find the entity that owns this mesh
           if (mesh && mesh.metadata.rootEntity && mesh.metadata.rootEntity instanceof EntityBase) {
@@ -345,7 +345,7 @@ export default function EditorContainer() {
 
   const loadDefaultProject = async (scene: BABYLON.Scene) => {
     try {
-      const url = "/demoAssets/default.json";
+      const url = "/demoAssets/default_empty.json";
       await loadProjectFromUrl(url, scene, (settings: SerializedProjectSettings) => {
         // Apply all settings at once via context
         updateProjectSettings(settings);

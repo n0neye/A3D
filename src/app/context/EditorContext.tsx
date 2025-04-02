@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from '../util/entity/EntityBase';
-import { isGenerativeEntity, isLightEntity, isShapeEntity } from '../util/entity/entityUtils';
+import { isGenerativeEntity, isLightEntity, isShapeEntity, isCharacterEntity } from '../util/entity/entityUtils';
 import { HistoryManager } from '../components/HistoryManager';
 import { UpdateGizmoVisibility } from '../util/editor/editor-util';
 
@@ -29,7 +29,7 @@ const EditorContext = createContext<EditorContextType | null>(null);
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [scene, setScene] = useState<BABYLON.Scene | null>(null);
   const [engine, setEngine] = useState<BABYLON.Engine | null>(null);
-  const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
+  const [selectedEntityState, setSelectedEntityState] = useState<EntityBase | null>(null);
   const [gizmoManager, setGizmoManager] = useState<BABYLON.GizmoManager | null>(null);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [currentGizmoMode, setCurrentGizmoMode] = useState<GizmoMode>('position');
@@ -41,8 +41,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   // Keep the ref in sync with the state
   useEffect(() => {
-    selectedEntityRef.current = selectedEntity;
-  }, [selectedEntity]);
+    selectedEntityRef.current = selectedEntityState;
+  }, [selectedEntityState]);
 
   // Function to get current entity from the ref
   const getCurrentSelectedEntity = () => selectedEntityRef.current;
@@ -121,33 +121,33 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       // No longer need to handle bounding box here since our entities manage their own meshes
     }
 
-    if (selectedEntity) {
+    if (selectedEntityState) {
       setGizmoMode(currentGizmoMode);
-      console.log("EditorContext: selectedEntity", selectedEntity.id);
+      console.log("EditorContext: selectedEntity", selectedEntityState.id);
       
       // Handle gizmo attachment based on entity type
-      if (isGenerativeEntity(selectedEntity)) {
+      if (isGenerativeEntity(selectedEntityState)) {
         // For generative entities, attach to the entity itself or a specific mesh
-        const primaryMesh = selectedEntity.getPrimaryMesh();
+        const primaryMesh = selectedEntityState.getPrimaryMesh();
         if (primaryMesh && (currentGizmoMode === 'boundingBox' || currentGizmoMode === 'scale')) {
           gizmoManager.attachToMesh(primaryMesh);
         } else {
-          gizmoManager.attachToNode(selectedEntity);
+          gizmoManager.attachToNode(selectedEntityState);
         }
       } 
-      else if (isShapeEntity(selectedEntity)) {
+      else if (isShapeEntity(selectedEntityState)) {
         // For shape entities
-        gizmoManager.attachToNode(selectedEntity);
+        gizmoManager.attachToNode(selectedEntityState);
       }
-      else if (isLightEntity(selectedEntity)) {
+      else if (isLightEntity(selectedEntityState)) {
         // For light entities, only allow position control
-        console.log("EditorContext: light", selectedEntity);
+        console.log("EditorContext: light", selectedEntityState);
         setGizmoMode("position");
-        gizmoManager.attachToNode(selectedEntity);
+        gizmoManager.attachToNode(selectedEntityState);
       }
       else {
         // Default case
-        gizmoManager.attachToNode(selectedEntity);
+        gizmoManager.attachToNode(selectedEntityState);
       }
     } else {
       gizmoManager.attachToMesh(null);
@@ -161,7 +161,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         gizmoManager.attachToMesh(null);
       }
     };
-  }, [selectedEntity, gizmoManager, scene, isDebugMode, currentGizmoMode]);
+  }, [selectedEntityState, gizmoManager, scene, isDebugMode, currentGizmoMode]);
 
   // Add keyboard shortcut for toggling gizmo visibility
   useEffect(() => {
@@ -191,6 +191,21 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isGizmoVisible, scene]);
 
+  const setSelectedEntity = (entity: EntityBase | null) => {
+    // If there's a currently selected entity, notify it about deselection
+    if (selectedEntityState && isCharacterEntity(selectedEntityState)) {
+      selectedEntityState.onDeselect();
+    }
+    
+    // Update the selected entity
+    setSelectedEntityState(entity);
+    
+    // Notify the newly selected entity
+    if (entity && isCharacterEntity(entity)) {
+      entity.onSelect();
+    }
+  };
+
   return (
     <EditorContext.Provider
       value={{
@@ -198,7 +213,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setScene,
         engine,
         setEngine,
-        selectedEntity,
+        selectedEntity: selectedEntityState,
         setSelectedEntity,
         getCurrentSelectedEntity,
         gizmoManager,
