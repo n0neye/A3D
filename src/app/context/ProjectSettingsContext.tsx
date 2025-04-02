@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { SerializedProjectSettings } from '../util/editor/project-util';
-import { availableAPIs } from '../util/image-render-api';
+import { availableAPIs } from '../util/generation/image-render-api';
 import { RenderLog } from '../util/editor/project-util';
 
 // Default settings

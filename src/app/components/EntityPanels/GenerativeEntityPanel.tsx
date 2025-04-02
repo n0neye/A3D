@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
-import { removeBackground } from '../../util/generation-util';
-import { generate3DModel } from '../../util/3d-generation-util';
-import { generateRealtimeImage, GenerationResult } from '../../util/realtime-generation-util';
+import { removeBackground } from '../../util/generation/generation-util';
+import { generate3DModel } from '../../util/generation/3d-generation-util';
+import { generateRealtimeImage, GenerationResult } from '../../util/generation/realtime-generation-util';
 import { useEditorContext } from '../../context/EditorContext';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
-import { GenerativeEntity, GenerationStatus } from '../../util/extensions/GenerativeEntity';
+import { GenerativeEntity, GenerationStatus } from '../../util/entity/GenerativeEntity';
 
-import { ImageRatio } from "../../util/generation-util";
+import { ImageRatio } from "../../util/generation/generation-util";
 
 // TODO: This is a hack to get the previous entity.
 let PREV_ENTITY: GenerativeEntity | null = null;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useEditorContext } from '../context/EditorContext';
-import { EntityType, } from '../util/extensions/EntityBase';
-import { ShapeType } from '../util/extensions/ShapeEntity';
+import { EntityType, } from '../util/entity/EntityBase';
+import { ShapeType } from '../util/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
@@ -15,7 +15,7 @@ import {
   IconSquare,
   IconBulb,
 } from '@tabler/icons-react';
-import { EntityFactory } from '../util/extensions/EntityFactory';
+import { EntityFactory } from '../util/entity/EntityFactory';
 
 
 const AddPanel: React.FC = () => {

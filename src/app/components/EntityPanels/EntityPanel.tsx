@@ -1,9 +1,9 @@
 import React from 'react';
 
 import { useEditorContext } from '../../context/EditorContext';
-import { LightEntity } from '../../util/extensions/LightEntity';
+import { LightEntity } from '../../util/entity/LightEntity';
 import GenerativeEntityPanel from './GenerativeEntityPanel';
-import { GenerativeEntity } from '@/app/util/extensions/GenerativeEntity';
+import { GenerativeEntity } from '@/app/util/entity/GenerativeEntity';
 import LightEntityPanel from './LightEntityPanel';
 
 

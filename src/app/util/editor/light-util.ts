@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { environmentObjects } from './editor-util';
-import { LightEntity, LightProps, SerializedColor } from '../extensions/LightEntity';
-import { EntityFactory } from '../extensions/EntityFactory';
+import { LightEntity, LightProps, SerializedColor } from '../entity/LightEntity';
+import { EntityFactory } from '../entity/EntityFactory';
 
 // export const createSunEntity = (scene: BABYLON.Scene) => {
 //     // Create the light entity

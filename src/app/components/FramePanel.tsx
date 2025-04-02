@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { IconVideo } from '@tabler/icons-react';
-import { ImageRatio } from '../util/generation-util';
+import { ImageRatio } from '../util/generation/generation-util';
 import { useEditorContext } from '../context/EditorContext';
 import {
   setRatioOverlayRatio,

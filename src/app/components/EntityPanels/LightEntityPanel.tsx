@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 
 import { useEditorContext } from '../../context/EditorContext';
-import { EntityBase, } from '../../util/extensions/EntityBase';
+import { EntityBase, } from '../../util/entity/EntityBase';
 import { Slider } from '@/components/ui/slider';
 import * as BABYLON from '@babylonjs/core';
-import { LightEntity } from '../../util/extensions/LightEntity';
+import { LightEntity } from '../../util/entity/LightEntity';
 
 function LightEntityPanel(props: { entity: LightEntity }) {
     // State for light settings

@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { getRatioOverlayDimensions } from './editor/editor-util';
+import { getRatioOverlayDimensions } from '../editor/editor-util';
 import { cropImageToRatioFrame, resizeImage } from './image-processing';
 
 // Add this utility function to convert depth texture to image

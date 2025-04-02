@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import RenderPanel from './RenderPanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
-import { isEntity } from '../util/extensions/entityUtils';
+import { isEntity } from '../util/entity/entityUtils';
 
 export default function FileMenu() {
   const { scene } = useEditorContext();

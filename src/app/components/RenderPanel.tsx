@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { renderImage as generateRenderImage, dataURLtoBlob, availableAPIs, API_Info } from '../util/image-render-api';
-import { addNoiseToImage, resizeImage } from '../util/image-processing';
+import { renderImage as generateRenderImage, dataURLtoBlob, availableAPIs, API_Info } from '../util/generation/image-render-api';
+import { addNoiseToImage, resizeImage } from '../util/generation/image-processing';
 import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
-import { LoraConfig, LoraInfo } from '../util/lora';
+import { LoraConfig, LoraInfo } from '../util/generation/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/render-util';
+import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/generation/render-util';
 import { SerializedProjectSettings, downloadImage } from '../util/editor/project-util';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';

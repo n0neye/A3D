@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { CivitaiResponse, customLoras, getAllLoraInfo, LoraInfo } from '../util/lora';
+import { CivitaiResponse, customLoras, getAllLoraInfo, LoraInfo } from '../util/generation/lora';
 
 
 interface StylePanelProps {

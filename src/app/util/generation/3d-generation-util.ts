@@ -1,16 +1,16 @@
 import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
-import { get3DSimulationData, getImageSimulationData, isSimulating } from "./simulation-data";
-import { GenerationResult } from "./realtime-generation-util";
+import { get3DSimulationData, getImageSimulationData, isSimulating } from "../simulation-data";
+import { GenerationResult } from "../realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
-import { setupMeshShadows } from "./editor/light-util";
+import { setupMeshShadows } from "../editor/light-util";
 import { v4 as uuidv4 } from 'uuid';
-import { get3DModelPersistentUrl, upload3DModelToGCP } from "./storage-util";
-import { defaultPBRMaterial } from "./editor/material-util";
-import { GenerativeEntity } from "./extensions/GenerativeEntity";
-import { loadModel } from "./extensions/GenerativeEntity";
+import { get3DModelPersistentUrl, upload3DModelToGCP } from "../storage-util";
+import { defaultPBRMaterial } from "../editor/material-util";
+import { GenerativeEntity } from "../entity/GenerativeEntity";
+import { loadModel } from "../entity/GenerativeEntity";
 
 
 /**

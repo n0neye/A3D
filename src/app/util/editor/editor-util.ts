@@ -1,10 +1,10 @@
 import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
-import { EntityBase } from "../extensions/EntityBase";
-import { EntityFactory } from "../extensions/EntityFactory";
-import { isLightEntity } from "../extensions/entityUtils";
+import { EntityBase } from "../entity/EntityBase";
+import { EntityFactory } from "../entity/EntityFactory";
+import { isLightEntity } from "../entity/entityUtils";
 import * as GUI from '@babylonjs/gui';
-import { ImageRatio, RATIO_MAP } from '../generation-util';
+import { ImageRatio, RATIO_MAP } from '../generation/generation-util';
 import * as Materials from "@babylonjs/materials";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";

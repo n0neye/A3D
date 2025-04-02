@@ -5,7 +5,7 @@ import * as BABYLON from '@babylonjs/core';
 import AddPanel from './AddPanel';
 import EntityPanel from './EntityPanels/EntityPanel';
 import { useEditorContext } from '../context/EditorContext';
-import { initializeRealtimeConnection } from '../util/realtime-generation-util';
+import { initializeRealtimeConnection } from '../util/generation/realtime-generation-util';
 import RenderPanel from './RenderPanel';
 import DebugLayer from './DebugLayer';
 import { initGizmo, initScene } from '../util/editor/editor-util';
@@ -17,13 +17,13 @@ import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from './GalleryPanel';
 import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityAsyncCommand } from '../lib/commands';
 import { v4 as uuidv4 } from 'uuid';
-import { EntityFactory } from '../util/extensions/EntityFactory';
-import { duplicateEntity } from '../util/extensions/entityUtils';
+import { EntityFactory } from '../util/entity/EntityFactory';
+import { duplicateEntity } from '../util/entity/entityUtils';
 import Guide from './Guide';
-import { availableAPIs } from '../util/image-render-api';
+import { availableAPIs } from '../util/generation/image-render-api';
 import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
-import { GenerativeEntityProps } from '../util/extensions/GenerativeEntity';
-import { EntityBase } from '../util/extensions/EntityBase';
+import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
+import { EntityBase } from '../util/entity/EntityBase';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;

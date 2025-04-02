@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, fromBabylonVector3, SerializedEntityData, toBabylonVector3 } from './EntityBase';
-import { ImageRatio, ProgressCallback } from '../generation-util';
+import { ImageRatio, ProgressCallback } from '../generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
 import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
 import { setupMeshShadows } from '../editor/light-util';

@@ -1,15 +1,15 @@
-import { isEntity } from "../extensions/entityUtils";
-import { EntityBase, SerializedEntityData } from "../extensions/EntityBase";
-import { GenerativeEntity, SerializedGenerativeEntityData } from "../extensions/GenerativeEntity";
-import { ShapeEntity, SerializedShapeEntityData } from "../extensions/ShapeEntity";
-import { LightEntity, SerializedLightEntityData } from "../extensions/LightEntity";
-import { EntityFactory } from "../extensions/EntityFactory";
+import { isEntity } from "../entity/entityUtils";
+import { EntityBase, SerializedEntityData } from "../entity/EntityBase";
+import { GenerativeEntity, SerializedGenerativeEntityData } from "../entity/GenerativeEntity";
+import { ShapeEntity, SerializedShapeEntityData } from "../entity/ShapeEntity";
+import { LightEntity, SerializedLightEntityData } from "../entity/LightEntity";
+import { EntityFactory } from "../entity/EntityFactory";
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
-import { ImageRatio } from '../generation-util';
-import { API_Info } from '../image-render-api';
-import { LoraConfig } from '../lora';
-import { GenerativeEntityProps } from "../extensions/GenerativeEntity";
+import { ImageRatio } from '../generation/generation-util';
+import { API_Info } from '../generation/image-render-api';
+import { LoraConfig } from '../generation/lora';
+import { GenerativeEntityProps } from "../entity/GenerativeEntity";
 
 // Interface for serialized render settings
 export interface SerializedProjectSettings {
