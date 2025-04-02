@@ -29,6 +29,7 @@ import { isCharacterEntity } from '../util/entity/entityUtils';
 import { registerGizmoManager, registerHistoryManager } from '../util/editor/scene-managers';
 import { createSelectionManager, getSelectionManager } from '../util/editor/selection-manager';
 import { ISelectable } from '../interfaces/ISelectable';
+import { BoneControl } from '../util/entity/BoneControl';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -181,19 +182,35 @@ export default function EditorContainer() {
 
   const handleRegularClick = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
     console.log("handleRegularClick called");
-    // Normal left click (without Ctrl) - handle selection
-    const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-    const mesh = pickInfo.pickedMesh;
-    console.log("Picked mesh:", mesh?.name, "metadata:", mesh?.metadata);
 
     // Get the selection manager
     const selectionManager = getSelectionManager(scene);
     console.log("Selection manager found:", !!selectionManager);
     if (!selectionManager) return;
 
+
+    const bonePickInfo = scene.pick(
+      scene.pointerX,
+      scene.pointerY,
+      (mesh) => {
+        return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
+      }
+    );
+    if (bonePickInfo.hit && bonePickInfo.pickedMesh && bonePickInfo.pickedMesh instanceof BoneControl) {
+      console.log("Bone picked:", bonePickInfo.pickedMesh.name);
+      const boneControl = bonePickInfo.pickedMesh as BoneControl;
+      boneControl.character.selectBone(boneControl);
+      return;
+    }
+
+
+    const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+    const mesh = pickInfo.pickedMesh;
+    console.log("Picked mesh:", mesh?.name, "metadata:", mesh?.metadata);
+
+    // Clicked on empty space - deselect
     if (!mesh) {
       console.log("No mesh picked, deselecting");
-      // Clicked on empty space - deselect
       selectionManager.select(null);
       setSelectedEntity(null);
       return;
@@ -207,7 +224,7 @@ export default function EditorContainer() {
       console.log("Mesh has selectable rootEntity");
       selectable = mesh.metadata.rootEntity as ISelectable;
       selectionManager.select(selectable);
-      
+
       // If it's an EntityBase, update the selected entity in state
       if (mesh.metadata.rootEntity instanceof EntityBase) {
         console.log("rootEntity is EntityBase, selecting in UI");
@@ -215,7 +232,7 @@ export default function EditorContainer() {
       } else {
         setSelectedEntity(null);
       }
-    } 
+    }
     // THEN check if the mesh itself is directly selectable (for BoneControl etc.)
     else if ((mesh as any).gizmoCapabilities) {
       console.log("Mesh is directly selectable");

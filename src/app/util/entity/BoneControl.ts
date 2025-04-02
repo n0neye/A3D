@@ -1,12 +1,15 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
+import { CharacterEntity } from './CharacterEntity';
 
 /**
  * A mesh that represents a bone for manipulation
  */
 export class BoneControl extends BABYLON.Mesh implements ISelectable {
   public id: string;
+  public character: CharacterEntity;
+  public bone: BABYLON.Bone;
 
   // ISelectable implementation - bones only support rotation
   gizmoCapabilities: GizmoCapabilities = {
@@ -23,7 +26,8 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
   constructor(
     name: string,
     scene: BABYLON.Scene,
-    private bone: BABYLON.Bone,
+    bone: BABYLON.Bone,
+    character: CharacterEntity,
     options: {
       id?: string;
       diameter?: number;
@@ -33,6 +37,8 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     // Create with basic constructor first
     super(name, scene);
     this.id = options.id || uuidv4();
+    this.character = character;
+    this.bone = bone;
 
     // Create sphere mesh for the bone control
     const sphereSource = BABYLON.MeshBuilder.CreateSphere(

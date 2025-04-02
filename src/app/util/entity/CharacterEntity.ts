@@ -226,12 +226,13 @@ export class CharacterEntity extends EntityBase {
                 `bone_${bone.name}_${this.id}`,
                 this._scene,
                 bone,
+                this,
                 {
                     diameter: 0.05,
                     material: this._visualizationMaterial!
                 }
             );
-            
+
             // Position the control
             if (bone._linkedTransformNode) {
                 boneControl.parent = bone._linkedTransformNode.parent;
@@ -345,31 +346,31 @@ export class CharacterEntity extends EntityBase {
         this.showBoneVisualization(true);
 
         // Add pointer observer for bone selection
-        if (!this._pointerObserver && this._scene) {
-            this._pointerObserver = this._scene.onPointerObservable.add(
-                (pointerInfo) => this._handlePointerEvent(pointerInfo),
-                BABYLON.PointerEventTypes.POINTERDOWN |
-                BABYLON.PointerEventTypes.POINTERUP
+        // if (!this._pointerObserver && this._scene) {
+        //     this._pointerObserver = this._scene.onPointerObservable.add(
+        //         (pointerInfo) => this._handlePointerEvent(pointerInfo),
+        //         BABYLON.PointerEventTypes.POINTERDOWN |
+        //         BABYLON.PointerEventTypes.POINTERUP
+        //     );
+        // }
+
+        // If there's a gizmo manager, observe rotation changes
+        const gizmoManager = this.getGizmoManager();
+        if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
+            // Add observer for start of rotation (when drag begins)
+            this._gizmoStartDragObserver = gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
+                () => this._handleGizmoRotationStart()
             );
 
-            // If there's a gizmo manager, observe rotation changes
-            const gizmoManager = this.getGizmoManager();
-            if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
-                // Add observer for start of rotation (when drag begins)
-                this._gizmoStartDragObserver = gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
-                    () => this._handleGizmoRotationStart()
-                );
+            // Add observer for rotation changes (during drag)
+            this._gizmoRotationObserver = gizmoManager.gizmos.rotationGizmo.onDragObservable.add(
+                () => this._handleGizmoRotation()
+            );
 
-                // Add observer for rotation changes (during drag)
-                this._gizmoRotationObserver = gizmoManager.gizmos.rotationGizmo.onDragObservable.add(
-                    () => this._handleGizmoRotation()
-                );
-
-                // Add observer for end of rotation (when drag ends)
-                this._gizmoEndDragObserver = gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(
-                    () => this._finalizeBoneRotation()
-                );
-            }
+            // Add observer for end of rotation (when drag ends)
+            this._gizmoEndDragObserver = gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(
+                () => this._finalizeBoneRotation()
+            );
         }
     }
 
@@ -414,51 +415,7 @@ export class CharacterEntity extends EntityBase {
         this.showBoneVisualization(false);
     }
 
-    /**
-     * Handle pointer events for bone selection
-     */
-    private _handlePointerEvent(pointerInfo: BABYLON.PointerInfo): void {
-        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-            console.log("CharacterEntity: _handlePointerEvent", pointerInfo);
-
-            const bonePickInfo = this._scene.pick(
-                this._scene.pointerX,
-                this._scene.pointerY,
-                (mesh) => {
-                    return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
-                }
-            );
-
-            if (bonePickInfo.hit && bonePickInfo.pickedMesh) {
-                const pickedMesh = bonePickInfo.pickedMesh;
-
-                // Check if this is one of our bone controls
-                for (const [boneName, { bone, control }] of this._boneMap.entries()) {
-                    if (control === pickedMesh) {
-                        this._selectBone(bone, control);
-                        return;
-                    }
-                }
-
-                // If we clicked on something else, deselect current bone
-                if (this._selectedBone) {
-                    // Only deselect if we didn't click on a bone control
-                    let isControlMesh = false;
-                    for (const { control } of this._boneMap.values()) {
-                        if (pickedMesh === control) {
-                            isControlMesh = true;
-                            break;
-                        }
-                    }
-
-                    if (!isControlMesh) {
-                        this._deselectBone();
-                    }
-                }
-            }
-        }
-    }
-
+    
     /**
      * Called when a bone rotation gizmo drag starts
      */
@@ -516,17 +473,17 @@ export class CharacterEntity extends EntityBase {
     /**
      * Select a bone and its control
      */
-    private _selectBone(bone: BABYLON.Bone, control: BABYLON.Mesh): void {
+    public selectBone(boneControl: BoneControl): void {
         // Deselect previous bone
         this._deselectBone();
 
         // Select new bone
-        this._selectedBone = bone;
-        this._selectedControl = control;
+        this._selectedBone = boneControl.bone;
+        this._selectedControl = boneControl;
 
         // Highlight the selected control
-        if (control.material instanceof BABYLON.StandardMaterial) {
-            control.material = this._highlightMaterial;
+        if (boneControl.material instanceof BABYLON.StandardMaterial) {
+            boneControl.material = this._highlightMaterial;
         }
 
         // Sync rotation of the bone
@@ -538,7 +495,7 @@ export class CharacterEntity extends EntityBase {
         // Track bone selection
         trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
             action: 'select_bone',
-            boneName: bone.name
+            boneName: boneControl.bone.name
         });
 
         // Attach gizmo to the control
@@ -546,10 +503,10 @@ export class CharacterEntity extends EntityBase {
         if (gizmoManager) {
             gizmoManager.positionGizmoEnabled = false;
             gizmoManager.rotationGizmoEnabled = true;
-            gizmoManager.attachToMesh(control);
+            gizmoManager.attachToMesh(boneControl);
         }
 
-        console.log(`Selected bone: ${bone.name}`);
+        console.log(`Selected bone: ${boneControl.bone.name}`);
     }
 
     /**
@@ -582,7 +539,7 @@ export class CharacterEntity extends EntityBase {
         if (this.skeleton) {
             this.skeleton.bones.forEach(bone => {
                 let rotation: BABYLON.Quaternion | null = null;
-                
+
                 // Check if bone has a linked transform node with rotation
                 if (bone._linkedTransformNode) {
                     if (bone._linkedTransformNode.rotationQuaternion) {
@@ -599,7 +556,7 @@ export class CharacterEntity extends EntityBase {
                     // Use bone's rotation directly if no linked transform
                     rotation = bone.getRotationQuaternion();
                 }
-                
+
                 if (rotation) {
                     boneRotations[bone.name] = {
                         x: rotation.x,
@@ -630,12 +587,12 @@ export class CharacterEntity extends EntityBase {
 
             // Wait for model to load before applying bone rotations
             await entity.waitUntilReady();
-            
+
             // Give Babylon an extra frame to finalize loading
             await new Promise(resolve => setTimeout(resolve, 0));
 
             console.log("Character loaded, applying transforms");
-            
+
             // Apply base properties (transform)
             entity.position.x = data.position.x;
             entity.position.y = data.position.y;
@@ -652,10 +609,10 @@ export class CharacterEntity extends EntityBase {
             // Apply saved bone rotations if available
             if (data.boneRotations && entity.skeleton) {
                 console.log("Applying bone rotations");
-                
+
                 // First ensure all bones have their initial transforms updated
                 entity.skeleton.prepare();
-                
+
                 // Apply rotations in a try/catch to prevent errors from breaking deserialization
                 try {
                     Object.entries(data.boneRotations).forEach(([boneName, rotation]) => {
@@ -667,7 +624,7 @@ export class CharacterEntity extends EntityBase {
                                 rotation.z,
                                 rotation.w
                             );
-                            
+
                             try {
                                 // Apply to the linked transform node if it exists
                                 if (bone._linkedTransformNode) {
