@@ -8,34 +8,25 @@ import { Inspector } from '@babylonjs/inspector';
 
 let selectedBone: BABYLON.Bone | null = null;
 let selectedSphere: BABYLON.Mesh | null = null;
+let skeleton: BABYLON.Skeleton | null = null;
+let gizmoManager: BABYLON.GizmoManager | null = null;
+let bones: BABYLON.Bone[] = [];
+let boneSpheres: { [name: string]: BABYLON.Mesh } = {};
 
 export default function SkeletonTestScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BABYLON.Engine | null>(null);
   const sceneRef = useRef<BABYLON.Scene | null>(null);
-  const skeletonRef = useRef<BABYLON.Skeleton | null>(null);
-  const gizmoManagerRef = useRef<BABYLON.GizmoManager | null>(null);
-  // const [selectedBone, setSelectedBone] = useState<BABYLON.Bone | null>(null);
-  // const [selectedSphere, setSelectedSphere] = useState<BABYLON.Mesh | null>(null);
-  const [rotationX, setRotationX] = useState(0);
-  const [rotationY, setRotationY] = useState(0);
-  const [rotationZ, setRotationZ] = useState(0);
-  const [bones, setBones] = useState<BABYLON.Bone[]>([]);
-  const boneSpheres = useRef<{[name: string]: BABYLON.Mesh}>({});
 
   useEffect(() => {
     // Initialize Babylon.js
     if (!canvasRef.current) return;
-
     // Create engine and scene
     const engine = new BABYLON.Engine(canvasRef.current, true);
     engineRef.current = engine;
-    
     const scene = new BABYLON.Scene(engine);
     sceneRef.current = scene;
-
-    
-    Inspector.Show(scene, { overlay: true, embedMode: false });
+    // Inspector.Show(scene, { overlay: true, embedMode: false });
 
     // Setup camera
     const camera = new BABYLON.ArcRotateCamera(
@@ -79,132 +70,23 @@ export default function SkeletonTestScene() {
     ground.receiveShadows = true;
 
     // Create a gizmo manager
-    const gizmoManager = new BABYLON.GizmoManager(scene);
-    gizmoManagerRef.current = gizmoManager;
+    gizmoManager = new BABYLON.GizmoManager(scene);
     gizmoManager.positionGizmoEnabled = false;
     gizmoManager.rotationGizmoEnabled = true;
     gizmoManager.scaleGizmoEnabled = false;
     gizmoManager.usePointerToAttachGizmos = false;
     gizmoManager.attachableMeshes = []; // We'll add meshes to this later
-    
+
     // Configure the rotation gizmo
     const rotationGizmo = gizmoManager.gizmos.rotationGizmo;
     if (rotationGizmo) {
-      console.log("Rotation gizmo found");
       rotationGizmo.updateGizmoRotationToMatchAttachedMesh = true;
       rotationGizmo.scaleRatio = 1.5;
-      
-      // Listen for rotation changes from the gizmo
-      rotationGizmo.onDragObservable.add((event) => {
-        console.log("Rotating:", selectedBone?.name, selectedSphere?.name);
-        if (!selectedBone || !selectedSphere) return;
-        
-        // Get the rotation quaternion from the gizmo's attached mesh
-        const rotation = selectedSphere.rotation;
-        if (!rotation) return;
-        
-        console.log("Updating bone rotation", selectedBone.name, rotation.x, rotation.y, rotation.z);
-        
-        // Apply the same rotation to the bone
-        selectedBone.setRotation(rotation.clone());
-        if (selectedBone._linkedTransformNode) {
-          selectedBone._linkedTransformNode.rotation = rotation.clone();
-        }
-        
-        // Update UI sliders to match
-        // const euler = rotation.toEulerAngles();
-        const euler = rotation;
-        setRotationX(euler.x * (180 / Math.PI));
-        setRotationY(euler.y * (180 / Math.PI));
-        setRotationZ(euler.z * (180 / Math.PI));
-        
-        // Force skeleton update
-        if (skeletonRef.current) {
-          skeletonRef.current.prepare();
-        }
-      });
+      rotationGizmo.onDragObservable.add(onRotationChange);
     }
 
-    // Load the mannequin character
-    BABYLON.SceneLoader.ImportMesh(
-      '',
-      '/characters/mannequin_man_idle/',
-      'mannequin_man_idle.gltf',
-      scene,
-      (meshes, particleSystems, skeletons) => {
-        console.log('Model loaded', { meshes, skeletons });
-        
-        // If there are skeletons, log information about them
-        if (skeletons && skeletons.length > 0) {
-          const skeleton = skeletons[0];
-          skeletonRef.current = skeleton;
-          setBones(skeleton.bones);
-          console.log('Bones:', skeleton.bones.length);
-          console.log('Animations:', scene.animationGroups);
-          
-          // Make bones selectable
-          skeleton.bones.forEach((bone, index) => {
-            // Create a small sphere for each bone to make it selectable
-            const boneSphere = BABYLON.MeshBuilder.CreateSphere(
-              `bone_${bone.name}`,
-              { diameter: 0.05 },
-              scene
-            );
-            
-            // Position the sphere at the bone
-            boneSphere.position = bone.getAbsolutePosition();
-            
-            // Make it nearly transparent but keep it selectable
-            const material = new BABYLON.StandardMaterial(`bone_material_${index}`, scene);
-            material.diffuseColor = new BABYLON.Color3(0, 1, 0);
-            material.alpha = 0.3;
-            boneSphere.material = material;
-            
-            // Make it pickable
-            boneSphere.isPickable = true;
-            
-            // Add action on click
-            boneSphere.actionManager = new BABYLON.ActionManager(scene);
-            boneSphere.actionManager.registerAction(
-              new BABYLON.ExecuteCodeAction(
-                BABYLON.ActionManager.OnPickTrigger,
-                () => {
-                  console.log(`Selected bone: ${bone.name}`);
-                  // setSelectedBone(bone);
-                  selectedBone = bone;
-                  // Get current rotation
-                  const rotation = bone.getRotation();
-                  setRotationX(rotation.x * (180 / Math.PI));
-                  setRotationY(rotation.y * (180 / Math.PI));
-                  setRotationZ(rotation.z * (180 / Math.PI));
 
-                  gizmoManager.attachToMesh(boneSphere);
-                  selectedSphere = boneSphere;
-                }
-              )
-            );
-          });
-          
-          // Play animations if they exist
-          if (scene.animationGroups && scene.animationGroups.length > 0) {
-            // Pause animation to allow manual adjustment
-            scene.animationGroups[0].pause();
-          }
-        }
 
-        // Position the model
-        const rootMesh = meshes[0];
-        rootMesh.position = new BABYLON.Vector3(0, 0, 0);
-      },
-      (event) => {
-        // Loading progress
-        console.log(`Loading progress: ${event.loaded} / ${event.total}`);
-      },
-      (scene, message) => {
-        // Error handling
-        console.error('Error loading model:', message);
-      }
-    );
 
     // Handle window resize
     const handleResize = () => {
@@ -217,6 +99,8 @@ export default function SkeletonTestScene() {
       scene.render();
     });
 
+    prepareCharacter(scene);
+
     // Cleanup function
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -225,51 +109,105 @@ export default function SkeletonTestScene() {
     };
   }, []);
 
-  // Apply rotation when sliders change
-  useEffect(() => {
-    if (selectedBone) {
-      // Convert degrees to radians
-      const radX = rotationX * (Math.PI / 180);
-      const radY = rotationY * (Math.PI / 180);
-      const radZ = rotationZ * (Math.PI / 180);
-      
-      // Create rotation quaternion
-      const rotation = BABYLON.Quaternion.RotationYawPitchRoll(radY, radX, radZ);
-      
-      // Apply to bone
-      selectedBone.setRotationQuaternion(rotation);
-      
-      // Update the scene
-      if (sceneRef.current) {
-        sceneRef.current.render();
-      }
-    }
-  }, [rotationX, rotationY, rotationZ, selectedBone]);
+  const prepareCharacter = async (scene: BABYLON.Scene) => {
+    // Load the mannequin character
+    const result = await BABYLON.ImportMeshAsync(
+      '/characters/mannequin_man_idle/mannequin_man_idle.gltf',
+      scene,
+    );
+    const meshes = result.meshes;
+    const skeletons = result.skeletons;
 
-  // Function to handle bone selection from dropdown
-  const handleBoneSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const boneName = e.target.value;
-    const bone = bones.find(b => b.name === boneName) || null;
-    
-    if (bone) {
-      // setSelectedBone(bone);
-      selectedBone = bone;
-      // Get current rotation
-      const rotation = bone.getRotation();
-      setRotationX(rotation.x * (180 / Math.PI));
-      setRotationY(rotation.y * (180 / Math.PI));
-      setRotationZ(rotation.z * (180 / Math.PI));
-    } else {
-      // setSelectedBone(null);
-      selectedBone = null;
+    console.log('Model loaded', { meshes, skeletons });
+    // If there are skeletons, log information about them
+    if (skeletons && skeletons.length > 0) {
+      prepareBones(skeletons[0], scene);
     }
-  };
-  
+    // Position the model
+    const rootMesh = meshes[0];
+    rootMesh.position = new BABYLON.Vector3(0, 0, 0);
+  }
+
+  const prepareBones = (skeleton: BABYLON.Skeleton, scene: BABYLON.Scene) => {
+    bones = skeleton.bones;
+    console.log('Bones:', skeleton.bones.length);
+    console.log('Animations:', scene.animationGroups);
+
+    // Make bones selectable
+    skeleton.bones.forEach((bone, index) => {
+      // Create a small sphere for each bone to make it selectable
+      const boneSphere = BABYLON.MeshBuilder.CreateSphere(
+        `bone_${bone.name}`,
+        { diameter: 0.05 },
+        scene
+      );
+
+      // Position the sphere at the bone
+      boneSphere.position = bone.getAbsolutePosition();
+
+      // Make it nearly transparent but keep it selectable
+      const material = new BABYLON.StandardMaterial(`bone_material_${index}`, scene);
+      material.diffuseColor = new BABYLON.Color3(0, 1, 0);
+      material.alpha = 0.3;
+      boneSphere.material = material;
+
+      // Make it pickable
+      boneSphere.isPickable = true;
+
+      // Add action on click
+      boneSphere.actionManager = new BABYLON.ActionManager(scene);
+      boneSphere.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(
+          BABYLON.ActionManager.OnPickTrigger,
+          () => {
+            console.log(`Selected bone: ${bone.name}`);
+            // setSelectedBone(bone);
+            selectedBone = bone;
+            // Get current rotation
+            const rotation = bone.getRotation();
+
+            if (gizmoManager) {
+              gizmoManager.attachToMesh(boneSphere);
+            }
+            selectedSphere = boneSphere;
+          }
+        )
+      );
+    });
+
+    // Pause animation to allow manual adjustment
+    if (scene.animationGroups && scene.animationGroups.length > 0) {
+      scene.animationGroups[0].pause();
+    }
+  }
+
+  const onRotationChange = (event: unknown) => {
+    console.log("Rotating:", selectedBone?.name, selectedSphere?.name);
+    if (!selectedBone || !selectedSphere) return;
+
+    // Get the rotation quaternion from the gizmo's attached mesh
+    const rotation = selectedSphere.rotation;
+    if (!rotation) return;
+
+    console.log("Updating bone rotation", selectedBone.name, rotation.x, rotation.y, rotation.z);
+
+    // Apply the same rotation to the bone
+    if (selectedBone._linkedTransformNode) {
+      selectedBone._linkedTransformNode.rotation = rotation.clone();
+    } else {
+      selectedBone.rotation = rotation.clone();
+    }
+
+    // Force skeleton update
+    if (skeleton) {
+      skeleton.prepare();
+    }
+  }
+
 
   return (
     <>
       <canvas ref={canvasRef} className="w-full h-full fixed" />
-      
     </>
   );
 } 
