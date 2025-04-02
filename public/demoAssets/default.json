@@ -1,14 +1,15 @@
 {
-  "version": "1.0.0",
-  "timestamp": "2025-03-31T08:29:08.710Z",
+  "version": "1.0.1",
+  "timestamp": "2025-04-02T03:10:10.511Z",
   "entities": [
     {
-      "id": "light-faff3696",
-      "name": "light-faff3696",
+      "id": "dba18014-0eac-433d-bcee-78150a412515",
+      "name": "entity-1743561307120",
+      "entityType": "shape",
       "position": {
-        "x": -0.5372024178504944,
-        "y": 3.007087469100952,
-        "z": 2.107046604156494
+        "x": 0,
+        "y": 0,
+        "z": 0
       },
       "rotation": {
         "x": 0,
@@ -20,197 +21,19 @@
         "y": 1,
         "z": 1
       },
-      "metadata": {
-        "entityType": "light",
-        "created": "2025-03-31T08:27:57.893Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
-        },
-        "lightProperties": {
-          "color": {
-            "r": 1,
-            "g": 1,
-            "b": 1
-          },
-          "intensity": 0.55,
-          "shadowEnabled": true
-        }
-      },
-      "created": "2025-03-31T08:27:57.893Z",
-      "displayMode": "2d"
-    },
-    {
-      "id": "aiObject-618f5805",
-      "name": "aiObject-618f5805",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scaling": {
-        "x": 6.665422439575195,
-        "y": 1,
-        "z": 9.925246238708496
-      },
-      "metadata": {
-        "entityType": "aiObject",
-        "created": "2025-03-30T10:31:12.546Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
-        },
-        "aiData": {
-          "aiObjectType": "shape",
-          "currentGenerationId": null,
-          "ratio": "1:1",
-          "imageSize": "medium",
-          "generationLogs": []
-        },
+      "created": "2025-04-02T03:09:36.842Z",
+      "props": {
         "shapeType": "floor"
-      },
-      "created": "2025-03-30T10:31:12.546Z",
-      "displayMode": "3d"
+      }
     },
     {
-      "id": "a_a_gen-5735fb69",
-      "name": "a_a_gen-5735fb69",
+      "id": "76355aa7-4e86-4d0a-8cff-4378eff5ec5f",
+      "name": "entity-1743561308611",
+      "entityType": "light",
       "position": {
-        "x": 1.377175211906433,
-        "y": 0.8256326913833618,
-        "z": 1.3703480958938599
-      },
-      "rotation": {
         "x": 0,
-        "y": 0.33855216144388883,
-        "z": 0
-      },
-      "scaling": {
-        "x": 0.8453273773193459,
-        "y": 0.8453260660171509,
-        "z": 0.8453273773193459
-      },
-      "metadata": {
-        "entityType": "aiObject",
-        "created": "2025-03-30T10:35:37.445Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
-        },
-        "aiData": {
-          "aiObjectType": "generativeObject",
-          "currentGenerationId": "bff03820-3113-431c-a18e-a527e745cfa9",
-          "ratio": "1:1",
-          "imageSize": "medium",
-          "generationLogs": [
-            {
-              "id": "9987a6f0-b8fd-430e-bfc2-576f9747063e",
-              "timestamp": 1743330948515,
-              "prompt": "a sitted cat",
-              "assetType": "image",
-              "fileUrl": "https://im.runware.ai/image/ws/2/ii/ff372926-67e7-442b-8a2f-3b54a880a7a6.webp",
-              "imageParams": {
-                "ratio": "1:1",
-                "imageSize": "medium"
-              }
-            },
-            {
-              "id": "58f38c68-3c0c-406c-afd6-aa218bd155c7",
-              "timestamp": 1743330955353,
-              "prompt": "a sitted cat",
-              "assetType": "image",
-              "fileUrl": "https://im.runware.ai/image/ws/2/ii/ed7ea1e9-a16b-40cc-9b39-d92c198d257a.webp",
-              "imageParams": {
-                "ratio": "1:1",
-                "imageSize": "medium"
-              }
-            },
-            {
-              "id": "bff03820-3113-431c-a18e-a527e745cfa9",
-              "timestamp": 1743330966978,
-              "prompt": "a sitted cat",
-              "assetType": "model",
-              "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/14aa4756-a534-4025-b85f-fd2010157424.glb",
-              "derivedFromId": "58f38c68-3c0c-406c-afd6-aa218bd155c7"
-            }
-          ]
-        }
-      },
-      "created": "2025-03-30T10:35:37.445Z",
-      "displayMode": "3d"
-    },
-    {
-      "id": "skull_gen-c46c6361",
-      "name": "skull_gen-c46c6361",
-      "position": {
-        "x": -0.5354422330856323,
-        "y": 0.3342999815940857,
-        "z": 1.5598057508468628
-      },
-      "rotation": {
-        "x": -0.296688945325394,
-        "y": -0.6308496211056707,
-        "z": 0.04742849731163886
-      },
-      "scaling": {
-        "x": 0.38622358441352844,
-        "y": 0.38622361421585344,
-        "z": 0.38622361421585344
-      },
-      "metadata": {
-        "entityType": "aiObject",
-        "created": "2025-03-30T10:32:52.731Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
-        },
-        "aiData": {
-          "aiObjectType": "generativeObject",
-          "currentGenerationId": "11c5b040-cb47-44dc-8d6f-a602fc9333cb",
-          "ratio": "1:1",
-          "imageSize": "medium",
-          "generationLogs": [
-            {
-              "id": "78ae8f97-0fd8-4d74-ba13-dbc4c85d1436",
-              "timestamp": 1743330778505,
-              "prompt": "skull",
-              "assetType": "image",
-              "fileUrl": "https://im.runware.ai/image/ws/2/ii/189c3781-419d-4fda-b7ca-e963f4585ff4.webp",
-              "imageParams": {
-                "ratio": "1:1",
-                "imageSize": "medium"
-              }
-            },
-            {
-              "id": "11c5b040-cb47-44dc-8d6f-a602fc9333cb",
-              "timestamp": 1743330789708,
-              "prompt": "skull",
-              "assetType": "model",
-              "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/30324567-8157-4f27-a286-7e324401b84c.glb",
-              "derivedFromId": "78ae8f97-0fd8-4d74-ba13-dbc4c85d1436"
-            }
-          ]
-        }
-      },
-      "created": "2025-03-30T10:32:52.731Z",
-      "displayMode": "3d"
-    },
-    {
-      "id": "dried_flowers_gen-10d76abc",
-      "name": "dried_flowers_gen-10d76abc",
-      "position": {
-        "x": 0.05197547748684883,
-        "y": 0.9607067108154297,
-        "z": 1.819027066230774
+        "y": 2.5504138469696045,
+        "z": 2.689049243927002
       },
       "rotation": {
         "x": 0,
@@ -218,203 +41,128 @@
         "z": 0
       },
       "scaling": {
-        "x": 0.5265162587165833,
-        "y": 0.5265162587165833,
-        "z": 0.5265162587165833
-      },
-      "metadata": {
-        "entityType": "aiObject",
-        "created": "2025-03-30T10:35:12.866Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
-        },
-        "aiData": {
-          "aiObjectType": "generativeObject",
-          "currentGenerationId": "41cc3107-8aeb-4e99-85b0-968ef109464f",
-          "ratio": "1:1",
-          "imageSize": "medium",
-          "generationLogs": [
-            {
-              "id": "392270d7-8a42-4793-a143-a83c58d0499c",
-              "timestamp": 1743330920320,
-              "prompt": "flowers in a vase",
-              "assetType": "image",
-              "fileUrl": "https://im.runware.ai/image/ws/2/ii/c2aa1ecc-4432-4df6-9780-e91101861c90.webp",
-              "imageParams": {
-                "ratio": "1:1",
-                "imageSize": "medium"
-              }
-            },
-            {
-              "id": "37d8753d-6b64-45fc-b909-1c0b804157cf",
-              "timestamp": 1743330928110,
-              "prompt": "dried flowers in a vase",
-              "assetType": "image",
-              "fileUrl": "https://im.runware.ai/image/ws/2/ii/7aee1998-4689-4d20-86dd-cf0403ccfccc.webp",
-              "imageParams": {
-                "ratio": "1:1",
-                "imageSize": "medium"
-              }
-            },
-            {
-              "id": "41cc3107-8aeb-4e99-85b0-968ef109464f",
-              "timestamp": 1743330941121,
-              "prompt": "dried flowers in a vase",
-              "assetType": "model",
-              "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/3f57c1c6-b465-47c9-a35f-e67debad5150.glb",
-              "derivedFromId": "37d8753d-6b64-45fc-b909-1c0b804157cf"
-            }
-          ]
-        }
-      },
-      "created": "2025-03-30T10:35:12.866Z",
-      "displayMode": "3d"
-    },
-    {
-      "id": "bird_bird_gen-7ba627d7",
-      "name": "bird_bird_gen-7ba627d7",
-      "position": {
-        "x": 1.1357192993164062,
-        "y": 2.9153318405151367,
-        "z": 0.3151845932006836
-      },
-      "rotation": {
-        "x": 0,
-        "y": -0.7269074804462111,
-        "z": 0
-      },
-      "scaling": {
-        "x": 0.6778775453567505,
-        "y": 0.6778775453567505,
-        "z": 0.6778775453567505
-      },
-      "metadata": {
-        "entityType": "aiObject",
-        "created": "2025-03-31T07:13:09.525Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
-        },
-        "aiData": {
-          "aiObjectType": "generativeObject",
-          "currentGenerationId": "1917911c-5680-4add-9b7b-837b809f7c27",
-          "ratio": "1:1",
-          "imageSize": "medium",
-          "generationLogs": [
-            {
-              "id": "c8ce9989-b61c-47b1-8929-b0716c284ddb",
-              "timestamp": 1743405195331,
-              "prompt": "bird flying",
-              "assetType": "image",
-              "fileUrl": "https://im.runware.ai/image/ws/2/ii/f13b1af7-053f-440f-bc4d-b6af0f9ffd2d.webp",
-              "imageParams": {
-                "ratio": "1:1",
-                "imageSize": "medium"
-              }
-            },
-            {
-              "id": "97cd749c-5195-41db-b4a3-7ccad3a9d1f6",
-              "timestamp": 1743405200348,
-              "prompt": "bird flying",
-              "assetType": "image",
-              "fileUrl": "https://im.runware.ai/image/ws/2/ii/07004209-d6c9-4435-aa3a-37db9967258e.webp",
-              "imageParams": {
-                "ratio": "1:1",
-                "imageSize": "medium"
-              }
-            },
-            {
-              "id": "1917911c-5680-4add-9b7b-837b809f7c27",
-              "timestamp": 1743405209742,
-              "prompt": "bird flying",
-              "assetType": "model",
-              "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/90906cf6-c0a5-4678-8d90-211dc18a2f62.glb",
-              "derivedFromId": "97cd749c-5195-41db-b4a3-7ccad3a9d1f6"
-            }
-          ]
-        }
-      },
-      "created": "2025-03-31T07:13:09.525Z",
-      "displayMode": "3d"
-    },
-    {
-      "id": "cube-f1f3a29e",
-      "name": "cube-f1f3a29e",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scaling": {
-        "x": 2.2502729892730713,
-        "y": 2.0189590454101562,
+        "x": 1,
+        "y": 1,
         "z": 1
       },
-      "metadata": {
-        "entityType": "aiObject",
-        "created": "2025-03-31T08:24:35.790Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
+      "created": "2025-04-02T03:09:36.845Z",
+      "props": {
+        "intensity": 0.7,
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
         },
-        "aiData": {
-          "aiObjectType": "shape",
-          "currentGenerationId": null,
-          "ratio": "1:1",
-          "imageSize": "medium",
-          "generationLogs": []
-        },
-        "shapeType": "cube"
-      },
-      "created": "2025-03-31T08:24:35.790Z",
-      "displayMode": "3d"
+        "shadowEnabled": true
+      }
     },
     {
-      "id": "cube-7f85632a",
-      "name": "cube-7f85632a",
+      "id": "be25befd-a327-4dff-8607-7df693155534",
+      "name": "entity-1743561324084",
+      "entityType": "shape",
       "position": {
-        "x": 0.05821117386221886,
+        "x": 0,
         "y": 0,
-        "z": 1.7818299531936646
+        "z": 0.4002954065799713
       },
       "rotation": {
         "x": 0,
-        "y": -0.7514110345017344,
+        "y": 0,
         "z": 0
       },
       "scaling": {
-        "x": 0.48478803038597107,
-        "y": 0.48478803038597107,
-        "z": 0.48478803038597107
+        "x": 1,
+        "y": 1.4872163534164429,
+        "z": 0.3586892783641815
       },
-      "metadata": {
-        "entityType": "aiObject",
-        "created": "2025-03-31T08:28:20.886Z",
-        "processingState": {
-          "isGenerating2D": false,
-          "isGenerating3D": false,
-          "progressMessage": ""
-        },
-        "aiData": {
-          "aiObjectType": "shape",
-          "currentGenerationId": null,
-          "ratio": "1:1",
-          "imageSize": "medium",
-          "generationLogs": []
-        },
+      "created": "2025-04-02T03:09:36.849Z",
+      "props": {
         "shapeType": "cube"
+      }
+    },
+    {
+      "id": "sitted_7d05b804-23cb-4e62-8a56-8b65825c487f",
+      "name": "sitted_entity-1743561342407",
+      "entityType": "generative",
+      "position": {
+        "x": -0.0016885526711121202,
+        "y": 0.6653233170509338,
+        "z": 0.932239294052124
       },
-      "created": "2025-03-31T08:28:20.886Z",
-      "displayMode": "3d"
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scaling": {
+        "x": 0.6860902309417725,
+        "y": 0.6860902309417725,
+        "z": 0.6860902309417725
+      },
+      "created": "2025-04-02T03:09:36.851Z",
+      "props": {
+        "generationLogs": [
+          {
+            "id": "3a7cf9b2-d29a-4afb-bc82-161542bfe36b",
+            "timestamp": 1743561349512,
+            "prompt": "sitted cat",
+            "assetType": "image",
+            "fileUrl": "https://im.runware.ai/image/ws/2/ii/01db54c3-6c88-4ffe-8f3c-d534a320c85e.webp"
+          },
+          {
+            "id": "7aa7a48e-fd95-47e5-97db-9ca4bde12e8c",
+            "timestamp": 1743561423437,
+            "prompt": "",
+            "assetType": "model",
+            "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/2c1e0fee-0bb9-48e2-8d9c-3da32bcbf185.glb",
+            "derivedFromId": "3a7cf9b2-d29a-4afb-bc82-161542bfe36b"
+          }
+        ],
+        "currentGenerationId": "7aa7a48e-fd95-47e5-97db-9ca4bde12e8c",
+        "currentGenerationIdx": 1
+      }
+    },
+    {
+      "id": "skull_b6825e2b-2d99-4049-b19c-ead9334317fd",
+      "name": "skull_entity-1743561366379",
+      "entityType": "generative",
+      "position": {
+        "x": 0.8370312452316284,
+        "y": 0.2361592799425125,
+        "z": 0.37498825788497925
+      },
+      "rotation": {
+        "x": -0.5683240186099452,
+        "y": 0.607868298713871,
+        "z": -6.135810551507426e-8
+      },
+      "scaling": {
+        "x": 0.3727756738663391,
+        "y": 0.37277644872665405,
+        "z": 0.3727756738663391
+      },
+      "created": "2025-04-02T03:09:36.853Z",
+      "props": {
+        "generationLogs": [
+          {
+            "id": "1d0f7347-dfd8-4659-b5dd-3ea1ee760271",
+            "timestamp": 1743561372889,
+            "prompt": "skull",
+            "assetType": "image",
+            "fileUrl": "https://im.runware.ai/image/ws/2/ii/edd539e6-b058-446d-898d-9df9bcfdafea.webp"
+          },
+          {
+            "id": "343e29d0-e968-4b2b-af4f-1aa5d6557004",
+            "timestamp": 1743561433892,
+            "prompt": "",
+            "assetType": "model",
+            "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/6b042563-a4dc-48cf-ade8-2171c0c161c7.glb",
+            "derivedFromId": "1d0f7347-dfd8-4659-b5dd-3ea1ee760271"
+          }
+        ],
+        "currentGenerationId": "343e29d0-e968-4b2b-af4f-1aa5d6557004",
+        "currentGenerationIdx": 1
+      }
     }
   ],
   "environment": {
@@ -426,11 +174,11 @@
     },
     "camera": {
       "fov": 0.47,
-      "farClip": 20,
+      "farClip": 40,
       "position": {
-        "x": 0.4179162594952426,
-        "y": 0.4883622042528817,
-        "z": 11.336664447969616
+        "x": 0.7368223115187605,
+        "y": 2.1298450604161756,
+        "z": 11.303986342399687
       },
       "target": {
         "x": 0.06287474425993049,
@@ -438,8 +186,8 @@
         "z": 0.9635817178080648
       },
       "radius": 10.403722232707619,
-      "alpha": 1.5365824891121946,
-      "beta": 1.639529540895313
+      "alpha": 1.5057122490432144,
+      "beta": 1.4815787030479735
     }
   },
   "ProjectSettings": {

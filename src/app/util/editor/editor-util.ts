@@ -61,29 +61,23 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
         new BABYLON.Vector3(0, 0, 0),
         scene
     );
-    camera.wheelPrecision = 40;
-    camera.panningSensibility = 1000;
-    camera.angularSensibilityX = 500;
-    camera.angularSensibilityY = 500;
+    camera.wheelPrecision = 20;
+    camera.panningSensibility = 400;
+    camera.angularSensibilityX = 400;
+    camera.angularSensibilityY = 400;
     camera.lowerRadiusLimit = 1;
     camera.upperRadiusLimit = 20;
     camera.attachControl(canvas, true);
     camera.position = new BABYLON.Vector3(0, 1, 5);
     camera.minZ = 0.01;
     camera.maxZ = 50;
+    camera.inertia = 0;
+    camera.panningInertia = 0;
+    camera.inertialPanningX = 0;
+    camera.inertialPanningY = 0;
 
     // Ambient Light
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);
-
-    // Create Ambient Light
-    // createDefaultLights(scene);
-
-
-    // Create a background entity
-    // createEntity(scene, "aiObject", {
-    //     aiObjectType: "background",
-    //     imageUrl: "./demoAssets/skybox/qwantani_puresky_4k.jpg"
-    // });
 
     // Create world grid
     createWorldGrid(scene, 20, 10);
@@ -96,20 +90,6 @@ export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene)
 
     // Load shape meshes before creating any shapes
     await loadShapeMeshes(scene);
-
-    // Create shapes
-    // createEntity(scene, "aiObject", {
-    //     aiObjectType: "shape",
-    //     shapeType: "sphere",
-    //     position: new BABYLON.Vector3(0, 0.25, 0),
-    // });
-
-    // createEntity(scene, "aiObject", {
-    //     aiObjectType: "shape",
-    //     shapeType: "floor",
-    //     position: new BABYLON.Vector3(0, 0, 0),
-    //     scale: new BABYLON.Vector3(50, 50, 50),
-    // });
 
     createSkybox(scene);
 }
