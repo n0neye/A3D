@@ -10,8 +10,7 @@ let selectedBone: BABYLON.Bone | null = null;
 let selectedSphere: BABYLON.Mesh | null = null;
 let skeleton: BABYLON.Skeleton | null = null;
 let gizmoManager: BABYLON.GizmoManager | null = null;
-let bones: BABYLON.Bone[] = [];
-let boneSpheres: { [name: string]: BABYLON.Mesh } = {};
+let boneMap: { [name: string]: { bone: BABYLON.Bone, sphere: BABYLON.Mesh } } = {};
 
 export default function SkeletonTestScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -115,61 +114,60 @@ export default function SkeletonTestScene() {
       '/characters/mannequin_man_idle/mannequin_man_idle.gltf',
       scene,
     );
-    const meshes = result.meshes;
-    const skeletons = result.skeletons;
+    prepareBones(result, scene);
 
-    console.log('Model loaded', { meshes, skeletons });
-    // If there are skeletons, log information about them
-    if (skeletons && skeletons.length > 0) {
-      prepareBones(skeletons[0], scene);
-    }
     // Position the model
-    const rootMesh = meshes[0];
+    const rootMesh = result.meshes[0];
     rootMesh.position = new BABYLON.Vector3(0, 0, 0);
   }
 
-  const prepareBones = (skeleton: BABYLON.Skeleton, scene: BABYLON.Scene) => {
-    bones = skeleton.bones;
+  const prepareBones = (result: BABYLON.ISceneLoaderAsyncResult, scene: BABYLON.Scene) => {
+    const skeletons = result.skeletons;
+    let skeleton: BABYLON.Skeleton | null = null;
+    if (skeletons && skeletons.length > 0) {
+      skeleton = skeletons[0];
+    }
+    if (!skeleton) return;
+    const bones = skeleton.bones;
     console.log('Bones:', skeleton.bones.length);
     console.log('Animations:', scene.animationGroups);
 
     // Make bones selectable
-    skeleton.bones.forEach((bone, index) => {
+    skeleton.bones.forEach((_bone, index) => {
       // Create a small sphere for each bone to make it selectable
-      const boneSphere = BABYLON.MeshBuilder.CreateSphere(
-        `bone_${bone.name}`,
+      const _boneSphere = BABYLON.MeshBuilder.CreateSphere(
+        `bone_${_bone.name}`,
         { diameter: 0.05 },
         scene
       );
 
+      // BoneMap
+      boneMap[_bone.name] = { bone: _bone, sphere: _boneSphere };
+
       // Position the sphere at the bone
-      boneSphere.position = bone.getAbsolutePosition();
+      _boneSphere.position = _bone.getAbsolutePosition();
 
       // Make it nearly transparent but keep it selectable
       const material = new BABYLON.StandardMaterial(`bone_material_${index}`, scene);
       material.diffuseColor = new BABYLON.Color3(0, 1, 0);
       material.alpha = 0.3;
-      boneSphere.material = material;
+      _boneSphere.material = material;
 
       // Make it pickable
-      boneSphere.isPickable = true;
+      _boneSphere.isPickable = true;
 
       // Add action on click
-      boneSphere.actionManager = new BABYLON.ActionManager(scene);
-      boneSphere.actionManager.registerAction(
+      _boneSphere.actionManager = new BABYLON.ActionManager(scene);
+      _boneSphere.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(
           BABYLON.ActionManager.OnPickTrigger,
           () => {
-            console.log(`Selected bone: ${bone.name}`);
-            // setSelectedBone(bone);
-            selectedBone = bone;
-            // Get current rotation
-            const rotation = bone.getRotation();
-
+            console.log(`Selected bone: ${_bone.name}`);
+            selectedSphere = _boneSphere;
+            selectedBone = _bone;
             if (gizmoManager) {
-              gizmoManager.attachToMesh(boneSphere);
+              gizmoManager.attachToMesh(_boneSphere);
             }
-            selectedSphere = boneSphere;
           }
         )
       );
