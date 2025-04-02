@@ -8,6 +8,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
 import { BoneRotationCommand } from '../../lib/commands';
 import { useEditorContext } from '../../context/EditorContext';
 import { HistoryManager } from '../../components/HistoryManager';
+import { BoneControl } from './BoneControl';
 
 export interface CharacterEntityProps {
     url: string;
@@ -29,7 +30,7 @@ export class CharacterEntity extends EntityBase {
     public initialBoneRotations: Map<string, BABYLON.Quaternion> = new Map();
 
     // Bone visualization properties
-    private _boneMap: Map<string, { bone: BABYLON.Bone, control: BABYLON.Mesh }> = new Map();
+    private _boneMap: Map<string, { bone: BABYLON.Bone, control: BoneControl }> = new Map();
     private _boneLines: Map<string, BABYLON.LinesMesh> = new Map();
     private _visualizationMaterial: BABYLON.Material | null = null;
     private _highlightMaterial: BABYLON.Material | null = null;
@@ -220,21 +221,18 @@ export class CharacterEntity extends EntityBase {
                 return;
             }
 
-            // Create a small sphere for the bone
-            const boneControl = BABYLON.MeshBuilder.CreateSphere(
+            // Create a bone control instead of a regular mesh
+            const boneControl = new BoneControl(
                 `bone_${bone.name}_${this.id}`,
-                { diameter: 0.05 },
-                this._scene
+                this._scene,
+                bone,
+                {
+                    diameter: 0.05,
+                    material: this._visualizationMaterial!
+                }
             );
-
-            boneControl.material = this._visualizationMaterial;
-            boneControl.renderingGroupId = 1;
-            boneControl.isPickable = true;
-            boneControl.metadata = {
-                isBoneControl: true
-            }
-
-            // Position the control at the bone
+            
+            // Position the control
             if (bone._linkedTransformNode) {
                 boneControl.parent = bone._linkedTransformNode.parent;
                 boneControl.position = bone._linkedTransformNode.position;
@@ -243,7 +241,7 @@ export class CharacterEntity extends EntityBase {
                 boneControl.position = bone.getPosition(BABYLON.Space.WORLD);
             }
 
-            // Store in bone map
+            // Store in bone map 
             this._boneMap.set(bone.name, { bone, control: boneControl });
 
             // Hide initially

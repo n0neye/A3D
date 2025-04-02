@@ -4,6 +4,7 @@ import { EntityBase } from '../util/entity/EntityBase';
 import { isGenerativeEntity, isLightEntity, isShapeEntity, isCharacterEntity } from '../util/entity/entityUtils';
 import { HistoryManager } from '../components/HistoryManager';
 import { UpdateGizmoVisibility } from '../util/editor/editor-util';
+import { SelectionManager } from '../util/editor/selection-manager';
 
 interface EditorContextType {
   scene: BABYLON.Scene | null;
@@ -22,6 +23,8 @@ interface EditorContextType {
   historyManager: HistoryManager;
   isGizmoVisible: boolean;
   setGizmoVisible: (isVisible: boolean) => void;
+  selectionManager: SelectionManager | null;
+  setSelectionManager: (manager: SelectionManager | null) => void;
 }
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 const EditorContext = createContext<EditorContextType | null>(null);
@@ -35,6 +38,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [currentGizmoMode, setCurrentGizmoMode] = useState<GizmoMode>('position');
   const [historyManager] = useState(new HistoryManager());
   const [isGizmoVisible, setIsGizmoVisible] = useState<boolean>(true);
+  const [selectionManager, setSelectionManager] = useState<SelectionManager | null>(null);
 
   // Use a ref to always track current selected entity
   const selectedEntityRef = useRef<EntityBase | null>(null);
@@ -192,18 +196,16 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, [isGizmoVisible, scene]);
 
   const setSelectedEntity = (entity: EntityBase | null) => {
-    // If there's a currently selected entity, notify it about deselection
-    if (selectedEntityState && isCharacterEntity(selectedEntityState)) {
-      selectedEntityState.onDeselect();
-    }
+    // If there's a currently selected entity, it will be deselected by selection manager
     
-    // Update the selected entity
+    // Update the selected entity state
     setSelectedEntityState(entity);
     
-    // Notify the newly selected entity
-    if (entity && isCharacterEntity(entity)) {
-      // No need to pass managers explicitly - entity gets them from scene
-      entity.onSelect();
+    // Update selection manager if it exists
+    if (selectionManager && entity) {
+      selectionManager.select(entity);
+    } else if (selectionManager) {
+      selectionManager.select(null);
     }
   };
 
@@ -226,6 +228,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         historyManager,
         isGizmoVisible,
         setGizmoVisible: setIsGizmoVisible,
+        selectionManager,
+        setSelectionManager,
       }}
     >
       {children}

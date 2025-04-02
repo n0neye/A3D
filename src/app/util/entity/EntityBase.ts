@@ -4,6 +4,7 @@ import { ShapeEntityProps } from './ShapeEntity';
 import { GenerativeEntityProps } from './GenerativeEntity';
 import { LightProps } from './LightEntity';
 import { HistoryManager } from '../../components/HistoryManager';
+import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 
 /**
  * Base class for all entities in the scene
@@ -11,11 +12,20 @@ import { HistoryManager } from '../../components/HistoryManager';
  */
 // Entity types
 export type EntityType = 'generative' | 'shape' | 'light' | 'character';
-export class EntityBase extends BABYLON.TransformNode {
+export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   // Core properties all entities share
   id: string;
   entityType: EntityType;
   created: Date;
+  
+  // ISelectable implementation
+  gizmoCapabilities: GizmoCapabilities = {
+    allowPosition: true,
+    allowRotation: true,
+    allowScale: true
+  };
+  
+  cursorType: SelectableCursorType = 'move';
 
   constructor(
     name: string,
@@ -94,6 +104,50 @@ export class EntityBase extends BABYLON.TransformNode {
    */
   public getHistoryManager(): HistoryManager | null {
     return this._scene.metadata?.historyManager || null;
+  }
+
+  // ISelectable implementation
+  onSelect(): void {
+    // Base implementation does nothing
+    console.log(`Entity selected: ${this.name}`);
+  }
+  
+  onDeselect(): void {
+    // Base implementation does nothing
+    console.log(`Entity deselected: ${this.name}`);
+  }
+  
+  getGizmoTarget(): BABYLON.AbstractMesh | BABYLON.TransformNode {
+    return this; // The entity itself is the target
+  }
+  
+  getId(): string {
+    return this.id;
+  }
+  
+  applyTransformation(
+    transformType: 'position' | 'rotation' | 'scale', 
+    value: BABYLON.Vector3 | BABYLON.Quaternion
+  ): void {
+    switch (transformType) {
+      case 'position':
+        if (value instanceof BABYLON.Vector3) {
+          this.position = value;
+        }
+        break;
+      case 'rotation':
+        if (value instanceof BABYLON.Quaternion) {
+          this.rotationQuaternion = value;
+        } else if (value instanceof BABYLON.Vector3) {
+          this.rotation = value;
+        }
+        break;
+      case 'scale':
+        if (value instanceof BABYLON.Vector3) {
+          this.scaling = value;
+        }
+        break;
+    }
   }
 }
 
