@@ -41,20 +41,6 @@ export class CharacterEntity extends EntityBase {
     private _boneMaterialAlpha = 0.5;
     private _linesMaterialAlpha = 0.7;
 
-    // Pointer observable for bone selection
-    private _pointerObserver: BABYLON.Observer<BABYLON.PointerInfo> | null = null;
-    private _gizmoRotationObserver: BABYLON.Observer<any> | null = null;
-    private _gizmoEndDragObserver: BABYLON.Observer<any> | null = null;
-
-    // Add this as a property to the CharacterEntity class
-    private _currentBoneCommand: BoneRotationCommand | null = null;
-
-    // Add these properties for drag state tracking
-    private _isDraggingBone = false;
-
-    // Add this property
-    private _gizmoStartDragObserver: BABYLON.Observer<any> | null = null;
-
     constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps) {
         super(name, scene, 'character', {
             id: id,
@@ -341,37 +327,7 @@ export class CharacterEntity extends EntityBase {
      */
     public onSelect(): void {
         console.log(`CharacterEntity: Selected ${this.name}`);
-
-        // Show bone visualization when selected
         this.showBoneVisualization(true);
-
-        // Add pointer observer for bone selection
-        // if (!this._pointerObserver && this._scene) {
-        //     this._pointerObserver = this._scene.onPointerObservable.add(
-        //         (pointerInfo) => this._handlePointerEvent(pointerInfo),
-        //         BABYLON.PointerEventTypes.POINTERDOWN |
-        //         BABYLON.PointerEventTypes.POINTERUP
-        //     );
-        // }
-
-        // If there's a gizmo manager, observe rotation changes
-        const gizmoManager = this.getGizmoManager();
-        if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
-            // Add observer for start of rotation (when drag begins)
-            this._gizmoStartDragObserver = gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
-                () => this._handleGizmoRotationStart()
-            );
-
-            // Add observer for rotation changes (during drag)
-            this._gizmoRotationObserver = gizmoManager.gizmos.rotationGizmo.onDragObservable.add(
-                () => this._handleGizmoRotation()
-            );
-
-            // Add observer for end of rotation (when drag ends)
-            this._gizmoEndDragObserver = gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(
-                () => this._finalizeBoneRotation()
-            );
-        }
     }
 
     /**
@@ -379,134 +335,22 @@ export class CharacterEntity extends EntityBase {
      */
     public onDeselect(): void {
         console.log(`CharacterEntity: Deselected ${this.name}`);
-
-        // Remove pointer observer
-        if (this._pointerObserver && this._scene) {
-            this._scene.onPointerObservable.remove(this._pointerObserver);
-            this._pointerObserver = null;
-        }
-
-        // Remove gizmo observers
-        const gizmoManager = this.getGizmoManager();
-        if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
-            if (this._gizmoStartDragObserver) {
-                gizmoManager.gizmos.rotationGizmo.onDragStartObservable.remove(this._gizmoStartDragObserver);
-                this._gizmoStartDragObserver = null;
-            }
-
-            if (this._gizmoRotationObserver) {
-                gizmoManager.gizmos.rotationGizmo.onDragObservable.remove(this._gizmoRotationObserver);
-                this._gizmoRotationObserver = null;
-            }
-
-            if (this._gizmoEndDragObserver) {
-                gizmoManager.gizmos.rotationGizmo.onDragEndObservable.remove(this._gizmoEndDragObserver);
-                this._gizmoEndDragObserver = null;
-            }
-        }
-
-        // Finalize any in-progress rotation
-        this._finalizeBoneRotation();
-
+        
+        // Hide bone visualization
+        this.showBoneVisualization(false);
+        
         // Deselect any selected bone
         this._deselectBone();
-
-        // Hide bone visualization when deselected
-        this.showBoneVisualization(false);
-    }
-
-    
-    /**
-     * Called when a bone rotation gizmo drag starts
-     */
-    private _handleGizmoRotationStart(): void {
-        if (!this._selectedBone || !this._selectedControl) return;
-
-        console.log("CharacterEntity: Starting bone rotation", this._selectedBone.name);
-
-        // Mark the start of dragging
-        this._isDraggingBone = true;
-
-        // Create a bone rotation command that captures the initial state
-        this._currentBoneCommand = new BoneRotationCommand(this._selectedBone, this._selectedControl);
     }
 
     /**
-     * Called during bone rotation gizmo drag
-     */
-    private _handleGizmoRotation(): void {
-        // Apply control rotation to bone
-        if (!this._selectedBone || !this._selectedControl) return;
-        const rotation = this._selectedControl.rotation;
-        if (rotation) {
-            if (this._selectedBone._linkedTransformNode) {
-                this._selectedBone._linkedTransformNode.rotation = rotation.clone();
-            } else {
-                this._selectedBone.rotation = rotation.clone();
-            }
-        }
-    }
-
-    /**
-     * Called when a bone rotation gizmo drag ends
-     */
-    private _finalizeBoneRotation(): void {
-        if (!this._isDraggingBone || !this._currentBoneCommand || !this._selectedBone) return;
-
-        console.log("CharacterEntity: Finalizing bone rotation");
-
-        // Only record the command if the rotation actually changed
-        this._currentBoneCommand.updateFinalState();
-
-        // Track rotation change
-        trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
-            action: 'rotate_bone',
-            boneName: this._selectedBone.name,
-            method: 'gizmo'
-        });
-
-        // Reset dragging state
-        this._isDraggingBone = false;
-        this._currentBoneCommand = null;
-    }
-
-    /**
-     * Select a bone and its control
+     * Select a specific bone
      */
     public selectBone(boneControl: BoneControl): void {
-        // Deselect previous bone
-        this._deselectBone();
-
-        // Select new bone
-        this._selectedBone = boneControl.bone;
-        this._selectedControl = boneControl;
-
-        // Highlight the selected control
-        if (boneControl.material instanceof BABYLON.StandardMaterial) {
-            boneControl.material = this._highlightMaterial;
+        const selectionManager = this._scene.metadata?.selectionManager;
+        if (selectionManager) {
+            selectionManager.select(boneControl);
         }
-
-        // Sync rotation of the bone
-        if (this._selectedBone._linkedTransformNode) {
-            this._selectedControl.rotation = this._selectedBone.rotation;
-            console.log(`Sync bone rotation: ${this._selectedControl.name}`, this._selectedBone.rotation);
-        }
-
-        // Track bone selection
-        trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
-            action: 'select_bone',
-            boneName: boneControl.bone.name
-        });
-
-        // Attach gizmo to the control
-        const gizmoManager = this.getGizmoManager();
-        if (gizmoManager) {
-            gizmoManager.positionGizmoEnabled = false;
-            gizmoManager.rotationGizmoEnabled = true;
-            gizmoManager.attachToMesh(boneControl);
-        }
-
-        console.log(`Selected bone: ${boneControl.bone.name}`);
     }
 
     /**
@@ -662,31 +506,9 @@ export class CharacterEntity extends EntityBase {
     }
 
     public dispose(): void {
-        // Remove observers if they exist
-        if (this._pointerObserver && this._scene) {
-            this._scene.onPointerObservable.remove(this._pointerObserver);
-            this._pointerObserver = null;
-        }
+        // We no longer need to clean up gizmo observers here, as BoneControl handles that
 
-        const gizmoManager = this.getGizmoManager();
-        if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
-            if (this._gizmoStartDragObserver) {
-                gizmoManager.gizmos.rotationGizmo.onDragStartObservable.remove(this._gizmoStartDragObserver);
-                this._gizmoStartDragObserver = null;
-            }
-
-            if (this._gizmoRotationObserver) {
-                gizmoManager.gizmos.rotationGizmo.onDragObservable.remove(this._gizmoRotationObserver);
-                this._gizmoRotationObserver = null;
-            }
-
-            if (this._gizmoEndDragObserver) {
-                gizmoManager.gizmos.rotationGizmo.onDragEndObservable.remove(this._gizmoEndDragObserver);
-                this._gizmoEndDragObserver = null;
-            }
-        }
-
-        // Rest of the dispose code
+        // Rest of the dispose code for cleaning up resources
         this._boneMap.forEach(({ control }) => {
             control.dispose();
         });
@@ -701,5 +523,50 @@ export class CharacterEntity extends EntityBase {
 
         this.skeleton?.dispose();
         super.dispose();
+    }
+
+    /**
+     * Update the bone visualization to reflect the current state
+     */
+    public updateBoneVisualization(): void {
+        this._updateBoneLines();
+    }
+
+    /**
+     * Highlight a specific bone control
+     */
+    public highlightBone(boneControl: BoneControl): void {
+        // Use existing _deselectBone first to clear any current selection
+        this._deselectBone();
+        
+        // Find the bone from the control
+        const boneName = boneControl.bone.name;
+        const bone = this.skeleton?.bones.find(b => b.name === boneName);
+        
+        if (bone) {
+            this._selectedBone = bone;
+            this._selectedControl = boneControl;
+            
+            // Apply highlight material if available
+            if (this._highlightMaterial && boneControl.material) {
+                boneControl.material = this._highlightMaterial;
+            }
+        }
+    }
+
+    /**
+     * Remove highlight from currently highlighted bone
+     */
+    public unhighlightBone(boneControl: BoneControl): void {
+        if (this._selectedBone && this._selectedControl === boneControl) {
+            // Reset control appearance
+            if (this._selectedControl.material && this._visualizationMaterial) {
+                this._selectedControl.material = this._visualizationMaterial;
+            }
+            
+            // Clear selection
+            this._selectedBone = null;
+            this._selectedControl = null;
+        }
     }
 } 

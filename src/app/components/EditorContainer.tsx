@@ -196,13 +196,16 @@ export default function EditorContainer() {
         return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
       }
     );
+
+    // If we picked a bone control, select the bone and return
+    // TODO: this is hack to select bones behind the character mesh
     if (bonePickInfo.hit && bonePickInfo.pickedMesh && bonePickInfo.pickedMesh instanceof BoneControl) {
       console.log("Bone picked:", bonePickInfo.pickedMesh.name);
       const boneControl = bonePickInfo.pickedMesh as BoneControl;
       boneControl.character.selectBone(boneControl);
+      selectionManager.select(boneControl);
       return;
     }
-
 
     const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
     const mesh = pickInfo.pickedMesh;
@@ -219,6 +222,7 @@ export default function EditorContainer() {
     // Find the selectable object
     let selectable: ISelectable | null = null;
 
+    // TODO: It's so messy here
     // FIRST check if the mesh has a rootEntity that's selectable
     if (mesh.metadata?.rootEntity && (mesh.metadata.rootEntity as any).gizmoCapabilities) {
       console.log("Mesh has selectable rootEntity");
@@ -248,6 +252,7 @@ export default function EditorContainer() {
     }
   }
 
+  // Handle Ctrl+Click to create a new generative entity
   const handleCtrlClick = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
     console.log("CtrlClick", pointerInfo, scene);
     // Cast a ray from the camera through the mouse position

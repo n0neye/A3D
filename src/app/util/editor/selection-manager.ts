@@ -25,8 +25,10 @@ export class SelectionManager {
     console.log("SelectionManager.select called with:", selectable, selectable?.getId(), selectable?.constructor.name);
     
     // Deselect previous selection
+    //! TODO: Prevent deselecting the character if we're selecting a bone control
     if (this._currentSelection) {
       console.log("Deselecting previous:", this._currentSelection.getId(), this._currentSelection.constructor.name);
+
       this._currentSelection.onDeselect();
     }
     
