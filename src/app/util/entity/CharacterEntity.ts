@@ -650,56 +650,84 @@ export class CharacterEntity extends EntityBase {
         scene: Scene,
         data: SerializedCharacterEntityData,
     ): Promise<CharacterEntity> {
-        const entity = new CharacterEntity(scene, data.name, data.id, data.characterProps);
+        try {
+            console.log("Deserializing character:", data.name, data.id);
+            const entity = new CharacterEntity(scene, data.name, data.id, data.characterProps);
 
-        // Wait for model to load before applying bone rotations
-        await entity.waitUntilReady();
+            // Wait for model to load before applying bone rotations
+            await entity.waitUntilReady();
+            
+            // Give Babylon an extra frame to finalize loading
+            await new Promise(resolve => setTimeout(resolve, 0));
 
-        // Apply base properties (transform)
-        entity.position.x = data.position.x;
-        entity.position.y = data.position.y;
-        entity.position.z = data.position.z;
+            console.log("Character loaded, applying transforms");
+            
+            // Apply base properties (transform)
+            entity.position.x = data.position.x;
+            entity.position.y = data.position.y;
+            entity.position.z = data.position.z;
 
-        entity.rotation.x = data.rotation.x;
-        entity.rotation.y = data.rotation.y;
-        entity.rotation.z = data.rotation.z;
+            entity.rotation.x = data.rotation.x;
+            entity.rotation.y = data.rotation.y;
+            entity.rotation.z = data.rotation.z;
 
-        entity.scaling.x = data.scaling.x;
-        entity.scaling.y = data.scaling.y;
-        entity.scaling.z = data.scaling.z;
+            entity.scaling.x = data.scaling.x;
+            entity.scaling.y = data.scaling.y;
+            entity.scaling.z = data.scaling.z;
 
-        // Apply saved bone rotations if available
-        if (data.boneRotations && entity.skeleton) {
-            Object.entries(data.boneRotations).forEach(([boneName, rotation]) => {
-                const bone = entity.skeleton!.bones.find(b => b.name === boneName);
-                if (bone) {
-                    const quaternion = new BABYLON.Quaternion(
-                        rotation.x,
-                        rotation.y,
-                        rotation.z,
-                        rotation.w
-                    );
-                    
-                    // Apply to the linked transform node if it exists
-                    if (bone._linkedTransformNode) {
-                        if (bone._linkedTransformNode.rotationQuaternion) {
-                            bone._linkedTransformNode.rotationQuaternion = quaternion;
-                        } else {
-                            // Convert quaternion to euler for nodes using rotation
-                            const euler = quaternion.toEulerAngles();
-                            bone._linkedTransformNode.rotation = new BABYLON.Vector3(
-                                euler.x, euler.y, euler.z
+            // Apply saved bone rotations if available
+            if (data.boneRotations && entity.skeleton) {
+                console.log("Applying bone rotations");
+                
+                // First ensure all bones have their initial transforms updated
+                entity.skeleton.prepare();
+                
+                // Apply rotations in a try/catch to prevent errors from breaking deserialization
+                try {
+                    Object.entries(data.boneRotations).forEach(([boneName, rotation]) => {
+                        const bone = entity.skeleton!.bones.find(b => b.name === boneName);
+                        if (bone) {
+                            const quaternion = new BABYLON.Quaternion(
+                                rotation.x,
+                                rotation.y,
+                                rotation.z,
+                                rotation.w
                             );
+                            
+                            try {
+                                // Apply to the linked transform node if it exists
+                                if (bone._linkedTransformNode) {
+                                    if (bone._linkedTransformNode.rotationQuaternion) {
+                                        bone._linkedTransformNode.rotationQuaternion = quaternion;
+                                    } else {
+                                        // Convert quaternion to euler for nodes using rotation
+                                        const euler = quaternion.toEulerAngles();
+                                        bone._linkedTransformNode.rotation = new BABYLON.Vector3(
+                                            euler.x, euler.y, euler.z
+                                        );
+                                    }
+                                } else {
+                                    // Apply directly to the bone if no linked transform
+                                    bone.setRotationQuaternion(quaternion);
+                                }
+                            } catch (boneErr) {
+                                console.warn(`Error applying rotation to bone ${boneName}:`, boneErr);
+                            }
                         }
-                    } else {
-                        // Apply directly to the bone if no linked transform
-                        bone.setRotationQuaternion(quaternion);
-                    }
+                    });
+                } catch (rotErr) {
+                    console.error("Error applying bone rotations:", rotErr);
                 }
-            });
-        }
+            }
 
-        return entity;
+            return entity;
+        } catch (error) {
+            console.error("Error during character deserialization:", error);
+            // Create a fallback entity without the bone rotations
+            const fallbackEntity = new CharacterEntity(scene, data.name, data.id, data.characterProps);
+            await fallbackEntity.waitUntilReady();
+            return fallbackEntity;
+        }
     }
 
     public dispose(): void {
