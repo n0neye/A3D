@@ -206,6 +206,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       if (gizmoManager) {
         entity.setGizmoManager(gizmoManager);
       }
+      // Pass the history manager to the character entity
+      entity.setHistoryManager(historyManager);
       entity.onSelect();
     }
   };

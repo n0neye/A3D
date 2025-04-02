@@ -195,3 +195,92 @@ export class CreateEntityAsyncCommand implements Command {
     return this.entity;
   }
 } 
+
+// Updated BoneRotationCommand to store differences only
+export class BoneRotationCommand implements Command {
+  private initialRotation: BABYLON.Quaternion;
+  private finalRotation: BABYLON.Quaternion;
+  private boneName: string;
+  
+  constructor(
+    private bone: BABYLON.Bone,
+    private controlMesh: BABYLON.Mesh
+  ) {
+    this.boneName = bone.name;
+    
+    // Always store as quaternions for more reliable interpolation
+    this.initialRotation = bone.getRotationQuaternion() 
+      ? bone.getRotationQuaternion()!.clone() 
+      : BABYLON.Quaternion.FromEulerAngles(bone.rotation.x, bone.rotation.y, bone.rotation.z);
+      
+    // Initially, final rotation equals initial (will be updated at end of drag)
+    this.finalRotation = this.initialRotation.clone();
+  }
+
+  // Call this after the rotation is complete
+  public updateFinalState(): void {
+    // Capture the final rotation state after dragging
+    this.finalRotation = this.bone.getRotationQuaternion() 
+      ? this.bone.getRotationQuaternion()!.clone() 
+      : BABYLON.Quaternion.FromEulerAngles(this.bone.rotation.x, this.bone.rotation.y, this.bone.rotation.z);
+  }
+
+  // We don't need to apply changes here - the mesh already has the right rotation
+  public execute(): void {
+    console.log(`Execute rotation for bone: ${this.boneName}`);
+    // The rotation is already applied by the gizmo's natural behavior
+    // We don't need to do anything here
+  }
+
+  // Restore the initial rotation
+  public undo(): void {
+    console.log(`Undo rotation for bone: ${this.boneName}`);
+    // Apply the initial rotation to the bone
+    if (this.bone._linkedTransformNode) {
+      // If the bone has a linked transform node, apply rotation to it
+      if (this.bone._linkedTransformNode.rotationQuaternion) {
+        this.bone._linkedTransformNode.rotationQuaternion = this.initialRotation.clone();
+      } else {
+        const euler = this.initialRotation.toEulerAngles();
+        this.bone._linkedTransformNode.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
+      }
+    } else {
+      // Apply directly to the bone
+      this.bone.setRotationQuaternion(this.initialRotation.clone());
+    }
+    
+    // Also update the control mesh to match
+    if (this.controlMesh.rotationQuaternion) {
+      this.controlMesh.rotationQuaternion = this.initialRotation.clone();
+    } else {
+      const euler = this.initialRotation.toEulerAngles();
+      this.controlMesh.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
+    }
+  }
+  
+  // Reapply the final rotation
+  public redo(): void {
+    console.log(`Redo rotation for bone: ${this.boneName}`);
+    // Apply the final rotation to the bone
+    if (this.bone._linkedTransformNode) {
+      // If the bone has a linked transform node, apply rotation to it
+      if (this.bone._linkedTransformNode.rotationQuaternion) {
+        this.bone._linkedTransformNode.rotationQuaternion = this.finalRotation.clone();
+      } else {
+        const euler = this.finalRotation.toEulerAngles();
+        this.bone._linkedTransformNode.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
+      }
+    } else {
+      // Apply directly to the bone
+      this.bone.setRotationQuaternion(this.finalRotation.clone());
+    }
+    
+    // Also update the control mesh to match
+    if (this.controlMesh.rotationQuaternion) {
+      this.controlMesh.rotationQuaternion = this.finalRotation.clone();
+    } else {
+      const euler = this.finalRotation.toEulerAngles();
+      this.controlMesh.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
+    }
+  }
+} 
