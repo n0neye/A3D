@@ -1,6 +1,6 @@
 {
   "version": "1.0.1",
-  "timestamp": "2025-04-02T03:10:10.511Z",
+  "timestamp": "2025-04-02T03:31:38.183Z",
   "entities": [
     {
       "id": "dba18014-0eac-433d-bcee-78150a412515",
@@ -21,7 +21,7 @@
         "y": 1,
         "z": 1
       },
-      "created": "2025-04-02T03:09:36.842Z",
+      "created": "2025-04-02T03:31:31.629Z",
       "props": {
         "shapeType": "floor"
       }
@@ -45,7 +45,7 @@
         "y": 1,
         "z": 1
       },
-      "created": "2025-04-02T03:09:36.845Z",
+      "created": "2025-04-02T03:31:31.631Z",
       "props": {
         "intensity": 0.7,
         "color": {
@@ -63,7 +63,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "z": 0.4002954065799713
+        "z": -0.22335922718048096
       },
       "rotation": {
         "x": 0,
@@ -71,11 +71,11 @@
         "z": 0
       },
       "scaling": {
-        "x": 1,
-        "y": 1.4872163534164429,
+        "x": 1.7022647857666016,
+        "y": 2.0552358627319336,
         "z": 0.3586892783641815
       },
-      "created": "2025-04-02T03:09:36.849Z",
+      "created": "2025-04-02T03:31:31.636Z",
       "props": {
         "shapeType": "cube"
       }
@@ -85,9 +85,9 @@
       "name": "sitted_entity-1743561342407",
       "entityType": "generative",
       "position": {
-        "x": -0.0016885526711121202,
+        "x": -0.991362452507019,
         "y": 0.6653233170509338,
-        "z": 0.932239294052124
+        "z": 0.4773271679878235
       },
       "rotation": {
         "x": 0,
@@ -99,7 +99,7 @@
         "y": 0.6860902309417725,
         "z": 0.6860902309417725
       },
-      "created": "2025-04-02T03:09:36.851Z",
+      "created": "2025-04-02T03:31:31.637Z",
       "props": {
         "generationLogs": [
           {
@@ -141,7 +141,7 @@
         "y": 0.37277644872665405,
         "z": 0.3727756738663391
       },
-      "created": "2025-04-02T03:09:36.853Z",
+      "created": "2025-04-02T03:31:31.639Z",
       "props": {
         "generationLogs": [
           {
@@ -163,6 +163,72 @@
         "currentGenerationId": "343e29d0-e968-4b2b-af4f-1aa5d6557004",
         "currentGenerationIdx": 1
       }
+    },
+    {
+      "id": "flower_c5e5f17c-24a9-45d9-a993-007ced68f377",
+      "name": "flower_entity-1743564264848",
+      "entityType": "generative",
+      "position": {
+        "x": -0.02394622005522251,
+        "y": 1.2382882833480835,
+        "z": 1.1340982913970947
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scaling": {
+        "x": 0.7275160551071167,
+        "y": 0.7275160551071167,
+        "z": 0.7275160551071167
+      },
+      "created": "2025-04-02T03:31:31.641Z",
+      "props": {
+        "generationLogs": [
+          {
+            "id": "31184762-107c-4d65-a92b-25b9f190aeb4",
+            "timestamp": 1743564271966,
+            "prompt": "flower in a vase",
+            "assetType": "image",
+            "fileUrl": "https://im.runware.ai/image/ws/2/ii/820fd886-a7f2-417c-b21b-afcca1b721cf.webp"
+          },
+          {
+            "id": "67162a95-2833-4f7b-9fd2-878097390eed",
+            "timestamp": 1743564318471,
+            "prompt": "",
+            "assetType": "model",
+            "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/5b7166d6-219c-4ea9-9a65-b9df133cde9e.glb",
+            "derivedFromId": "31184762-107c-4d65-a92b-25b9f190aeb4"
+          }
+        ],
+        "currentGenerationId": "67162a95-2833-4f7b-9fd2-878097390eed",
+        "currentGenerationIdx": 1
+      }
+    },
+    {
+      "id": "98e4b871-45ba-43b7-b24f-73cf5108fe0c",
+      "name": "entity-1743564346932",
+      "entityType": "shape",
+      "position": {
+        "x": -0.021366488188505173,
+        "y": 1.7763568394002505e-15,
+        "z": 1.0145823955535889
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.8557412951526775,
+        "z": 0
+      },
+      "scaling": {
+        "x": 0.7173072291069365,
+        "y": 0.7173077464103699,
+        "z": 0.7173072291069365
+      },
+      "created": "2025-04-02T03:31:31.643Z",
+      "props": {
+        "shapeType": "cube"
+      }
     }
   ],
   "environment": {
@@ -176,18 +242,18 @@
       "fov": 0.47,
       "farClip": 40,
       "position": {
-        "x": 0.7368223115187605,
-        "y": 2.1298450604161756,
-        "z": 11.303986342399687
+        "x": 0.5874766459828428,
+        "y": 1.5594755083785188,
+        "z": 10.263080302591547
       },
       "target": {
-        "x": 0.06287474425993049,
-        "y": 1.2028805672208231,
-        "z": 0.9635817178080648
+        "x": 0.12111444896488184,
+        "y": 1.2561448196308784,
+        "z": 0.9593097750024334
       },
-      "radius": 10.403722232707619,
-      "alpha": 1.5057122490432144,
-      "beta": 1.4815787030479735
+      "radius": 9.320388899374283,
+      "alpha": 1.520712096455322,
+      "beta": 1.5382457257530497
     }
   },
   "ProjectSettings": {
@@ -196,10 +262,35 @@
     "depthStrength": 0.9,
     "noiseStrength": 0,
     "selectedAPI": "flux-lora-depth",
-    "seed": 1607317053,
+    "seed": 685428137,
     "useRandomSeed": true,
     "selectedLoras": [],
-    "renderLogs": [],
+    "renderLogs": [
+      {
+        "imageUrl": "https://fal.media/files/koala/qS670ZXVGYsLXfFbpMaX2_6a82cd9893044db1b18a0e5c103fb01e.jpg",
+        "prompt": "still life oil painting, a cat, skull, vase, flower",
+        "model": "Flux Dev",
+        "timestamp": "2025-04-02T03:27:57.358Z",
+        "seed": 1195827743,
+        "promptStrength": 0.9,
+        "depthStrength": 0,
+        "selectedLoras": [
+          {
+            "info": {
+              "id": "nontech-01",
+              "name": "nontech",
+              "description": "",
+              "modelUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.safetensors",
+              "thumbUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/lora/nontech-replicate.webp",
+              "author": "nontech",
+              "authorLinkUrl": "https://nontech.net",
+              "linkUrl": "https://nontech.net"
+            },
+            "strength": 0.5
+          }
+        ]
+      }
+    ],
     "openOnRendered": true
   }
 }

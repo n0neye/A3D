@@ -91,13 +91,11 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
           </Button>
 
           <div className="relative max-h-full max-w-full">
-            <AspectRatio ratio={16 / 9}>
               <img
                 src={currentImage.imageUrl}
                 alt="Generated image"
-                className="max-h-[70vh] max-w-full object-contain"
+                className="max-h-[70vh] min-h-[720px] max-w-full object-contain aspect-video"
               />
-            </AspectRatio>
             <Button
               variant="ghost"
               size="icon"
