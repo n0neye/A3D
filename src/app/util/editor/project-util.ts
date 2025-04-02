@@ -10,6 +10,7 @@ import { ImageRatio } from '../generation/generation-util';
 import { API_Info } from '../generation/image-render-api';
 import { LoraConfig } from '../generation/lora';
 import { GenerativeEntityProps } from "../entity/GenerativeEntity";
+import { CharacterEntity, SerializedCharacterEntityData } from "../entity/CharacterEntity";
 
 // Interface for serialized render settings
 export interface SerializedProjectSettings {
@@ -278,7 +279,9 @@ export function deserializeScene(
                     case 'generative':
                         GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
                         break;
-                        
+                    case 'character':
+                        CharacterEntity.deserialize(scene, entityData as SerializedCharacterEntityData);
+                        break;                        
                     default:
                         console.warn(`Unknown entity type: ${entityType}`);
                         break;

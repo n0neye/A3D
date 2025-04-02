@@ -197,9 +197,8 @@ export class CharacterEntity extends EntityBase {
         this.skeleton.bones.forEach(bone => {
             // Skip fingers and other small bones for cleaner visualization
             const boneName = bone.name.toLowerCase();
-            if (boneName.includes('finger') || boneName.includes('thumb') ||
-                boneName.includes('toe') || boneName.includes('eye')) {
-                return;
+            if (boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky')) {
+              return;
             }
 
             // Create a small sphere for the bone
