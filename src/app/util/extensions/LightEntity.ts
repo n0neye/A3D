@@ -1,5 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
+import { environmentObjects } from '../editor/editor-util';
 /**
  * Entity that represents lights in the scene
  */
@@ -43,6 +44,8 @@ export class LightEntity extends EntityBase {
       position: options.position,
     });
 
+    console.log("LightEntity: constructor", options);
+
     // Create the light
     this.light = this.createLight(
       options.props?.intensity || 0.7,
@@ -84,7 +87,22 @@ export class LightEntity extends EntityBase {
    * Create shadow generator
    */
   private createShadowGenerator(light: BABYLON.ShadowLight): void {
-    // Implementation for shadow generator
+    console.log("Creating shadow generator for light", light);
+    // Create with higher resolution for better quality
+    const shadowGenerator = new BABYLON.ShadowGenerator(2048, light);
+
+    // Better filtering technique for smoother shadows
+    shadowGenerator.usePercentageCloserFiltering = true; // Use PCF instead of blur
+    shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
+
+    // Fix self-shadowing artifacts with proper bias
+    shadowGenerator.bias = 0.05
+
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.blurScale = 0.5;
+
+    // Add to our global list
+    environmentObjects.shadowGenerators.push(shadowGenerator);
   }
 
   /**
@@ -163,7 +181,7 @@ export class LightEntity extends EntityBase {
    */
   static deserialize(scene: BABYLON.Scene, data: SerializedLightEntityData): LightEntity {
     const position = data.position ? toBabylonVector3(data.position) : undefined;
-    
+
     return new LightEntity(data.name, scene, {
       id: data.id,
       position,
