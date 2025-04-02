@@ -424,12 +424,17 @@ export class CharacterEntity extends EntityBase {
      * Handle rotation changes from gizmo
      */
     private _handleGizmoRotation(): void {
+        console.log("CharacterEntity: _handleGizmoRotation", this._selectedBone, this._selectedControl);
         if (!this._selectedBone || !this._selectedControl) return;
 
         // Apply control rotation to bone
-        const rotation = this._selectedControl.rotationQuaternion;
+        const rotation = this._selectedControl.rotation;
         if (rotation) {
-            this._selectedBone.setRotationQuaternion(rotation.clone());
+            if(this._selectedBone._linkedTransformNode){
+                this._selectedBone._linkedTransformNode.rotation = rotation.clone();
+            } else {
+                this._selectedBone.rotation = rotation.clone();
+            }
 
             // Track rotation change
             trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
@@ -455,6 +460,13 @@ export class CharacterEntity extends EntityBase {
         if (control.material instanceof BABYLON.StandardMaterial) {
             control.material.emissiveColor = new BABYLON.Color3(1, 0.5, 0);
             control.material.alpha = 0.8;
+        }
+
+        
+        // Sync rotation of the bone
+        if (this._selectedBone._linkedTransformNode) {
+            this._selectedControl.rotation = this._selectedBone.rotation;
+            console.log(`Sync bone rotation: ${this._selectedControl.name}`, this._selectedBone.rotation);
         }
 
         // Track bone selection
