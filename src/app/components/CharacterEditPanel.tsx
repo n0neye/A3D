@@ -44,20 +44,11 @@ const CharacterEditPanel: React.FC<CharacterEditPanelProps> = ({ entity }) => {
     setShowBones(newState);
     entity.showBoneVisualization(newState);
     
-    // Track toggling visualization
-    trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
-      action: newState ? 'show_bones' : 'hide_bones'
-    });
   };
   
   // Reset all bones to initial pose
   const resetAllBones = () => {
     entity.resetAllBones();
-    
-    // Track reset action
-    trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
-      action: 'reset_all_bones'
-    });
   };
 
   if (isLoading) {
