@@ -12,6 +12,9 @@ let skeleton: BABYLON.Skeleton | null = null;
 let gizmoManager: BABYLON.GizmoManager | null = null;
 let boneMap: { [name: string]: { bone: BABYLON.Bone, control: BABYLON.Mesh } } = {};
 
+// Create lines for bone visualization
+const boneLines: { [name: string]: BABYLON.LinesMesh } = {};
+
 export default function SkeletonTestScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BABYLON.Engine | null>(null);
@@ -105,6 +108,35 @@ export default function SkeletonTestScene() {
     prepareCharacter(scene);
 
 
+    // Add a line update function to your scene's render loop
+    scene.registerBeforeRender(() => {
+      // Update all bone lines
+      Object.entries(boneLines).forEach(([name, line]) => {
+        // Extract parent and child bone names from the line name
+        const matches = name.match(/line_(.+)_to_(.+)/);
+        if (matches && matches.length === 3) {
+          const parentBoneName = matches[1];
+          const childBoneName = matches[2];
+
+          if (boneMap[parentBoneName] && boneMap[childBoneName]) {
+            // Get positions from bone controls (which are already correctly positioned)
+            const startPos = boneMap[parentBoneName].control.getAbsolutePosition();
+            const endPos = boneMap[childBoneName].control.getAbsolutePosition();
+
+            // Update the line points
+            const updatedLine = BABYLON.MeshBuilder.CreateLines(
+              name,
+              {
+                points: [startPos, endPos],
+                instance: line // Update existing line
+              },
+              scene
+            );
+          }
+        }
+      });
+
+    });
 
     // Cleanup function
     return () => {
@@ -120,17 +152,17 @@ export default function SkeletonTestScene() {
       if (pointerInfo.event.button === 0) {  // Left click
         // First try to pick only bone controls by using a predicate function
         const pickInfo = scene.pick(
-          scene.pointerX, 
+          scene.pointerX,
           scene.pointerY,
           (mesh) => {
             return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
           }
         );
-        
+
         if (pickInfo.hit && pickInfo.pickedMesh) {
           const mesh = pickInfo.pickedMesh;
           console.log("Picked bone control:", mesh.name);
-          
+
           // Find which bone this control belongs to
           const boneName = mesh.name.replace('bone_', '');
           if (boneMap[boneName]) {
@@ -144,6 +176,9 @@ export default function SkeletonTestScene() {
           // If no bone control was hit, perform normal picking
           const regularPickInfo = scene.pick(scene.pointerX, scene.pointerY);
           console.log("Picked regular mesh:", regularPickInfo.pickedMesh?.name);
+          if (!regularPickInfo.pickedMesh) {
+            gizmoManager?.attachToNode(null);
+          }
         }
       }
     }
@@ -176,6 +211,12 @@ export default function SkeletonTestScene() {
     console.log('Bones:', skeleton.bones.length);
     console.log('Animations:', scene.animationGroups);
 
+    const material = new BABYLON.StandardMaterial(`bone_material`, scene);
+    material.diffuseColor = new BABYLON.Color3(0, 1, 0);
+    material.alpha = 0.3;
+    material.disableDepthWrite = true; // This ensures the mesh is considered for picking
+    material.emissiveColor = new BABYLON.Color3(0, 0.5, 0);
+
     // Make bones selectable
     skeleton.bones.forEach((_bone, index) => {
       // Skip the fingers
@@ -183,7 +224,6 @@ export default function SkeletonTestScene() {
       if (boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky')) {
         return;
       }
-
       // Create a small sphere for each bone to make it selectable
       const _boneControl = BABYLON.MeshBuilder.CreateSphere(
         `bone_${_bone.name}`,
@@ -203,9 +243,6 @@ export default function SkeletonTestScene() {
       _boneControl.position = _bone.position;
 
       // Make it nearly transparent but keep it selectable
-      const material = new BABYLON.StandardMaterial(`bone_material_${index}`, scene);
-      material.diffuseColor = new BABYLON.Color3(0, 1, 0);
-      material.alpha = 0.3;
       _boneControl.material = material;
 
       // Make the bone control always render on top
@@ -214,12 +251,6 @@ export default function SkeletonTestScene() {
       // Important for picking - set this to the highest possible value
       _boneControl.renderingGroupId = 1;
       _boneControl.isPickable = true;
-
-      // This ensures the mesh is considered for picking
-      material.disableDepthWrite = true;
-
-      // Increase visibility
-      material.emissiveColor = new BABYLON.Color3(0, 0.5, 0);
 
       // Critical for picking priority
       _boneControl.alphaIndex = 1000; // Higher value means higher picking priority
@@ -245,6 +276,38 @@ export default function SkeletonTestScene() {
     if (scene.animationGroups && scene.animationGroups.length > 0) {
       scene.animationGroups[0].pause();
     }
+
+    // Create bone lines
+    skeleton.bones.forEach((_bone) => {
+      const childBones = _bone.getChildren();
+      if (childBones.length > 0) {
+        // For each child, create a line from parent to child
+        childBones.forEach((childBone) => {
+          // Only create lines for bones that have controls (not fingers)
+          if (boneMap[_bone.name] && boneMap[childBone.name]) {
+            const lineName = `line_${_bone.name}_to_${childBone.name}`;
+
+            // Create initial line with dummy points (will be updated in render loop)
+            const line = BABYLON.MeshBuilder.CreateLines(
+              lineName,
+              {
+                points: [BABYLON.Vector3.Zero(), BABYLON.Vector3.Zero()],
+                updatable: true // Important for updating the line later
+              },
+              scene
+            );
+
+            // Store reference to parent and child bone for this line
+            boneLines[lineName] = line;
+
+            // Make line more visible
+            line.color = new BABYLON.Color3(0, 1, 0);
+            line.alpha = 0.8;
+            line.renderingGroupId = 1;
+          }
+        });
+      }
+    });
   }
 
   const onRotationChange = (event: unknown) => {
