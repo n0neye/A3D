@@ -6,16 +6,22 @@ import '@babylonjs/loaders';
 import { SkeletonViewer } from '@babylonjs/core/Debug/skeletonViewer';
 import { Inspector } from '@babylonjs/inspector';
 
+let selectedBone: BABYLON.Bone | null = null;
+let selectedSphere: BABYLON.Mesh | null = null;
+
 export default function SkeletonTestScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BABYLON.Engine | null>(null);
   const sceneRef = useRef<BABYLON.Scene | null>(null);
   const skeletonRef = useRef<BABYLON.Skeleton | null>(null);
-  const [selectedBone, setSelectedBone] = useState<BABYLON.Bone | null>(null);
+  const gizmoManagerRef = useRef<BABYLON.GizmoManager | null>(null);
+  // const [selectedBone, setSelectedBone] = useState<BABYLON.Bone | null>(null);
+  // const [selectedSphere, setSelectedSphere] = useState<BABYLON.Mesh | null>(null);
   const [rotationX, setRotationX] = useState(0);
   const [rotationY, setRotationY] = useState(0);
   const [rotationZ, setRotationZ] = useState(0);
   const [bones, setBones] = useState<BABYLON.Bone[]>([]);
+  const boneSpheres = useRef<{[name: string]: BABYLON.Mesh}>({});
 
   useEffect(() => {
     // Initialize Babylon.js
@@ -29,7 +35,7 @@ export default function SkeletonTestScene() {
     sceneRef.current = scene;
 
     
-    // Inspector.Show(scene, { overlay: true, embedMode: false });
+    Inspector.Show(scene, { overlay: true, embedMode: false });
 
     // Setup camera
     const camera = new BABYLON.ArcRotateCamera(
@@ -72,6 +78,53 @@ export default function SkeletonTestScene() {
     ground.material = groundMaterial;
     ground.receiveShadows = true;
 
+    // Create a gizmo manager
+    const gizmoManager = new BABYLON.GizmoManager(scene);
+    gizmoManagerRef.current = gizmoManager;
+    gizmoManager.positionGizmoEnabled = false;
+    gizmoManager.rotationGizmoEnabled = true;
+    gizmoManager.scaleGizmoEnabled = false;
+    gizmoManager.usePointerToAttachGizmos = false;
+    gizmoManager.attachableMeshes = []; // We'll add meshes to this later
+    
+    // Configure the rotation gizmo
+    const rotationGizmo = gizmoManager.gizmos.rotationGizmo;
+    if (rotationGizmo) {
+      console.log("Rotation gizmo found");
+      rotationGizmo.updateGizmoRotationToMatchAttachedMesh = true;
+      rotationGizmo.scaleRatio = 1.5;
+      
+      // Listen for rotation changes from the gizmo
+      rotationGizmo.onDragObservable.add((event) => {
+        console.log("Rotating:", selectedBone?.name, selectedSphere?.name);
+        if (!selectedBone || !selectedSphere) return;
+        
+        // Get the rotation quaternion from the gizmo's attached mesh
+        const rotation = selectedSphere.rotation;
+        if (!rotation) return;
+        
+        console.log("Updating bone rotation", selectedBone.name, rotation.x, rotation.y, rotation.z);
+        
+        // Apply the same rotation to the bone
+        selectedBone.setRotation(rotation.clone());
+        if (selectedBone._linkedTransformNode) {
+          selectedBone._linkedTransformNode.rotation = rotation.clone();
+        }
+        
+        // Update UI sliders to match
+        // const euler = rotation.toEulerAngles();
+        const euler = rotation;
+        setRotationX(euler.x * (180 / Math.PI));
+        setRotationY(euler.y * (180 / Math.PI));
+        setRotationZ(euler.z * (180 / Math.PI));
+        
+        // Force skeleton update
+        if (skeletonRef.current) {
+          skeletonRef.current.prepare();
+        }
+      });
+    }
+
     // Load the mannequin character
     BABYLON.SceneLoader.ImportMesh(
       '',
@@ -88,23 +141,6 @@ export default function SkeletonTestScene() {
           setBones(skeleton.bones);
           console.log('Bones:', skeleton.bones.length);
           console.log('Animations:', scene.animationGroups);
-          
-          // Create a skeleton viewer
-          // const skeletonViewer = new SkeletonViewer(
-          //   skeleton,
-          //   meshes[0],
-          //   scene,
-          //   false,
-          //   0,
-          //   {
-          //     displayMode: SkeletonViewer.DISPLAY_SPHERE_AND_SPURS,
-          //   }
-          // );
-          
-          // // Configure the skeleton viewer
-          // skeletonViewer.isEnabled = true;
-          // skeletonViewer.color = new BABYLON.Color3(1, 0, 0); // Red color for bones
-          // skeletonViewer.displayMode = SkeletonViewer.DISPLAY_SPHERE_AND_SPURS;
           
           // Make bones selectable
           skeleton.bones.forEach((bone, index) => {
@@ -134,12 +170,16 @@ export default function SkeletonTestScene() {
                 BABYLON.ActionManager.OnPickTrigger,
                 () => {
                   console.log(`Selected bone: ${bone.name}`);
-                  setSelectedBone(bone);
+                  // setSelectedBone(bone);
+                  selectedBone = bone;
                   // Get current rotation
                   const rotation = bone.getRotation();
                   setRotationX(rotation.x * (180 / Math.PI));
                   setRotationY(rotation.y * (180 / Math.PI));
                   setRotationZ(rotation.z * (180 / Math.PI));
+
+                  gizmoManager.attachToMesh(boneSphere);
+                  selectedSphere = boneSphere;
                 }
               )
             );
@@ -212,104 +252,24 @@ export default function SkeletonTestScene() {
     const bone = bones.find(b => b.name === boneName) || null;
     
     if (bone) {
-      setSelectedBone(bone);
+      // setSelectedBone(bone);
+      selectedBone = bone;
       // Get current rotation
       const rotation = bone.getRotation();
       setRotationX(rotation.x * (180 / Math.PI));
       setRotationY(rotation.y * (180 / Math.PI));
       setRotationZ(rotation.z * (180 / Math.PI));
     } else {
-      setSelectedBone(null);
+      // setSelectedBone(null);
+      selectedBone = null;
     }
   };
+  
 
   return (
     <>
       <canvas ref={canvasRef} className="w-full h-full fixed" />
       
-      {/* Controls Panel */}
-      <div className="fixed top-20 right-5 bg-black p-4 rounded shadow-lg z-10" style={{ width: '300px' }}>
-        <h2 className="text-lg font-bold mb-2">Bone Controls</h2>
-        
-        {/* Bone Selection Dropdown */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Select Bone:</label>
-          <select 
-            className="w-full p-2 border rounded" 
-            onChange={handleBoneSelect}
-            value={selectedBone?.name || ''}
-          >
-            <option value="">Select a bone...</option>
-            {bones.map((bone) => (
-              <option key={bone.name} value={bone.name}>
-                {bone.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        {selectedBone && (
-          <>
-            <div className="text-sm font-medium mb-2">
-              Selected: {selectedBone.name}
-            </div>
-            
-            {/* X Rotation Slider */}
-            <div className="mb-2">
-              <label className="block text-sm">X Rotation: {rotationX.toFixed(1)}°</label>
-              <input
-                type="range"
-                min="-180"
-                max="180"
-                step="1"
-                value={rotationX}
-                onChange={(e) => setRotationX(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            
-            {/* Y Rotation Slider */}
-            <div className="mb-2">
-              <label className="block text-sm">Y Rotation: {rotationY.toFixed(1)}°</label>
-              <input
-                type="range"
-                min="-180"
-                max="180"
-                step="1"
-                value={rotationY}
-                onChange={(e) => setRotationY(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            
-            {/* Z Rotation Slider */}
-            <div className="mb-2">
-              <label className="block text-sm">Z Rotation: {rotationZ.toFixed(1)}°</label>
-              <input
-                type="range"
-                min="-180"
-                max="180"
-                step="1"
-                value={rotationZ}
-                onChange={(e) => setRotationZ(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            
-            {/* Reset Button */}
-            <button
-              className="bg-red-500 text-white px-4 py-2 rounded mt-2"
-              onClick={() => {
-                setRotationX(0);
-                setRotationY(0);
-                setRotationZ(0);
-              }}
-            >
-              Reset Rotation
-            </button>
-          </>
-        )}
-      </div>
     </>
   );
 } 
