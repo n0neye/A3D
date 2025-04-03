@@ -14,14 +14,12 @@
 import * as BABYLON from '@babylonjs/core';
 import { EnableDepthRender, TakeFramedScreenshot } from '../../util/generation/render-util';
 import { resizeImage, addNoiseToImage, dataURLtoBlob } from '../../util/generation/image-processing';
-import { EventEmitter } from '../utils/EventEmitter';
 import { EditorEngine } from '../EditorEngine';
 import { UpdateGizmoVisibility } from '@/app/util/editor/editor-util';
 export class RenderService {
     private scene: BABYLON.Scene;
     private engine: EditorEngine;
     private babylonEngine: BABYLON.Engine;
-    public events: EventEmitter = new EventEmitter();
 
     constructor(scene: BABYLON.Scene, engine: EditorEngine, babylonEngine: BABYLON.Engine) {
         this.scene = scene;

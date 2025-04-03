@@ -26,8 +26,10 @@ const FramePanel: React.FC = () => {
   // Initialize state from camera manager settings
   useEffect(() => {
     if (!engine) return;
-    // Get initial camera settings
+    
     const cameraManager = engine.getCameraManager();
+    
+    // Get initial camera settings
     const cameraSettings = cameraManager.getCameraSettings();
     setFov(cameraSettings.fov);
     setFarClip(cameraSettings.farClip);
@@ -39,29 +41,39 @@ const FramePanel: React.FC = () => {
     setRightExtraPadding(overlaySettings.rightExtraPadding);
     setRatio(overlaySettings.ratio);
     
-    // Set up event listeners for settings changes
-    const fovChangedHandler = (newFOV: number) => setFov(newFOV);
-    const farClipChangedHandler = (newFarClip: number) => setFarClip(newFarClip);
-    const visibilityChangedHandler = (visible: boolean) => setOverlayVisible(visible);
-    const paddingChangedHandler = (newPadding: number) => setPadding(newPadding);
-    const rightPaddingChangedHandler = (newPadding: number) => setRightExtraPadding(newPadding);
-    const ratioChangedHandler = (newRatio: ImageRatio) => setRatio(newRatio);
+    // Set up type-safe subscriptions
+    const unsubFov = cameraManager.observer.subscribe('fovChanged', 
+      ({ fov }) => setFov(fov)
+    );
     
-    cameraManager.events.on('fovChanged', fovChangedHandler);
-    cameraManager.events.on('farClipChanged', farClipChangedHandler);
-    cameraManager.events.on('ratioOverlayVisibilityChanged', visibilityChangedHandler);
-    cameraManager.events.on('ratioOverlayPaddingChanged', paddingChangedHandler);
-    cameraManager.events.on('ratioOverlayRightPaddingChanged', rightPaddingChangedHandler);
-    cameraManager.events.on('ratioOverlayRatioChanged', ratioChangedHandler);
+    const unsubFarClip = cameraManager.observer.subscribe('farClipChanged', 
+      ({ farClip }) => setFarClip(farClip)
+    );
     
-    // Cleanup event listeners
+    const unsubVisibility = cameraManager.observer.subscribe('ratioOverlayVisibilityChanged', 
+      ({ visible }) => setOverlayVisible(visible)
+    );
+    
+    const unsubPadding = cameraManager.observer.subscribe('ratioOverlayPaddingChanged', 
+      ({ padding }) => setPadding(padding)
+    );
+    
+    const unsubRightPadding = cameraManager.observer.subscribe('ratioOverlayRightPaddingChanged', 
+      ({ padding }) => setRightExtraPadding(padding)
+    );
+    
+    const unsubRatio = cameraManager.observer.subscribe('ratioOverlayRatioChanged', 
+      ({ ratio }) => setRatio(ratio)
+    );
+    
+    // Cleanup subscriptions
     return () => {
-      cameraManager.events.off('fovChanged', fovChangedHandler);
-      cameraManager.events.off('farClipChanged', farClipChangedHandler);
-      cameraManager.events.off('ratioOverlayVisibilityChanged', visibilityChangedHandler);
-      cameraManager.events.off('ratioOverlayPaddingChanged', paddingChangedHandler);
-      cameraManager.events.off('ratioOverlayRightPaddingChanged', rightPaddingChangedHandler);
-      cameraManager.events.off('ratioOverlayRatioChanged', ratioChangedHandler);
+      unsubFov();
+      unsubFarClip();
+      unsubVisibility();
+      unsubPadding();
+      unsubRightPadding();
+      unsubRatio();
     };
   }, [engine]);
 

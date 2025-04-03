@@ -19,7 +19,6 @@ import * as BABYLON from '@babylonjs/core';
 import { BabylonCore } from './core/BabylonCore';
 import { CameraManager } from './managers/CameraManager';
 import { SelectionManager } from './managers/SelectionManager';
-import { EventEmitter } from './utils/EventEmitter';
 import { EntityBase, EntityType } from '../util/entity/EntityBase';
 import { EntityFactory, CreateEntityOptions } from './utils/EntityFactory';
 import { Command, HistoryManager } from './managers/HistoryManager';
@@ -30,7 +29,7 @@ import { RenderService } from './services/RenderService';
 import { createSkybox, createWorldGrid } from '../util/editor/editor-util';
 import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
 import { ProjectManager } from './managers/ProjectManager';
-import { DeleteMeshCommand } from '../lib/commands';
+import { engineObserver } from './utils/Observer';
 
 
 /**
@@ -49,7 +48,7 @@ export class EditorEngine {
   private renderService: RenderService;
   private projectManager: ProjectManager;
 
-  public events: EventEmitter = new EventEmitter();
+  public observer = engineObserver;
 
   private constructor(canvas: HTMLCanvasElement) {
     this.core = new BabylonCore(canvas);
@@ -67,11 +66,6 @@ export class EditorEngine {
 
     // Create the render service
     this.renderService = new RenderService(scene, this, babylonEngine);
-
-    // Listen for events from the input manager
-    this.inputManager.events.on('entityCreated', (entity) => {
-      this.events.emit('entityCreated', entity);
-    });
   }
 
   public static initEngine(canvas: HTMLCanvasElement): EditorEngine {
@@ -116,43 +110,52 @@ export class EditorEngine {
     return this.cameraManager;
   }
 
-  public getGizmoModeManager(): GizmoModeManager {
-    return this.gizmoModeManager;
-  }
-
   public getProjectManager(): ProjectManager {
     return this.projectManager;
+  }
+
+  public getHistoryManager(): HistoryManager {
+    return this.historyManager;
+  }
+
+  public getGizmoModeManager(): GizmoModeManager {
+    return this.gizmoModeManager;
   }
 
 
 
   // Public API methods for React components
+  // Entity Management
   public selectEntity(entity: EntityBase | null): void {
     this.selectionManager.select(entity);
+    
+    // Notify observers with type-safe payload
+    this.observer.notify('entitySelected', { entity });
   }
-
   public createEntity(options: CreateEntityOptions): EntityBase {
     const entity = EntityFactory.createEntity(this.core.getScene(), options);
     return entity;
   }
-
   public createEntityDefault(type: EntityType): EntityBase {
     const entity = EntityFactory.createEntityDefault(this.core.getScene(), type);
     return entity;
   }
-
-  // Delete entity
   public deleteEntity(entity: EntityBase): void {
-    const deleteCommand = new DeleteMeshCommand(entity, this.gizmoModeManager.getGizmoManager());
-    this.historyManager.executeCommand(deleteCommand);
+    EntityFactory.deleteEntity(entity, this);
+  }
+  public duplicateEntity(entity: EntityBase): void {
+    EntityFactory.duplicateEntity(entity, this);
   }
 
+  // History Management
   public executeCommand(command: Command): void {
     this.historyManager.executeCommand(command);
   }
 
+  // Gizmo Mode Management
   public setGizmoMode(mode: GizmoMode): void {
     this.gizmoModeManager.setGizmoMode(mode);
+    this.observer.notify('gizmoModeChanged', { mode });
   }
 
   public getGizmoMode(): GizmoMode {

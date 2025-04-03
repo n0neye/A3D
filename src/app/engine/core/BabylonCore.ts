@@ -18,7 +18,6 @@
  * completely decoupled from the editor business logic.
  */
 import * as BABYLON from '@babylonjs/core';
-import { EventEmitter } from '../utils/EventEmitter';
 
 /**
  * Core Babylon engine that's completely decoupled from React
@@ -27,7 +26,6 @@ export class BabylonCore {
   private engine: BABYLON.Engine;
   private scene: BABYLON.Scene;
   private canvas: HTMLCanvasElement;
-  public events: EventEmitter = new EventEmitter();
   
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -45,8 +43,6 @@ export class BabylonCore {
     // Initialize scene
     this._setupScene();
     
-    // Emit initialization complete
-    this.events.emit('initialized', this);
   }
   
   public getScene(): BABYLON.Scene {

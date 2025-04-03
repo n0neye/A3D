@@ -37,21 +37,25 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (canvasRef.current) {
       const engine = EditorEngine.initEngine(canvasRef.current);
-
       setIsInitialized(true);
-
-      engine.getGizmoModeManager().events.on('gizmoModeChanged', (mode) => {
-        setGizmoMode(mode);
-      });
       
-      // Handle entity selection
-      const selectionManager = engine.getSelectionManager();
-      selectionManager.events.on('entitySelected', (entity) => {
-        setSelectedEntity(entity);
-      });
+      // Type-safe subscriptions
+      const unsubGizmoMode = engine.observer.subscribe('gizmoModeChanged', 
+        ({ mode }) => setGizmoMode(mode)
+      );
+      
+      const unsubEntitySelected = engine.observer.subscribe(
+        'entitySelected', 
+        ({ entity }) => setSelectedEntity(entity)
+      );
+      
+      // Return cleanup function
+      return () => {
+        unsubGizmoMode();
+        unsubEntitySelected();
+      };
     }
   }, [canvasRef.current]);
-
 
   return (
     <EditorEngineContext.Provider

@@ -5,6 +5,10 @@ import { ShapeEntity, ShapeEntityProps } from '../../util/entity/ShapeEntity';
 import { LightEntity, LightProps } from '../../util/entity/LightEntity';
 import { CharacterEntity, CharacterEntityProps } from '../../util/entity/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
+import { CreateEntityAsyncCommand } from '@/app/lib/commands';
+import { duplicateEntity } from '@/app/util/entity/entityUtils';
+import { EditorEngine } from '../EditorEngine';
+import { DeleteMeshCommand } from '@/app/lib/commands';
 
 // Base properties common to all entities
 interface BaseEntityOptions {
@@ -50,7 +54,7 @@ export class EntityFactory {
         throw new Error(`Unknown entity type`);
     }
   }
-  
+
   static createEntity(scene: BABYLON.Scene, options: CreateEntityOptions): EntityBase {
     const name = options.name || `entity-${Date.now()}`;
     switch (options.type) {
@@ -82,6 +86,30 @@ export class EntityFactory {
         const exhaustiveCheck: never = options;
         throw new Error(`Unknown entity type: ${exhaustiveCheck}`);
     }
+  }
+
+  static async duplicateEntity(entity: EntityBase, engine: EditorEngine): Promise<EntityBase | null> {
+    const scene = engine.getScene();
+    const historyManager = engine.getHistoryManager();
+
+    const duplicateCommand = new CreateEntityAsyncCommand(
+      async () => {
+        console.log("Creating duplicate entity", entity.getEntityType(), entity.metadata?.aiData?.aiObjectType);
+        const duplicate = await duplicateEntity(entity, scene);
+        duplicate.position.x += 0.2;
+        return duplicate;
+      },
+      scene
+    );
+    historyManager.executeCommand(duplicateCommand);
+    const newEntity = duplicateCommand.getEntity();
+    console.log("New entity", newEntity);
+    return newEntity;
+  }
+
+  static deleteEntity(entity: EntityBase, engine: EditorEngine): void {
+    const deleteCommand = new DeleteMeshCommand(entity, engine.getGizmoModeManager().getGizmoManager());
+    engine.getHistoryManager().executeCommand(deleteCommand);
   }
 
   /**

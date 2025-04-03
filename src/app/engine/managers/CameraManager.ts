@@ -16,7 +16,7 @@
  */
 import * as BABYLON from '@babylonjs/core';
 import { ImageRatio } from '../../util/generation/generation-util';
-import { EventEmitter } from '../utils/EventEmitter';
+import { cameraObserver } from '../utils/CameraObserver';
 
 export class CameraManager {
   private scene: BABYLON.Scene;
@@ -29,7 +29,8 @@ export class CameraManager {
     isVisible: boolean;
   } | null = null;
   
-  public events: EventEmitter = new EventEmitter();
+  // Make observer publicly accessible
+  public observer = cameraObserver;
   
   constructor(scene: BABYLON.Scene, canvas: HTMLCanvasElement) {
     this.scene = scene;
@@ -163,7 +164,7 @@ export class CameraManager {
   public setFOV(fov: number): void {
     const clampedFOV = Math.max(0.35, Math.min(1.57, fov));
     this.mainCamera.fov = clampedFOV;
-    this.events.emit('fovChanged', clampedFOV);
+    this.observer.notify('fovChanged', { fov: clampedFOV });
   }
   
   public getFOV(): number {
@@ -172,7 +173,7 @@ export class CameraManager {
   
   public setFarClip(farClip: number): void {
     this.mainCamera.maxZ = farClip;
-    this.events.emit('farClipChanged', farClip);
+    this.observer.notify('farClipChanged', { farClip });
   }
   
   public getFarClip(): number {
@@ -183,7 +184,7 @@ export class CameraManager {
     if (this.ratioOverlay) {
       this.ratioOverlay.isVisible = visible;
       this.ratioOverlay.frame.isVisible = visible;
-      this.events.emit('ratioOverlayVisibilityChanged', visible);
+      this.observer.notify('ratioOverlayVisibilityChanged', { visible });
     }
   }
   
@@ -194,7 +195,7 @@ export class CameraManager {
   public setRatioOverlayPadding(padding: number): void {
     if (this.ratioOverlay) {
       this.ratioOverlay.padding = padding;
-      this.events.emit('ratioOverlayPaddingChanged', padding);
+      this.observer.notify('ratioOverlayPaddingChanged', { padding });
     }
   }
   
@@ -205,7 +206,7 @@ export class CameraManager {
   public setRatioOverlayRightPadding(padding: number): void {
     if (this.ratioOverlay) {
       this.ratioOverlay.rightExtraPadding = padding;
-      this.events.emit('ratioOverlayRightPaddingChanged', padding);
+      this.observer.notify('ratioOverlayRightPaddingChanged', { padding });
     }
   }
   
@@ -216,7 +217,7 @@ export class CameraManager {
   public setRatioOverlayRatio(ratio: ImageRatio): void {
     if (this.ratioOverlay) {
       this.ratioOverlay.ratio = ratio;
-      this.events.emit('ratioOverlayRatioChanged', ratio);
+      this.observer.notify('ratioOverlayRatioChanged', { ratio });
     }
   }
   

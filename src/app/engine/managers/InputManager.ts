@@ -20,7 +20,6 @@ import { EntityFactory } from '../utils/EntityFactory';
 import { ISelectable } from '../../interfaces/ISelectable';
 import { BoneControl } from '../../util/entity/BoneControl';
 import { GenerativeEntityProps } from '../../util/entity/GenerativeEntity';
-import { EventEmitter } from '../utils/EventEmitter';
 import { EditorEngine } from '../EditorEngine';
 
 export class InputManager {
@@ -28,7 +27,6 @@ export class InputManager {
   private scene: BABYLON.Scene;
   private selectionManager: SelectionManager;
   private historyManager: HistoryManager;
-  public events: EventEmitter = new EventEmitter();
   
   // Keyboard state tracking
   private keysPressed: Map<string, boolean> = new Map();
@@ -305,12 +303,9 @@ export class InputManager {
     // Duplicate selected entity (Ctrl+D)
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
       event.preventDefault(); // Prevent browser's bookmark dialog
-      
       const currentEntity = this.selectionManager.getCurrentSelection();
       if (!currentEntity || !(currentEntity instanceof EntityBase)) return;
-
-      // Emit event to duplicate entity (implementation will be in EditorEngine)
-      this.events.emit('duplicateEntity', currentEntity);
+      this.engine.duplicateEntity(currentEntity);
     }
 
     // Delete selected entity

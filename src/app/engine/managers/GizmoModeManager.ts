@@ -1,12 +1,10 @@
 import * as BABYLON from '@babylonjs/core';
 import { GizmoManager } from '@babylonjs/core';
-import { EventEmitter } from '../utils/EventEmitter';
 export type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 export class GizmoModeManager {
     private scene: BABYLON.Scene;
     private gizmoManager: GizmoManager;
-    public events: EventEmitter = new EventEmitter();
-    private currentMode: GizmoMode = 'position';
+    private _currentMode: GizmoMode = 'position';
 
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
@@ -14,13 +12,17 @@ export class GizmoModeManager {
         
     }   
 
-    public setGizmoMode(mode: GizmoMode): void {
-        this.currentMode = mode;
-        this.events.emit('gizmoModeChanged', mode);
+    public setGizmoMode(mode: GizmoMode): GizmoMode {
+        this._currentMode = mode;
+        
+        // Apply gizmo changes...
+        
+        // Return the new mode rather than emitting an event
+        return mode;
     }
 
     public getGizmoMode(): GizmoMode {
-        return this.currentMode;
+        return this._currentMode;
     }
 
     public getGizmoManager(): GizmoManager {
