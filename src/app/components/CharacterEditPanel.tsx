@@ -71,14 +71,14 @@ const CharacterEditPanel: React.FC<CharacterEditPanelProps> = ({ entity }) => {
       >
         {showBones ? <IconEyeOff size={16} /> : <IconEye size={16} />}
       </Button>
-      <Button
+      {/* <Button
         variant="outline"
         size="sm"
         onClick={resetAllBones}
         title="Reset all bones to initial pose"
       >
         <IconRotateClockwise size={16} />
-      </Button>
+      </Button> */}
     </div>
   );
 };

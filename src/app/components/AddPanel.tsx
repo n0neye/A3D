@@ -5,6 +5,7 @@ import { ShapeType } from '../util/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
+import { v4 as uuidv4 } from 'uuid';
 import {
   IconCube,
   IconSphere,
@@ -96,8 +97,9 @@ const AddPanel: React.FC = () => {
         type: 'character',
         characterProps: {
           url: modelUrl,
-          name: modelName
-        }
+          name: modelName+'-'+uuidv4(),
+        },
+        scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale)
       }),
     );
 
@@ -129,7 +131,10 @@ const AddPanel: React.FC = () => {
 
   // List of available character models
   const characterModels = [
-    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin (Male)' },
+    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: '/characters/thumbs/mannequin.webp', scale: 1 },
+    { url: '/characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: '/characters/thumbs/xbot.webp', scale: 1 },
+    { url: '/characters/cat/cat_orange.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.webp', scale: 0.02 },
+    // { url: '/characters/cat/cat_-_walking_scale.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.png', scale: 1 },
   ];
 
   return (
@@ -212,18 +217,19 @@ const AddPanel: React.FC = () => {
 
           {/* Characters dropdown menu */}
           {showCharactersMenu && (
-            <div className="absolute left-14 top-0 pl-2">
-              <Card className="p-2 w-48 panel-shape">
+            <div className="absolute left-14 -top-1 pl-2">
+              <Card className="p-2 panel-shape flex flex-row gap-2">
                 {characterModels.map((model) => (
                   <Button
                     key={model.url}
                     variant="ghost"
                     size="sm"
-                    className="flex items-center justify-start gap-2 h-10 w-full mb-1"
-                    onClick={() => handleCreateCharacter(model.url, model.name)}
+                    className="flex items-center justify-start gap-2 h-10 w-24 mb-1"
+                    onClick={() => handleCreateCharacter(model.url, model.name, model.scale)}
                   >
-                    <IconUser size={16} />
-                    <span className="text-xs truncate">{model.name}</span>
+                    {/* <IconUser size={16} />
+                    <span className="text-xs truncate">{model.name}</span> */}
+                    <img src={model.thumbnail} alt={model.name} className="w-20 h-20 rounded-md" />
                   </Button>
                 ))}
               </Card>

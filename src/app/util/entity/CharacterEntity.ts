@@ -9,6 +9,7 @@ import { BoneRotationCommand } from '../../lib/commands';
 import { useOldEditorContext } from '../../context/OldEditorContext';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
+import { setupMeshShadows } from '../editor/light-util';
 
 export interface CharacterEntityProps {
     url: string;
@@ -25,6 +26,7 @@ export class CharacterEntity extends EntityBase {
     public skeleton: Skeleton | null = null;
     public characterProps: CharacterEntityProps;
     private _isLoading = false;
+    private _isDisposed = false;
     private _loadingPromise: Promise<void> | null = null;
     public rootMesh: BABYLON.AbstractMesh | null = null;
     public initialBoneRotations: Map<string, BABYLON.Quaternion> = new Map();
@@ -41,10 +43,11 @@ export class CharacterEntity extends EntityBase {
     private _boneMaterialAlpha = 0.5;
     private _linesMaterialAlpha = 0.7;
 
-    constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps) {
+    constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps, options?: { scaling?: BABYLON.Vector3 }) {
         super(name, scene, 'character', {
             id: id,
             position: new BABYLON.Vector3(0, 0, 0),
+            scaling: options?.scaling || new BABYLON.Vector3(1, 1, 1)
         });
         this.characterProps = props;
 
@@ -126,6 +129,8 @@ export class CharacterEntity extends EntityBase {
 
                 // Position the character at origin by default
                 this.position = BABYLON.Vector3.Zero();
+
+                setupMeshShadows(this.rootMesh);
             } else {
                 console.error(`No meshes loaded for character ${this.name}`);
             }
@@ -236,6 +241,7 @@ export class CharacterEntity extends EntityBase {
         });
 
         // Create bone lines to visualize the skeleton structure
+        console.log("CharacterEntity: Creating bone lines");
         this.skeleton.bones.forEach(bone => {
             const childBones = bone.getChildren();
 
@@ -276,6 +282,8 @@ export class CharacterEntity extends EntityBase {
      */
     private _updateBoneLines(): void {
         if (!this._isVisualizationVisible) return;
+        if (this._isDisposed) return;
+        console.log("CharacterEntity: Updating bone lines", this.name);
 
         this.skeleton?.bones.forEach(bone => {
             const childBones = bone.getChildren();
@@ -568,5 +576,18 @@ export class CharacterEntity extends EntityBase {
             this._selectedBone = null;
             this._selectedControl = null;
         }
+    }
+
+    public disposeCharacter(): void {
+        console.log("CharacterEntity: Disposing children", this.name);
+        this._boneMap.forEach(({ control }) => {
+            control.dispose();
+        });
+
+        this._boneLines.forEach(line => {
+            line.dispose();
+        });
+
+        this._isDisposed = true;        
     }
 } 
