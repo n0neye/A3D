@@ -139,7 +139,8 @@ const AddPanel: React.FC = () => {
 
   // List of available character models
   const characterModels = [
-    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin (Male)' },
+    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: '/characters/thumbs/mannequin.png' },
+    { url: '/characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: '/characters/thumbs/xbot.png' },
   ];
 
   return (
@@ -223,7 +224,7 @@ const AddPanel: React.FC = () => {
           {/* Characters dropdown menu */}
           {showCharactersMenu && (
             <div className="absolute left-14 top-0 pl-2">
-              <Card className="p-2 w-48 panel-shape">
+              <Card className="p-2 panel-shape  grid grid-cols-2 gap-2 w-48">
                 {characterModels.map((model) => (
                   <Button
                     key={model.url}
@@ -232,8 +233,9 @@ const AddPanel: React.FC = () => {
                     className="flex items-center justify-start gap-2 h-10 w-full mb-1"
                     onClick={() => handleCreateCharacter(model.url, model.name)}
                   >
-                    <IconUser size={16} />
-                    <span className="text-xs truncate">{model.name}</span>
+                    {/* <IconUser size={16} />
+                    <span className="text-xs truncate">{model.name}</span> */}
+                    <img src={model.thumbnail} alt={model.name} className="w-20 h-20 rounded-md" />
                   </Button>
                 ))}
               </Card>

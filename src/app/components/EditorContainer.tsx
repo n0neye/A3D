@@ -577,7 +577,7 @@ export default function EditorContainer() {
         onSelectImage={setCurrentGalleryIndex}
         onApplySettings={handleApplyRenderSettings}
       />
-      {/* <DebugLayer /> */}
+      <DebugLayer />
 
       {/* Add the Guide component */}
       <Guide />
