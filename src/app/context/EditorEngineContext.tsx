@@ -44,12 +44,14 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         setIsInitialized(true);
       });
 
-      engine.events.on('entitySelected', (entity) => {
-        setSelectedEntity(entity);
-      });
-
       engine.events.on('gizmoModeChanged', (mode) => {
         setGizmoMode(mode);
+      });
+      
+      // Handle entity selection
+      const selectionManager = engine.getSelectionManager();
+      selectionManager.events.on('entitySelected', (entity) => {
+        setSelectedEntity(entity);
       });
     }
   }, [canvasRef.current]);

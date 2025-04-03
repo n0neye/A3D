@@ -3,7 +3,8 @@ import { ISelectable } from '../../interfaces/ISelectable';
 import { getGizmoManager } from './SceneManagers';
 import { CharacterEntity } from '../../util/entity/CharacterEntity';
 import { BoneControl } from '../../util/entity/BoneControl';
-
+import { EntityBase } from '@/app/util/entity/EntityBase';
+import { EventEmitter } from 'events';
 /**
  * Manages selection of objects in the scene
  */
@@ -14,70 +15,12 @@ export class SelectionManager {
   private _gizmoManager: BABYLON.GizmoManager;
   private _hoverObserver: BABYLON.Observer<BABYLON.PointerInfo> | null = null;
   private _hoveredMesh: BABYLON.AbstractMesh | null = null;
-  
+  public events: EventEmitter = new EventEmitter();
+
   constructor(scene: BABYLON.Scene, gizmoManager: BABYLON.GizmoManager) {
     this._scene = scene;
     this._gizmoManager = gizmoManager;
     this._setupHoverObserver();
-  }
-
-  onSceneClick(pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) {
-    console.log("handleRegularClick called");
-
-    // Get the selection manager
-
-
-    const bonePickInfo = scene.pick(
-      scene.pointerX,
-      scene.pointerY,
-      (mesh) => {
-        return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
-      }
-    );
-
-    // If we picked a bone control, select the bone and return
-    // TODO: this is hack to select bones behind the character mesh
-    if (bonePickInfo.hit && bonePickInfo.pickedMesh && bonePickInfo.pickedMesh instanceof BoneControl) {
-      console.log("Bone picked:", bonePickInfo.pickedMesh.name);
-      const boneControl = bonePickInfo.pickedMesh as BoneControl;
-      boneControl.character.selectBone(boneControl);
-      this.select(boneControl);
-      return;
-    }
-
-    const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-    const mesh = pickInfo.pickedMesh;
-    console.log("Picked mesh:", mesh?.name, "metadata:", mesh?.metadata);
-
-    // Clicked on empty space - deselect
-    if (!mesh) {
-      console.log("No mesh picked, deselecting");
-      this.select(null);
-      return;
-    }
-
-    // Find the selectable object
-    let selectable: ISelectable | null = null;
-
-    // TODO: It's so messy here
-    // FIRST check if the mesh has a rootEntity that's selectable
-    if (mesh.metadata?.rootEntity && (mesh.metadata.rootEntity as any).gizmoCapabilities) {
-      console.log("Mesh has selectable rootEntity");
-      selectable = mesh.metadata.rootEntity as ISelectable;
-      this.select(selectable);
-    }
-    // THEN check if the mesh itself is directly selectable (for BoneControl etc.)
-    else if ((mesh as any).gizmoCapabilities) {
-      console.log("Mesh is directly selectable");
-      selectable = mesh as unknown as ISelectable;
-      const parentSelection = this.getParentSelection();
-      this.select(selectable);
-    }
-    // Nothing selectable found
-    else {
-      console.log("Nothing selectable found, deselecting");
-      this.select(null);
-    }
   }
 
   
@@ -105,6 +48,11 @@ export class SelectionManager {
       console.log("Selecting a child of current selection - keeping parent active");
       // Keep track of parent
       this._parentSelection = this._currentSelection;
+    }
+
+    // Notify the engine context
+    if (selectable && selectable instanceof EntityBase) {
+      this.events.emit('entitySelected', selectable);
     }
     
     // Clear gizmo

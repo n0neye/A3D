@@ -190,7 +190,6 @@ export class InputManager {
     if (!mesh) {
       console.log("No mesh picked, deselecting");
       this.selectionManager.select(null);
-      this.events.emit('entitySelected', null);
       return;
     }
 
@@ -202,35 +201,17 @@ export class InputManager {
       console.log("Mesh has selectable rootEntity");
       selectable = mesh.metadata.rootEntity as ISelectable;
       this.selectionManager.select(selectable);
-
-      // If it's an EntityBase, emit selection event
-      if (mesh.metadata.rootEntity instanceof EntityBase) {
-        console.log("rootEntity is EntityBase, selecting in UI");
-        this.events.emit('entitySelected', mesh.metadata.rootEntity);
-      } else {
-        this.events.emit('entitySelected', null);
-      }
     }
     // Then check if the mesh itself is directly selectable (for BoneControl etc.)
     else if ((mesh as any).gizmoCapabilities) {
       console.log("Mesh is directly selectable");
       selectable = mesh as unknown as ISelectable;
       this.selectionManager.select(selectable);
-      
-      // Check if we need to show a special UI for this selection
-      // or if we should use the parent's UI
-      const parentSelection = this.selectionManager.getParentSelection();
-      if (parentSelection instanceof EntityBase) {
-        this.events.emit('entitySelected', parentSelection);
-      } else {
-        this.events.emit('entitySelected', null);
-      }
     }
     // Nothing selectable found
     else {
       console.log("Nothing selectable found, deselecting");
       this.selectionManager.select(null);
-      this.events.emit('entitySelected', null);
     }
   }
   

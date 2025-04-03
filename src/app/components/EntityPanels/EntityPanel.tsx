@@ -24,7 +24,7 @@ const EntityPanel: React.FC = () => {
         minWidth: '150px',
       }}
     >
-      {/* {selectedEntity instanceof GenerativeEntity && <GenerativeEntityPanel entity={selectedEntity} />} */}
+      {selectedEntity instanceof GenerativeEntity && <GenerativeEntityPanel entity={selectedEntity} />}
       {selectedEntity instanceof LightEntity && <LightEntityPanel entity={selectedEntity} />}
     </div>
   );

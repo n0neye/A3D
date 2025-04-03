@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
 import { setupMeshShadows } from '../editor/light-util';
 import { createShapeMesh } from '../editor/shape-util';
+import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '../generation/3d-generation-util';
+import { doGenerateRealtimeImage, GenerationResult } from '../generation/realtime-generation-util';
 
 /**
  * Entity that represents AI-generated content
@@ -359,6 +361,60 @@ export class GenerativeEntity extends EntityBase {
       this.applyGenerationLog(newLog);
     }
   }
+
+  async generateRealtimeImage(
+    prompt: string,
+    options: {
+      ratio?: ImageRatio;
+    } = {}
+  ): Promise<GenerationResult> {
+    const scene = this.engine.getScene();
+    return doGenerateRealtimeImage(prompt, this, scene, { ratio: options.ratio });
+  }
+
+  /**
+ * Unified function to generate a 3D model using the specified API provider
+ */
+  async generate3DModel(
+    imageUrl: string,
+    derivedFromId: string,
+    options: {
+      prompt?: string;
+      apiProvider?: ModelApiProvider;
+    } = {}
+  ): Promise<GenerationResult> {
+    // Default to Trellis if no provider specified
+    const apiProvider = options.apiProvider || 'runpod';
+
+    console.log(`Generating 3D model using ${apiProvider} API...`);
+    const scene = this.engine.getScene();
+    const gizmoManager = this.engine.getGizmoManager();
+
+    // Call the appropriate provider's implementation
+    switch (apiProvider) {
+      case 'runpod':
+        return generate3DModel_Runpod(
+          imageUrl,
+          this,
+          scene,
+          gizmoManager,
+          derivedFromId,
+          { prompt: options.prompt }
+        );
+
+      case 'trellis':
+      default:
+        return generate3DModel_Trellis(
+          imageUrl,
+          this,
+          scene,
+          gizmoManager,
+          derivedFromId,
+          { prompt: options.prompt }
+        );
+    }
+  }
+
 }
 
 

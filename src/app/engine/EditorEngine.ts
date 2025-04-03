@@ -89,10 +89,22 @@ export class EditorEngine {
     return EditorEngine.instance;
   }
 
+  public getScene(): BABYLON.Scene {
+    return this.core.getScene();
+  }
+
+  public getGizmoManager(): GizmoManager {
+    return this.gizmoManager;
+  }
+
+  public getSelectionManager(): SelectionManager {
+    return this.selectionManager;
+  }
+  
+
   // Public API methods for React components
   public selectEntity(entity: EntityBase | null): void {
     this.selectionManager.select(entity);
-    this.events.emit('entitySelected', entity);
   }
 
   public createEntity(options: CreateEntityOptions): EntityBase {

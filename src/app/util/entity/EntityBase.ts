@@ -5,7 +5,7 @@ import { GenerativeEntityProps } from './GenerativeEntity';
 import { LightProps } from './LightEntity';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
-
+import { EditorEngine } from '../../engine/EditorEngine';
 /**
  * Base class for all entities in the scene
  * Extends TransformNode with common functionality
@@ -17,12 +17,14 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   id: string;
   entityType: EntityType;
   created: Date;
+  engine: EditorEngine;
   
   // ISelectable implementation
   gizmoCapabilities: GizmoCapabilities = {
     allowPosition: true,
     allowRotation: true,
-    allowScale: true
+    allowScale: true,
+    allowBoundingBox: false
   };
   
   cursorType: SelectableCursorType = 'move';
@@ -41,6 +43,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
     super(name, scene);
 
     // Initialize core properties
+    this.engine = EditorEngine.getInstance();
     this.id = options.id || uuidv4();
     this.entityType = entityType;
     this.created = new Date();

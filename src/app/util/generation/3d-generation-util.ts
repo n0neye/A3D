@@ -2,7 +2,7 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "../simulation-data";
-import { GenerationResult } from "../realtime-generation-util";
+import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
 import { setupMeshShadows } from "../editor/light-util";
@@ -302,46 +302,3 @@ export async function generate3DModel_Runpod(
  */
 export type ModelApiProvider = 'trellis' | 'runpod';
 
-/**
- * Unified function to generate a 3D model using the specified API provider
- */
-export async function generate3DModel(
-    imageUrl: string,
-    entity: GenerativeEntity,
-    scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
-    derivedFromId: string,
-    options: {
-        prompt?: string;
-        apiProvider?: ModelApiProvider;
-    } = {}
-): Promise<GenerationResult> {
-    // Default to Trellis if no provider specified
-    const apiProvider = options.apiProvider || 'runpod';
-
-    console.log(`Generating 3D model using ${apiProvider} API...`);
-
-    // Call the appropriate provider's implementation
-    switch (apiProvider) {
-        case 'runpod':
-            return generate3DModel_Runpod(
-                imageUrl,
-                entity,
-                scene,
-                gizmoManager,
-                derivedFromId,
-                { prompt: options.prompt }
-            );
-
-        case 'trellis':
-        default:
-            return generate3DModel_Trellis(
-                imageUrl,
-                entity,
-                scene,
-                gizmoManager,
-                derivedFromId,
-                { prompt: options.prompt }
-            );
-    }
-}

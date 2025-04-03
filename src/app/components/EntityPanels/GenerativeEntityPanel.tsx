@@ -2,9 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
 import { removeBackground } from '../../util/generation/generation-util';
-import { generate3DModel } from '../../util/generation/3d-generation-util';
-import { generateRealtimeImage, GenerationResult } from '../../util/generation/realtime-generation-util';
-import { useEditorEngine } from '../../context/EditorEngineContext';
+import { GenerationResult } from '../../util/generation/realtime-generation-util';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
@@ -17,8 +15,6 @@ let PREV_ENTITY: GenerativeEntity | null = null;
 
 
 const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
-
-  const {  } = useEditorEngine();
 
   const [promptInput, setPromptInput] = useState(props.entity.temp_prompt);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);
@@ -155,9 +151,9 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   // Handle image generation
   const handleGenerate2D = async () => {
     console.log('handleGenerate2D', promptInput);
-    if (!props.entity || !promptInput.trim() || !scene) return;
+    if (!props.entity || !promptInput.trim() ) return;
     let result: GenerationResult;
-    result = await generateRealtimeImage(promptInput, props.entity, scene, { ratio: currentRatio });
+    result = await props.entity.generateRealtimeImage(promptInput, { ratio: currentRatio });
   };
 
   // Convert to 3D model
@@ -172,7 +168,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
     try {
       console.log('handleGenerate3D');
-      if (!props.entity || !scene) return;
+      if (!props.entity ) return;
 
       // Get current generation
       const currentGen = props.entity.getCurrentGenerationLog();
@@ -182,7 +178,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
       }
 
       // Call the 3D conversion service
-      const result = await generate3DModel(currentGen.fileUrl, props.entity, scene, gizmoManager, currentGen.id, {
+      const result = await props.entity.generate3DModel(currentGen.fileUrl, currentGen.id, {
         prompt: promptInput,
         // apiProvider: 'trellis'
       });
@@ -237,7 +233,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   // Handle ratio change
   const handleRatioChange = (ratio: ImageRatio) => {
-    if (!props.entity || !scene) return;
+    if (!props.entity) return;
 
     // Update the entity's aspect ratio
     setCurrentRatio(ratio);

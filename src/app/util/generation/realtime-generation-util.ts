@@ -25,7 +25,7 @@ export function initializeRealtimeConnection(): void {
     initRunwareClient();
 }
 
-export async function generateRealtimeImage(
+export async function doGenerateRealtimeImage(
     promptInput: string,
     entity: GenerativeEntity,
     scene: BABYLON.Scene,
