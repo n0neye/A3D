@@ -2,7 +2,7 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "../simulation-data";
-import { GenerationResult } from "../realtime-generation-util";
+import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64, ProgressCallback } from "./generation-util";
 import { setupMeshShadows } from "../editor/light-util";

@@ -12,6 +12,7 @@ interface BaseEntityOptions {
   id?: string;
   position?: BABYLON.Vector3;
   rotation?: BABYLON.Vector3;
+  scaling?: BABYLON.Vector3;
 }
 
 // Type-specific options using discriminated union
@@ -76,7 +77,7 @@ export class EntityFactory {
           props: options.lightProps
         });
       case 'character':
-        return new CharacterEntity(scene, name, options.id || uuidv4(), options.characterProps);
+        return new CharacterEntity(scene, name, options.id || uuidv4(), options.characterProps, { scaling: options.scaling });
       default:
         // This ensures exhaustive type checking
         const exhaustiveCheck: never = options;

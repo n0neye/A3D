@@ -42,10 +42,11 @@ export class CharacterEntity extends EntityBase {
     private _boneMaterialAlpha = 0.5;
     private _linesMaterialAlpha = 0.7;
 
-    constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps) {
+    constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps, options?: { scaling?: BABYLON.Vector3 }) {
         super(name, scene, 'character', {
             id: id,
             position: new BABYLON.Vector3(0, 0, 0),
+            scaling: options?.scaling || new BABYLON.Vector3(1, 1, 1)
         });
         this.characterProps = props;
 

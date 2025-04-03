@@ -19,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { EntityFactory } from '../util/entity/EntityFactory';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
+import * as BABYLON from '@babylonjs/core';
 
 const AddPanel: React.FC = () => {
   const { scene, setSelectedEntity, historyManager } = useEditorContext();
@@ -96,7 +97,7 @@ const AddPanel: React.FC = () => {
   };
 
   // Handle character entity creation
-  const handleCreateCharacter = (modelUrl: string, modelName: string) => {
+  const handleCreateCharacter = (modelUrl: string, modelName: string, modelScale: number) => {
     if (!scene) return;
 
     // Create a command with factory function for character
@@ -105,8 +106,9 @@ const AddPanel: React.FC = () => {
         type: 'character',
         characterProps: { 
           url: modelUrl,
-          name: modelName+'-'+uuidv4()
-        }
+          name: modelName+'-'+uuidv4(),
+        },
+        scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale)
       }),
       scene
     );
@@ -139,8 +141,9 @@ const AddPanel: React.FC = () => {
 
   // List of available character models
   const characterModels = [
-    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: '/characters/thumbs/mannequin.png' },
-    { url: '/characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: '/characters/thumbs/xbot.png' },
+    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: '/characters/thumbs/mannequin.webp', scale: 1 },
+    { url: '/characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: '/characters/thumbs/xbot.webp', scale: 1 },
+    // { url: '/characters/cat/cat_-_walking_scale.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.png', scale: 1 },
   ];
 
   return (
@@ -231,7 +234,7 @@ const AddPanel: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="flex items-center justify-start gap-2 h-10 w-full mb-1"
-                    onClick={() => handleCreateCharacter(model.url, model.name)}
+                    onClick={() => handleCreateCharacter(model.url, model.name, model.scale)}
                   >
                     {/* <IconUser size={16} />
                     <span className="text-xs truncate">{model.name}</span> */}
