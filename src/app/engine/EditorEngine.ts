@@ -21,13 +21,16 @@ import { CameraManager } from './managers/CameraManager';
 import { SelectionManager } from './managers/SelectionManager';
 import { EventEmitter } from './utils/EventEmitter';
 import { EntityBase, EntityType } from '../util/entity/EntityBase';
-import { GizmoManager } from '@babylonjs/core';
 import { EntityFactory, CreateEntityOptions } from './utils/EntityFactory';
 import { Command, HistoryManager } from './managers/HistoryManager';
 import { loadShapeMeshes } from '../util/editor/shape-util';
 import { InputManager } from './managers/InputManager';
 import { createDefaultMaterials } from '../util/editor/material-util';
 import { RenderService } from './services/RenderService';
+import { createSkybox, createWorldGrid } from '../util/editor/editor-util';
+import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
+import { ProjectManager } from './managers/ProjectManager';
+
 
 /**
  * Main editor engine that coordinates all Babylon.js subsystems
@@ -39,10 +42,11 @@ export class EditorEngine {
 
   private cameraManager: CameraManager;
   private selectionManager: SelectionManager;
-  private gizmoManager: GizmoManager;
+  private gizmoModeManager: GizmoModeManager;
   private historyManager: HistoryManager;
   private inputManager: InputManager;
   private renderService: RenderService;
+  private projectManager: ProjectManager;
 
   public events: EventEmitter = new EventEmitter();
 
@@ -50,18 +54,19 @@ export class EditorEngine {
     this.core = new BabylonCore(canvas);
 
     const scene = this.core.getScene();
-    const engine = this.core.getEngine();
+    const babylonEngine = this.core.getEngine();
     this.cameraManager = new CameraManager(scene, canvas);
-    this.gizmoManager = new GizmoManager(scene);
-    this.selectionManager = new SelectionManager(scene, this.gizmoManager);
+    this.gizmoModeManager = new GizmoModeManager(scene);
+    this.selectionManager = new SelectionManager(scene, this.gizmoModeManager.getGizmoManager());
     this.historyManager = new HistoryManager();
-    
+    this.projectManager = new ProjectManager(this);
+
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(scene, this.selectionManager, this.historyManager);
-    
+
     // Create the render service
-    this.renderService = new RenderService(scene, engine);
-    
+    this.renderService = new RenderService(scene, this, babylonEngine);
+
     // Listen for events from the input manager
     this.inputManager.events.on('entityCreated', (entity) => {
       this.events.emit('entityCreated', entity);
@@ -78,6 +83,8 @@ export class EditorEngine {
     const scene = engine.core.getScene();
     loadShapeMeshes(scene);
     createDefaultMaterials(scene);
+    createSkybox(scene);
+    createWorldGrid(scene, 20, 10);
 
     return EditorEngine.instance;
   }
@@ -90,10 +97,6 @@ export class EditorEngine {
 
   public getScene(): BABYLON.Scene {
     return this.core.getScene();
-  }
-
-  public getGizmoManager(): GizmoManager {
-    return this.gizmoManager;
   }
 
   public getSelectionManager(): SelectionManager {
@@ -111,7 +114,16 @@ export class EditorEngine {
   public getCameraManager(): CameraManager {
     return this.cameraManager;
   }
-  
+
+  public getGizmoModeManager(): GizmoModeManager {
+    return this.gizmoModeManager;
+  }
+
+  public getProjectManager(): ProjectManager {
+    return this.projectManager;
+  }
+
+
 
   // Public API methods for React components
   public selectEntity(entity: EntityBase | null): void {
@@ -120,18 +132,24 @@ export class EditorEngine {
 
   public createEntity(options: CreateEntityOptions): EntityBase {
     const entity = EntityFactory.createEntity(this.core.getScene(), options);
-    this.events.emit('entityCreated', entity);
     return entity;
   }
 
   public createEntityDefault(type: EntityType): EntityBase {
     const entity = EntityFactory.createEntityDefault(this.core.getScene(), type);
-    this.events.emit('entityCreated', entity);
     return entity;
   }
 
   public executeCommand(command: Command): void {
     this.historyManager.executeCommand(command);
+  }
+
+  public setGizmoMode(mode: GizmoMode): void {
+    this.gizmoModeManager.setGizmoMode(mode);
+  }
+
+  public getGizmoMode(): GizmoMode {
+    return this.gizmoModeManager.getGizmoMode();
   }
 
 } 

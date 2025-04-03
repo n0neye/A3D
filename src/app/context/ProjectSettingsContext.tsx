@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SerializedProjectSettings } from '../util/editor/project-util';
 import { availableAPIs } from '../util/generation/image-render-api';
 import { RenderLog } from '../util/editor/project-util';
+import { useEditorEngine } from './EditorEngineContext';
 
 // Default settings
 const defaultSettings: SerializedProjectSettings = {
@@ -38,7 +39,15 @@ export const useProjectSettings = () => useContext(ProjectSettingsContext);
 export const ProjectSettingsProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
+  const { engine } = useEditorEngine();
   const [ProjectSettings, setProjectSettings] = useState<SerializedProjectSettings>(defaultSettings);
+
+  useEffect(() => {
+    if (!engine) return;
+    engine.getProjectManager().events.on('projectLoaded', (project: SerializedProjectSettings) => {
+      setProjectSettings(project);
+    });
+  }, [engine]);
 
   const updateProjectSettings = (newSettings: Partial<SerializedProjectSettings>) => {
     setProjectSettings(prev => ({
@@ -48,7 +57,7 @@ export const ProjectSettingsProvider: React.FC<{
   };
 
   const addRenderLog = (image: RenderLog) => {
-    console.log("ProjectSettingsContext: addRenderLog",ProjectSettings.renderLogs.length, image);
+    console.log("ProjectSettingsContext: addRenderLog", ProjectSettings.renderLogs.length, image);
     setProjectSettings(prev => ({
       ...prev,
       renderLogs: [...prev.renderLogs, image]

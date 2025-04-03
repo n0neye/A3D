@@ -1,5 +1,4 @@
 import React from 'react';
-import { useOldEditorContext } from '../context/OldEditorContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -8,9 +7,10 @@ import {
   IconArrowsMaximize, // Scale
   IconSquare // Bounding Box
 } from '@tabler/icons-react';
+import { useEditorEngine } from '../context/EditorEngineContext';
 
 const GizmoModeSelector: React.FC = () => {
-  const { currentGizmoMode, setGizmoMode } = useOldEditorContext();
+  const { gizmoMode, engine } = useEditorEngine();
 
   return (
     <>
@@ -18,9 +18,9 @@ const GizmoModeSelector: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={currentGizmoMode === 'position' ? 'default' : 'outline'}
+              variant={gizmoMode === 'position' ? 'default' : 'outline'}
               size="icon"
-              onClick={() => setGizmoMode('position')}
+              onClick={() => engine.setGizmoMode('position')}
               aria-label="position gizmo"
             >
               <IconArrowsMove className="h-4 w-4" />
@@ -34,9 +34,9 @@ const GizmoModeSelector: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={currentGizmoMode === 'scale' ? 'default' : 'outline'}
+              variant={gizmoMode === 'scale' ? 'default' : 'outline'}
               size="icon"
-              onClick={() => setGizmoMode('scale')}
+              onClick={() => engine.setGizmoMode('scale')}
               aria-label="scale gizmo"
             >
               <IconArrowsMaximize className="h-4 w-4" />
@@ -50,9 +50,9 @@ const GizmoModeSelector: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={currentGizmoMode === 'rotation' ? 'default' : 'outline'}
+              variant={gizmoMode === 'rotation' ? 'default' : 'outline'}
               size="icon"
-              onClick={() => setGizmoMode('rotation')}
+              onClick={() => engine.setGizmoMode('rotation')}
               aria-label="rotation gizmo"
             >
               <IconRotate className="h-4 w-4" />

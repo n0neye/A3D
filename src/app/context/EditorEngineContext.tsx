@@ -42,7 +42,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         setIsInitialized(true);
       });
 
-      engine.events.on('gizmoModeChanged', (mode) => {
+      engine.getGizmoModeManager().events.on('gizmoModeChanged', (mode) => {
         setGizmoMode(mode);
       });
       

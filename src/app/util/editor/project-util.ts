@@ -357,34 +357,6 @@ export async function saveProjectToFile(
     }
 }
 
-// Load project from a file
-export async function loadProjectFromFile(
-    file: File,
-    scene: BABYLON.Scene,
-    applyProjectSettings?: (settings: SerializedProjectSettings) => void
-): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onload = (event) => {
-            try {
-                if (event.target && typeof event.target.result === 'string') {
-                    const projectData = JSON.parse(event.target.result);
-                    deserializeScene(projectData, scene, applyProjectSettings);
-                    resolve();
-                }
-            } catch (error) {
-                reject(error);
-            }
-        };
-
-        reader.onerror = () => {
-            reject(new Error('Failed to read project file'));
-        };
-
-        reader.readAsText(file);
-    });
-}
 
 // Serialize all entities in a scene to a project JSON structure
 export function serializeScene(

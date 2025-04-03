@@ -53,25 +53,10 @@ export const getEnvironmentObjects = (): EnvironmentObjects => {
 const DEFAULT_RATIO: ImageRatio = '16:9';
 
 export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
-    // Camera
-    const cameraManager = new CameraManager(scene, canvas);
-
-    // Ambient Light
-    scene.ambientColor = new BABYLON.Color3(1, 1, 1);
-
-    // Create world grid
-    createWorldGrid(scene, 20, 10);
 
     // createRatioOverlay
     createRatioOverlay(scene);
 
-    // Create default material
-    createDefaultMaterials(scene);
-
-    // Load shape meshes before creating any shapes
-    await loadShapeMeshes(scene);
-
-    createSkybox(scene);
 }
 
 export const createSkybox = (scene: BABYLON.Scene) => {
@@ -686,52 +671,6 @@ export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) 
     }
 
     return gizmoManager;
-}
-
-/**
- * Sets the field of view (FOV) for the active camera in the scene
- * @param fov The FOV in radians
- * @param scene The Babylon.js scene
- */
-export function setCameraFOV(fov: number, scene: BABYLON.Scene): void {
-    if (!scene.activeCamera) return;
-
-    // Make sure the FOV is within reasonable bounds (about 20-90 degrees)
-    const clampedFOV = Math.max(0.35, Math.min(1.57, fov));
-    scene.activeCamera.fov = clampedFOV;
-}
-
-/**
- * Gets the current field of view (FOV) from the active camera in the scene
- * @param scene The Babylon.js scene
- * @returns The current FOV in radians, or a default value if no camera is available
- */
-export function getCameraFOV(scene: BABYLON.Scene): number {
-    if (!scene.activeCamera) return 0.8; // Default FOV (approximately 45 degrees)
-    return scene.activeCamera.fov;
-}
-
-/**
- * Sets the far clip plane distance for the active camera in the scene
- * @param farClip The far clip distance
- * @param scene The Babylon.js scene
- */
-export function setCameraFarClip(farClip: number, scene: BABYLON.Scene): void {
-    if (!scene.activeCamera) return;
-
-    // Make sure the far clip is within reasonable bounds
-    const clampedFarClip = Math.max(10, Math.min(1000, farClip));
-    scene.activeCamera.maxZ = clampedFarClip;
-}
-
-/**
- * Gets the current far clip plane distance from the active camera in the scene
- * @param scene The Babylon.js scene
- * @returns The current far clip distance, or a default value if no camera is available
- */
-export function getCameraFarClip(scene: BABYLON.Scene): number {
-    if (!scene.activeCamera) return 20; // Default far clip
-    return scene.activeCamera.maxZ;
 }
 
 
