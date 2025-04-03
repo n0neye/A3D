@@ -81,7 +81,12 @@ export class EntityFactory {
           props: options.lightProps
         });
       case 'character':
-        return new CharacterEntity(scene, name, options.id || uuidv4(), options.characterProps, { scaling: options.scaling });
+        return new CharacterEntity(
+          scene, name,
+          options.id || uuidv4(),
+          options.characterProps,
+          { scaling: options.scaling }
+        );
       default:
         // This ensures exhaustive type checking
         const exhaustiveCheck: never = options;

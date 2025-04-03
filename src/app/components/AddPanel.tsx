@@ -20,6 +20,7 @@ import {
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { EditorEngine } from '../engine/EditorEngine';
+import * as BABYLON from '@babylonjs/core';
 
 const AddPanel: React.FC = () => {
   const [showShapesMenu, setShowShapesMenu] = useState(false);
@@ -88,7 +89,7 @@ const AddPanel: React.FC = () => {
   };
 
   // Handle character entity creation
-  const handleCreateCharacter = (modelUrl: string, modelName: string) => {
+  const handleCreateCharacter = (modelUrl: string, modelName: string, modelScale: number) => {
     const engine = EditorEngine.getInstance();
 
     // Create a command with factory function for character
