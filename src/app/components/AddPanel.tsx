@@ -16,13 +16,11 @@ import {
   IconBulb,
   IconUser,
 } from '@tabler/icons-react';
-import { EntityFactory } from '../engine/utils/EntityFactory';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { EditorEngine } from '../engine/EditorEngine';
 
 const AddPanel: React.FC = () => {
-  const { } = useEditorEngine();
   const [showShapesMenu, setShowShapesMenu] = useState(false);
   const [showCharactersMenu, setShowCharactersMenu] = useState(false);
 

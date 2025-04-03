@@ -65,6 +65,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
     >
       {children}
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
+      <AddPanel />
     </EditorEngineContext.Provider>
   );
 }
