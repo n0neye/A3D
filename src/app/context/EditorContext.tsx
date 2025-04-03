@@ -2,9 +2,9 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from '../util/entity/EntityBase';
 import { isGenerativeEntity, isLightEntity, isShapeEntity, isCharacterEntity } from '../util/entity/entityUtils';
-import { HistoryManager } from '../components/HistoryManager';
+import { HistoryManager } from '../util/editor/managers/HistoryManager';
 import { UpdateGizmoVisibility } from '../util/editor/editor-util';
-import { SelectionManager } from '../util/editor/selection-manager';
+import { getSelectionManager, SelectionManager } from '../util/editor/managers/SelectionManager';
 
 interface EditorContextType {
   scene: BABYLON.Scene | null;
@@ -53,7 +53,28 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   // Function to set gizmo mode
   const setGizmoMode = (mode: GizmoMode) => {
-    if (!gizmoManager) return;
+    if (!gizmoManager || !scene) return;
+
+    // Get SelectionManager
+    const selectionManager = getSelectionManager(scene);
+    if (!selectionManager) return;
+
+    // Get the current selection
+    const currentSelection = selectionManager.getCurrentSelection();
+    if (currentSelection) {
+      if(mode === 'position' && !currentSelection.gizmoCapabilities.allowPosition) {
+        return;
+      }
+      if(mode === 'rotation' && !currentSelection.gizmoCapabilities.allowRotation) {
+        return;
+      }
+      if(mode === 'scale' && !currentSelection.gizmoCapabilities.allowScale) {
+        return;
+      }
+      if(mode === 'boundingBox' && !currentSelection.gizmoCapabilities.allowBoundingBox) {
+        return;
+      }
+    }
 
     // Reset all gizmos first
     gizmoManager.positionGizmoEnabled = false;

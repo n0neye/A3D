@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ShapeEntityProps } from './ShapeEntity';
 import { GenerativeEntityProps } from './GenerativeEntity';
 import { LightProps } from './LightEntity';
-import { HistoryManager } from '../../components/HistoryManager';
+import { HistoryManager } from '../editor/managers/HistoryManager';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 
 /**

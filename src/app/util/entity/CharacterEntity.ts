@@ -7,7 +7,7 @@ import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
 import { BoneRotationCommand } from '../../lib/commands';
 import { useEditorContext } from '../../context/EditorContext';
-import { HistoryManager } from '../../components/HistoryManager';
+import { HistoryManager } from '../editor/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
 
 export interface CharacterEntityProps {

@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { HistoryManager } from '../components/HistoryManager';
+import { HistoryManager } from '../util/editor/managers/HistoryManager';
 
 /**
  * Defines transformation capabilities for a selectable object
@@ -8,6 +8,7 @@ export interface GizmoCapabilities {
   allowPosition: boolean;
   allowRotation: boolean;
   allowScale: boolean;
+  allowBoundingBox: boolean;
 }
 
 /**

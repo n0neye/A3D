@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { HistoryManager } from '../../components/HistoryManager';
+import { HistoryManager } from './HistoryManager';
 
 // Define the metadata structure
 export interface SceneMetadata {

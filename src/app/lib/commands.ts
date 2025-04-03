@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { Command } from '../components/HistoryManager';
+import { Command } from '../util/editor/managers/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
 import { EntityBase } from '../util/entity/EntityBase';
 import { usePostHog } from 'posthog-js/react';

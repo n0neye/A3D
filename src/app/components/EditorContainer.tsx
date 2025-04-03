@@ -26,8 +26,8 @@ import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { EntityBase } from '../util/entity/EntityBase';
 import CharacterEditPanel from './CharacterEditPanel';
 import { isCharacterEntity } from '../util/entity/entityUtils';
-import { registerGizmoManager, registerHistoryManager } from '../util/editor/scene-managers';
-import { createSelectionManager, getSelectionManager } from '../util/editor/selection-manager';
+import { registerGizmoManager, registerHistoryManager } from '../util/editor/managers/SceneManagers';
+import { createSelectionManager, getSelectionManager } from '../util/editor/managers/SelectionManager';
 import { ISelectable } from '../interfaces/ISelectable';
 import { BoneControl } from '../util/entity/BoneControl';
 

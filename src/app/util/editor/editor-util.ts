@@ -8,7 +8,7 @@ import { ImageRatio, RATIO_MAP } from '../generation/generation-util';
 import * as Materials from "@babylonjs/materials";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
-import { HistoryManager } from "@/app/components/HistoryManager";
+import { HistoryManager } from "@/app/util/editor/managers/HistoryManager";
 import { loadShapeMeshes } from "./shape-util";
 import { createDefaultMaterials } from "./material-util";
 // Store environment objects

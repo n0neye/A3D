@@ -16,7 +16,8 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
   gizmoCapabilities: GizmoCapabilities = {
     allowPosition: false,
     allowRotation: true,
-    allowScale: false
+    allowScale: false,
+    allowBoundingBox: false
   };
 
   // Use rotate cursor to indicate rotation capability
@@ -115,6 +116,8 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
 
       gizmoManager.attachToMesh(this);
+
+      gizmoManager.gizmos.rotationGizmo.scaleRatio = 0.5;
 
       // Add observer for start of rotation (when drag begins)
       this._gizmoStartDragObserver = gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
