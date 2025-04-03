@@ -25,6 +25,7 @@ export class CharacterEntity extends EntityBase {
     public skeleton: Skeleton | null = null;
     public characterProps: CharacterEntityProps;
     private _isLoading = false;
+    private _isDisposed = false;
     private _loadingPromise: Promise<void> | null = null;
     public rootMesh: BABYLON.AbstractMesh | null = null;
     public initialBoneRotations: Map<string, BABYLON.Quaternion> = new Map();
@@ -236,6 +237,7 @@ export class CharacterEntity extends EntityBase {
         });
 
         // Create bone lines to visualize the skeleton structure
+        console.log("CharacterEntity: Creating bone lines");
         this.skeleton.bones.forEach(bone => {
             const childBones = bone.getChildren();
 
@@ -276,6 +278,8 @@ export class CharacterEntity extends EntityBase {
      */
     private _updateBoneLines(): void {
         if (!this._isVisualizationVisible) return;
+        if (this._isDisposed) return;
+        console.log("CharacterEntity: Updating bone lines", this.name);
 
         this.skeleton?.bones.forEach(bone => {
             const childBones = bone.getChildren();
@@ -568,5 +572,18 @@ export class CharacterEntity extends EntityBase {
             this._selectedBone = null;
             this._selectedControl = null;
         }
+    }
+
+    public disposeCharacter(): void {
+        console.log("CharacterEntity: Disposing children", this.name);
+        this._boneMap.forEach(({ control }) => {
+            control.dispose();
+        });
+
+        this._boneLines.forEach(line => {
+            line.dispose();
+        });
+
+        this._isDisposed = true;        
     }
 } 

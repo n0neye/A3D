@@ -5,6 +5,7 @@ import { ShapeType } from '../util/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
+import { v4 as uuidv4 } from 'uuid';
 import {
   IconCube,
   IconSphere,
@@ -104,7 +105,7 @@ const AddPanel: React.FC = () => {
         type: 'character',
         characterProps: { 
           url: modelUrl,
-          name: modelName
+          name: modelName+'-'+uuidv4()
         }
       }),
       scene

@@ -247,6 +247,12 @@ export function deserializeScene(
 ): void {
     // Clear existing entities if needed
     const existingEntities = scene.rootNodes.filter(node => isEntity(node));
+    // Dispose all children of the existing entities
+    existingEntities.forEach(entity => {
+        if(entity instanceof CharacterEntity) {
+            entity.disposeCharacter();
+        }
+    });
     existingEntities.forEach(entity => entity.dispose());
 
     // Apply environment settings if present
