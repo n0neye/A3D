@@ -8,9 +8,10 @@ import { ImageRatio, RATIO_MAP } from '../generation/generation-util';
 import * as Materials from "@babylonjs/materials";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
-import { HistoryManager } from "@/app/util/editor/managers/HistoryManager";
+import { HistoryManager } from "@/app/engine/managers/HistoryManager";
 import { loadShapeMeshes } from "./shape-util";
 import { createDefaultMaterials } from "./material-util";
+import { CameraManager } from "@/app/engine/managers/CameraManager";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
@@ -53,28 +54,7 @@ const DEFAULT_RATIO: ImageRatio = '16:9';
 
 export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
     // Camera
-    const camera = new BABYLON.ArcRotateCamera(
-        "camera",
-        -Math.PI / 2,
-        Math.PI / 2.5,
-        100,
-        new BABYLON.Vector3(0, 0, 0),
-        scene
-    );
-    camera.wheelPrecision = 20;
-    camera.panningSensibility = 400;
-    camera.angularSensibilityX = 400;
-    camera.angularSensibilityY = 400;
-    camera.lowerRadiusLimit = 1;
-    camera.upperRadiusLimit = 20;
-    camera.attachControl(canvas, true);
-    camera.position = new BABYLON.Vector3(0, 1, 5);
-    camera.minZ = 0.01;
-    camera.maxZ = 50;
-    camera.inertia = 0;
-    camera.panningInertia = 0;
-    camera.inertialPanningX = 0;
-    camera.inertialPanningY = 0;
+    const cameraManager = new CameraManager(scene, canvas);
 
     // Ambient Light
     scene.ambientColor = new BABYLON.Color3(1, 1, 1);

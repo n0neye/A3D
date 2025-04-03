@@ -2,9 +2,9 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from '../util/entity/EntityBase';
 import { isGenerativeEntity, isLightEntity, isShapeEntity, isCharacterEntity } from '../util/entity/entityUtils';
-import { HistoryManager } from '../util/editor/managers/HistoryManager';
+import { HistoryManager } from '../engine/managers/HistoryManager';
 import { UpdateGizmoVisibility } from '../util/editor/editor-util';
-import { getSelectionManager, SelectionManager } from '../util/editor/managers/SelectionManager';
+import { getSelectionManager, SelectionManager } from '../engine/managers/SelectionManager';
 
 interface EditorContextType {
   scene: BABYLON.Scene | null;

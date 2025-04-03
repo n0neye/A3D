@@ -1,5 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
-import { HistoryManager } from '../util/editor/managers/HistoryManager';
+import { HistoryManager } from '../engine/managers/HistoryManager';
 
 /**
  * Defines transformation capabilities for a selectable object
