@@ -30,16 +30,11 @@ import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { ISelectable } from '../interfaces/ISelectable';
 import { BoneControl } from '../util/entity/BoneControl';
 import { InputManager } from './managers/InputManager';
+import { createDefaultMaterials } from '../util/editor/material-util';
 // import { GizmoManager } from './managers/GizmoManager';
 // import { EntityManager } from './managers/EntityManager';
 // import { EnvironmentManager } from './managers/EnvironmentManager';
 // import { InputManager } from './managers/InputManager';
-
-
-// Temp hack to handle e and r key presses
-let isWKeyPressed = false;
-let isEKeyPressed = false;
-let isRKeyPressed = false;
 
 /**
  * Main editor engine that coordinates all Babylon.js subsystems
@@ -81,10 +76,10 @@ export class EditorEngine {
     }
 
     // Init other utils
-
-    // Load shape meshes
     const engine = EditorEngine.instance;
-    loadShapeMeshes(engine.core.getScene());
+    const scene = engine.core.getScene();
+    loadShapeMeshes(scene);
+    createDefaultMaterials(scene);
 
     return EditorEngine.instance;
   }
@@ -115,7 +110,4 @@ export class EditorEngine {
   public executeCommand(command: Command): void {
     this.historyManager.executeCommand(command);
   }
-
-
-  // And so on...
 } 
