@@ -15,9 +15,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { EditorEngine } from '../engine/EditorEngine';
 import { EntityBase } from '../util/entity/EntityBase';
-import AddPanel from '../components/AddPanel';
-import EntityPanel from '../components/EntityPanels/EntityPanel';
-
+import EngineUIContainer from '../components/EngineUIContainer';
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 
 interface EditorEngineContextType {
@@ -68,8 +66,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
     >
       {children}
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
-      <AddPanel />
-      <EntityPanel />
+      <EngineUIContainer />
+      
     </EditorEngineContext.Provider>
   );
 }
