@@ -2,32 +2,32 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import AddPanel from './AddPanel';
-import EntityPanel from './EntityPanels/EntityPanel';
-import { useEditorContext } from '../context/EditorContext';
+import AddPanel from '../components/AddPanel';
+import EntityPanel from '../components/EntityPanels/EntityPanel';
+import { useEditorContext } from './utils/EngineContext';
 import { initializeRealtimeConnection } from '../util/generation/realtime-generation-util';
-import RenderPanel from './RenderPanel';
-import DebugLayer from './DebugLayer';
+import RenderPanel from '../components/RenderPanel';
+import DebugLayer from '../components/DebugLayer';
 import { initGizmo, initScene } from '../util/editor/editor-util';
-import EnvironmentPanel from './EnvironmentPanel';
-import GizmoModeSelector from './GizmoModeSelector';
-import FileMenu from './FileMenu';
-import FramePanel from './FramePanel';
+import EnvironmentPanel from '../components/EnvironmentPanel';
+import GizmoModeSelector from '../components/GizmoModeSelector';
+import FileMenu from '../components/FileMenu';
+import FramePanel from '../components/FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
-import GalleryPanel from './GalleryPanel';
+import GalleryPanel from '../components/GalleryPanel';
 import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityAsyncCommand } from '../lib/commands';
 import { v4 as uuidv4 } from 'uuid';
-import { EntityFactory } from '../util/entity/EntityFactory';
+import { EntityFactory } from './utils/EntityFactory';
 import { duplicateEntity } from '../util/entity/entityUtils';
-import Guide from './Guide';
+import Guide from '../components/Guide';
 import { availableAPIs } from '../util/generation/image-render-api';
 import { RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
 import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { EntityBase } from '../util/entity/EntityBase';
-import CharacterEditPanel from './CharacterEditPanel';
+import CharacterEditPanel from '../components/CharacterEditPanel';
 import { isCharacterEntity } from '../util/entity/entityUtils';
-import { registerGizmoManager, registerHistoryManager } from '../engine/managers/SceneManagers';
-import { createSelectionManager, getSelectionManager } from '../engine/managers/SelectionManager';
+import { registerGizmoManager, registerHistoryManager } from './managers/SceneManagers';
+import { createSelectionManager, getSelectionManager } from './managers/SelectionManager';
 import { ISelectable } from '../interfaces/ISelectable';
 import { BoneControl } from '../util/entity/BoneControl';
 
@@ -36,7 +36,7 @@ let isWKeyPressed = false;
 let isEKeyPressed = false;
 let isRKeyPressed = false;
 
-export default function EditorContainer() {
+export default function EngineContainer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const {
     setScene,

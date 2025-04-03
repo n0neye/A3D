@@ -1,12 +1,12 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase } from '../util/entity/EntityBase';
-import { isGenerativeEntity, isLightEntity, isShapeEntity, isCharacterEntity } from '../util/entity/entityUtils';
-import { HistoryManager } from '../engine/managers/HistoryManager';
-import { UpdateGizmoVisibility } from '../util/editor/editor-util';
-import { getSelectionManager, SelectionManager } from '../engine/managers/SelectionManager';
+import { EntityBase } from '../../util/entity/EntityBase';
+import { isGenerativeEntity, isLightEntity, isShapeEntity, isCharacterEntity } from '../../util/entity/entityUtils';
+import { HistoryManager } from '../managers/HistoryManager';
+import { UpdateGizmoVisibility } from '../../util/editor/editor-util';
+import { getSelectionManager, SelectionManager } from '../managers/SelectionManager';
 
-interface EditorContextType {
+interface EngineContextType {
   scene: BABYLON.Scene | null;
   setScene: (scene: BABYLON.Scene | null) => void;
   engine: BABYLON.Engine | null;
@@ -27,9 +27,9 @@ interface EditorContextType {
   setSelectionManager: (manager: SelectionManager | null) => void;
 }
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
-const EditorContext = createContext<EditorContextType | null>(null);
+const EditorContext = createContext<EngineContextType | null>(null);
 
-export function EditorProvider({ children }: { children: React.ReactNode }) {
+export function EngineProvider({ children }: { children: React.ReactNode }) {
   const [scene, setScene] = useState<BABYLON.Scene | null>(null);
   const [engine, setEngine] = useState<BABYLON.Engine | null>(null);
   const [selectedEntityState, setSelectedEntityState] = useState<EntityBase | null>(null);

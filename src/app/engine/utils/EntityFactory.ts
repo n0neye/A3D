@@ -1,9 +1,9 @@
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase, EntityType } from './EntityBase';
-import { GenerativeEntity, GenerativeEntityProps } from './GenerativeEntity';
-import { ShapeEntity, ShapeEntityProps } from './ShapeEntity';
-import { LightEntity, LightProps } from './LightEntity';
-import { CharacterEntity, CharacterEntityProps } from './CharacterEntity'
+import { EntityBase, EntityType } from '../../util/entity/EntityBase';
+import { GenerativeEntity, GenerativeEntityProps } from '../../util/entity/GenerativeEntity';
+import { ShapeEntity, ShapeEntityProps } from '../../util/entity/ShapeEntity';
+import { LightEntity, LightProps } from '../../util/entity/LightEntity';
+import { CharacterEntity, CharacterEntityProps } from '../../util/entity/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
 
 // Base properties common to all entities

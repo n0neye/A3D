@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { EditorProvider } from './context/EditorContext';
-import EditorContainer from './components/EditorContainer';
+import { EngineProvider } from './engine/utils/EngineContext';
+import EngineContainer from './engine/EngineContainer';
 import { ProjectSettingsProvider } from './context/ProjectSettingsContext';
 import { Laptop } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,10 +66,10 @@ export default function Home() {
   }
 
   return (
-    <EditorProvider>
+    <EngineProvider>
       <ProjectSettingsProvider>
-        <EditorContainer />
+        <EngineContainer />
       </ProjectSettingsProvider>
-    </EditorProvider>
+    </EngineProvider>
   );
 }

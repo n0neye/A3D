@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { useEditorContext } from '../context/EditorContext';
+import { useEditorContext } from '../engine/utils/EngineContext';
 import { getEnvironmentObjects } from '../util/editor/editor-util';
 
 // Import Shadcn UI components

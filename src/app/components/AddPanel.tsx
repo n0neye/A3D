@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEditorContext } from '../context/EditorContext';
+import { useEditorContext } from '../engine/utils/EngineContext';
 import { EntityType, } from '../util/entity/EntityBase';
 import { ShapeType } from '../util/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   IconBulb,
   IconUser,
 } from '@tabler/icons-react';
-import { EntityFactory } from '../util/entity/EntityFactory';
+import { EntityFactory } from '../engine/utils/EntityFactory';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 const AddPanel: React.FC = () => {

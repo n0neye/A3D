@@ -6,7 +6,7 @@ import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
 import { BoneRotationCommand } from '../../lib/commands';
-import { useEditorContext } from '../../context/EditorContext';
+import { useEditorContext } from '../../engine/utils/EngineContext';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
 

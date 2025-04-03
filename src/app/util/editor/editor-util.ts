@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
 import { EntityBase } from "../entity/EntityBase";
-import { EntityFactory } from "../entity/EntityFactory";
+import { EntityFactory } from "../../engine/utils/EntityFactory";
 import { isLightEntity } from "../entity/entityUtils";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation/generation-util';

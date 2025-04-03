@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEditorContext } from '../context/EditorContext';
+import { useEditorContext } from '../engine/utils/EngineContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {

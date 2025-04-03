@@ -3,7 +3,7 @@ import { EntityBase, SerializedEntityData } from "../entity/EntityBase";
 import { GenerativeEntity, SerializedGenerativeEntityData } from "../entity/GenerativeEntity";
 import { ShapeEntity, SerializedShapeEntityData } from "../entity/ShapeEntity";
 import { LightEntity, SerializedLightEntityData } from "../entity/LightEntity";
-import { EntityFactory } from "../entity/EntityFactory";
+import { EntityFactory } from "../../engine/utils/EntityFactory";
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
 import { ImageRatio } from '../generation/generation-util';

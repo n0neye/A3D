@@ -3,7 +3,7 @@ import { EntityBase } from './EntityBase';
 import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from './GenerativeEntity';
 import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from './ShapeEntity';
 import { LightEntity, LightProps, SerializedLightEntityData } from './LightEntity';
-import { EntityFactory } from './EntityFactory';
+import { EntityFactory } from '../../engine/utils/EntityFactory';
 import { v4 as uuidv4 } from 'uuid';
 import { CharacterEntity, SerializedCharacterEntityData } from './CharacterEntity';
 

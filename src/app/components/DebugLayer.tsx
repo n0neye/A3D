@@ -1,7 +1,7 @@
 
 import { Inspector } from '@babylonjs/inspector';
 import { useEffect, useState } from 'react';
-import { useEditorContext } from '../context/EditorContext';
+import { useEditorContext } from '../engine/utils/EngineContext';
 
 function DebugLayer() {
     const [showInspector, setShowInspector] = useState(false);
