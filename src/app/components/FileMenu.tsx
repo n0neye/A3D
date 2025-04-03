@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 import { saveProjectToFile, loadProjectFromFile, SerializedProjectSettings } from '../util/editor/project-util';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 import { isEntity } from '../util/entity/entityUtils';
 
 export default function FileMenu() {
-  const { scene } = useEditorContext();
+  const { scene } = useOldEditorContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { ProjectSettings, updateProjectSettings } = useProjectSettings();
 

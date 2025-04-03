@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { IconVideo } from '@tabler/icons-react';
 import { ImageRatio } from '../util/generation/generation-util';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 import {
   setRatioOverlayRatio,
   setRatioOverlayPadding,
@@ -23,7 +23,7 @@ import {
 } from '../util/editor/editor-util';
 
 const FramePanel: React.FC = () => {
-  const { scene, engine, isGizmoVisible, setGizmoVisible } = useEditorContext();
+  const { scene, engine, isGizmoVisible, setGizmoVisible } = useOldEditorContext();
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [padding, setPadding] = useState(10); // Default padding
   const [rightExtraPadding, setRightExtraPadding] = useState(0); // Default extra right padding

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 import { getEnvironmentObjects } from '../util/editor/editor-util';
 
 // Import Shadcn UI components
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronUp, ChevronDown, Settings } from "lucide-react";
 
 const EnvironmentPanel: React.FC = () => {
-  const { scene, gizmoManager } = useEditorContext();
+  const { scene, gizmoManager } = useOldEditorContext();
   const [sunIntensity, setSunIntensity] = useState(0.7);
   const [sunColor, setSunColor] = useState('#FFC080');
   const [sunOrientation, setSunOrientation] = useState(45); // Horizontal angle (0-360)

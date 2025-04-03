@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 import { EntityType, } from '../util/entity/EntityBase';
 import { ShapeType } from '../util/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";
@@ -18,24 +18,25 @@ import {
 } from '@tabler/icons-react';
 import { EntityFactory } from '../engine/utils/EntityFactory';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
+import { useEditorEngine } from '../context/EditorEngineContext';
+import { EditorEngine } from '../engine/EditorEngine';
 
 const AddPanel: React.FC = () => {
-  const { scene, setSelectedEntity, historyManager } = useEditorContext();
+  const { } = useEditorEngine();
   const [showShapesMenu, setShowShapesMenu] = useState(false);
   const [showCharactersMenu, setShowCharactersMenu] = useState(false);
 
   // Create an entity with command pattern
   const handleCreateGenerativeEntity = (entityType: EntityType) => {
-    if (!scene) return;
-
+    const engine = EditorEngine.getInstance();
     console.log(`Creating Generative entity`);
-    const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntityDefault(scene, entityType),
-      scene
-    );
 
     // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
+    const createCommand = new CreateEntityCommand(() => engine.createEntityDefault(entityType));
+    engine.executeCommand(createCommand);
+
+    // Select the newly created entity
+    engine.selectEntity(createCommand.getEntity());
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -43,21 +44,16 @@ const AddPanel: React.FC = () => {
       entityType: entityType
     });
 
-    // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
   };
 
   // Create a primitive shape
   const handleCreateShape = (shapeType: ShapeType) => {
-    if (!scene) return;
     console.log(`Creating ${shapeType} primitive`);
+    const engine = EditorEngine.getInstance();
     // Create a command with factory function
-    const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntity(scene, { type: 'shape', shapeProps: { shapeType: shapeType } }),
-      scene
-    );
+    const createCommand = new CreateEntityCommand(() => engine.createEntity({ type: 'shape', shapeProps: { shapeType: shapeType } }));
     // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
+    engine.executeCommand(createCommand);
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -67,22 +63,20 @@ const AddPanel: React.FC = () => {
     });
 
     // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
+    engine.selectEntity(createCommand.getEntity());
     // Hide the shapes menu after creation
     setShowShapesMenu(false);
   };
 
   // Handle light entity creation
   const handleCreateLight = () => {
-    if (!scene) return;
-
+    const engine = EditorEngine.getInstance();
     // Create a command with factory function
     const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntityDefault(scene, 'light'),
-      scene
+      () => engine.createEntityDefault('light'),
     );
     // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
+    engine.executeCommand(createCommand);
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -91,27 +85,26 @@ const AddPanel: React.FC = () => {
     });
 
     // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
+    engine.selectEntity(createCommand.getEntity());
   };
 
   // Handle character entity creation
   const handleCreateCharacter = (modelUrl: string, modelName: string) => {
-    if (!scene) return;
+    const engine = EditorEngine.getInstance();
 
     // Create a command with factory function for character
     const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntity(scene, { 
+      () => engine.createEntity({
         type: 'character',
-        characterProps: { 
+        characterProps: {
           url: modelUrl,
           name: modelName
         }
       }),
-      scene
     );
 
     // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
+    engine.executeCommand(createCommand);
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -121,7 +114,7 @@ const AddPanel: React.FC = () => {
     });
 
     // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
+    engine.selectEntity(createCommand.getEntity());
     // Hide the characters menu after creation
     setShowCharactersMenu(false);
   };

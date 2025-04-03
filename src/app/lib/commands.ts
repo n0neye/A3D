@@ -118,11 +118,9 @@ export class DeleteMeshCommand implements Command {
 export class CreateEntityCommand implements Command {
   private entity: EntityBase | null = null;
   private factory: () => EntityBase;
-  private scene: BABYLON.Scene;
 
-  constructor(factory: () => EntityBase, scene: BABYLON.Scene) {
+  constructor(factory: () => EntityBase) {
     this.factory = factory;
-    this.scene = scene;
   }
 
   execute(): void {

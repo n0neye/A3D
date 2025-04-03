@@ -4,7 +4,7 @@ import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDo
 import { removeBackground } from '../../util/generation/generation-util';
 import { generate3DModel } from '../../util/generation/3d-generation-util';
 import { generateRealtimeImage, GenerationResult } from '../../util/generation/realtime-generation-util';
-import { useEditorContext } from '../../context/EditorContext';
+import { useOldEditorContext } from '../../context/OldEditorContext';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
@@ -18,7 +18,7 @@ let PREV_ENTITY: GenerativeEntity | null = null;
 
 const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
-  const { scene, gizmoManager } = useEditorContext();
+  const { scene, gizmoManager } = useOldEditorContext();
 
   const [promptInput, setPromptInput] = useState(props.entity.temp_prompt);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);

@@ -23,6 +23,7 @@ import { EventEmitter } from './utils/EventEmitter';
 import { EntityBase, EntityType } from '../util/entity/EntityBase';
 import { GizmoManager } from '@babylonjs/core';
 import { EntityFactory, CreateEntityOptions } from './utils/EntityFactory';
+import { Command, HistoryManager } from './managers/HistoryManager';
 // import { GizmoManager } from './managers/GizmoManager';
 // import { EntityManager } from './managers/EntityManager';
 // import { EnvironmentManager } from './managers/EnvironmentManager';
@@ -35,22 +36,24 @@ import { EntityFactory, CreateEntityOptions } from './utils/EntityFactory';
 export class EditorEngine {
   private static instance: EditorEngine;
   private core: BabylonCore;
-  
+
   private cameraManager: CameraManager;
   private selectionManager: SelectionManager;
   private gizmoManager: GizmoManager;
-  
+  private historyManager: HistoryManager;
+
   public events: EventEmitter = new EventEmitter();
-  
+
   private constructor(canvas: HTMLCanvasElement) {
     this.core = new BabylonCore(canvas);
-    
+
     // Forward core events
     const scene = this.core.getScene();
     const engine = this.core.getEngine();
     this.cameraManager = new CameraManager(scene, canvas);
     this.selectionManager = new SelectionManager(scene);
     this.gizmoManager = new GizmoManager(scene);
+    this.historyManager = new HistoryManager();
   }
 
   public static initEngine(canvas: HTMLCanvasElement): EditorEngine {
@@ -59,23 +62,33 @@ export class EditorEngine {
     }
     return EditorEngine.instance;
   }
-  
+
   public static getInstance(): EditorEngine {
     return EditorEngine.instance;
   }
 
   // Public API methods for React components
-    public selectEntity(entity: EntityBase | null): void {
+  public selectEntity(entity: EntityBase | null): void {
     this.selectionManager.select(entity);
     this.events.emit('entitySelected', entity);
   }
-  
-  public createEntity(type: EntityType, options: CreateEntityOptions): EntityBase {
+
+  public createEntity(options: CreateEntityOptions): EntityBase {
     const entity = EntityFactory.createEntity(this.core.getScene(), options);
     this.events.emit('entityCreated', entity);
     return entity;
   }
-  
-  
+
+  public createEntityDefault(type: EntityType): EntityBase {
+    const entity = EntityFactory.createEntityDefault(this.core.getScene(), type);
+    this.events.emit('entityCreated', entity);
+    return entity;
+  }
+
+  public executeCommand(command: Command): void {
+    this.historyManager.executeCommand(command);
+  }
+
+
   // And so on...
 } 

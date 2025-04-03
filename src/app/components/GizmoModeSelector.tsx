@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -10,7 +10,7 @@ import {
 } from '@tabler/icons-react';
 
 const GizmoModeSelector: React.FC = () => {
-  const { currentGizmoMode, setGizmoMode } = useEditorContext();
+  const { currentGizmoMode, setGizmoMode } = useOldEditorContext();
 
   return (
     <>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { EditorProvider } from './context/EditorContext';
-import EngineContainer from './engine/EngineContainer';
+import { EditorProvider } from './context/OldEditorContext';
+import EngineContainer from './engine/OldEditorContainer';
 import { ProjectSettingsProvider } from './context/ProjectSettingsContext';
 import { Laptop } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

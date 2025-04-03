@@ -258,7 +258,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useEditorContext() {
+export function useOldEditorContext() {
   const context = useContext(EditorContext);
   if (context === null) {
     throw new Error('useEditorContext must be used within an EditorProvider');

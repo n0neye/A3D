@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useEditorContext } from '../../context/EditorContext';
+import { useOldEditorContext } from '../../context/OldEditorContext';
 import { LightEntity } from '../../util/entity/LightEntity';
 import GenerativeEntityPanel from './GenerativeEntityPanel';
 import { GenerativeEntity } from '@/app/util/entity/GenerativeEntity';
@@ -8,7 +8,7 @@ import LightEntityPanel from './LightEntityPanel';
 
 
 const EntityPanel: React.FC = () => {
-  const { selectedEntity } = useEditorContext();
+  const { selectedEntity } = useOldEditorContext();
 
   // Show panel for both generative objects and lights
   if (!selectedEntity) return null;

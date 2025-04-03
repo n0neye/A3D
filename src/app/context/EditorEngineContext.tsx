@@ -17,11 +17,13 @@ import { EditorEngine } from '../engine/EditorEngine';
 import { EntityBase } from '../util/entity/EntityBase';
 import AddPanel from '../components/AddPanel';
 
+type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
+
 interface EditorEngineContextType {
   engine: EditorEngine;
   isInitialized: boolean;
   selectedEntity: EntityBase | null;
-  gizmoMode: string;
+  gizmoMode: GizmoMode;
 }
 
 const EditorEngineContext = createContext<EditorEngineContextType | null>(null);
@@ -30,7 +32,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const engine = EditorEngine.getInstance();
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
-  const [gizmoMode, setGizmoMode] = useState<string>('position');
+  const [gizmoMode, setGizmoMode] = useState<GizmoMode>('position');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

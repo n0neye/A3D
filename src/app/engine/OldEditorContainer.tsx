@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import AddPanel from '../components/AddPanel';
 import EntityPanel from '../components/EntityPanels/EntityPanel';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 import { initializeRealtimeConnection } from '../util/generation/realtime-generation-util';
 import RenderPanel from '../components/RenderPanel';
 import DebugLayer from '../components/DebugLayer';
@@ -47,7 +47,7 @@ export default function EngineContainer() {
     isDebugMode,
     scene,
     historyManager
-  } = useEditorContext();
+  } = useOldEditorContext();
   const [showInspector, setShowInspector] = React.useState(false);
 
   const { ProjectSettings, updateProjectSettings } = useProjectSettings();

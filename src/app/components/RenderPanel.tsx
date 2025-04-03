@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { renderImage as generateRenderImage, dataURLtoBlob, availableAPIs, API_Info } from '../util/generation/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/generation/image-processing';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/generation/lora';
@@ -27,7 +27,7 @@ interface RenderPanelProps {
 }
 
 const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
-  const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setGizmoVisible } = useEditorContext();
+  const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setGizmoVisible } = useOldEditorContext();
   const { ProjectSettings, updateProjectSettings, addRenderLog } = useProjectSettings();
 
   // State variables
