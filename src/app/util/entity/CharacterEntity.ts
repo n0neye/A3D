@@ -9,6 +9,7 @@ import { BoneRotationCommand } from '../../lib/commands';
 import { useEditorContext } from '../../context/EditorContext';
 import { HistoryManager } from '../editor/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
+import { setupMeshShadows } from '../editor/light-util';
 
 export interface CharacterEntityProps {
     url: string;
@@ -128,6 +129,8 @@ export class CharacterEntity extends EntityBase {
 
                 // Position the character at origin by default
                 this.position = BABYLON.Vector3.Zero();
+
+                setupMeshShadows(this.rootMesh);
             } else {
                 console.error(`No meshes loaded for character ${this.name}`);
             }
