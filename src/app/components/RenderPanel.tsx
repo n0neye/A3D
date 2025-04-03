@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { renderImage as generateRenderImage, dataURLtoBlob, availableAPIs, API_Info } from '../util/generation/image-render-api';
+import { renderImage as generateRenderImage, availableAPIs, API_Info } from '../util/generation/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/generation/image-processing';
-import { useOldEditorContext } from '../context/OldEditorContext';
-import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/generation/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/generation/render-util';
-import { SerializedProjectSettings, downloadImage } from '../util/editor/project-util';
+import { downloadImage } from '../util/editor/project-util';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
@@ -19,15 +16,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
+import { useEditorEngine } from '../context/EditorEngineContext';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
   isDebugMode: boolean;
-  onOpenGallery?: (shouldAutoOpen?: boolean) => void;
+  onOpenGallery: () => void;
 }
 
 const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
-  const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setGizmoVisible } = useOldEditorContext();
+  // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
+  const { engine } = useEditorEngine();
   const { ProjectSettings, updateProjectSettings, addRenderLog } = useProjectSettings();
 
   // State variables
@@ -197,8 +196,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   const generateDebugImage = async () => {
     try {
       // Force a fresh render
-      if (!scene || !engine) throw new Error("Scene or engine not found");
-      const screenshot = await TakeFramedScreenshot(scene, engine);
+      const screenshot = await engine.getRenderService().takeFramedScreenshot();
       if (!screenshot) throw new Error("Failed to take screenshot");
       console.log("Screenshot generated:", screenshot?.substring(0, 100) + "...");
       setImageUrl(screenshot);
@@ -234,10 +232,10 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         depthStrength: selectedAPI.useDepthImage ? ProjectSettings.depthStrength : 0,
         selectedLoras: ProjectSettings.selectedLoras,
       });
-      
+
       // If openOnRendered is true, tell EditorContainer to auto-open when the image is added
       if (ProjectSettings.openOnRendered && onOpenGallery) {
-        onOpenGallery(true);
+        onOpenGallery();
       }
     }
   };
@@ -246,11 +244,11 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null);
-    setSelectedEntity(null);
-    
+    engine.getSelectionManager().select(null);
+
     // Start measuring time
     const startTime = Date.now();
-    
+
     // Track that render started
     trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_started', {
       test_mode: isTest,
@@ -258,18 +256,14 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       prompt_length: prompt.length,
       use_depth: selectedAPI.useDepthImage,
     });
-    
-    if (gizmoManager) {
-      gizmoManager.attachToNode(null);
-    }
-    
+
     // Hide gizmos before rendering
-    setGizmoVisible(false);
+    const renderService = engine.getRenderService();
+    renderService.setAllGizmoVisibility(false);
 
     try {
       // First, take a screenshot of the current scene
-      if (!scene || !engine) throw new Error("Scene or engine not found");
-      const screenshot = await TakeFramedScreenshot(scene, engine);
+      const screenshot = await renderService.takeFramedScreenshot();
       if (!screenshot) throw new Error("Failed to take screenshot");
 
       // Store the original screenshot
@@ -278,19 +272,18 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       // Apply noise to the screenshot if noiseStrength > 0
       let processedImage = screenshot;
       if (noiseStrength > 0) {
-        processedImage = await addNoiseToImage(screenshot, noiseStrength);
+        processedImage = await renderService.addNoiseToImage(screenshot, noiseStrength);
       }
 
-      // Resize the image to 512x512 before sending to API
-      const resizedImage = await resizeImage(processedImage, 1280, 720);
+      // Resize the image to final dimensions before sending to API
+      const resizedImage = await renderService.resizeImage(processedImage, 1280, 720);
 
       // Convert the resized image to blob for API
-      const imageBlob = dataURLtoBlob(resizedImage);
-
+      const imageBlob = renderService.dataURLtoBlob(resizedImage);
 
       let depthImage = undefined;
       if (selectedAPI.useDepthImage) {
-        depthImage = await EnableDepthRender(scene, engine, 1) || undefined;
+        depthImage = await renderService.enableDepthRender(1) || undefined;
         if (depthImage) {
           setImageUrl(depthImage);
         }
@@ -301,7 +294,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       console.log(`%cPre-processing time: ${(preProcessingTime - startTime) / 1000} seconds`, "color: #4CAF50; font-weight: bold;");
 
       // Restore gizmos after rendering
-      setGizmoVisible(true);
+      renderService.setAllGizmoVisibility(true);
 
       if (isTest) {
         return;
@@ -358,28 +351,26 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         error_message: error instanceof Error ? error.message : String(error),
         prompt_length: prompt.length,
       });
-      
+
       console.error("Error generating preview:", error);
       alert("Failed to generate Render. Please try again.");
     } finally {
       // Restore gizmos after rendering
-      setGizmoVisible(true);
+      renderService.setAllGizmoVisibility(true);
       setIsLoading(false);
     }
   };
 
   const OnEnableDepthRender = async () => {
-    if (!scene || !engine) throw new Error("Scene or engine not found");
-    const depthSnapshot = await EnableDepthRender(scene, engine);
+    const depthSnapshot = await engine.getRenderService().enableDepthRender(1);
     if (!depthSnapshot) throw new Error("Failed to generate depth map");
     setImageUrl(depthSnapshot);
   }
 
   const onGetDepthMap = async () => {
-    if (!scene || !engine) throw new Error("Scene or engine not found");
-    const result = await GetDepthMap(scene, engine);
+    const result = await engine.getRenderService().enableDepthRender(1);
     if (!result) throw new Error("Failed to generate depth map");
-    setImageUrl(result.imageUrl);
+    setImageUrl(result);
   };
 
   return (
@@ -414,7 +405,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
                     src={imageUrl}
                     alt="Scene Preview"
                     className="w-full h-full object-contain cursor-pointer"
-                    onClick={() => onOpenGallery && onOpenGallery()}
+                    onClick={onOpenGallery}
                   />
                   <Button
                     variant="ghost"

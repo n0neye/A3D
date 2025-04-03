@@ -19,24 +19,21 @@ function EngineUIContainer() {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
     const [isDebugMode, setIsDebugMode] = useState(false);
-    const [shouldOpenGallery, setShouldOpenGallery] = useState(false);
     const prevRenderLogsLength = useRef(0);
 
     const openGallery = () => {
+        console.log('openGallery');
         setIsGalleryOpen(true);
     }
 
-
-
     // Track when new images are added to renderLogs
+    // TODO: Use event emitter instead of polling
     useEffect(() => {
-        if (ProjectSettings.renderLogs.length > prevRenderLogsLength.current && shouldOpenGallery) {
+        if (ProjectSettings.renderLogs.length > prevRenderLogsLength.current) {
             // A new image was added and gallery should open
             setCurrentGalleryIndex(ProjectSettings.renderLogs.length - 1);
             setIsGalleryOpen(true);
-            setShouldOpenGallery(false);
         }
-
         // Update previous length
         prevRenderLogsLength.current = ProjectSettings.renderLogs.length;
     }, [ProjectSettings.renderLogs.length]);
@@ -52,7 +49,6 @@ function EngineUIContainer() {
             // Find the API by name
             selectedAPI: availableAPIs.find(api => api.name === renderLog.model)?.id || availableAPIs[0].id
         };
-
         // Update the project settings
         updateProjectSettings(settings);
     };
@@ -65,10 +61,10 @@ function EngineUIContainer() {
             <EntityPanel />
 
             {/* Render Panel - no longer needs onImageGenerated */}
-            {/* <RenderPanel
+            <RenderPanel
                 isDebugMode={isDebugMode}
                 onOpenGallery={openGallery}
-            /> */}
+            />
 
 
             {/* Top Toolbar */}
@@ -81,7 +77,6 @@ function EngineUIContainer() {
             </div>
 
 
-            Gallery Panel - now uses context for images
             <GalleryPanel
                 isOpen={isGalleryOpen}
                 onClose={() => setIsGalleryOpen(false)}

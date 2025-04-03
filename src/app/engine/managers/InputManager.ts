@@ -269,9 +269,7 @@ export class InputManager {
     
     if (newEntity) {
       newEntity.setEnabled(true);
-      // Emit both selection and creation events
-      this.events.emit('entitySelected', newEntity);
-      this.events.emit('entityCreated', newEntity);
+      this.selectionManager.select(newEntity);
     } else {
       console.error("No entity returned from createCommand");
     }

@@ -30,6 +30,11 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
     setLocalIndex(currentIndex);
   }, [currentIndex]);
 
+  
+  useEffect(() => {
+    console.log('GalleryPanel useEffect', isOpen);
+  }, [isOpen]);
+  
   useEffect(() => {
     if (!isOpen) return;
 

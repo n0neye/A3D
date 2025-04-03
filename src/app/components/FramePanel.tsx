@@ -23,7 +23,7 @@ import {
 } from '../util/editor/editor-util';
 
 const FramePanel: React.FC = () => {
-  const { scene, engine, isGizmoVisible, setGizmoVisible } = useOldEditorContext();
+  const { scene, engine, isGizmoVisible, setAllGizmoVisibility: setGizmoVisible } = useOldEditorContext();
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [padding, setPadding] = useState(10); // Default padding
   const [rightExtraPadding, setRightExtraPadding] = useState(0); // Default extra right padding

@@ -1,6 +1,7 @@
 import { fal } from "@fal-ai/client";
 import { LoraWeight } from "@fal-ai/client/endpoints";
 import { LoraConfig } from "./lora";
+import { blobToBase64 } from "./image-processing";
 
 // Configure fal.ai client to use the proxy
 fal.config({
@@ -454,29 +455,4 @@ async function generateFluxDevImage(params: ImageToImageParams): Promise<ImageTo
     console.error("Error generating image with flux-dev:", error);
     throw error;
   }
-}
-
-// Helper to convert a Blob to base64
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-// Convert a data URL to a Blob
-export function dataURLtoBlob(dataUrl: string): Blob {
-  const arr = dataUrl.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-
-  return new Blob([u8arr], { type: mime });
 }

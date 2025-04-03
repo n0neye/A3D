@@ -53,6 +53,8 @@ export class SelectionManager {
     // Notify the engine context
     if (selectable && selectable instanceof EntityBase) {
       this.events.emit('entitySelected', selectable);
+    }else {
+      this.events.emit('entitySelected', null);
     }
     
     // Clear gizmo

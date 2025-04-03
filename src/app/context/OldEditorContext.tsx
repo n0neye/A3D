@@ -22,7 +22,7 @@ interface EditorContextType {
   setGizmoMode: (mode: GizmoMode) => void;
   historyManager: HistoryManager;
   isGizmoVisible: boolean;
-  setGizmoVisible: (isVisible: boolean) => void;
+  setAllGizmoVisibility: (isVisible: boolean) => void;
   selectionManager: SelectionManager | null;
   setSelectionManager: (manager: SelectionManager | null) => void;
 }
@@ -248,7 +248,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setGizmoMode,
         historyManager,
         isGizmoVisible,
-        setGizmoVisible: setIsGizmoVisible,
+        setAllGizmoVisibility: setIsGizmoVisible,
         selectionManager,
         setSelectionManager,
       }}

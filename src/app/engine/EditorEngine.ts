@@ -25,16 +25,9 @@ import { GizmoManager } from '@babylonjs/core';
 import { EntityFactory, CreateEntityOptions } from './utils/EntityFactory';
 import { Command, HistoryManager } from './managers/HistoryManager';
 import { loadShapeMeshes } from '../util/editor/shape-util';
-import { CreateEntityCommand, TransformCommand } from '../lib/commands';
-import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
-import { ISelectable } from '../interfaces/ISelectable';
-import { BoneControl } from '../util/entity/BoneControl';
 import { InputManager } from './managers/InputManager';
 import { createDefaultMaterials } from '../util/editor/material-util';
-// import { GizmoManager } from './managers/GizmoManager';
-// import { EntityManager } from './managers/EntityManager';
-// import { EnvironmentManager } from './managers/EnvironmentManager';
-// import { InputManager } from './managers/InputManager';
+import { RenderService } from './services/RenderService';
 
 /**
  * Main editor engine that coordinates all Babylon.js subsystems
@@ -49,6 +42,7 @@ export class EditorEngine {
   private gizmoManager: GizmoManager;
   private historyManager: HistoryManager;
   private inputManager: InputManager;
+  private renderService: RenderService;
 
   public events: EventEmitter = new EventEmitter();
 
@@ -56,6 +50,7 @@ export class EditorEngine {
     this.core = new BabylonCore(canvas);
 
     const scene = this.core.getScene();
+    const engine = this.core.getEngine();
     this.cameraManager = new CameraManager(scene, canvas);
     this.gizmoManager = new GizmoManager(scene);
     this.selectionManager = new SelectionManager(scene, this.gizmoManager);
@@ -63,6 +58,9 @@ export class EditorEngine {
     
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(scene, this.selectionManager, this.historyManager);
+    
+    // Create the render service
+    this.renderService = new RenderService(scene, engine);
     
     // Listen for events from the input manager
     this.inputManager.events.on('entityCreated', (entity) => {
@@ -85,6 +83,7 @@ export class EditorEngine {
   }
 
 
+  // Getters
   public static getInstance(): EditorEngine {
     return EditorEngine.instance;
   }
@@ -99,6 +98,18 @@ export class EditorEngine {
 
   public getSelectionManager(): SelectionManager {
     return this.selectionManager;
+  }
+
+  public getInputManager(): InputManager {
+    return this.inputManager;
+  }
+
+  public getRenderService(): RenderService {
+    return this.renderService;
+  }
+
+  public getCameraManager(): CameraManager {
+    return this.cameraManager;
   }
   
 
@@ -122,4 +133,5 @@ export class EditorEngine {
   public executeCommand(command: Command): void {
     this.historyManager.executeCommand(command);
   }
+
 } 
