@@ -4,7 +4,7 @@ import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDo
 import { removeBackground } from '../../util/generation/generation-util';
 import { generate3DModel } from '../../util/generation/3d-generation-util';
 import { generateRealtimeImage, GenerationResult } from '../../util/generation/realtime-generation-util';
-import { useEditorContext } from '../../engine/utils/EngineContext';
+import { useEditorContext } from '../../context/EditorContext';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';

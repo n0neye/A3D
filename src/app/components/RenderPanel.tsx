@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { renderImage as generateRenderImage, dataURLtoBlob, availableAPIs, API_Info } from '../util/generation/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/generation/image-processing';
-import { useEditorContext } from '../engine/utils/EngineContext';
+import { useEditorContext } from '../context/EditorContext';
 import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/generation/lora';

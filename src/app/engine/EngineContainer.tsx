@@ -4,19 +4,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import AddPanel from '../components/AddPanel';
 import EntityPanel from '../components/EntityPanels/EntityPanel';
-import { useEditorContext } from './utils/EngineContext';
+import { useEditorContext } from '../context/EditorContext';
 import { initializeRealtimeConnection } from '../util/generation/realtime-generation-util';
 import RenderPanel from '../components/RenderPanel';
 import DebugLayer from '../components/DebugLayer';
 import { initGizmo, initScene } from '../util/editor/editor-util';
-import EnvironmentPanel from '../components/EnvironmentPanel';
 import GizmoModeSelector from '../components/GizmoModeSelector';
 import FileMenu from '../components/FileMenu';
 import FramePanel from '../components/FramePanel';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from '../components/GalleryPanel';
 import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityAsyncCommand } from '../lib/commands';
-import { v4 as uuidv4 } from 'uuid';
 import { EntityFactory } from './utils/EntityFactory';
 import { duplicateEntity } from '../util/entity/entityUtils';
 import Guide from '../components/Guide';
@@ -61,6 +59,84 @@ export default function EngineContainer() {
 
   // At the component level, add a ref to track the scene
   const sceneRef = useRef<BABYLON.Scene | null>(null);
+
+  // Initialize BabylonJS engine and scene
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    // Initialize BabylonJS engine and scene
+    const engine = new BABYLON.Engine(canvasRef.current, true);
+    const scene = new BABYLON.Scene(engine);
+    sceneRef.current = scene; // Store reference to scene
+
+    // Register the history manager with the scene
+    registerHistoryManager(scene, historyManager);
+
+    // Update context
+    setEngine(engine);
+    setScene(scene);
+
+    const init = async (canvas: HTMLCanvasElement) => {
+      await initScene(canvas, scene);
+      await loadDefaultProject(scene);
+
+      // Set up gizmo manager and register with scene
+      const gizmoManager = initGizmo(scene, historyManager);
+      registerGizmoManager(scene, gizmoManager);
+
+      // Create the selection manager
+      const selectionManager = createSelectionManager(scene);
+
+      // Set gizmo manager for UI state
+      setGizmoManager(gizmoManager);
+    }
+
+    init(canvasRef.current);
+
+    // Start the render loop
+    engine.runRenderLoop(() => {
+      scene.render();
+    });
+
+    // Handle window resize
+    const handleResize = () => {
+      engine.resize();
+    };
+
+    // Listeners
+    scene.onPointerObservable.add((pointerInfo) => onPointerObservable(pointerInfo, scene));
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+
+    // Initialize API connection
+    initializeRealtimeConnection();
+
+    // Add event listener to prevent default browser zoom behavior when using Ctrl+Wheel
+    const preventDefaultZoom = (event: WheelEvent) => {
+      const isEKeyPressed = keysPressed[69]; // 'e' key code
+      const isRKeyPressed = keysPressed[82]; // 'r' key code
+
+      if (isEKeyPressed || isRKeyPressed) {
+        event.preventDefault();
+      }
+    };
+    canvasRef.current.addEventListener('wheel', preventDefaultZoom, { passive: false });
+
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Cleanup
+    return () => {
+      scene.dispose();
+      engine.dispose();
+      if (canvasRef.current) {
+        canvasRef.current.removeEventListener('wheel', preventDefaultZoom);
+      }
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   // Track when new images are added to renderLogs
   useEffect(() => {
@@ -440,83 +516,6 @@ export default function EngineContainer() {
     }
   };
 
-  // Initialize BabylonJS engine and scene
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    // Initialize BabylonJS engine and scene
-    const engine = new BABYLON.Engine(canvasRef.current, true);
-    const scene = new BABYLON.Scene(engine);
-    sceneRef.current = scene; // Store reference to scene
-
-    // Register the history manager with the scene
-    registerHistoryManager(scene, historyManager);
-
-    // Update context
-    setEngine(engine);
-    setScene(scene);
-
-    const init = async (canvas: HTMLCanvasElement) => {
-      await initScene(canvas, scene);
-      await loadDefaultProject(scene);
-
-      // Set up gizmo manager and register with scene
-      const gizmoManager = initGizmo(scene, historyManager);
-      registerGizmoManager(scene, gizmoManager);
-
-      // Create the selection manager
-      const selectionManager = createSelectionManager(scene);
-
-      // Set gizmo manager for UI state
-      setGizmoManager(gizmoManager);
-    }
-
-    init(canvasRef.current);
-
-    // Start the render loop
-    engine.runRenderLoop(() => {
-      scene.render();
-    });
-
-    // Handle window resize
-    const handleResize = () => {
-      engine.resize();
-    };
-
-    // Listeners
-    scene.onPointerObservable.add((pointerInfo) => onPointerObservable(pointerInfo, scene));
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('resize', handleResize);
-
-    // Initialize API connection
-    initializeRealtimeConnection();
-
-    // Add event listener to prevent default browser zoom behavior when using Ctrl+Wheel
-    const preventDefaultZoom = (event: WheelEvent) => {
-      const isEKeyPressed = keysPressed[69]; // 'e' key code
-      const isRKeyPressed = keysPressed[82]; // 'r' key code
-
-      if (isEKeyPressed || isRKeyPressed) {
-        event.preventDefault();
-      }
-    };
-    canvasRef.current.addEventListener('wheel', preventDefaultZoom, { passive: false });
-
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    // Cleanup
-    return () => {
-      scene.dispose();
-      engine.dispose();
-      if (canvasRef.current) {
-        canvasRef.current.removeEventListener('wheel', preventDefaultZoom);
-      }
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
 
   const handleApplyRenderSettings = (renderLog: RenderLog) => {
     // Extract settings from the renderLog

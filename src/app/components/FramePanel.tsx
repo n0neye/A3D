@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { IconVideo } from '@tabler/icons-react';
 import { ImageRatio } from '../util/generation/generation-util';
-import { useEditorContext } from '../engine/utils/EngineContext';
+import { useEditorContext } from '../context/EditorContext';
 import {
   setRatioOverlayRatio,
   setRatioOverlayPadding,

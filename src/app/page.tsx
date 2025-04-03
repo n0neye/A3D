@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { EngineProvider } from './engine/utils/EngineContext';
+import { EditorProvider } from './context/EditorContext';
 import EngineContainer from './engine/EngineContainer';
 import { ProjectSettingsProvider } from './context/ProjectSettingsContext';
 import { Laptop } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EditorEngineProvider } from './context/EditorEngineContext';
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
@@ -13,7 +14,7 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
-    
+
     // Function to check if device is mobile based on screen width
     const checkIfMobile = () => {
       const width = window.innerWidth;
@@ -25,7 +26,7 @@ export default function Home() {
 
     // Add event listener to check on resize
     window.addEventListener('resize', checkIfMobile);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
@@ -44,7 +45,7 @@ export default function Home() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              The editor is designed for desktop use with a mouse and keyboard. 
+              The editor is designed for desktop use with a mouse and keyboard.
               Please access it from a computer.
             </p>
             <div className="flex justify-center">
@@ -66,10 +67,13 @@ export default function Home() {
   }
 
   return (
-    <EngineProvider>
-      <ProjectSettingsProvider>
-        <EngineContainer />
-      </ProjectSettingsProvider>
-    </EngineProvider>
+    <EditorEngineProvider>
+      {/* <EditorProvider> */}
+        <ProjectSettingsProvider>
+          {/* <EngineContainer /> */}
+          <></>
+        </ProjectSettingsProvider>
+      {/* </EditorProvider> */}
+    </EditorEngineProvider>
   );
 }

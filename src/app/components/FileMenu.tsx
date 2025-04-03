@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { useEditorContext } from '../engine/utils/EngineContext';
+import { useEditorContext } from '../context/EditorContext';
 import { saveProjectToFile, loadProjectFromFile, SerializedProjectSettings } from '../util/editor/project-util';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';

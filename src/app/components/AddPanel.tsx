@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEditorContext } from '../engine/utils/EngineContext';
+import { useEditorContext } from '../context/EditorContext';
 import { EntityType, } from '../util/entity/EntityBase';
 import { ShapeType } from '../util/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";

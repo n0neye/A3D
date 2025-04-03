@@ -52,6 +52,13 @@ export class EditorEngine {
     this.selectionManager = new SelectionManager(scene);
     this.gizmoManager = new GizmoManager(scene);
   }
+
+  public static initEngine(canvas: HTMLCanvasElement): EditorEngine {
+    if (!EditorEngine.instance) {
+      EditorEngine.instance = new EditorEngine(canvas);
+    }
+    return EditorEngine.instance;
+  }
   
   public static getInstance(): EditorEngine {
     return EditorEngine.instance;
