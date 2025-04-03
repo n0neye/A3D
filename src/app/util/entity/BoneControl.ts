@@ -106,14 +106,7 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
   // ISelectable implementation
   onSelect(): void {
     console.log(`BoneControl.onSelect: Bone selected: ${this.bone.name}`);
-
-    // Sync the control's rotation with the bone
-    if(this.bone._linkedTransformNode) {
-      console.log(`BoneControl.onSelect: Syncing rotation with linked transform node for bone: ${this.bone.name}`);
-      this.rotation = this.bone._linkedTransformNode.rotation.clone();
-    } else {
-      this.rotation = this.bone.rotation.clone();
-    }
+    this.rotation = this.bone.rotation;
 
     
 

@@ -202,11 +202,11 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setSelectedEntityState(entity);
     
     // Update selection manager if it exists
-    if (selectionManager && entity) {
-      selectionManager.select(entity);
-    } else if (selectionManager) {
-      selectionManager.select(null);
-    }
+    // if (selectionManager && entity) {
+    //   selectionManager.select(entity);
+    // } else if (selectionManager) {
+    //   selectionManager.select(null);
+    // }
   };
 
   return (

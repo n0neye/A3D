@@ -219,7 +219,7 @@ export class CharacterEntity extends EntityBase {
                 }
             );
 
-            // Position the control
+            // Set parent and position the control
             if (bone._linkedTransformNode) {
                 boneControl.parent = bone._linkedTransformNode.parent;
                 boneControl.position = bone._linkedTransformNode.position;

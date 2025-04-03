@@ -25,7 +25,7 @@ export class SelectionManager {
    * Select an object
    */
   select(selectable: ISelectable | null): void {
-    console.log("SelectionManager.select called with:", selectable, selectable?.getName(), selectable?.constructor.name);
+    console.log("SelectionManager.select called with:", selectable?.getName());
     
     // Determine if we're selecting a child of the current selection
     const isChildOfCurrentSelection = this._isChildSelection(selectable, this._currentSelection);
@@ -35,7 +35,7 @@ export class SelectionManager {
       // If we're selecting something not related to current selection, 
       // deselect the current selection properly
       if (this._currentSelection) {
-        console.log("Deselecting previous:", this._currentSelection.getId(), this._currentSelection.constructor.name);
+        console.log("Deselecting previous:", this._currentSelection.getName());
         this._currentSelection.onDeselect();
       }
       
@@ -206,6 +206,5 @@ export function createSelectionManager(scene: BABYLON.Scene): SelectionManager {
 // Get the selection manager from a scene
 export function getSelectionManager(scene: BABYLON.Scene): SelectionManager | null {
   const manager = scene.metadata?.selectionManager || null;
-  console.log("Getting selection manager:", !!manager);
   return manager;
 } 
