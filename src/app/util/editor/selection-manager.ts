@@ -1,12 +1,15 @@
 import * as BABYLON from '@babylonjs/core';
 import { ISelectable } from '../../interfaces/ISelectable';
 import { getGizmoManager } from './scene-managers';
+import { CharacterEntity } from '../entity/CharacterEntity';
+import { BoneControl } from '../entity/BoneControl';
 
 /**
  * Manages selection of objects in the scene
  */
 export class SelectionManager {
   private _currentSelection: ISelectable | null = null;
+  private _parentSelection: ISelectable | null = null; // Track parent selection separately
   private _scene: BABYLON.Scene;
   private _gizmoManager: BABYLON.GizmoManager | null = null;
   private _hoverObserver: BABYLON.Observer<BABYLON.PointerInfo> | null = null;
@@ -22,14 +25,26 @@ export class SelectionManager {
    * Select an object
    */
   select(selectable: ISelectable | null): void {
-    console.log("SelectionManager.select called with:", selectable, selectable?.getId(), selectable?.constructor.name);
+    console.log("SelectionManager.select called with:", selectable, selectable?.getName(), selectable?.constructor.name);
     
-    // Deselect previous selection
-    //! TODO: Prevent deselecting the character if we're selecting a bone control
-    if (this._currentSelection) {
-      console.log("Deselecting previous:", this._currentSelection.getId(), this._currentSelection.constructor.name);
-
-      this._currentSelection.onDeselect();
+    // Determine if we're selecting a child of the current selection
+    const isChildOfCurrentSelection = this._isChildSelection(selectable, this._currentSelection);
+    
+    // Check if the new selection belongs to the same character as the current selection
+    if (!isChildOfCurrentSelection) {
+      // If we're selecting something not related to current selection, 
+      // deselect the current selection properly
+      if (this._currentSelection) {
+        console.log("Deselecting previous:", this._currentSelection.getId(), this._currentSelection.constructor.name);
+        this._currentSelection.onDeselect();
+      }
+      
+      // Also clear the parent selection
+      this._parentSelection = null;
+    } else {
+      console.log("Selecting a child of current selection - keeping parent active");
+      // Keep track of parent
+      this._parentSelection = this._currentSelection;
     }
     
     // Clear gizmo
@@ -71,10 +86,33 @@ export class SelectionManager {
   }
   
   /**
-   * Get the currently selected object
+   * Check if the new selection is a child of the current selection
+   */
+  private _isChildSelection(newSelection: ISelectable | null, currentSelection: ISelectable | null): boolean {
+    if (!newSelection || !currentSelection) return false;
+    
+    // Check specifically for BoneControl being a child of CharacterEntity
+    if (newSelection instanceof BoneControl && currentSelection instanceof CharacterEntity) {
+      return newSelection.character === currentSelection;
+    }
+    
+    // Add other parent-child relationships here as needed
+    
+    return false;
+  }
+  
+  /**
+   * Get the current selection
    */
   getCurrentSelection(): ISelectable | null {
     return this._currentSelection;
+  }
+  
+  /**
+   * Get the parent selection (if any)
+   */
+  getParentSelection(): ISelectable | null {
+    return this._parentSelection;
   }
   
   /**
@@ -82,48 +120,48 @@ export class SelectionManager {
    */
   private _setupHoverObserver(): void {
     console.log("Setting up hover observer");
-    this._hoverObserver = this._scene.onPointerObservable.add((pointerInfo) => {
-      // Only handle pointer move events
-      if (pointerInfo.type !== BABYLON.PointerEventTypes.POINTERMOVE) {
-        return;
-      }
+    // this._hoverObserver = this._scene.onPointerObservable.add((pointerInfo) => {
+    //   // Only handle pointer move events
+    //   if (pointerInfo.type !== BABYLON.PointerEventTypes.POINTERMOVE) {
+    //     return;
+    //   }
       
-      // Pick the mesh under the pointer
-      const pickInfo = this._scene.pick(
-        this._scene.pointerX, 
-        this._scene.pointerY
-      );
+    //   // Pick the mesh under the pointer
+    //   const pickInfo = this._scene.pick(
+    //     this._scene.pointerX, 
+    //     this._scene.pointerY
+    //   );
       
-      // Get the picked mesh
-      const pickedMesh = pickInfo.pickedMesh;
+    //   // Get the picked mesh
+    //   const pickedMesh = pickInfo.pickedMesh;
       
-      // If hovering over a new mesh
-      if (pickedMesh !== this._hoveredMesh) {
-        console.log("Hover changed to:", pickedMesh?.name);
-        // Update hover state
-        this._hoveredMesh = pickedMesh;
+    //   // If hovering over a new mesh
+    //   if (pickedMesh !== this._hoveredMesh) {
+    //     console.log("Hover changed to:", pickedMesh?.name);
+    //     // Update hover state
+    //     this._hoveredMesh = pickedMesh;
         
-        // Find ISelectable from mesh
-        let selectable: ISelectable | null = null;
+    //     // Find ISelectable from mesh
+    //     let selectable: ISelectable | null = null;
         
-        if (pickedMesh) {
-          // Check if mesh itself is selectable
-          if ((pickedMesh as any).gizmoCapabilities) {
-            console.log("Mesh is directly selectable");
-            selectable = pickedMesh as unknown as ISelectable;
-          } 
-          // Check if mesh has a selectable entity as metadata
-          else if (pickedMesh.metadata?.rootEntity && 
-                  (pickedMesh.metadata.rootEntity as any).gizmoCapabilities) {
-            console.log("Mesh has selectable rootEntity");
-            selectable = pickedMesh.metadata.rootEntity as ISelectable;
-          }
-        }
+    //     if (pickedMesh) {
+    //       // Check if mesh itself is selectable
+    //       if ((pickedMesh as any).gizmoCapabilities) {
+    //         console.log("Mesh is directly selectable");
+    //         selectable = pickedMesh as unknown as ISelectable;
+    //       } 
+    //       // Check if mesh has a selectable entity as metadata
+    //       else if (pickedMesh.metadata?.rootEntity && 
+    //               (pickedMesh.metadata.rootEntity as any).gizmoCapabilities) {
+    //         console.log("Mesh has selectable rootEntity");
+    //         selectable = pickedMesh.metadata.rootEntity as ISelectable;
+    //       }
+    //     }
         
-        // Update cursor based on selectable
-        this._updateCursor(selectable);
-      }
-    });
+    //     // Update cursor based on selectable
+    //     this._updateCursor(selectable);
+    //   }
+    // });
   }
   
   /**

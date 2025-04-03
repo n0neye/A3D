@@ -242,7 +242,15 @@ export default function EditorContainer() {
       console.log("Mesh is directly selectable");
       selectable = mesh as unknown as ISelectable;
       selectionManager.select(selectable);
-      setSelectedEntity(null); // No entity selected for direct selectable meshes
+      
+      // Check if we need to show a special UI for this selection
+      // or if we should use the parent's UI
+      const parentSelection = selectionManager.getParentSelection();
+      if (parentSelection instanceof EntityBase) {
+        setSelectedEntity(parentSelection);
+      } else {
+        setSelectedEntity(null);
+      }
     }
     // Nothing selectable found
     else {

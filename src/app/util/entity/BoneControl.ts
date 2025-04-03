@@ -107,9 +107,22 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
   onSelect(): void {
     console.log(`BoneControl.onSelect: Bone selected: ${this.bone.name}`);
 
+    // Sync the control's rotation with the bone
+    if(this.bone._linkedTransformNode) {
+      console.log(`BoneControl.onSelect: Syncing rotation with linked transform node for bone: ${this.bone.name}`);
+      this.rotation = this.bone._linkedTransformNode.rotation.clone();
+    } else {
+      this.rotation = this.bone.rotation.clone();
+    }
+
+    
+
     // Set up gizmo rotation observers
     const gizmoManager = this._getGizmoManager();
     if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
+
+      gizmoManager.attachToMesh(this);
+
       // Add observer for start of rotation (when drag begins)
       this._gizmoStartDragObserver = gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
         () => this._handleGizmoRotationStart()
@@ -290,7 +303,6 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
   }
 
   getGizmoTarget(): BABYLON.AbstractMesh {
-    console.log(`BoneControl.getGizmoTarget: Returning mesh for bone: ${this.bone.name}`);
     return this;
   }
 
