@@ -1,9 +1,10 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase } from '../util/entity/EntityBase';
-import { isGenerativeEntity, isLightEntity, isShapeEntity } from '../util/entity/entityUtils';
-import { HistoryManager } from '../components/HistoryManager';
+import { isGenerativeEntity, isLightEntity, isShapeEntity, isCharacterEntity } from '../util/entity/entityUtils';
+import { HistoryManager } from '../util/editor/managers/HistoryManager';
 import { UpdateGizmoVisibility } from '../util/editor/editor-util';
+import { getSelectionManager, SelectionManager } from '../util/editor/managers/SelectionManager';
 
 interface EditorContextType {
   scene: BABYLON.Scene | null;
@@ -22,6 +23,8 @@ interface EditorContextType {
   historyManager: HistoryManager;
   isGizmoVisible: boolean;
   setGizmoVisible: (isVisible: boolean) => void;
+  selectionManager: SelectionManager | null;
+  setSelectionManager: (manager: SelectionManager | null) => void;
 }
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 const EditorContext = createContext<EditorContextType | null>(null);
@@ -29,27 +32,49 @@ const EditorContext = createContext<EditorContextType | null>(null);
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [scene, setScene] = useState<BABYLON.Scene | null>(null);
   const [engine, setEngine] = useState<BABYLON.Engine | null>(null);
-  const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
+  const [selectedEntityState, setSelectedEntityState] = useState<EntityBase | null>(null);
   const [gizmoManager, setGizmoManager] = useState<BABYLON.GizmoManager | null>(null);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [currentGizmoMode, setCurrentGizmoMode] = useState<GizmoMode>('position');
   const [historyManager] = useState(new HistoryManager());
   const [isGizmoVisible, setIsGizmoVisible] = useState<boolean>(true);
+  const [selectionManager, setSelectionManager] = useState<SelectionManager | null>(null);
 
   // Use a ref to always track current selected entity
   const selectedEntityRef = useRef<EntityBase | null>(null);
 
   // Keep the ref in sync with the state
   useEffect(() => {
-    selectedEntityRef.current = selectedEntity;
-  }, [selectedEntity]);
+    selectedEntityRef.current = selectedEntityState;
+  }, [selectedEntityState]);
 
   // Function to get current entity from the ref
   const getCurrentSelectedEntity = () => selectedEntityRef.current;
 
   // Function to set gizmo mode
   const setGizmoMode = (mode: GizmoMode) => {
-    if (!gizmoManager) return;
+    if (!gizmoManager || !scene) return;
+
+    // Get SelectionManager
+    const selectionManager = getSelectionManager(scene);
+    if (!selectionManager) return;
+
+    // Get the current selection
+    const currentSelection = selectionManager.getCurrentSelection();
+    if (currentSelection) {
+      if(mode === 'position' && !currentSelection.gizmoCapabilities.allowPosition) {
+        return;
+      }
+      if(mode === 'rotation' && !currentSelection.gizmoCapabilities.allowRotation) {
+        return;
+      }
+      if(mode === 'scale' && !currentSelection.gizmoCapabilities.allowScale) {
+        return;
+      }
+      if(mode === 'boundingBox' && !currentSelection.gizmoCapabilities.allowBoundingBox) {
+        return;
+      }
+    }
 
     // Reset all gizmos first
     gizmoManager.positionGizmoEnabled = false;
@@ -121,33 +146,33 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       // No longer need to handle bounding box here since our entities manage their own meshes
     }
 
-    if (selectedEntity) {
+    if (selectedEntityState) {
       setGizmoMode(currentGizmoMode);
-      console.log("EditorContext: selectedEntity", selectedEntity.id);
+      console.log("EditorContext: selectedEntity", selectedEntityState.id);
       
       // Handle gizmo attachment based on entity type
-      if (isGenerativeEntity(selectedEntity)) {
+      if (isGenerativeEntity(selectedEntityState)) {
         // For generative entities, attach to the entity itself or a specific mesh
-        const primaryMesh = selectedEntity.getPrimaryMesh();
+        const primaryMesh = selectedEntityState.getPrimaryMesh();
         if (primaryMesh && (currentGizmoMode === 'boundingBox' || currentGizmoMode === 'scale')) {
           gizmoManager.attachToMesh(primaryMesh);
         } else {
-          gizmoManager.attachToNode(selectedEntity);
+          gizmoManager.attachToNode(selectedEntityState);
         }
       } 
-      else if (isShapeEntity(selectedEntity)) {
+      else if (isShapeEntity(selectedEntityState)) {
         // For shape entities
-        gizmoManager.attachToNode(selectedEntity);
+        gizmoManager.attachToNode(selectedEntityState);
       }
-      else if (isLightEntity(selectedEntity)) {
+      else if (isLightEntity(selectedEntityState)) {
         // For light entities, only allow position control
-        console.log("EditorContext: light", selectedEntity);
+        console.log("EditorContext: light", selectedEntityState);
         setGizmoMode("position");
-        gizmoManager.attachToNode(selectedEntity);
+        gizmoManager.attachToNode(selectedEntityState);
       }
       else {
         // Default case
-        gizmoManager.attachToNode(selectedEntity);
+        gizmoManager.attachToNode(selectedEntityState);
       }
     } else {
       gizmoManager.attachToMesh(null);
@@ -161,7 +186,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         gizmoManager.attachToMesh(null);
       }
     };
-  }, [selectedEntity, gizmoManager, scene, isDebugMode, currentGizmoMode]);
+  }, [selectedEntityState, gizmoManager, scene, isDebugMode, currentGizmoMode]);
 
   // Add keyboard shortcut for toggling gizmo visibility
   useEffect(() => {
@@ -191,6 +216,20 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isGizmoVisible, scene]);
 
+  const setSelectedEntity = (entity: EntityBase | null) => {
+    // If there's a currently selected entity, it will be deselected by selection manager
+    
+    // Update the selected entity state
+    setSelectedEntityState(entity);
+    
+    // Update selection manager if it exists
+    // if (selectionManager && entity) {
+    //   selectionManager.select(entity);
+    // } else if (selectionManager) {
+    //   selectionManager.select(null);
+    // }
+  };
+
   return (
     <EditorContext.Provider
       value={{
@@ -198,7 +237,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setScene,
         engine,
         setEngine,
-        selectedEntity,
+        selectedEntity: selectedEntityState,
         setSelectedEntity,
         getCurrentSelectedEntity,
         gizmoManager,
@@ -210,6 +249,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         historyManager,
         isGizmoVisible,
         setGizmoVisible: setIsGizmoVisible,
+        selectionManager,
+        setSelectionManager,
       }}
     >
       {children}

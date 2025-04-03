@@ -10,6 +10,7 @@ import { ImageRatio } from '../generation/generation-util';
 import { API_Info } from '../generation/image-render-api';
 import { LoraConfig } from '../generation/lora';
 import { GenerativeEntityProps } from "../entity/GenerativeEntity";
+import { CharacterEntity, SerializedCharacterEntityData } from "../entity/CharacterEntity";
 
 // Interface for serialized render settings
 export interface SerializedProjectSettings {
@@ -264,22 +265,23 @@ export function deserializeScene(
         data.entities.forEach((entityData: SerializedEntityData) => {
             try {
                 // Create the entity based on its type
-                let entity: EntityBase | null = null;
                 const entityType = entityData.entityType;
                 
                 switch (entityType) {
                     case 'light':
-                        entity = LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
+                        LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
                         break;
                         
                     case 'shape':
-                        entity = ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
+                        ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
                         break;
                         
                     case 'generative':
-                        entity = GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
+                        GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
                         break;
-                        
+                    case 'character':
+                        CharacterEntity.deserialize(scene, entityData as SerializedCharacterEntityData);
+                        break;                        
                     default:
                         console.warn(`Unknown entity type: ${entityType}`);
                         break;

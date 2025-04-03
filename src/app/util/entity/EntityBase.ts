@@ -3,18 +3,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { ShapeEntityProps } from './ShapeEntity';
 import { GenerativeEntityProps } from './GenerativeEntity';
 import { LightProps } from './LightEntity';
+import { HistoryManager } from '../editor/managers/HistoryManager';
+import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 
 /**
  * Base class for all entities in the scene
  * Extends TransformNode with common functionality
  */
 // Entity types
-export type EntityType = 'generative' | 'shape' | 'light';
-export class EntityBase extends BABYLON.TransformNode {
+export type EntityType = 'generative' | 'shape' | 'light' | 'character';
+export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   // Core properties all entities share
   id: string;
   entityType: EntityType;
   created: Date;
+  
+  // ISelectable implementation
+  gizmoCapabilities: GizmoCapabilities = {
+    allowPosition: true,
+    allowRotation: true,
+    allowScale: true
+  };
+  
+  cursorType: SelectableCursorType = 'move';
 
   constructor(
     name: string,
@@ -68,7 +79,7 @@ export class EntityBase extends BABYLON.TransformNode {
   /**
    * Base deserialization method (to be implemented in derived classes)
    */
-  static deserialize(scene: BABYLON.Scene, data: SerializedEntityData): EntityBase | null {
+  static async deserialize(scene: BABYLON.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
     // Base implementation to be overridden by subclasses
     return null;
   }
@@ -79,6 +90,67 @@ export class EntityBase extends BABYLON.TransformNode {
    */
   dispose(): void {
     super.dispose();
+  }
+
+  /**
+   * Get the GizmoManager from the scene
+   */
+  public getGizmoManager(): BABYLON.GizmoManager | null {
+    return this._scene.metadata?.gizmoManager || null;
+  }
+
+  /**
+   * Get the HistoryManager from the scene
+   */
+  public getHistoryManager(): HistoryManager | null {
+    return this._scene.metadata?.historyManager || null;
+  }
+
+  // ISelectable implementation
+  onSelect(): void {
+    console.log(`EntityBase.onSelect: Entity selected: ${this.name} (${this.constructor.name})`);
+  }
+  
+  onDeselect(): void {
+    console.log(`EntityBase.onDeselect: Entity deselected: ${this.name} (${this.constructor.name})`);
+  }
+  
+  getGizmoTarget(): BABYLON.AbstractMesh | BABYLON.TransformNode {
+    console.log(`EntityBase.getGizmoTarget: Returning this entity: ${this.name}`);
+    return this; // The entity itself is the target
+  }
+  
+  getId(): string {
+    return this.id;
+  }
+
+  getName(): string {
+    return this.name;
+  }
+  
+  applyTransformation(
+    transformType: 'position' | 'rotation' | 'scale', 
+    value: BABYLON.Vector3 | BABYLON.Quaternion
+  ): void {
+    switch (transformType) {
+      case 'position':
+        if (value instanceof BABYLON.Vector3) {
+          this.position = value;
+        }
+        break;
+      case 'rotation':
+        if (value instanceof BABYLON.Quaternion) {
+          this.rotationQuaternion = value;
+        } else if (value instanceof BABYLON.Vector3) {
+          this.rotation = value;
+        }
+        break;
+      case 'scale':
+        if (value instanceof BABYLON.Vector3) {
+          this.scaling = value;
+        }
+        break;
+    }
   }
 }
 

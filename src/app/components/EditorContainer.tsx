@@ -21,9 +21,15 @@ import { EntityFactory } from '../util/entity/EntityFactory';
 import { duplicateEntity } from '../util/entity/entityUtils';
 import Guide from './Guide';
 import { availableAPIs } from '../util/generation/image-render-api';
-import { loadProjectFromFile, RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
+import { RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
 import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
 import { EntityBase } from '../util/entity/EntityBase';
+import CharacterEditPanel from './CharacterEditPanel';
+import { isCharacterEntity } from '../util/entity/entityUtils';
+import { registerGizmoManager, registerHistoryManager } from '../util/editor/managers/SceneManagers';
+import { createSelectionManager, getSelectionManager } from '../util/editor/managers/SelectionManager';
+import { ISelectable } from '../interfaces/ISelectable';
+import { BoneControl } from '../util/entity/BoneControl';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;
@@ -90,145 +96,225 @@ export default function EditorContainer() {
       if (pointerInfo.event.button === 0) {  // Left click
         // Check if Ctrl key is pressed
         if (pointerInfo.event.ctrlKey || pointerInfo.event.metaKey) { // Ctrl+Left click (or Cmd+Left click on Mac)
-          // Cast a ray from the camera through the mouse position
-          const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-          let position: BABYLON.Vector3;
-
-          if (pickInfo.hit) {
-            // If we hit something, use that point
-            position = pickInfo.pickedPoint!.clone();
-          } else {
-            // Create at the position where the user clicked, but at a fixed distance from camera
-            const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
-            if (!camera) return;
-
-            // Camera center
-            const cameraCenter = camera.getTarget();
-            const cameraPosition = camera.position;
-            const distance = cameraPosition.subtract(cameraCenter).length();
-
-            // Create a ray from the camera through the clicked point on the screen
-            const ray = scene.createPickingRay(
-              scene.pointerX,
-              scene.pointerY,
-              BABYLON.Matrix.Identity(),
-              camera
-            );
-
-            // Calculate position along the ray at the specified distance
-            position = ray.origin.add(ray.direction.scale(distance));
-          }
-
-          // Create entity command using the new EntityFactory
-          const createCommand = new CreateEntityCommand(
-            () => EntityFactory.createEntity(scene, {
-              type: 'generative',
-              position,
-              gnerativeProps: {
-                generationLogs: [],
-              } as GenerativeEntityProps
-            }),
-            scene
-          );
-
-          // Execute command and select the new entity
-          console.log("About to execute command", createCommand);
-          historyManager.executeCommand(createCommand);
-          console.log("Command executed");
-          const newEntity = createCommand.getEntity();
-          console.log("Got entity from command", newEntity);
-          setSelectedEntity(newEntity);
-          if (newEntity) {
-            newEntity.setEnabled(true);
-          } else {
-            console.error("No entity returned from createCommand");
-          }
+          handleCtrlClick(pointerInfo, scene);
         } else {
-          // Normal left click (without Ctrl) - handle selection
-          const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
-          const mesh = pickInfo.pickedMesh;
-
-          // Find the entity that owns this mesh
-          if (mesh && mesh.metadata.rootEntity && mesh.metadata.rootEntity instanceof EntityBase) {
-            setSelectedEntity(mesh.metadata.rootEntity);
-          } else {
-            setSelectedEntity(null);
-          }
+          handleRegularClick(pointerInfo, scene);
         }
       }
     }
-
     // Handle mouse wheel events for scaling and rotation
     else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERWHEEL) {
-      const currentEntity = getCurrentSelectedEntity();
-      if (!currentEntity) return;
+      handleMouseWheel(pointerInfo, scene);
+    }
+  }
 
-      // @ts-ignore
-      const wheelDelta = pointerInfo.event.deltaY;
-      const scaleFactor = 0.001; // Adjust this for sensitivity
-      const rotationFactor = 0.0025; // Adjust this for sensitivity
+  const handleMouseWheel = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
+    const currentEntity = getCurrentSelectedEntity();
+    if (!currentEntity) return;
+
+    // @ts-ignore
+    const wheelDelta = pointerInfo.event.deltaY;
+    const scaleFactor = 0.001; // Adjust this for sensitivity
+    const rotationFactor = 0.0025; // Adjust this for sensitivity
 
 
-      if (isEKeyPressed || isRKeyPressed || isWKeyPressed) {
-        // Disable camera zoom
-        const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
-        camera.inputs.remove(camera.inputs.attached.mousewheel);
+    if (isEKeyPressed || isRKeyPressed || isWKeyPressed) {
+      // Disable camera zoom
+      const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
+      camera.inputs.remove(camera.inputs.attached.mousewheel);
 
-        // W+Wheel: Move the selected entity up
-        if (isWKeyPressed) {
-          currentEntity.position.y += wheelDelta * -0.001;
-        }
-
-        // E+Wheel: Scale the selected entity
-        if (isEKeyPressed) {
-          // Create scale command - record the starting state
-          const scaleCommand = new TransformCommand(currentEntity);
-
-          // Calculate scale factor based on wheel direction
-          const delta = -wheelDelta * scaleFactor;
-          const newScale = currentEntity.scaling.clone();
-
-          // Apply uniform scaling
-          newScale.x += newScale.x * delta;
-          newScale.y += newScale.y * delta;
-          newScale.z += newScale.z * delta;
-
-          // Apply the new scale
-          currentEntity.scaling = newScale;
-
-          // Update the final state and record the command
-          scaleCommand.updateFinalState();
-          historyManager.executeCommand(scaleCommand);
-
-          // Prevent default browser zoom
-          pointerInfo.event.preventDefault();
-        }
-
-        // R+Wheel: Rotate the selected entity around Y axis
-        else if (isRKeyPressed) {
-          // Create rotation command - record the starting state
-          const rotationCommand = new TransformCommand(currentEntity);
-
-          // Calculate rotation amount based on wheel direction
-          const delta = wheelDelta * rotationFactor;
-
-          // Apply rotation around y-axis
-          currentEntity.rotate(BABYLON.Vector3.Up(), delta);
-
-          // Update the final state and record the command
-          rotationCommand.updateFinalState();
-          historyManager.executeCommand(rotationCommand);
-
-          // Prevent default browser behavior
-          pointerInfo.event.preventDefault();
-        }
-
-        // Enable camera zoom
-        setTimeout(() => {
-          camera.inputs.add(new BABYLON.ArcRotateCameraMouseWheelInput);
-          camera.wheelPrecision = 40;
-        }, 50);
+      // W+Wheel: Move the selected entity up
+      if (isWKeyPressed) {
+        currentEntity.position.y += wheelDelta * -0.001;
       }
+
+      // E+Wheel: Scale the selected entity
+      if (isEKeyPressed) {
+        // Create scale command - record the starting state
+        const scaleCommand = new TransformCommand(currentEntity);
+
+        // Calculate scale factor based on wheel direction
+        const delta = -wheelDelta * scaleFactor;
+        const newScale = currentEntity.scaling.clone();
+
+        // Apply uniform scaling
+        newScale.x += newScale.x * delta;
+        newScale.y += newScale.y * delta;
+        newScale.z += newScale.z * delta;
+
+        // Apply the new scale
+        currentEntity.scaling = newScale;
+
+        // Update the final state and record the command
+        scaleCommand.updateFinalState();
+        historyManager.executeCommand(scaleCommand);
+
+        // Prevent default browser zoom
+        pointerInfo.event.preventDefault();
+      }
+
+      // R+Wheel: Rotate the selected entity around Y axis
+      else if (isRKeyPressed) {
+        // Create rotation command - record the starting state
+        const rotationCommand = new TransformCommand(currentEntity);
+
+        // Calculate rotation amount based on wheel direction
+        const delta = wheelDelta * rotationFactor;
+
+        // Apply rotation around y-axis
+        currentEntity.rotate(BABYLON.Vector3.Up(), delta);
+
+        // Update the final state and record the command
+        rotationCommand.updateFinalState();
+        historyManager.executeCommand(rotationCommand);
+
+        // Prevent default browser behavior
+        pointerInfo.event.preventDefault();
+      }
+
+      // Enable camera zoom
+      setTimeout(() => {
+        camera.inputs.add(new BABYLON.ArcRotateCameraMouseWheelInput);
+        camera.wheelPrecision = 40;
+      }, 50);
+    }
+  }
+
+  const handleRegularClick = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
+    console.log("handleRegularClick called");
+
+    // Get the selection manager
+    const selectionManager = getSelectionManager(scene);
+    console.log("Selection manager found:", !!selectionManager);
+    if (!selectionManager) return;
+
+
+    const bonePickInfo = scene.pick(
+      scene.pointerX,
+      scene.pointerY,
+      (mesh) => {
+        return mesh.name.startsWith('bone_'); // Only pick meshes that start with 'bone_'
+      }
+    );
+
+    // If we picked a bone control, select the bone and return
+    // TODO: this is hack to select bones behind the character mesh
+    if (bonePickInfo.hit && bonePickInfo.pickedMesh && bonePickInfo.pickedMesh instanceof BoneControl) {
+      console.log("Bone picked:", bonePickInfo.pickedMesh.name);
+      const boneControl = bonePickInfo.pickedMesh as BoneControl;
+      boneControl.character.selectBone(boneControl);
+      selectionManager.select(boneControl);
+      return;
+    }
+
+    const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+    const mesh = pickInfo.pickedMesh;
+    console.log("Picked mesh:", mesh?.name, "metadata:", mesh?.metadata);
+
+    // Clicked on empty space - deselect
+    if (!mesh) {
+      console.log("No mesh picked, deselecting");
+      selectionManager.select(null);
+      setSelectedEntity(null);
+      return;
+    }
+
+    // Find the selectable object
+    let selectable: ISelectable | null = null;
+
+    // TODO: It's so messy here
+    // FIRST check if the mesh has a rootEntity that's selectable
+    if (mesh.metadata?.rootEntity && (mesh.metadata.rootEntity as any).gizmoCapabilities) {
+      console.log("Mesh has selectable rootEntity");
+      selectable = mesh.metadata.rootEntity as ISelectable;
+      selectionManager.select(selectable);
+
+      // If it's an EntityBase, update the selected entity in state
+      if (mesh.metadata.rootEntity instanceof EntityBase) {
+        console.log("rootEntity is EntityBase, selecting in UI");
+        setSelectedEntity(mesh.metadata.rootEntity);
+      } else {
+        setSelectedEntity(null);
+      }
+    }
+    // THEN check if the mesh itself is directly selectable (for BoneControl etc.)
+    else if ((mesh as any).gizmoCapabilities) {
+      console.log("Mesh is directly selectable");
+      selectable = mesh as unknown as ISelectable;
+      selectionManager.select(selectable);
+      
+      // Check if we need to show a special UI for this selection
+      // or if we should use the parent's UI
+      const parentSelection = selectionManager.getParentSelection();
+      if (parentSelection instanceof EntityBase) {
+        setSelectedEntity(parentSelection);
+      } else {
+        setSelectedEntity(null);
+      }
+    }
+    // Nothing selectable found
+    else {
+      console.log("Nothing selectable found, deselecting");
+      selectionManager.select(null);
+      setSelectedEntity(null);
+    }
+  }
+
+  // Handle Ctrl+Click to create a new generative entity
+  const handleCtrlClick = (pointerInfo: BABYLON.PointerInfo, scene: BABYLON.Scene) => {
+    console.log("CtrlClick", pointerInfo, scene);
+    // Cast a ray from the camera through the mouse position
+    const pickInfo = scene.pick(scene.pointerX, scene.pointerY);
+    let position: BABYLON.Vector3;
+
+    if (pickInfo.hit) {
+      // If we hit something, use that point
+      position = pickInfo.pickedPoint!.clone();
+    } else {
+      // Create at the position where the user clicked, but at a fixed distance from camera
+      const camera = scene.activeCamera as BABYLON.ArcRotateCamera;
+      if (!camera) return;
+
+      // Camera center
+      const cameraCenter = camera.getTarget();
+      const cameraPosition = camera.position;
+      const distance = cameraPosition.subtract(cameraCenter).length();
+
+      // Create a ray from the camera through the clicked point on the screen
+      const ray = scene.createPickingRay(
+        scene.pointerX,
+        scene.pointerY,
+        BABYLON.Matrix.Identity(),
+        camera
+      );
+
+      // Calculate position along the ray at the specified distance
+      position = ray.origin.add(ray.direction.scale(distance));
+    }
+
+    // Create entity command using the new EntityFactory
+    const createCommand = new CreateEntityCommand(
+      () => EntityFactory.createEntity(scene, {
+        type: 'generative',
+        position,
+        gnerativeProps: {
+          generationLogs: [],
+        } as GenerativeEntityProps
+      }),
+      scene
+    );
+
+    // Execute command and select the new entity
+    console.log("About to execute command", createCommand);
+    historyManager.executeCommand(createCommand);
+    console.log("Command executed");
+    const newEntity = createCommand.getEntity();
+    console.log("Got entity from command", newEntity);
+    setSelectedEntity(newEntity);
+    if (newEntity) {
+      newEntity.setEnabled(true);
+    } else {
+      console.error("No entity returned from createCommand");
     }
   }
 
@@ -342,7 +428,7 @@ export default function EditorContainer() {
 
   const loadDefaultProject = async (scene: BABYLON.Scene) => {
     try {
-      const url = "/demoAssets/default.json";
+      const url = "/demoAssets/default_empty.json";
       await loadProjectFromUrl(url, scene, (settings: SerializedProjectSettings) => {
         // Apply all settings at once via context
         updateProjectSettings(settings);
@@ -363,6 +449,9 @@ export default function EditorContainer() {
     const scene = new BABYLON.Scene(engine);
     sceneRef.current = scene; // Store reference to scene
 
+    // Register the history manager with the scene
+    registerHistoryManager(scene, historyManager);
+
     // Update context
     setEngine(engine);
     setScene(scene);
@@ -370,8 +459,15 @@ export default function EditorContainer() {
     const init = async (canvas: HTMLCanvasElement) => {
       await initScene(canvas, scene);
       await loadDefaultProject(scene);
-      // Set up gizmo manager
+
+      // Set up gizmo manager and register with scene
       const gizmoManager = initGizmo(scene, historyManager);
+      registerGizmoManager(scene, gizmoManager);
+
+      // Create the selection manager
+      const selectionManager = createSelectionManager(scene);
+
+      // Set gizmo manager for UI state
       setGizmoManager(gizmoManager);
     }
 
@@ -485,6 +581,13 @@ export default function EditorContainer() {
 
       {/* Add the Guide component */}
       <Guide />
+
+      {/* Character Edit Panel */}
+      {selectedEntity && isCharacterEntity(selectedEntity) && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2">
+          <CharacterEditPanel entity={selectedEntity} />
+        </div>
+      )}
     </div>
   );
 } 

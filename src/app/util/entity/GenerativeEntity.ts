@@ -317,7 +317,7 @@ export class GenerativeEntity extends EntityBase {
   /**
    * Deserialize a generative entity from serialized data
    */
-  static deserialize(scene: BABYLON.Scene, data: SerializedGenerativeEntityData): GenerativeEntity {
+  static async deserialize(scene: BABYLON.Scene, data: SerializedGenerativeEntityData): Promise<GenerativeEntity> {
     const position = data.position ? toBabylonVector3(data.position) : undefined;
     const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
     const scaling = data.scaling ? toBabylonVector3(data.scaling) : undefined;
