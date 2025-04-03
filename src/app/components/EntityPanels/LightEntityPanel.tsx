@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 
-import { useOldEditorContext } from '../../context/OldEditorContext';
-import { EntityBase, } from '../../util/entity/EntityBase';
 import { Slider } from '@/components/ui/slider';
 import * as BABYLON from '@babylonjs/core';
 import { LightEntity } from '../../util/entity/LightEntity';
