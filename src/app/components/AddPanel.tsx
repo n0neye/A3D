@@ -143,6 +143,7 @@ const AddPanel: React.FC = () => {
   const characterModels = [
     { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: '/characters/thumbs/mannequin.webp', scale: 1 },
     { url: '/characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: '/characters/thumbs/xbot.webp', scale: 1 },
+    { url: '/characters/cat/cat_orange.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.webp', scale: 0.02 },
     // { url: '/characters/cat/cat_-_walking_scale.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.png', scale: 1 },
   ];
 
@@ -226,14 +227,14 @@ const AddPanel: React.FC = () => {
 
           {/* Characters dropdown menu */}
           {showCharactersMenu && (
-            <div className="absolute left-14 top-0 pl-2">
-              <Card className="p-2 panel-shape  grid grid-cols-2 gap-2 w-48">
+            <div className="absolute left-14 -top-1 pl-2">
+              <Card className="p-2 panel-shape flex flex-row gap-2">
                 {characterModels.map((model) => (
                   <Button
                     key={model.url}
                     variant="ghost"
                     size="sm"
-                    className="flex items-center justify-start gap-2 h-10 w-full mb-1"
+                    className="flex items-center justify-start gap-2 h-10 w-24 mb-1"
                     onClick={() => handleCreateCharacter(model.url, model.name, model.scale)}
                   >
                     {/* <IconUser size={16} />
