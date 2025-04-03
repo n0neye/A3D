@@ -21,8 +21,10 @@ import { ISelectable } from '../../interfaces/ISelectable';
 import { BoneControl } from '../../util/entity/BoneControl';
 import { GenerativeEntityProps } from '../../util/entity/GenerativeEntity';
 import { EventEmitter } from '../utils/EventEmitter';
+import { EditorEngine } from '../EditorEngine';
 
 export class InputManager {
+  private engine: EditorEngine;
   private scene: BABYLON.Scene;
   private selectionManager: SelectionManager;
   private historyManager: HistoryManager;
@@ -31,7 +33,8 @@ export class InputManager {
   // Keyboard state tracking
   private keysPressed: Map<string, boolean> = new Map();
   
-  constructor(scene: BABYLON.Scene, selectionManager: SelectionManager, historyManager: HistoryManager) {
+  constructor(engine: EditorEngine, scene: BABYLON.Scene, selectionManager: SelectionManager, historyManager: HistoryManager) {
+    this.engine = engine;
     this.scene = scene;
     this.selectionManager = selectionManager;
     this.historyManager = historyManager;
@@ -314,9 +317,7 @@ export class InputManager {
     if (event.key === 'Delete') {
       const currentEntity = this.selectionManager.getCurrentSelection();
       if (!currentEntity || !(currentEntity instanceof EntityBase)) return;
-
-      // Emit event to delete entity (implementation will be in EditorEngine)
-      this.events.emit('deleteEntity', currentEntity);
+      this.engine.deleteEntity(currentEntity);
     }
 
     // Handle undo (Ctrl+Z or Command+Z)
@@ -337,16 +338,16 @@ export class InputManager {
     // Handle gizmo mode changes
     switch (event.key.toLowerCase()) {
       case 'w':
-        this.events.emit('gizmoModeChanged', 'position');
+        this.engine.setGizmoMode('position');
         break;
       case 'e':
-        this.events.emit('gizmoModeChanged', 'scale');
+        this.engine.setGizmoMode('scale');
         break;
       case 'r':
-        this.events.emit('gizmoModeChanged', 'rotation');
+        this.engine.setGizmoMode('rotation');
         break;
       case 't':
-        this.events.emit('gizmoModeChanged', 'boundingBox');
+        this.engine.setGizmoMode('boundingBox');
         break;
     }
   }

@@ -30,6 +30,7 @@ import { RenderService } from './services/RenderService';
 import { createSkybox, createWorldGrid } from '../util/editor/editor-util';
 import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
 import { ProjectManager } from './managers/ProjectManager';
+import { DeleteMeshCommand } from '../lib/commands';
 
 
 /**
@@ -62,7 +63,7 @@ export class EditorEngine {
     this.projectManager = new ProjectManager(this);
 
     // Create the input manager and pass references to other managers
-    this.inputManager = new InputManager(scene, this.selectionManager, this.historyManager);
+    this.inputManager = new InputManager(this, scene, this.selectionManager, this.historyManager);
 
     // Create the render service
     this.renderService = new RenderService(scene, this, babylonEngine);
@@ -138,6 +139,12 @@ export class EditorEngine {
   public createEntityDefault(type: EntityType): EntityBase {
     const entity = EntityFactory.createEntityDefault(this.core.getScene(), type);
     return entity;
+  }
+
+  // Delete entity
+  public deleteEntity(entity: EntityBase): void {
+    const deleteCommand = new DeleteMeshCommand(entity, this.gizmoModeManager.getGizmoManager());
+    this.historyManager.executeCommand(deleteCommand);
   }
 
   public executeCommand(command: Command): void {

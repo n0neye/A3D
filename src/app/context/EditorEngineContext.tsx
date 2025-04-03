@@ -38,9 +38,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
     if (canvasRef.current) {
       const engine = EditorEngine.initEngine(canvasRef.current);
 
-      engine.events.on('initialized', () => {
-        setIsInitialized(true);
-      });
+      setIsInitialized(true);
 
       engine.getGizmoModeManager().events.on('gizmoModeChanged', (mode) => {
         setGizmoMode(mode);
@@ -66,7 +64,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
     >
       {children}
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
-      <EngineUIContainer />
+      {isInitialized && <EngineUIContainer />}
       
     </EditorEngineContext.Provider>
   );
