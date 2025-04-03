@@ -15,6 +15,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { EditorEngine } from '../engine/EditorEngine';
 import { EntityBase } from '../util/entity/EntityBase';
+import AddPanel from '../components/AddPanel';
 
 interface EditorEngineContextType {
   engine: EditorEngine;
@@ -61,7 +62,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       }}
     >
       {children}
-      <canvas ref={canvasRef}></canvas>
+      <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
     </EditorEngineContext.Provider>
   );
 }
