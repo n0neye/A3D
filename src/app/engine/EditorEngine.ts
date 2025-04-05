@@ -30,6 +30,7 @@ import { createSkybox, createWorldGrid } from '../util/editor/editor-util';
 import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
 import { ProjectManager } from './managers/ProjectManager';
 import { engineObserver } from './utils/Observer';
+import { EnvironmentManager } from './managers/environmentManager';
 
 
 /**
@@ -47,6 +48,7 @@ export class EditorEngine {
   private inputManager: InputManager;
   private renderService: RenderService;
   private projectManager: ProjectManager;
+  private environmentManager: EnvironmentManager;
 
   public observer = engineObserver;
 
@@ -60,6 +62,7 @@ export class EditorEngine {
     this.selectionManager = new SelectionManager(scene, this.gizmoModeManager.getGizmoManager());
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
+    this.environmentManager = new EnvironmentManager(this);
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(this, scene, this.selectionManager, this.historyManager);
@@ -120,6 +123,10 @@ export class EditorEngine {
 
   public getGizmoModeManager(): GizmoModeManager {
     return this.gizmoModeManager;
+  }
+
+  public getEnvironmentManager(): EnvironmentManager {
+    return this.environmentManager;
   }
 
 

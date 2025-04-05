@@ -18,7 +18,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   entityType: EntityType;
   created: Date;
   engine: EditorEngine;
-  
+
   // ISelectable implementation
   gizmoCapabilities: GizmoCapabilities = {
     allowPosition: true,
@@ -26,7 +26,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
     allowScale: true,
     allowBoundingBox: false
   };
-  
+
   cursorType: SelectableCursorType = 'move';
 
   constructor(
@@ -113,16 +113,16 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   onSelect(): void {
     console.log(`EntityBase.onSelect: Entity selected: ${this.name} (${this.constructor.name})`);
   }
-  
+
   onDeselect(): void {
     console.log(`EntityBase.onDeselect: Entity deselected: ${this.name} (${this.constructor.name})`);
   }
-  
+
   getGizmoTarget(): BABYLON.AbstractMesh | BABYLON.TransformNode {
     console.log(`EntityBase.getGizmoTarget: Returning this entity: ${this.name}`);
     return this; // The entity itself is the target
   }
-  
+
   getId(): string {
     return this.id;
   }
@@ -130,9 +130,9 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   getName(): string {
     return this.name;
   }
-  
+
   applyTransformation(
-    transformType: 'position' | 'rotation' | 'scale', 
+    transformType: 'position' | 'rotation' | 'scale',
     value: BABYLON.Vector3 | BABYLON.Quaternion
   ): void {
     switch (transformType) {
@@ -173,12 +173,14 @@ type Vector3Data = {
   y: number;
   z: number;
 }
-const toBabylonVector3 = (v: Vector3Data): BABYLON.Vector3 => {
+
+export const toBabylonVector3 = (v: Vector3Data): BABYLON.Vector3 => {
   return new BABYLON.Vector3(v.x, v.y, v.z);
 }
-const fromBabylonVector3 = (v: BABYLON.Vector3): Vector3Data => {
+export const fromBabylonVector3 = (v: BABYLON.Vector3): Vector3Data => {
   return { x: v.x, y: v.y, z: v.z };
 }
 
-// Make these utility functions available for export
-export { toBabylonVector3, fromBabylonVector3 };
+export function isEntity(node: BABYLON.Node | null): node is EntityBase {
+  return node instanceof EntityBase;
+}

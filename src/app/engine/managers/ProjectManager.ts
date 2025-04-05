@@ -1,18 +1,25 @@
-import { SerializedProjectSettings, saveProjectToFile, deserializeScene } from "@/app/util/editor/project-util";
 import { EditorEngine } from "../EditorEngine";
-import EventEmitter from "events";
-
+import { Observer } from "@/app/engine/utils/Observer";
+import { SerializedShapeEntityData } from "../entity/ShapeEntity";
+import { SerializedGenerativeEntityData } from "../entity/GenerativeEntity";
+import { CharacterEntity } from "../entity/CharacterEntity";
+import { SerializedCharacterEntityData } from "../entity/CharacterEntity";
+import { GenerativeEntity } from "../entity/GenerativeEntity";
+import { ShapeEntity } from "../entity/ShapeEntity";
+import { LightEntity } from "../entity/LightEntity";
+import { SerializedLightEntityData } from "../entity/LightEntity";
+import { EntityBase, SerializedEntityData, isEntity } from "../entity/EntityBase";
+import { LoraConfig } from "@/app/util/generation/lora";
 export class ProjectManager {
     private engine: EditorEngine;
-    public events: EventEmitter = new EventEmitter();
+    public observers = new Observer<{
+        projectLoaded: { project: SerializedProjectSettings };
+    }>();
 
     constructor(engine: EditorEngine) {
         this.engine = engine;
     }
 
-    public saveProjectToFile(projectSettings: SerializedProjectSettings, projectName: string): void {
-        saveProjectToFile(this.engine.getScene(), projectSettings, projectName);
-    }
 
     // Load project from a file
     public async loadProjectFromFile(
@@ -24,7 +31,7 @@ export class ProjectManager {
                 try {
                     if (event.target && typeof event.target.result === 'string') {
                         const projectData = JSON.parse(event.target.result);
-                        deserializeScene(projectData, this.engine, this.onProjectLoaded);
+                        this.deserializeProject(projectData);
                         resolve();
                     }
                 } catch (error) {
@@ -43,14 +50,189 @@ export class ProjectManager {
     public async loadProjectFromUrl(url: string): Promise<void> {
         const response = await fetch(url);
         const projectData = await response.json();
-        deserializeScene(projectData, this.engine, this.onProjectLoaded);
+        this.deserializeProject(projectData);
     }
 
     onProjectLoaded(project: SerializedProjectSettings): void {
-        this.events.emit('projectLoaded', project);
+        console.log("ProjectManager: onProjectLoaded", project, this.observers);
+        this.observers.notify('projectLoaded', { project });
     }
 
     // TODO: Integrate project-util.ts
+
+    public async saveProjectToFile(
+        ProjectSettings?: SerializedProjectSettings,
+        fileName: string = 'scene-project.mud'
+    ): Promise<void> {
+        const projectData = this.serializeProject(ProjectSettings);
+        const jsonString = JSON.stringify(projectData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/mud' });
+    
+        // Try to use the File System Access API if available (modern browsers)
+        if ('showSaveFilePicker' in window) {
+            try {
+                // @ts-ignore - TypeScript might not recognize this API yet
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'MUD Files',
+                        accept: { 'application/mud': ['.mud'] },
+                    }],
+                });
+    
+                // Create a writable stream
+                // @ts-ignore - TypeScript might not recognize this API yet
+                const writable = await fileHandle.createWritable();
+    
+                // Write the blob to the file
+                // @ts-ignore - TypeScript might not recognize this API yet
+                await writable.write(blob);
+    
+                // Close the file
+                // @ts-ignore - TypeScript might not recognize this API yet
+                await writable.close();
+    
+                return;
+            } catch (err) {
+                // User probably cancelled the save dialog or browser doesn't support it
+                console.log("File System Access API failed, falling back to download method");
+            }
+        } else {
+    
+            // Fallback method for browsers that don't support File System Access API
+            // This doesn't always show a Save As dialog, but we can try to encourage it
+            const url = URL.createObjectURL(blob);
+    
+            // Create and trigger download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+    
+            // Append to body and click (to ensure it works in all browsers)
+            document.body.appendChild(a);
+            a.click();
+    
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+    
+        }
+    }
+
+    serializeProject(
+        ProjectSettings?: SerializedProjectSettings
+    ): any {
+        const scene = this.engine.getScene();
+        const entities: EntityBase[] = [];
+    
+        // Find all entities in the scene
+        scene.rootNodes.forEach(node => {
+            if (isEntity(node) && node.isEnabled()) {
+                entities.push(node);
+            }
+        });
+    
+        // Serialize environment settings
+        const environment = this.engine.getEnvironmentManager().serializeEnvironment();
+    
+        // Create project data structure
+        const project = {
+            version: "1.0.1",
+            timestamp: new Date().toISOString(),
+            entities: entities.map(entity => entity.serialize()),
+            environment: environment,
+            ProjectSettings: ProjectSettings
+        };
+    
+        return project;
+    }
+    
+
+    deserializeProject(
+        data: any,
+    ): void {
+        // Clear existing entities if needed
+        const scene = this.engine.getScene();
+        const existingEntities = scene.rootNodes.filter(node => isEntity(node));
+        // Dispose all children of the existing entities
+        existingEntities.forEach(entity => {
+            if (entity instanceof CharacterEntity) {
+                entity.disposeCharacter();
+            }
+        });
+        existingEntities.forEach(entity => entity.dispose());
+
+        // Apply environment settings if present
+        if (data.environment) {
+            this.engine.getEnvironmentManager().deserializeEnvironment(data.environment, this.engine);
+        }
+
+
+        // Create entities from the saved data
+        if (data.entities && Array.isArray(data.entities)) {
+            // Create entities from serialized data using entity class deserializers
+            data.entities.forEach((entityData: SerializedEntityData) => {
+                try {
+                    // Create the entity based on its type
+                    const entityType = entityData.entityType;
+
+                    switch (entityType) {
+                        case 'light':
+                            LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
+                            break;
+
+                        case 'shape':
+                            ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
+                            break;
+
+                        case 'generative':
+                            GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
+                            break;
+                        case 'character':
+                            CharacterEntity.deserialize(scene, entityData as SerializedCharacterEntityData);
+                            break;
+                        default:
+                            console.warn(`Unknown entity type: ${entityType}`);
+                            break;
+                    }
+
+                } catch (error) {
+                    console.error(`Error creating entity from saved data:`, error, entityData);
+                }
+            });
+        }
+
+        
+        // Notify observers that the project has been loaded
+        this.observers.notify('projectLoaded', { project: data });
+    }
 }
 
 
+
+// Interface for serialized render settings
+export interface SerializedProjectSettings {
+    prompt: string;
+    promptStrength: number;
+    depthStrength: number;
+    noiseStrength: number;
+    selectedAPI: string; // Store API ID as string
+    seed: number;
+    useRandomSeed: boolean;
+    selectedLoras: LoraConfig[];
+    renderLogs: RenderLog[];
+    openOnRendered: boolean;
+}
+
+export interface RenderLog {
+    imageUrl: string;
+    prompt: string;
+    model: string;
+    timestamp: Date;
+    seed?: number;
+    promptStrength?: number;
+    depthStrength?: number;
+    selectedLoras?: any[];
+}

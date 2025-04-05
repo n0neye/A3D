@@ -44,9 +44,7 @@ export const ProjectSettingsProvider: React.FC<{
 
   useEffect(() => {
     if (!engine) return;
-    engine.getProjectManager().events.on('projectLoaded', (project: SerializedProjectSettings) => {
-      setProjectSettings(project);
-    });
+    engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setProjectSettings(project));
   }, [engine]);
 
   const updateProjectSettings = (newSettings: Partial<SerializedProjectSettings>) => {
