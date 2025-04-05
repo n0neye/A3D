@@ -52,7 +52,7 @@ export class ProjectManager {
     private renderLogs: IRenderLog[] = [];
     public observers = new Observer<{
         projectLoaded: { project: IRenderSettings };
-        renderLogsChanged: { renderLogs: IRenderLog[] };
+        renderLogsChanged: { renderLogs: IRenderLog[], isNewRenderLog: boolean };
         renderSettingsChanged: { renderSettings: IRenderSettings };
     }>();
 
@@ -244,8 +244,14 @@ export class ProjectManager {
 
 
         // Notify observers that the project has been loaded
-        this.observers.notify('projectLoaded', { project: data.renderSettings });
-        this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs });
+        if(data.renderSettings) {
+            this.settings = data.renderSettings;
+            this.observers.notify('projectLoaded', { project: data.renderSettings });
+        }
+        if(data.renderLogs) {
+            this.renderLogs = data.renderLogs;
+            this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs, isNewRenderLog: false });
+        }
     }
 
     updateRenderSettings(newSettings: Partial<IRenderSettings>): void {
@@ -254,10 +260,10 @@ export class ProjectManager {
         this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
     }
 
-    addRenderLog(image: IRenderLog): void { 
-        this.renderLogs.push(image);
+    addRenderLog(log: IRenderLog): void { 
+        this.renderLogs.push(log);
         console.log("ProjectManager: addRenderLog", this.renderLogs);
-        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs });
+        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: true });
     }
 }
 

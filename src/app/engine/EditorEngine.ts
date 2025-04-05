@@ -28,8 +28,8 @@ import { createDefaultMaterials } from '../util/editor/material-util';
 import { RenderService } from './services/RenderService';
 import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
 import { ProjectManager } from './managers/ProjectManager';
-import { engineObserver } from './utils/Observer';
 import { EnvironmentManager } from './managers/environmentManager';
+import { Observer } from './utils/Observer';
 
 
 /**
@@ -49,7 +49,8 @@ export class EditorEngine {
   private projectManager: ProjectManager;
   private environmentManager: EnvironmentManager;
 
-  public observer = engineObserver;
+  public observer = new Observer<{
+  }>();
 
   private constructor(canvas: HTMLCanvasElement) {
     console.log("EditorEngine constructor");
@@ -135,7 +136,6 @@ export class EditorEngine {
     console.log(`EditorEngine: selectEntity`, entity !== null, entity !== undefined, this.selectionManager);
     // TODO: We've to get the instance again, as the UI may not have the lastest manager instance
     EditorEngine.getInstance().getSelectionManager().select(entity);
-    EditorEngine.getInstance().observer.notify('entitySelected', { entity });
   }
   public createEntity(options: CreateEntityOptions): EntityBase {
     const entity = EntityFactory.createEntity(this.core.getScene(), options);
@@ -160,7 +160,6 @@ export class EditorEngine {
   // Gizmo Mode Management
   public setGizmoMode(mode: GizmoMode): void {
     this.gizmoModeManager.setGizmoMode(mode);
-    this.observer.notify('gizmoModeChanged', { mode });
   }
 
   public getGizmoMode(): GizmoMode {

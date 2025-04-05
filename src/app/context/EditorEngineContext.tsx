@@ -46,18 +46,12 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       setIsInitialized(true);
 
       // Subscribe to engine events
-      const unsubGizmoMode = engine.observer.subscribe('gizmoModeChanged',
-        ({ mode }) => setGizmoMode(mode)
-      );
+      const unsubGizmoMode = engine.getGizmoModeManager().observers.subscribe('gizmoModeChanged', ({ mode }) => setGizmoMode(mode));
+      const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe('entitySelected', ({ entity }) => setSelectedEntity(entity));
 
-      const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe(
-        'entitySelected',
-        ({ entity }) => setSelectedEntity(entity)
-      );
-
+      // Subscribe to project manager events
       const unsubRenderLogsChanged = engine.getProjectManager().observers.subscribe('renderLogsChanged', ({ renderLogs }) => setRenderLogs(renderLogs));
       const unsubRenderSettingsChanged = engine.getProjectManager().observers.subscribe('renderSettingsChanged', ({ renderSettings }) => setRenderSettings(renderSettings));
-
       const unsubProjectLoaded = engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setRenderSettings(project));
 
       // Return cleanup function

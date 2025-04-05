@@ -3,17 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconArrowRight, IconX, IconDownload, IconSettings } from '@tabler/icons-react';
-import { RenderLog, downloadImage } from '../util/editor/project-util';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { downloadImage } from '../engine/utils/helpers';
+import { IRenderLog } from '../engine/managers/ProjectManager';
 // import { useToast } from "@/components/ui/use-toast";
 
 interface GalleryPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  images: RenderLog[];
+  images: IRenderLog[];
   currentIndex: number;
   onSelectImage: (index: number) => void;
-  onApplySettings: (settings: RenderLog) => void;
+  onApplySettings: (settings: IRenderLog) => void;
 }
 
 const GalleryPanel: React.FC<GalleryPanelProps> = ({

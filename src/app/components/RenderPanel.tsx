@@ -4,7 +4,7 @@ import { addNoiseToImage, resizeImage } from '../util/generation/image-processin
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/generation/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { downloadImage } from '../util/editor/project-util';
+import { downloadImage } from '../engine/utils/helpers';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 // Import Shadcn components
@@ -24,7 +24,7 @@ interface RenderPanelProps {
   onOpenGallery: () => void;
 }
 
-const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
+const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelProps) => {
   // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
   const { engine } = useEditorEngine();
   const { renderSettings, renderLogs } = useEditorEngine();
@@ -101,7 +101,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   }, [prompt, promptStrength, noiseStrength, selectedAPI, selectedLoras]); // Re-create handler when these dependencies change
 
   useEffect(() => {
-    console.log("renderLogs", renderLogs);
+    console.log("renderLogs changed", renderLogs);
     if (renderLogs.length > 0) {
       setImageUrl(renderLogs[renderLogs.length - 1].imageUrl);
     }
@@ -228,21 +228,11 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
 
   const handleSuccessfulRender = (result: any, currentSeed: number) => {
     if (result && result.imageUrl) {
-      // Add the render log to the context
-      addRenderLog({
-        imageUrl: result.imageUrl,
-        prompt: renderSettings.prompt,
-        model: selectedAPI.name,
-        timestamp: new Date(),
-        seed: currentSeed,
-        promptStrength: renderSettings.promptStrength,
-        depthStrength: selectedAPI.useDepthImage ? renderSettings.depthStrength : 0,
-        selectedLoras: renderSettings.selectedLoras,
-      });
-
       // If openOnRendered is true, tell EditorContainer to auto-open when the image is added
-      if (renderSettings.openOnRendered && onOpenGallery) {
-        onOpenGallery();
+      if (renderSettings.openOnRendered && OpenGallery) {
+        setTimeout(() => {
+          OpenGallery();
+        }, 10);
       }
     }
   };
@@ -412,7 +402,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
                     src={imageUrl}
                     alt="Scene Preview"
                     className="w-full h-full object-contain cursor-pointer"
-                    onClick={onOpenGallery}
+                    onClick={OpenGallery}
                   />
                   <Button
                     variant="ghost"

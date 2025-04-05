@@ -2,6 +2,8 @@ import { fal } from "@fal-ai/client";
 import { LoraWeight } from "@fal-ai/client/endpoints";
 import { LoraConfig } from "./lora";
 import { blobToBase64 } from "./image-processing";
+import { IRenderLog } from "@/app/engine/managers/ProjectManager";
+import { EditorEngine } from "@/app/engine/EditorEngine";
 
 // Configure fal.ai client to use the proxy
 fal.config({
@@ -110,26 +112,56 @@ export async function renderImage(params: ImageToImageParams): Promise<ImageToIm
     params.prompt = positivePrompt;
   }
   
+  let result: ImageToImageResult|null = null;
   switch (params.modelApiInfo.id) {
     case 'fal-turbo':
-      return generateFalTurboImage(params);
+      result = await generateFalTurboImage(params);
+      break;
     case 'fast-lcm-diffusion':
-      return generateFalLcmImage(params);
+      result = await generateFalLcmImage(params);
+      break;
     case 'flux-dev':
-      return generateFluxDevImage(params);
+      result = await generateFluxDevImage(params);
+      break;
     case 'flux-pro-depth':
-      return generateFluxProDepthImage(params);
+      result = await generateFluxProDepthImage(params);
+      break;
     case 'flux-lora-depth':
-      return generateFluxLoraDepthImage(params);
+      result = await generateFluxLoraDepthImage(params);
+      break;
     case 'replicate-lcm':
-      return generateReplicateLcmImage(params);
+      result = await generateReplicateLcmImage(params);
+      break;
     case 'fal-ai/flux-control-lora-depth/image-to-image':
-      return generateFluxControlLoraDepthI2I(params);
+      result = await generateFluxControlLoraDepthI2I(params);
+      break;
     case 'fal-ai/flux-control-lora-depth':
-      return generateFluxControlLoraDepthT2I(params);
+      result = await generateFluxControlLoraDepthT2I(params);
+      break;
     default:
-      return generateFalTurboImage(params);
+      result = await generateFalTurboImage(params);
   }
+
+  if (!result) {
+    throw new Error('No result from renderImage');
+  }
+
+  // Add render log
+  const renderLog: IRenderLog = {
+    timestamp: new Date(),
+    imageUrl: result.imageUrl,
+    prompt: params.prompt,
+    model: params.modelApiInfo.name,
+    seed: result.seed,
+    promptStrength: params.promptStrength,
+    depthStrength: params.depthStrength,
+    selectedLoras: params.loras,
+  };
+
+  // Add render log to project manager
+  EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog);
+
+  return result;
 }
 
 // Add a new function for Flux Pro Depth

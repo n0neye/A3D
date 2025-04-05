@@ -15,7 +15,7 @@ import { useEditorEngine } from '../context/EditorEngineContext';
 
 function EngineUIContainer() {
 
-    const { renderLogs, engine } = useEditorEngine();
+    const { renderSettings, renderLogs, engine } = useEditorEngine();
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
     const [isDebugMode, setIsDebugMode] = useState(false);
@@ -27,14 +27,7 @@ function EngineUIContainer() {
     }
 
     // Track when new images are added to renderLogs
-    // TODO: Use event emitter instead of polling
     useEffect(() => {
-        if (renderLogs.length > prevRenderLogsLength.current) {
-            // A new image was added and gallery should open
-            setCurrentGalleryIndex(renderLogs.length - 1);
-            setIsGalleryOpen(true);
-        }
-        // Update previous length
         prevRenderLogsLength.current = renderLogs.length;
     }, [renderLogs.length]);
 
