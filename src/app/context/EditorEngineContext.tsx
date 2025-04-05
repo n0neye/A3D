@@ -39,12 +39,12 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       const engine = EditorEngine.initEngine(canvasRef.current);
       setIsInitialized(true);
       
-      // Type-safe subscriptions
+      // Subscribe to engine events
       const unsubGizmoMode = engine.observer.subscribe('gizmoModeChanged', 
         ({ mode }) => setGizmoMode(mode)
       );
       
-      const unsubEntitySelected = engine.observer.subscribe(
+      const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe(
         'entitySelected', 
         ({ entity }) => setSelectedEntity(entity)
       );

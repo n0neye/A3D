@@ -4,18 +4,24 @@ import { getGizmoManager } from './SceneManagers';
 import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
-import { EventEmitter } from 'events';
+import { Observer } from "@/app/engine/utils/Observer";
 /**
  * Manages selection of objects in the scene
  */
 export class SelectionManager {
+  
+  // Observer for selection events
+  public selectionObserver = new Observer<{
+    entitySelected: { entity: EntityBase | null };
+  }
+  >(); 
+
   private _currentSelection: ISelectable | null = null;
   private _parentSelection: ISelectable | null = null; // Track parent selection separately
   private _scene: BABYLON.Scene;
   private _gizmoManager: BABYLON.GizmoManager;
   private _hoverObserver: BABYLON.Observer<BABYLON.PointerInfo> | null = null;
   private _hoveredMesh: BABYLON.AbstractMesh | null = null;
-  public events: EventEmitter = new EventEmitter();
 
   constructor(scene: BABYLON.Scene, gizmoManager: BABYLON.GizmoManager) {
     this._scene = scene;
@@ -52,9 +58,9 @@ export class SelectionManager {
 
     // Notify the engine context
     if (selectable && selectable instanceof EntityBase) {
-      this.events.emit('entitySelected', selectable);
+      this.selectionObserver.notify('entitySelected', { entity: selectable });
     }else {
-      this.events.emit('entitySelected', null);
+      this.selectionObserver.notify('entitySelected', { entity: null });
     }
     
     // Clear gizmo
