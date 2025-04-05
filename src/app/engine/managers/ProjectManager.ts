@@ -20,12 +20,11 @@ export class ProjectManager {
     ): Promise<void> {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-
             reader.onload = (event) => {
                 try {
                     if (event.target && typeof event.target.result === 'string') {
                         const projectData = JSON.parse(event.target.result);
-                        deserializeScene(projectData, this.engine.getScene(), this.onProjectLoaded);
+                        deserializeScene(projectData, this.engine, this.onProjectLoaded);
                         resolve();
                     }
                 } catch (error) {
@@ -39,6 +38,12 @@ export class ProjectManager {
 
             reader.readAsText(file);
         });
+    }
+
+    public async loadProjectFromUrl(url: string): Promise<void> {
+        const response = await fetch(url);
+        const projectData = await response.json();
+        deserializeScene(projectData, this.engine, this.onProjectLoaded);
     }
 
     onProjectLoaded(project: SerializedProjectSettings): void {

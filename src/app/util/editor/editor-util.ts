@@ -1,17 +1,12 @@
 import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
 import { EntityBase } from "../entity/EntityBase";
-import { EntityFactory } from "../../engine/utils/EntityFactory";
 import { isLightEntity } from "../entity/entityUtils";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation/generation-util';
-import * as Materials from "@babylonjs/materials";
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/engine/managers/HistoryManager";
-import { loadShapeMeshes } from "./shape-util";
-import { createDefaultMaterials } from "./material-util";
-import { CameraManager } from "@/app/engine/managers/CameraManager";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
@@ -52,12 +47,6 @@ export const getEnvironmentObjects = (): EnvironmentObjects => {
 // Default ratio
 const DEFAULT_RATIO: ImageRatio = '16:9';
 
-export const initScene = async (canvas: HTMLCanvasElement, scene: BABYLON.Scene) => {
-
-    // createRatioOverlay
-    createRatioOverlay(scene);
-
-}
 
 export const createSkybox = (scene: BABYLON.Scene) => {
 
@@ -340,188 +329,6 @@ const createDirectionalArrow = (scene: BABYLON.Scene, size: number = 1): BABYLON
 const DEFAULT_FRAME_PADDING = 10; // percentage of screen size
 
 /**
- * Creates a ratio overlay frame for positioning elements for rendering
- * @param scene The Babylon.js scene
- * @returns The created GUI elements
- */
-export const createRatioOverlay = (scene: BABYLON.Scene): void => {
-    // Remove existing overlay if present
-    if (environmentObjects.ratioOverlay) {
-        environmentObjects.ratioOverlay.container.dispose();
-        delete environmentObjects.ratioOverlay;
-    }
-
-    // Create fullscreen UI
-    const advancedTexture = GUI.AdvancedDynamicTexture.CreateFullscreenUI("ratioOverlayUI", true, scene);
-
-    // Create a container to group the frame elements
-    const container = new GUI.Rectangle("ratioFrameContainer");
-    container.thickness = 0;
-    container.background = "transparent";
-    advancedTexture.addControl(container);
-
-    // Create the frame elements (four rectangles for borders)
-    const topBorder = new GUI.Rectangle("topBorder");
-    const rightBorder = new GUI.Rectangle("rightBorder");
-    const bottomBorder = new GUI.Rectangle("bottomBorder");
-    const leftBorder = new GUI.Rectangle("leftBorder");
-
-    // Set properties for all borders
-    [topBorder, rightBorder, bottomBorder, leftBorder].forEach(border => {
-        border.thickness = 0;
-        border.background = "rgba(0, 0, 0, 0.3)"; // Semi-transparent black
-        container.addControl(border);
-    });
-
-    // Store in environment objects with initial padding and ratio
-    environmentObjects.ratioOverlay = {
-        container: advancedTexture,
-        frame: container,
-        padding: DEFAULT_FRAME_PADDING,
-        rightExtraPadding: 0,
-        ratio: DEFAULT_RATIO,
-        borders: {
-            top: topBorder,
-            right: rightBorder,
-            bottom: bottomBorder,
-            left: leftBorder
-        }
-    };
-
-    // Initial sizing
-    updateRatioOverlay(scene);
-
-    // Update when the window is resized
-    window.addEventListener('resize', () => {
-        setTimeout(() => {
-            updateRatioOverlay(scene)
-        }, 1);
-    });
-};
-
-/**
- * Updates the ratio overlay frame to maintain the selected aspect ratio
- * @param scene The Babylon.js scene
- */
-export const updateRatioOverlay = (scene: BABYLON.Scene): void => {
-    if (!environmentObjects.ratioOverlay || !environmentObjects.ratioOverlay.borders) return;
-
-    const { frame, padding, rightExtraPadding, borders, ratio } = environmentObjects.ratioOverlay;
-
-    // Get current engine dimensions
-    const engine = scene.getEngine();
-    const screenWidth = engine.getRenderWidth();
-    const screenHeight = engine.getRenderHeight();
-
-    // Calculate padding in pixels
-    const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
-    const rightExtraPaddingPixels = (rightExtraPadding / 100) * Math.min(screenWidth, screenHeight);
-
-    // Use the ratio from the ratio map instead of hardcoded value
-    const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
-    const targetRatio = ratioWidth / ratioHeight;
-
-    let frameWidth, frameHeight;
-
-    if (screenWidth / screenHeight > targetRatio) {
-        // Screen is wider than the target ratio
-        frameHeight = screenHeight - (paddingPixels * 2);
-        frameWidth = frameHeight * targetRatio;
-    } else {
-        // Screen is taller than the target ratio
-        frameWidth = screenWidth - (paddingPixels * 2) - rightExtraPaddingPixels;
-        frameHeight = frameWidth / targetRatio;
-    }
-
-    // Calculate frame position (centered, but adjusted for extra right padding)
-    const horizontalSpace = screenWidth - frameWidth;
-    const leftPadding = (horizontalSpace - rightExtraPaddingPixels) / 2;
-    const rightPadding = leftPadding + rightExtraPaddingPixels;
-
-    const frameLeft = leftPadding;
-    const frameTop = (screenHeight - frameHeight) / 2;
-
-    // Set container size to match screen
-    frame.width = "100%";
-    frame.height = "100%";
-
-    // Position the borders to create a hollow frame
-
-    // Top border - covers everything above the frame
-    borders.top.width = "100%";
-    borders.top.height = `${frameTop}px`;
-    borders.top.topInPixels = 0;
-    borders.top.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    borders.top.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-
-    // Bottom border - covers everything below the frame
-    borders.bottom.width = "100%";
-    borders.bottom.height = `${frameTop}px`;
-    borders.bottom.topInPixels = frameTop + frameHeight;
-    borders.bottom.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    borders.bottom.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-
-    // Left border - covers left area between top and bottom borders
-    borders.left.width = `${frameLeft}px`;
-    borders.left.height = `${frameHeight}px`;
-    borders.left.leftInPixels = 0;
-    borders.left.topInPixels = frameTop;
-    borders.left.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    borders.left.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-
-    // Right border - covers right area between top and bottom borders
-    borders.right.width = `${rightPadding}px`;
-    borders.right.height = `${frameHeight}px`;
-    borders.right.leftInPixels = frameLeft + frameWidth;
-    borders.right.topInPixels = frameTop;
-    borders.right.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    borders.right.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-};
-
-/**
- * Set the padding for the ratio overlay frame
- * @param padding Padding percentage (0-50)
- * @param scene The Babylon.js scene
- */
-export const setRatioOverlayPadding = (padding: number, scene: BABYLON.Scene): void => {
-    if (!environmentObjects.ratioOverlay) return;
-
-    // Clamp padding to reasonable range
-    const clampedPadding = Math.max(0, Math.min(50, padding));
-
-    // Update padding
-    environmentObjects.ratioOverlay.padding = clampedPadding;
-
-    // Update overlay
-    updateRatioOverlay(scene);
-};
-
-/**
- * Toggle the visibility of the ratio overlay
- * @param visible Whether the overlay should be visible
- */
-export const setRatioOverlayVisibility = (visible: boolean): void => {
-    if (!environmentObjects.ratioOverlay) return;
-
-    environmentObjects.ratioOverlay.frame.isVisible = visible;
-};
-
-/**
- * Set the ratio for the overlay frame
- * @param ratio The aspect ratio to use
- * @param scene The Babylon.js scene
- */
-export const setRatioOverlayRatio = (ratio: ImageRatio, scene: BABYLON.Scene): void => {
-    if (!environmentObjects.ratioOverlay) return;
-
-    // Update ratio
-    environmentObjects.ratioOverlay.ratio = ratio;
-
-    // Update overlay
-    updateRatioOverlay(scene);
-};
-
-/**
  * Get the current dimensions and position of the ratio overlay
  * in scene coordinates
  */
@@ -570,23 +377,6 @@ export const getRatioOverlayDimensions = (scene: BABYLON.Scene): {
     };
 };
 
-/**
- * Set the extra right padding for the ratio overlay frame
- * @param padding Extra right padding percentage (0-50)
- * @param scene The Babylon.js scene
- */
-export const setRatioOverlayRightPadding = (padding: number, scene: BABYLON.Scene): void => {
-    if (!environmentObjects.ratioOverlay) return;
-
-    // Clamp padding to reasonable range
-    const clampedPadding = Math.max(0, Math.min(50, padding));
-
-    // Update padding
-    environmentObjects.ratioOverlay.rightExtraPadding = clampedPadding;
-
-    // Update overlay
-    updateRatioOverlay(scene);
-};
 
 
 export function initGizmo(scene: BABYLON.Scene, historyManager: HistoryManager) {

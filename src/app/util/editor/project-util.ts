@@ -5,12 +5,13 @@ import { ShapeEntity, SerializedShapeEntityData } from "../entity/ShapeEntity";
 import { LightEntity, SerializedLightEntityData } from "../entity/LightEntity";
 import { EntityFactory } from "../../engine/utils/EntityFactory";
 import * as BABYLON from '@babylonjs/core';
-import { getEnvironmentObjects, setRatioOverlayRatio, setRatioOverlayPadding, setRatioOverlayVisibility, setRatioOverlayRightPadding } from './editor-util';
+import { getEnvironmentObjects } from './editor-util';
 import { ImageRatio } from '../generation/generation-util';
 import { API_Info } from '../generation/image-render-api';
 import { LoraConfig } from '../generation/lora';
 import { GenerativeEntityProps } from "../entity/GenerativeEntity";
 import { CharacterEntity, SerializedCharacterEntityData } from "../entity/CharacterEntity";
+import { EditorEngine } from "@/app/engine/EditorEngine";
 
 // Interface for serialized render settings
 export interface SerializedProjectSettings {
@@ -154,7 +155,8 @@ export function serializeEnvironment(scene: BABYLON.Scene): SerializedEnvironmen
 }
 
 // Deserialize and apply environment settings
-export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYLON.Scene): void {
+export function deserializeEnvironment(data: SerializedEnvironment, engine: EditorEngine): void {
+    const scene = engine.getScene();
     const env = getEnvironmentObjects();
 
     // Apply sun settings
@@ -183,13 +185,14 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
     }
 
     // Apply ratio overlay settings
+    const cameraManager = engine.getCameraManager();
     if (data.ratioOverlay && env.ratioOverlay) {
-        setRatioOverlayVisibility(data.ratioOverlay.visible);
-        setRatioOverlayRatio(data.ratioOverlay.ratio, scene);
-        setRatioOverlayPadding(data.ratioOverlay.padding, scene);
+        cameraManager.setRatioOverlayVisibility(data.ratioOverlay.visible);
+        cameraManager.setRatioOverlayRatio(data.ratioOverlay.ratio);
+        cameraManager.setRatioOverlayPadding(data.ratioOverlay.padding);
         
         if (data.ratioOverlay.rightExtraPadding !== undefined) {
-            setRatioOverlayRightPadding(data.ratioOverlay.rightExtraPadding, scene);
+            cameraManager.setRatioOverlayRightPadding(data.ratioOverlay.rightExtraPadding);
         }
     }
 
@@ -242,10 +245,11 @@ export function deserializeEnvironment(data: SerializedEnvironment, scene: BABYL
 // Deserialize a project JSON and recreate all entities in the scene
 export function deserializeScene(
     data: any,
-    scene: BABYLON.Scene,
+    engine: EditorEngine,
     applyProjectSettings?: (settings: SerializedProjectSettings) => void
 ): void {
     // Clear existing entities if needed
+    const scene = engine.getScene();
     const existingEntities = scene.rootNodes.filter(node => isEntity(node));
     // Dispose all children of the existing entities
     existingEntities.forEach(entity => {
@@ -257,7 +261,7 @@ export function deserializeScene(
 
     // Apply environment settings if present
     if (data.environment) {
-        deserializeEnvironment(data.environment, scene);
+        deserializeEnvironment(data.environment, engine);
     }
 
     // Apply project settings if present and callback provided
@@ -425,33 +429,5 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
     
   } catch (error) {
     console.error("Error downloading image:", error);
-  }
-}
-
-// Load project from a URL
-export async function loadProjectFromUrl(
-  url: string,
-  scene: BABYLON.Scene,
-  applyProjectSettings?: (settings: SerializedProjectSettings) => void
-): Promise<void> {
-  try {
-    // Fetch the project data from the URL
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to load project from URL: ${response.status} ${response.statusText}`);
-    }
-    
-    // Parse the JSON data
-    const projectData = await response.json();
-    
-    // Deserialize the scene using the data
-    deserializeScene(projectData, scene, applyProjectSettings);
-    
-    console.log(`Project loaded successfully from ${url}`);
-    return Promise.resolve();
-  } catch (error) {
-    console.error("Error loading project from URL:", error);
-    return Promise.reject(error);
   }
 }
