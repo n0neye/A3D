@@ -1,9 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
-import { getEnvironmentObjects } from './editor-util';
-import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { ShapeType } from '@/app/engine/entity//ShapeEntity';
-import { defaultMaterial } from './material-util';
-import { setupMeshShadows } from './light-util';
+
+let cachedMeshes: Map<string, BABYLON.Mesh> = new Map();
 
 // Add this function to load all shape meshes once
 export async function loadShapeMeshes(scene: BABYLON.Scene): Promise<void> {
@@ -36,7 +34,7 @@ export async function loadShapeMeshes(scene: BABYLON.Scene): Promise<void> {
         }
 
         // Store in environment objects
-        getEnvironmentObjects().cachedShapeMeshes = shapeMeshes;
+        cachedMeshes = shapeMeshes;
 
         console.log(`Successfully cached ${shapeMeshes.size} shape meshes`);
     } catch (error) {
@@ -46,7 +44,6 @@ export async function loadShapeMeshes(scene: BABYLON.Scene): Promise<void> {
 
 export const createShapeMesh = (scene: BABYLON.Scene, shapeType: ShapeType): BABYLON.Mesh => {
     // Try to get the cached mesh from the environment objects
-    const cachedMeshes = getEnvironmentObjects().cachedShapeMeshes;
 
     if (!cachedMeshes) {
         throw new Error("Shape meshes haven't been loaded yet. Using fallback box.");
@@ -61,7 +58,6 @@ export const createShapeMesh = (scene: BABYLON.Scene, shapeType: ShapeType): BAB
         // Make sure it's visible
         clonedMesh.isVisible = true;
         clonedMesh.setEnabled(true);
-
         
         // Return the created mesh
         console.log(`createShapeMesh: ${clonedMesh.name}`);

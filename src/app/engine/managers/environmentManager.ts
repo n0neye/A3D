@@ -1,6 +1,9 @@
+
+import { GridMaterial } from "@babylonjs/materials/grid";
 import { ImageRatio } from "@/app/util/generation/generation-util";
 import * as BABYLON from "@babylonjs/core";
 import { EditorEngine } from "../EditorEngine";
+import { EquiRectangularCubeTexture } from "@babylonjs/core";
 
 interface SerializedEnvironment {
     sun?: {
@@ -38,7 +41,6 @@ export interface EnvironmentObjects {
     background?: BABYLON.Mesh;
     grid?: BABYLON.Mesh;
     shadowGenerators: BABYLON.ShadowGenerator[];
-    cachedShapeMeshes?: Map<string, BABYLON.Mesh>;
 }
 
 export class EnvironmentManager {
@@ -50,6 +52,55 @@ export class EnvironmentManager {
 
     constructor(engine: EditorEngine) {
         this.engine = engine;
+    }
+
+    createDefaultEnvironment(): void {
+        const scene = this.engine.getScene();
+        this.createWorldGrid(scene);              
+        this.createSkybox(scene);
+    }
+
+    createWorldGrid = (
+        scene: BABYLON.Scene,
+        size: number = 100,
+        majorUnitFrequency: number = 10
+    ): BABYLON.Mesh => {
+        // Create a ground mesh for the grid
+        const gridGround = BABYLON.MeshBuilder.CreateGround(
+            "worldGrid",
+            { width: size, height: size, subdivisions: 1 },
+            scene
+        );
+        gridGround.position.y = -0.01;
+    
+        // Create a grid material
+        const gridMaterial = new GridMaterial("gridMaterial", scene);
+        gridMaterial.majorUnitFrequency = majorUnitFrequency;
+        gridMaterial.minorUnitVisibility = 0.45;
+        gridMaterial.gridRatio = 1;
+        gridMaterial.backFaceCulling = false;
+        gridMaterial.mainColor = new BABYLON.Color3(0.2, 0.2, 0.3);
+        gridMaterial.lineColor = new BABYLON.Color3(0.0, 0.7, 1.0);
+        gridMaterial.opacity = 0.8;
+    
+        // Apply the material to the grid
+        gridGround.material = gridMaterial;
+    
+        // Set grid to be non-pickable and not receive shadows
+        gridGround.isPickable = false;
+        gridGround.receiveShadows = true; // Enable receiving shadows for the grid
+    
+        // Store in environment objects
+        this.envObjects.grid = gridGround;
+    
+        return gridGround;
+    };
+
+    createSkybox = (scene: BABYLON.Scene) => {
+        // Create environment texture
+        const texture = new EquiRectangularCubeTexture("./demoAssets/skybox/qwantani_puresky_4k.jpg", scene, 100);
+        scene.environmentTexture = texture;
+        scene.createDefaultSkybox(texture, true, 100, 0.5, true);
     }
 
     public getEnvObjects(): EnvironmentObjects {

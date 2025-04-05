@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
-import { environmentObjects } from '@/app/util/editor/editor-util';
+import { EditorEngine } from '../EditorEngine';
 /**
  * Entity that represents lights in the scene
  */
@@ -105,6 +105,7 @@ export class LightEntity extends EntityBase {
     shadowGenerator.blurScale = 0.5;
 
     // Add to our global list
+    const environmentObjects = EditorEngine.getInstance().getEnvironmentManager().getEnvObjects();
     environmentObjects.shadowGenerators.push(shadowGenerator);
   }
 

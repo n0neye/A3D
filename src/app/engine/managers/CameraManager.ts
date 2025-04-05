@@ -287,6 +287,50 @@ export class CameraManager {
       ratio: this.getRatioOverlayRatio()
     };
   }
+  public getRatioOverlayDimensions = (): {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null => {
+    if (!this.ratioOverlay || !this.ratioOverlay.borders) return null;
+
+    const { padding, rightExtraPadding, ratio } = this.ratioOverlay;
+    const babylonEngine = this.scene.getEngine();
+    const screenWidth = babylonEngine.getRenderWidth();
+    const screenHeight = babylonEngine.getRenderHeight();
+
+    // Calculate padding in pixels
+    const paddingPixels = (padding / 100) * Math.min(screenWidth, screenHeight);
+    const rightExtraPaddingPixels = (rightExtraPadding / 100) * Math.min(screenWidth, screenHeight);
+
+    // Use the ratio from the ratio map
+    const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
+    const targetRatio = ratioWidth / ratioHeight;
+
+    let frameWidth, frameHeight;
+
+    if (screenWidth / screenHeight > targetRatio) {
+      // Screen is wider than the target ratio
+      frameHeight = screenHeight - (paddingPixels * 2);
+      frameWidth = frameHeight * targetRatio;
+    } else {
+      // Screen is taller than the target ratio
+      frameWidth = screenWidth - (paddingPixels * 2) - rightExtraPaddingPixels;
+      frameHeight = frameWidth / targetRatio;
+    }
+
+    // Calculate position (centered on screen, but adjusted for extra right padding)
+    const horizontalSpace = screenWidth - frameWidth;
+    const leftPadding = (horizontalSpace - rightExtraPaddingPixels) / 2;
+
+    return {
+      left: leftPadding,
+      top: (screenHeight - frameHeight) / 2,
+      width: frameWidth,
+      height: frameHeight
+    };
+  };
 
   // Add a method to handle window/canvas resize
   public onResize(): void {

@@ -26,7 +26,6 @@ import { loadShapeMeshes } from '../util/editor/shape-util';
 import { InputManager } from './managers/InputManager';
 import { createDefaultMaterials } from '../util/editor/material-util';
 import { RenderService } from './services/RenderService';
-import { createSkybox, createWorldGrid } from '../util/editor/editor-util';
 import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
 import { ProjectManager } from './managers/ProjectManager';
 import { engineObserver } from './utils/Observer';
@@ -82,8 +81,6 @@ export class EditorEngine {
     const scene = EditorEngine.instance.core.getScene();
     loadShapeMeshes(scene);
     createDefaultMaterials(scene);
-    createSkybox(scene);
-    createWorldGrid(scene, 20, 10);
 
     return EditorEngine.instance;
   }
