@@ -1,12 +1,12 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, fromBabylonVector3, SerializedEntityData, toBabylonVector3 } from './EntityBase';
-import { ImageRatio, ProgressCallback } from '../generation/generation-util';
+import { ImageRatio, ProgressCallback } from '@/app/util/generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
-import { defaultPBRMaterial, placeholderMaterial } from '../editor/material-util';
-import { setupMeshShadows } from '../editor/light-util';
-import { createShapeMesh } from '../editor/shape-util';
-import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '../generation/3d-generation-util';
-import { doGenerateRealtimeImage, GenerationResult } from '../generation/realtime-generation-util';
+import { defaultPBRMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
+import { setupMeshShadows } from '@/app/util/editor/light-util';
+import { createShapeMesh } from '@/app/util/editor/shape-util';
+import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '@/app/util/generation/3d-generation-util';
+import { doGenerateRealtimeImage, GenerationResult } from '@/app/util/generation/realtime-generation-util';
 
 /**
  * Entity that represents AI-generated content
@@ -388,7 +388,7 @@ export class GenerativeEntity extends EntityBase {
 
     console.log(`Generating 3D model using ${apiProvider} API...`);
     const scene = this.engine.getScene();
-    const gizmoManager = this.engine.getGizmoManager();
+    const gizmoManager = this.engine.getGizmoModeManager().getGizmoManager();
 
     // Call the appropriate provider's implementation
     switch (apiProvider) {

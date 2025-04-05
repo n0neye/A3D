@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase } from '../util/entity/EntityBase';
-import { isGenerativeEntity, isLightEntity, isShapeEntity } from '../util/entity/entityUtils';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
+import { isGenerativeEntity, isLightEntity, isShapeEntity } from '@/app/engine/entity/entityUtils';
 import { HistoryManager } from '../engine/managers/HistoryManager';
 import { UpdateGizmoVisibility } from '../util/editor/editor-util';
 import { getSelectionManager, SelectionManager } from '../engine/managers/SelectionManager';

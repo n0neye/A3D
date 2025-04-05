@@ -4,12 +4,12 @@ import { Scene } from '@babylonjs/core/scene';
 import { Skeleton } from '@babylonjs/core/Bones/skeleton';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
-import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
-import { BoneRotationCommand } from '../../lib/commands';
-import { useOldEditorContext } from '../../context/OldEditorContext';
-import { HistoryManager } from '../../engine/managers/HistoryManager';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/util/analytics';
+import { BoneRotationCommand } from '@/app/lib/commands';
+import { useOldEditorContext } from '@/app/context/OldEditorContext';
+import { HistoryManager } from '@/app/engine/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
-import { setupMeshShadows } from '../editor/light-util';
+import { setupMeshShadows } from '@/app/util/editor/light-util';
 
 export interface CharacterEntityProps {
     url: string;

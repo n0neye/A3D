@@ -2,8 +2,8 @@ import { fal, Result } from "@fal-ai/client";
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/loaders/glTF";
 import { get3DSimulationData, getImageSimulationData, isSimulating } from "../simulation-data";
-import { GenerationLog, GenerativeEntity } from '../entity/GenerativeEntity';
-import { EntityBase } from '../entity/EntityBase';
+import { GenerationLog, GenerativeEntity } from '@/app/engine/entity//GenerativeEntity';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 

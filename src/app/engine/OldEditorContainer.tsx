@@ -16,18 +16,18 @@ import { useProjectSettings } from '../context/ProjectSettingsContext';
 import GalleryPanel from '../components/GalleryPanel';
 import { DeleteMeshCommand, TransformCommand, CreateEntityCommand, CreateEntityAsyncCommand } from '../lib/commands';
 import { EntityFactory } from './utils/EntityFactory';
-import { duplicateEntity } from '../util/entity/entityUtils';
+import { duplicateEntity } from '@/app/engine/entity/entityUtils';
 import Guide from '../components/Guide';
 import { availableAPIs } from '../util/generation/image-render-api';
 import { RenderLog, SerializedProjectSettings, loadProjectFromUrl } from '../util/editor/project-util';
-import { GenerativeEntityProps } from '../util/entity/GenerativeEntity';
-import { EntityBase } from '../util/entity/EntityBase';
+import { GenerativeEntityProps } from '@/app/engine/entity/GenerativeEntity';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
 import CharacterEditPanel from '../components/CharacterEditPanel';
-import { isCharacterEntity } from '../util/entity/entityUtils';
+import { isCharacterEntity } from '@/app/engine/entity/entityUtils';
 import { registerGizmoManager, registerHistoryManager } from './managers/SceneManagers';
 import { createSelectionManager, getSelectionManager } from './managers/SelectionManager';
 import { ISelectable } from '../interfaces/ISelectable';
-import { BoneControl } from '../util/entity/BoneControl';
+import { BoneControl } from '@/app/engine/entity/BoneControl';
 
 // Temp hack to handle e and r key presses
 let isWKeyPressed = false;

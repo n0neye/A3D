@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects } from './editor-util';
-import { EntityBase } from '../entity/EntityBase';
-import { ShapeType } from '../entity/ShapeEntity';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
+import { ShapeType } from '@/app/engine/entity//ShapeEntity';
 import { defaultMaterial } from './material-util';
 import { setupMeshShadows } from './light-util';
 

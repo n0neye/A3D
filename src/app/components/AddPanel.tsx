@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useOldEditorContext } from '../context/OldEditorContext';
-import { EntityType, } from '../util/entity/EntityBase';
-import { ShapeType } from '../util/entity/ShapeEntity';
+import { EntityType, } from '@/app/engine/entity/EntityBase';
+import { ShapeType } from '@/app/engine/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';

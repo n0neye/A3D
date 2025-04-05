@@ -9,8 +9,8 @@ import { setupMeshShadows } from "../editor/light-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "../storage-util";
 import { defaultPBRMaterial } from "../editor/material-util";
-import { GenerativeEntity } from "../entity/GenerativeEntity";
-import { loadModel } from "../entity/GenerativeEntity";
+import { GenerativeEntity } from "@/app/engine/entity//GenerativeEntity";
+import { loadModel } from "@/app/engine/entity//GenerativeEntity";
 
 
 /**

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
-import { isEntity } from '../util/entity/entityUtils';
+import { isEntity } from '@/app/engine/entity/entityUtils';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
 export default function FileMenu() {

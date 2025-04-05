@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
-import { environmentObjects } from '../editor/editor-util';
+import { environmentObjects } from '@/app/util/editor/editor-util';
 /**
  * Entity that represents lights in the scene
  */

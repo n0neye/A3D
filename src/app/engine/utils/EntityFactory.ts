@@ -1,12 +1,12 @@
 import * as BABYLON from '@babylonjs/core';
-import { EntityBase, EntityType } from '../../util/entity/EntityBase';
-import { GenerativeEntity, GenerativeEntityProps } from '../../util/entity/GenerativeEntity';
-import { ShapeEntity, ShapeEntityProps } from '../../util/entity/ShapeEntity';
-import { LightEntity, LightProps } from '../../util/entity/LightEntity';
-import { CharacterEntity, CharacterEntityProps } from '../../util/entity/CharacterEntity'
+import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
+import { GenerativeEntity, GenerativeEntityProps } from '@/app/engine/entity/GenerativeEntity';
+import { ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/ShapeEntity';
+import { LightEntity, LightProps } from '@/app/engine/entity/LightEntity';
+import { CharacterEntity, CharacterEntityProps } from '@/app/engine/entity/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
 import { CreateEntityAsyncCommand } from '@/app/lib/commands';
-import { duplicateEntity } from '@/app/util/entity/entityUtils';
+import { duplicateEntity } from '@/app/engine/entity/entityUtils';
 import { EditorEngine } from '../EditorEngine';
 import { DeleteMeshCommand } from '@/app/lib/commands';
 

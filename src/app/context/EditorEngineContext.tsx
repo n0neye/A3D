@@ -14,7 +14,7 @@
  */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { EditorEngine } from '../engine/EditorEngine';
-import { EntityBase } from '../util/entity/EntityBase';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
 import EngineUIContainer from '../components/EngineUIContainer';
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 

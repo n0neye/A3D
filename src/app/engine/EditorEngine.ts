@@ -19,7 +19,7 @@ import * as BABYLON from '@babylonjs/core';
 import { BabylonCore } from './core/BabylonCore';
 import { CameraManager } from './managers/CameraManager';
 import { SelectionManager } from './managers/SelectionManager';
-import { EntityBase, EntityType } from '../util/entity/EntityBase';
+import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
 import { EntityFactory, CreateEntityOptions } from './utils/EntityFactory';
 import { Command, HistoryManager } from './managers/HistoryManager';
 import { loadShapeMeshes } from '../util/editor/shape-util';

@@ -1,7 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { Command } from '../engine/managers/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
-import { EntityBase } from '../util/entity/EntityBase';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { usePostHog } from 'posthog-js/react';
 
 // Base class for mesh transform operations

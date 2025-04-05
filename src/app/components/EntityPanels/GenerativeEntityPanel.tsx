@@ -6,7 +6,7 @@ import { GenerationResult } from '../../util/generation/realtime-generation-util
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
-import { GenerativeEntity, GenerationStatus } from '../../util/entity/GenerativeEntity';
+import { GenerativeEntity, GenerationStatus } from '@/app/engine/entity/GenerativeEntity';
 
 import { ImageRatio } from "../../util/generation/generation-util";
 

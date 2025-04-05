@@ -1,9 +1,9 @@
 import * as BABYLON from '@babylonjs/core';
 import { ISelectable } from '../../interfaces/ISelectable';
 import { getGizmoManager } from './SceneManagers';
-import { CharacterEntity } from '../../util/entity/CharacterEntity';
-import { BoneControl } from '../../util/entity/BoneControl';
-import { EntityBase } from '@/app/util/entity/EntityBase';
+import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
+import { BoneControl } from '@/app/engine/entity/BoneControl';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { EventEmitter } from 'events';
 /**
  * Manages selection of objects in the scene

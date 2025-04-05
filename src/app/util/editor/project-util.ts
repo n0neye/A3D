@@ -1,16 +1,16 @@
-import { isEntity } from "../entity/entityUtils";
-import { EntityBase, SerializedEntityData } from "../entity/EntityBase";
-import { GenerativeEntity, SerializedGenerativeEntityData } from "../entity/GenerativeEntity";
-import { ShapeEntity, SerializedShapeEntityData } from "../entity/ShapeEntity";
-import { LightEntity, SerializedLightEntityData } from "../entity/LightEntity";
+import { isEntity } from "@/app/engine/entity//entityUtils";
+import { EntityBase, SerializedEntityData } from "@/app/engine/entity/EntityBase";
+import { GenerativeEntity, SerializedGenerativeEntityData } from "@/app/engine/entity//GenerativeEntity";
+import { ShapeEntity, SerializedShapeEntityData } from "@/app/engine/entity//ShapeEntity";
+import { LightEntity, SerializedLightEntityData } from "@/app/engine/entity//LightEntity";
 import { EntityFactory } from "../../engine/utils/EntityFactory";
 import * as BABYLON from '@babylonjs/core';
 import { getEnvironmentObjects } from './editor-util';
 import { ImageRatio } from '../generation/generation-util';
 import { API_Info } from '../generation/image-render-api';
 import { LoraConfig } from '../generation/lora';
-import { GenerativeEntityProps } from "../entity/GenerativeEntity";
-import { CharacterEntity, SerializedCharacterEntityData } from "../entity/CharacterEntity";
+import { GenerativeEntityProps } from "@/app/engine/entity//GenerativeEntity";
+import { CharacterEntity, SerializedCharacterEntityData } from "@/app/engine/entity//CharacterEntity";
 import { EditorEngine } from "@/app/engine/EditorEngine";
 
 // Interface for serialized render settings

@@ -3,7 +3,7 @@
  * This replaces the string-based event emitter with typed event subscription.
  */
 
-import { EntityBase } from "@/app/util/entity/EntityBase";
+import { EntityBase } from "@/app/engine/entity/EntityBase";
 import { GizmoMode } from "../managers/GizmoModeManager";
 import { ImageRatio } from "@/app/util/generation/generation-util";
 

@@ -1,8 +1,8 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
-import { createShapeMesh } from '../editor/shape-util';
-import { defaultMaterial } from '../editor/material-util';
-import { setupMeshShadows } from '../editor/light-util';
+import { createShapeMesh } from '@/app/util/editor/shape-util';
+import { defaultMaterial } from '@/app/util/editor/material-util';
+import { setupMeshShadows } from '@/app/util/editor/light-util';
 
 /**
  * Entity that represents primitive shapes

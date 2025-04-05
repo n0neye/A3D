@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 
 import { Slider } from '@/components/ui/slider';
 import * as BABYLON from '@babylonjs/core';
-import { LightEntity } from '../../util/entity/LightEntity';
+import { LightEntity } from '@/app/engine/entity/LightEntity';
 
 function LightEntityPanel(props: { entity: LightEntity }) {
     // State for light settings
