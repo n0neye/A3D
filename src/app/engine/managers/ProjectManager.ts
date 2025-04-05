@@ -11,9 +11,19 @@ import { SerializedLightEntityData } from "../entity/LightEntity";
 import { EntityBase, SerializedEntityData, isEntity } from "../entity/EntityBase";
 import { LoraConfig } from "@/app/util/generation/lora";
 import { availableAPIs } from "@/app/util/generation/image-render-api";
-import { defaultSettings } from "@/app/context/ProjectSettingsContext";
+import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
 // Interface for serialized render settings
-export interface IProjectSettings {
+
+interface IProjectData {
+    version: string;
+    timestamp: string;
+    entities: SerializedEntityData[];
+    environment: any;
+    renderSettings: IRenderSettings;
+    renderLogs: IRenderLog[];
+}
+
+export interface IRenderSettings {
     prompt: string;
     promptStrength: number;
     depthStrength: number;
@@ -22,7 +32,6 @@ export interface IProjectSettings {
     seed: number;
     useRandomSeed: boolean;
     selectedLoras: LoraConfig[];
-    renderLogs: IRenderLog[];
     openOnRendered: boolean;
 }
 
@@ -34,14 +43,17 @@ export interface IRenderLog {
     seed?: number;
     promptStrength?: number;
     depthStrength?: number;
-    selectedLoras?: any[];
+    selectedLoras?: LoraConfig[];
 }
 
 export class ProjectManager {
     private engine: EditorEngine;
-    private settings: IProjectSettings = defaultSettings;
+    private settings: IRenderSettings = defaultSettings;
+    private renderLogs: IRenderLog[] = [];
     public observers = new Observer<{
-        projectLoaded: { project: IProjectSettings };
+        projectLoaded: { project: IRenderSettings };
+        renderLogsChanged: { renderLogs: IRenderLog[] };
+        renderSettingsChanged: { renderSettings: IRenderSettings };
     }>();
 
     constructor(engine: EditorEngine) {
@@ -80,7 +92,7 @@ export class ProjectManager {
         this.deserializeProject(projectData);
     }
 
-    onProjectLoaded(project: IProjectSettings): void {
+    onProjectLoaded(project: IRenderSettings): void {
         console.log("ProjectManager: onProjectLoaded", project, this.observers);
         this.observers.notify('projectLoaded', { project });
     }
@@ -90,7 +102,7 @@ export class ProjectManager {
     public async saveProjectToFile(
         fileName: string = 'scene-project.mud'
     ): Promise<void> {
-        const projectData = this.serializeProject(this.settings);
+        const projectData = this.serializeProject();
         const jsonString = JSON.stringify(projectData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/mud' });
 
@@ -148,8 +160,7 @@ export class ProjectManager {
     }
 
     serializeProject(
-        settings: IProjectSettings
-    ): any {
+    ): IProjectData {
         const scene = this.engine.getScene();
         const entities: EntityBase[] = [];
 
@@ -164,19 +175,21 @@ export class ProjectManager {
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
 
         // Create project data structure
-        const project = {
+        const project:IProjectData = {
             version: "1.0.1",
             timestamp: new Date().toISOString(),
             entities: entities.map(entity => entity.serialize()),
             environment: environment,
-            ProjectSettings: settings
+            renderSettings: this.settings,
+            renderLogs: this.renderLogs
         };
 
         return project;
     }
 
+
     deserializeProject(
-        data: any,
+        data: IProjectData,
     ): void {
         // Clear existing entities if needed
         const scene = this.engine.getScene();
@@ -231,11 +244,20 @@ export class ProjectManager {
 
 
         // Notify observers that the project has been loaded
-        this.observers.notify('projectLoaded', { project: data });
+        this.observers.notify('projectLoaded', { project: data.renderSettings });
+        this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs });
     }
 
-    updateProjectSettings(newSettings: Partial<IProjectSettings>): void {
+    updateRenderSettings(newSettings: Partial<IRenderSettings>): void {
         this.settings = { ...this.settings, ...newSettings };
+        console.log("ProjectManager: updateRenderSettings", this.settings);
+        this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
+    }
+
+    addRenderLog(image: IRenderLog): void { 
+        this.renderLogs.push(image);
+        console.log("ProjectManager: addRenderLog", this.renderLogs);
+        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs });
     }
 }
 

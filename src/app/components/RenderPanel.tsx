@@ -5,7 +5,6 @@ import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/generation/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { downloadImage } from '../util/editor/project-util';
-import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 // Import Shadcn components
@@ -17,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { useEditorEngine } from '../context/EditorEngineContext';
+import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
@@ -27,7 +27,7 @@ interface RenderPanelProps {
 const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
   const { engine } = useEditorEngine();
-  const { ProjectSettings, updateProjectSettings, addRenderLog } = useProjectSettings();
+  const { renderSettings, renderLogs } = useEditorEngine();
 
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -45,33 +45,40 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     seed,
     useRandomSeed,
     selectedLoras,
-    renderLogs,
     openOnRendered
-  } = ProjectSettings;
+  } = renderSettings;
 
   // Find the selected API object from its ID in the context
   const [selectedAPI, setSelectedAPI] = useState(() => {
-    const api = availableAPIs.find(api => api.id === ProjectSettings.selectedAPI);
+    const api = availableAPIs.find(api => api.id === renderSettings.selectedAPI);
     return api || availableAPIs[0];
   });
 
   // Style panel state
   const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
 
+  const updateRenderSettings = (newSettings: Partial<IRenderSettings>) => {
+    engine.getProjectManager().updateRenderSettings(newSettings);
+  };
+
+  const addRenderLog = (image: IRenderLog) => {
+    engine.getProjectManager().addRenderLog(image);
+  };
+
   // Update functions that modify the context
-  const setPrompt = (value: string) => updateProjectSettings({ prompt: value });
-  const setPromptStrength = (value: number) => updateProjectSettings({ promptStrength: value });
-  const setDepthStrength = (value: number) => updateProjectSettings({ depthStrength: value });
-  const setNoiseStrength = (value: number) => updateProjectSettings({ noiseStrength: value });
-  const setSeed = (value: number) => updateProjectSettings({ seed: value });
-  const setUseRandomSeed = (value: boolean) => updateProjectSettings({ useRandomSeed: value });
-  const setSelectedLoras = (loras: LoraConfig[]) => updateProjectSettings({ selectedLoras: loras });
-  const setOpenOnRendered = (value: boolean) => updateProjectSettings({ openOnRendered: value });
+  const setPrompt = (value: string) => updateRenderSettings({ prompt: value });
+  const setPromptStrength = (value: number) => updateRenderSettings({ promptStrength: value });
+  const setDepthStrength = (value: number) => updateRenderSettings({ depthStrength: value });
+  const setNoiseStrength = (value: number) => updateRenderSettings({ noiseStrength: value });
+  const setSeed = (value: number) => updateRenderSettings({ seed: value });
+  const setUseRandomSeed = (value: boolean) => updateRenderSettings({ useRandomSeed: value });
+  const setSelectedLoras = (loras: LoraConfig[]) => updateRenderSettings({ selectedLoras: loras });
+  const setOpenOnRendered = (value: boolean) => updateRenderSettings({ openOnRendered: value });
 
   // Instead, modify the setSelectedAPI function to update context at the same time
   const handleAPIChange = (newAPI: API_Info) => {
     setSelectedAPI(newAPI);
-    updateProjectSettings({ selectedAPI: newAPI.id });
+    updateRenderSettings({ selectedAPI: newAPI.id });
   };
 
   // Add keyboard shortcut for Ctrl/Cmd+Enter
@@ -224,17 +231,17 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       // Add the render log to the context
       addRenderLog({
         imageUrl: result.imageUrl,
-        prompt: ProjectSettings.prompt,
+        prompt: renderSettings.prompt,
         model: selectedAPI.name,
         timestamp: new Date(),
         seed: currentSeed,
-        promptStrength: ProjectSettings.promptStrength,
-        depthStrength: selectedAPI.useDepthImage ? ProjectSettings.depthStrength : 0,
-        selectedLoras: ProjectSettings.selectedLoras,
+        promptStrength: renderSettings.promptStrength,
+        depthStrength: selectedAPI.useDepthImage ? renderSettings.depthStrength : 0,
+        selectedLoras: renderSettings.selectedLoras,
       });
 
       // If openOnRendered is true, tell EditorContainer to auto-open when the image is added
-      if (ProjectSettings.openOnRendered && onOpenGallery) {
+      if (renderSettings.openOnRendered && onOpenGallery) {
         onOpenGallery();
       }
     }
@@ -381,7 +388,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         isOpen={isStylePanelOpen}
         onClose={() => setIsStylePanelOpen(false)}
         onSelectStyle={handleSelectStyle}
-        selectedLoraIds={selectedLoras.map((lora: LoraConfig) => lora.info.id)}
+        selectedLoraIds={selectedLoras ? selectedLoras.map((lora: LoraConfig) => lora.info.id) : []}
       />
 
       <div className={`fixed right-4 h-full flex justify-center items-center ${isDebugMode ? 'right-80' : ''}`}>

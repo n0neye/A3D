@@ -15,6 +15,8 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { EditorEngine } from '../engine/EditorEngine';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
+import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
+import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
 type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 
@@ -23,6 +25,8 @@ interface EditorEngineContextType {
   isInitialized: boolean;
   selectedEntity: EntityBase | null;
   gizmoMode: GizmoMode;
+  renderSettings: IRenderSettings;
+  renderLogs: IRenderLog[];
 }
 
 const EditorEngineContext = createContext<EditorEngineContextType | null>(null);
@@ -32,27 +36,37 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
   const [gizmoMode, setGizmoMode] = useState<GizmoMode>('position');
+  const [renderSettings, setRenderSettings] = useState<IRenderSettings>(defaultSettings);
+  const [renderLogs, setRenderLogs] = useState<IRenderLog[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (canvasRef.current) {
       const engine = EditorEngine.initEngine(canvasRef.current);
       setIsInitialized(true);
-      
+
       // Subscribe to engine events
-      const unsubGizmoMode = engine.observer.subscribe('gizmoModeChanged', 
+      const unsubGizmoMode = engine.observer.subscribe('gizmoModeChanged',
         ({ mode }) => setGizmoMode(mode)
       );
-      
+
       const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe(
-        'entitySelected', 
+        'entitySelected',
         ({ entity }) => setSelectedEntity(entity)
       );
-      
+
+      const unsubRenderLogsChanged = engine.getProjectManager().observers.subscribe('renderLogsChanged', ({ renderLogs }) => setRenderLogs(renderLogs));
+      const unsubRenderSettingsChanged = engine.getProjectManager().observers.subscribe('renderSettingsChanged', ({ renderSettings }) => setRenderSettings(renderSettings));
+
+      const unsubProjectLoaded = engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setRenderSettings(project));
+
       // Return cleanup function
       return () => {
         unsubGizmoMode();
         unsubEntitySelected();
+        unsubProjectLoaded();
+        unsubRenderLogsChanged();
+        unsubRenderSettingsChanged();
       };
     }
   }, [canvasRef.current]);
@@ -70,12 +84,14 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         isInitialized,
         selectedEntity,
         gizmoMode,
+        renderSettings: renderSettings,
+        renderLogs,
       }}
     >
-      {children}
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
+      {children}
       {isInitialized && <EngineUIContainer />}
-      
+
     </EditorEngineContext.Provider>
   );
 }

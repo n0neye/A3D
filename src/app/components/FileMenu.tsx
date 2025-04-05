@@ -4,24 +4,22 @@ import React, { useRef, useEffect } from 'react';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 import { isEntity } from '@/app/engine/entity/EntityBase';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
 export default function FileMenu() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { ProjectSettings, updateProjectSettings } = useProjectSettings();
-  const { engine } = useEditorEngine();
+  const { renderSettings, engine } = useEditorEngine();
 
   const handleSaveProject = () => {
     const projectName = `proj-${new Date().toISOString().split('T')[0]}.mud`;
-    engine.getProjectManager().saveProjectToFile(ProjectSettings, projectName);
+    engine.getProjectManager().saveProjectToFile(projectName);
 
     // Track save event
     trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
       entities_count: engine.getScene().rootNodes.filter(node => isEntity(node)).length,
-      has_settings: !!ProjectSettings,
+      has_settings: !!renderSettings,
     });
   }
 
@@ -79,7 +77,7 @@ export default function FileMenu() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [ProjectSettings]); // Re-attach when scene or settings change
+  }, [renderSettings]); // Re-attach when scene or settings change
 
   return (
     <div className="flex gap-2 items-center">

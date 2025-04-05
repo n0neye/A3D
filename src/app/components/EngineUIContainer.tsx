@@ -8,14 +8,14 @@ import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
 import RenderPanel from './RenderPanel';
 import { useEffect, useRef, useState } from 'react';
-import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { availableAPIs } from '../util/generation/image-render-api';
 import { IRenderLog } from '@/app/engine/managers/ProjectManager';
+import { useEditorEngine } from '../context/EditorEngineContext';
 
 
 function EngineUIContainer() {
 
-    const { ProjectSettings, updateProjectSettings } = useProjectSettings();
+    const { renderLogs, engine } = useEditorEngine();
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
     const [isDebugMode, setIsDebugMode] = useState(false);
@@ -29,14 +29,14 @@ function EngineUIContainer() {
     // Track when new images are added to renderLogs
     // TODO: Use event emitter instead of polling
     useEffect(() => {
-        if (ProjectSettings.renderLogs.length > prevRenderLogsLength.current) {
+        if (renderLogs.length > prevRenderLogsLength.current) {
             // A new image was added and gallery should open
-            setCurrentGalleryIndex(ProjectSettings.renderLogs.length - 1);
+            setCurrentGalleryIndex(renderLogs.length - 1);
             setIsGalleryOpen(true);
         }
         // Update previous length
-        prevRenderLogsLength.current = ProjectSettings.renderLogs.length;
-    }, [ProjectSettings.renderLogs.length]);
+        prevRenderLogsLength.current = renderLogs.length;
+    }, [renderLogs.length]);
 
     const handleApplyRenderSettings = (renderLog: IRenderLog) => {
         // Extract settings from the renderLog
@@ -50,7 +50,7 @@ function EngineUIContainer() {
             selectedAPI: availableAPIs.find(api => api.name === renderLog.model)?.id || availableAPIs[0].id
         };
         // Update the project settings
-        updateProjectSettings(settings);
+        engine.getProjectManager().updateRenderSettings(settings);
     };
 
 
@@ -80,7 +80,7 @@ function EngineUIContainer() {
             <GalleryPanel
                 isOpen={isGalleryOpen}
                 onClose={() => setIsGalleryOpen(false)}
-                images={ProjectSettings.renderLogs}
+                images={renderLogs}
                 currentIndex={currentGalleryIndex}
                 onSelectImage={setCurrentGalleryIndex}
                 onApplySettings={handleApplyRenderSettings}

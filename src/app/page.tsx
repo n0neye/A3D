@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { EditorProvider } from './context/OldEditorContext';
 import EngineContainer from './engine/OldEditorContainer';
-import { ProjectSettingsProvider } from './context/ProjectSettingsContext';
 import { Laptop } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditorEngineProvider } from './context/EditorEngineContext';
+import EngineUIContainer from './components/EngineUIContainer';
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
@@ -68,12 +68,8 @@ export default function Home() {
 
   return (
     <EditorEngineProvider>
-      {/* <EditorProvider> */}
-        <ProjectSettingsProvider>
-          {/* <EngineContainer /> */}
-          <></>
-        </ProjectSettingsProvider>
-      {/* </EditorProvider> */}
+      < >
+      </>
     </EditorEngineProvider>
   );
 }
