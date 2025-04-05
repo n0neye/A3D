@@ -174,7 +174,7 @@ export class InputManager {
     );
 
     // If we picked a bone control, select the bone and return
-    if (bonePickInfo.hit && bonePickInfo.pickedMesh && bonePickInfo.pickedMesh instanceof BoneControl) {
+    if (bonePickInfo.hit && bonePickInfo.pickedMesh && bonePickInfo.pickedMesh instanceof BoneControl && bonePickInfo.pickedMesh.isPickable) {
       console.log("Bone picked:", bonePickInfo.pickedMesh.name);
       const boneControl = bonePickInfo.pickedMesh as BoneControl;
       boneControl.character.selectBone(boneControl);
@@ -190,7 +190,7 @@ export class InputManager {
     // Clicked on empty space - deselect
     if (!mesh) {
       console.log("No mesh picked, deselecting");
-      this.selectionManager.select(null);
+      this.selectionManager.deselectAll();
       return;
     }
 
@@ -212,7 +212,7 @@ export class InputManager {
     // Nothing selectable found
     else {
       console.log("Nothing selectable found, deselecting");
-      this.selectionManager.select(null);
+      this.selectionManager.deselectAll();
     }
   }
   

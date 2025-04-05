@@ -5,6 +5,7 @@ import { LightEntity } from '@/app/engine/entity/LightEntity';
 import GenerativeEntityPanel from './GenerativeEntityPanel';
 import { GenerativeEntity } from '@/app/engine/entity/GenerativeEntity';
 import LightEntityPanel from './LightEntityPanel';
+import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
 
 
 const EntityPanel: React.FC = () => {
@@ -26,6 +27,7 @@ const EntityPanel: React.FC = () => {
     >
       {selectedEntity instanceof GenerativeEntity && <GenerativeEntityPanel entity={selectedEntity} />}
       {selectedEntity instanceof LightEntity && <LightEntityPanel entity={selectedEntity} />}
+      {selectedEntity instanceof CharacterEntity && <div>Character Entity</div>}
     </div>
   );
 };

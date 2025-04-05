@@ -97,7 +97,10 @@ const AddPanel: React.FC = () => {
           name: modelName + '-' + uuidv4(),
         },
         scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale),
-        onLoaded: engine.selectEntity
+        onLoaded: (entity) => {
+          console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
+          EditorEngine.getInstance().selectEntity(entity);
+        }
       }),
     );
 

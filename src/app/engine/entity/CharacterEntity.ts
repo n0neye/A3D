@@ -332,6 +332,7 @@ export class CharacterEntity extends EntityBase {
         // Update visibility of bone controls
         this._boneMap.forEach(({ control }) => {
             control.isVisible = visible;
+            control.isPickable = visible;
         });
 
         // Update visibility of bone lines

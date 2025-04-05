@@ -2,6 +2,7 @@ import * as BABYLON from '@babylonjs/core';
 import { GizmoManager } from '@babylonjs/core';
 import { Observer } from '../utils/Observer';
 export type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
+
 export class GizmoModeManager {
     private scene: BABYLON.Scene;
     private gizmoManager: GizmoManager;
