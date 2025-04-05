@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 import { CharacterEntity } from './CharacterEntity';
 import { BoneRotationCommand } from '../../lib/commands';
+import { EditorEngine } from '../EditorEngine';
 
 /**
  * A mesh that represents a bone for manipulation
@@ -109,8 +110,6 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     console.log(`BoneControl.onSelect: Bone selected: ${this.bone.name}`);
     this.rotation = this.bone.rotation;
 
-    
-
     // Set up gizmo rotation observers
     const gizmoManager = this._getGizmoManager();
     if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
@@ -151,12 +150,12 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
 
   // Helper to get the gizmo manager
   private _getGizmoManager(): BABYLON.GizmoManager | null {
-    return this.getScene().metadata?.gizmoManager || null;
+    return EditorEngine.getInstance().getGizmoModeManager().getGizmoManager();
   }
 
   // Helper to get the history manager
   private _getHistoryManager() {
-    return this.getScene().metadata?.historyManager || null;
+    return EditorEngine.getInstance().getHistoryManager();
   }
 
   // Handle the start of gizmo rotation
