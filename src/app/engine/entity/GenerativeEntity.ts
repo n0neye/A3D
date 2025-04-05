@@ -7,6 +7,7 @@ import { setupMeshShadows } from '@/app/util/editor/light-util';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
 import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '@/app/util/generation/3d-generation-util';
 import { doGenerateRealtimeImage, GenerationResult } from '@/app/util/generation/realtime-generation-util';
+import { EditorEngine } from '../EditorEngine';
 
 /**
  * Entity that represents AI-generated content

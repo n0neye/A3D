@@ -1,11 +1,13 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { ShapeEntityProps } from './ShapeEntity';
-import { GenerativeEntityProps } from './GenerativeEntity';
-import { LightProps } from './LightEntity';
+import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from './ShapeEntity';
+import { GenerativeEntity, SerializedGenerativeEntityData } from './GenerativeEntity';
+import { LightEntity, SerializedLightEntityData } from './LightEntity';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 import { EditorEngine } from '../../engine/EditorEngine';
+import { SerializedCharacterEntityData } from './CharacterEntity';
+import { CharacterEntity } from './CharacterEntity';
 /**
  * Base class for all entities in the scene
  * Extends TransformNode with common functionality
@@ -83,8 +85,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
    * Base deserialization method (to be implemented in derived classes)
    */
   static async deserialize(scene: BABYLON.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
-    // Base implementation to be overridden by subclasses
-    return null;
+    throw new Error(`EntityBase.deserialize: Not implemented`);
   }
 
   /**

@@ -104,18 +104,18 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   // Style panel handlers
   const handleSelectStyle = (lora: LoraInfo) => {
     // Only add if not already present
-    if (!selectedLoras.some(l => l.info.id === lora.id)) {
+    if (!selectedLoras.some((config: LoraConfig) => config.info.id === lora.id)) {
       setSelectedLoras([...selectedLoras, { info: lora, strength: 0.5 }]);
     }
   };
 
   const handleRemoveStyle = (id: string) => {
-    setSelectedLoras(selectedLoras.filter(lora => lora.info.id !== id));
+    setSelectedLoras(selectedLoras.filter((lora: LoraConfig) => lora.info.id !== id));
   };
 
   const handleUpdateStyleStrength = (id: string, strength: number) => {
     setSelectedLoras(
-      selectedLoras.map(lora =>
+      selectedLoras.map((lora: LoraConfig) =>
         lora.info.id === id ? { ...lora, strength } : lora
       )
     );
@@ -137,7 +137,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
 
     return (
       <div className="space-y-3">
-        {selectedLoras.map(loraConfig => (
+        {selectedLoras.map((loraConfig: LoraConfig) => (
           <Card key={loraConfig.info.id} className="bg-card border-border p-1 flex flex-row items-center">
             <div className="h-14 w-14 mr-2 overflow-hidden rounded">
               <img
@@ -381,7 +381,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         isOpen={isStylePanelOpen}
         onClose={() => setIsStylePanelOpen(false)}
         onSelectStyle={handleSelectStyle}
-        selectedLoraIds={selectedLoras.map(lora => lora.info.id)}
+        selectedLoraIds={selectedLoras.map((lora: LoraConfig) => lora.info.id)}
       />
 
       <div className={`fixed right-4 h-full flex justify-center items-center ${isDebugMode ? 'right-80' : ''}`}>

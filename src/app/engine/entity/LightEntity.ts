@@ -212,4 +212,8 @@ export class LightEntity extends EntityBase {
     }
     super.dispose();
   }
+
+  public static isLightEntity(entity: EntityBase): entity is LightEntity {
+    return entity.entityType === 'light';
+  }
 } 

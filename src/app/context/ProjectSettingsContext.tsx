@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { SerializedProjectSettings } from '../util/editor/project-util';
+import { SerializedProjectSettings, RenderLog } from '@/app/engine/managers/ProjectManager';
 import { availableAPIs } from '../util/generation/image-render-api';
-import { RenderLog } from '../util/editor/project-util';
 import { useEditorEngine } from './EditorEngineContext';
 
 // Default settings

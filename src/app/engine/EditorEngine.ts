@@ -53,6 +53,7 @@ export class EditorEngine {
   public observer = engineObserver;
 
   private constructor(canvas: HTMLCanvasElement) {
+    console.log("EditorEngine constructor");
     this.core = new BabylonCore(canvas);
 
     const scene = this.core.getScene();
@@ -72,6 +73,7 @@ export class EditorEngine {
   }
 
   public static initEngine(canvas: HTMLCanvasElement): EditorEngine {
+    console.log("EditorEngine initEngine");
     if (!EditorEngine.instance) {
       EditorEngine.instance = new EditorEngine(canvas);
     }

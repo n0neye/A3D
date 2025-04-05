@@ -1,12 +1,12 @@
 import * as BABYLON from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials/grid";
 import { EntityBase } from "@/app/engine/entity/EntityBase";
-import { isLightEntity } from "@/app/engine/entity/entityUtils";
 import * as GUI from '@babylonjs/gui';
 import { ImageRatio, RATIO_MAP } from '../generation/generation-util';
 import { EquiRectangularCubeTexture } from "@babylonjs/core";
 import { TransformCommand } from "@/app/lib/commands";
 import { HistoryManager } from "@/app/engine/managers/HistoryManager";
+import { LightEntity } from "@/app/engine/entity/LightEntity";
 // Store environment objects
 export interface EnvironmentObjects {
     sun?: BABYLON.DirectionalLight;
@@ -469,12 +469,11 @@ export const UpdateGizmoVisibility = (visible: boolean, scene: BABYLON.Scene) =>
     if (!scene) return;
 
     // Hide/show light entity gizmos
-    const lightEntities = scene.rootNodes.filter(node => node instanceof EntityBase && isLightEntity(node));
-
+    const lightEntities = scene.rootNodes.filter(node => node instanceof EntityBase && LightEntity.isLightEntity(node));
 
     lightEntities.forEach(entity => {
         // You'll need to add a visualMesh to LightEntity or update this logic
-        if ('gizmoMesh' in entity && entity.gizmoMesh) {
+        if (entity.gizmoMesh) {
             entity.gizmoMesh.isVisible = visible;
         }
     });

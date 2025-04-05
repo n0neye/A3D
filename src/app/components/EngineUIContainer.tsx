@@ -10,7 +10,7 @@ import RenderPanel from './RenderPanel';
 import { useEffect, useRef, useState } from 'react';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { availableAPIs } from '../util/generation/image-render-api';
-import { RenderLog } from '../util/editor/project-util';
+import { RenderLog } from '@/app/engine/managers/ProjectManager';
 
 
 function EngineUIContainer() {

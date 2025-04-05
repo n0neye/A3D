@@ -1,9 +1,9 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
-import { GenerativeEntity, GenerativeEntityProps } from '@/app/engine/entity/GenerativeEntity';
-import { ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/ShapeEntity';
-import { LightEntity, LightProps } from '@/app/engine/entity/LightEntity';
-import { CharacterEntity, CharacterEntityProps } from '@/app/engine/entity/CharacterEntity'
+import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/app/engine/entity/GenerativeEntity';
+import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/ShapeEntity';
+import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine/entity/LightEntity';
+import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } from '@/app/engine/entity/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
 import { CreateEntityAsyncCommand } from '@/app/lib/commands';
 import { duplicateEntity } from '@/app/engine/entity/entityUtils';
@@ -101,9 +101,26 @@ export class EntityFactory {
     const duplicateCommand = new CreateEntityAsyncCommand(
       async () => {
         console.log("Creating duplicate entity", entity.getEntityType(), entity.metadata?.aiData?.aiObjectType);
-        const duplicate = await duplicateEntity(entity, scene);
-        duplicate.position.x += 0.2;
-        return duplicate;
+        // const duplicate = await duplicateEntity(entity, scene);
+
+
+        const serializedEntityData = entity.serialize();
+
+        let newEntity: EntityBase | null = null;
+        if (serializedEntityData.entityType === 'generative') {
+          newEntity = await GenerativeEntity.deserialize(scene, serializedEntityData as SerializedGenerativeEntityData);
+        } else if (serializedEntityData.entityType === 'shape') {
+          newEntity = await ShapeEntity.deserialize(scene, serializedEntityData as SerializedShapeEntityData);
+        } else if (serializedEntityData.entityType === 'light') {
+          newEntity = await LightEntity.deserialize(scene, serializedEntityData as SerializedLightEntityData);
+        } else if (serializedEntityData.entityType === 'character') {
+          newEntity = await CharacterEntity.deserialize(scene, serializedEntityData as SerializedCharacterEntityData);
+        } else {
+          throw new Error(`Unknown entity type: ${serializedEntityData.entityType}`);
+        }
+
+        newEntity.position.x += 0.2;
+        return newEntity;
       },
       scene
     );

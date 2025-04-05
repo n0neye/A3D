@@ -20,7 +20,6 @@ export class ProjectManager {
         this.engine = engine;
     }
 
-
     // Load project from a file
     public async loadProjectFromFile(
         file: File,
@@ -149,7 +148,6 @@ export class ProjectManager {
         return project;
     }
     
-
     deserializeProject(
         data: any,
     ): void {
