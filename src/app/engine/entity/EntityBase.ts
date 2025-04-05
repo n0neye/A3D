@@ -1,13 +1,8 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from './ShapeEntity';
-import { GenerativeEntity, SerializedGenerativeEntityData } from './GenerativeEntity';
-import { LightEntity, SerializedLightEntityData } from './LightEntity';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 import { EditorEngine } from '../../engine/EditorEngine';
-import { SerializedCharacterEntityData } from './CharacterEntity';
-import { CharacterEntity } from './CharacterEntity';
 /**
  * Base class for all entities in the scene
  * Extends TransformNode with common functionality

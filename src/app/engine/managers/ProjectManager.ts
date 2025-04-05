@@ -10,10 +10,52 @@ import { LightEntity } from "../entity/LightEntity";
 import { SerializedLightEntityData } from "../entity/LightEntity";
 import { EntityBase, SerializedEntityData, isEntity } from "../entity/EntityBase";
 import { LoraConfig } from "@/app/util/generation/lora";
+import { availableAPIs } from "@/app/util/generation/image-render-api";
+// Interface for serialized render settings
+export interface IProjectSettings {
+    prompt: string;
+    promptStrength: number;
+    depthStrength: number;
+    noiseStrength: number;
+    selectedAPI: string; // Store API ID as string
+    seed: number;
+    useRandomSeed: boolean;
+    selectedLoras: LoraConfig[];
+    renderLogs: IRenderLog[];
+    openOnRendered: boolean;
+}
+
+export interface IRenderLog {
+    imageUrl: string;
+    prompt: string;
+    model: string;
+    timestamp: Date;
+    seed?: number;
+    promptStrength?: number;
+    depthStrength?: number;
+    selectedLoras?: any[];
+}
+
+// Default settings
+export const defaultSettings: IProjectSettings = {
+    prompt: '',
+    promptStrength: 0.9,
+    depthStrength: 0.9,
+    noiseStrength: 0,
+    selectedAPI: availableAPIs[0].id,
+    seed: Math.floor(Math.random() * 2147483647),
+    useRandomSeed: true,
+    selectedLoras: [],
+    renderLogs: [],
+    openOnRendered: true
+  };
+
+  
 export class ProjectManager {
     private engine: EditorEngine;
+    private settings: IProjectSettings = defaultSettings;
     public observers = new Observer<{
-        projectLoaded: { project: SerializedProjectSettings };
+        projectLoaded: { project: IProjectSettings };
     }>();
 
     constructor(engine: EditorEngine) {
@@ -52,7 +94,7 @@ export class ProjectManager {
         this.deserializeProject(projectData);
     }
 
-    onProjectLoaded(project: SerializedProjectSettings): void {
+    onProjectLoaded(project: IProjectSettings): void {
         console.log("ProjectManager: onProjectLoaded", project, this.observers);
         this.observers.notify('projectLoaded', { project });
     }
@@ -60,10 +102,9 @@ export class ProjectManager {
     // TODO: Integrate project-util.ts
 
     public async saveProjectToFile(
-        ProjectSettings?: SerializedProjectSettings,
         fileName: string = 'scene-project.mud'
     ): Promise<void> {
-        const projectData = this.serializeProject(ProjectSettings);
+        const projectData = this.serializeProject(this.settings);
         const jsonString = JSON.stringify(projectData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/mud' });
     
@@ -121,7 +162,7 @@ export class ProjectManager {
     }
 
     serializeProject(
-        ProjectSettings?: SerializedProjectSettings
+        settings: IProjectSettings
     ): any {
         const scene = this.engine.getScene();
         const entities: EntityBase[] = [];
@@ -142,7 +183,7 @@ export class ProjectManager {
             timestamp: new Date().toISOString(),
             entities: entities.map(entity => entity.serialize()),
             environment: environment,
-            ProjectSettings: ProjectSettings
+            ProjectSettings: settings
         };
     
         return project;
@@ -206,31 +247,11 @@ export class ProjectManager {
         // Notify observers that the project has been loaded
         this.observers.notify('projectLoaded', { project: data });
     }
+
+    updateProjectSettings(newSettings: Partial<IProjectSettings>): void {
+        this.settings = { ...this.settings, ...newSettings };
+    }
 }
 
 
 
-// Interface for serialized render settings
-export interface SerializedProjectSettings {
-    prompt: string;
-    promptStrength: number;
-    depthStrength: number;
-    noiseStrength: number;
-    selectedAPI: string; // Store API ID as string
-    seed: number;
-    useRandomSeed: boolean;
-    selectedLoras: LoraConfig[];
-    renderLogs: RenderLog[];
-    openOnRendered: boolean;
-}
-
-export interface RenderLog {
-    imageUrl: string;
-    prompt: string;
-    model: string;
-    timestamp: Date;
-    seed?: number;
-    promptStrength?: number;
-    depthStrength?: number;
-    selectedLoras?: any[];
-}

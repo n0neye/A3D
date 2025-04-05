@@ -1,27 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { SerializedProjectSettings, RenderLog } from '@/app/engine/managers/ProjectManager';
+import { defaultSettings, IProjectSettings, IRenderLog } from '@/app/engine/managers/ProjectManager';
 import { availableAPIs } from '../util/generation/image-render-api';
 import { useEditorEngine } from './EditorEngineContext';
 
-// Default settings
-const defaultSettings: SerializedProjectSettings = {
-  prompt: '',
-  promptStrength: 0.9,
-  depthStrength: 0.9,
-  noiseStrength: 0,
-  selectedAPI: availableAPIs[0].id,
-  seed: Math.floor(Math.random() * 2147483647),
-  useRandomSeed: true,
-  selectedLoras: [],
-  renderLogs: [],
-  openOnRendered: true
-};
 
 // Define the context interface
 interface ProjectSettingsContextType {
-  ProjectSettings: SerializedProjectSettings;
-  updateProjectSettings: (settings: Partial<SerializedProjectSettings>) => void;
-  addRenderLog: (image: RenderLog) => void;
+  ProjectSettings: IProjectSettings;
+  updateProjectSettings: (settings: Partial<IProjectSettings>) => void;
+  addRenderLog: (image: IRenderLog) => void;
 }
 
 // Create context with default values
@@ -39,23 +26,25 @@ export const ProjectSettingsProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const { engine } = useEditorEngine();
-  const [ProjectSettings, setProjectSettings] = useState<SerializedProjectSettings>(defaultSettings);
+  const [tempProjectSettings, setTempProjectSettings] = useState<IProjectSettings>(defaultSettings);
 
   useEffect(() => {
     if (!engine) return;
-    engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setProjectSettings(project));
+    engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setTempProjectSettings(project));
   }, [engine]);
 
-  const updateProjectSettings = (newSettings: Partial<SerializedProjectSettings>) => {
-    setProjectSettings(prev => ({
+  const updateProjectSettings = (newSettings: Partial<IProjectSettings>) => {
+    console.log("ProjectSettingsContext: updateProjectSettings", newSettings);
+    engine.getProjectManager().updateProjectSettings(newSettings);
+    setTempProjectSettings(prev => ({
       ...prev,
       ...newSettings
     }));
   };
 
-  const addRenderLog = (image: RenderLog) => {
-    console.log("ProjectSettingsContext: addRenderLog", ProjectSettings.renderLogs.length, image);
-    setProjectSettings(prev => ({
+  const addRenderLog = (image: IRenderLog) => {
+    console.log("ProjectSettingsContext: addRenderLog", tempProjectSettings.renderLogs.length, image);
+    setTempProjectSettings(prev => ({
       ...prev,
       renderLogs: [...prev.renderLogs, image]
     }));
@@ -64,7 +53,7 @@ export const ProjectSettingsProvider: React.FC<{
   return (
     <ProjectSettingsContext.Provider
       value={{
-        ProjectSettings,
+        ProjectSettings: tempProjectSettings,
         updateProjectSettings,
         addRenderLog
       }}

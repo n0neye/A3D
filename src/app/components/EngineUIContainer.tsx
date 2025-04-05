@@ -10,7 +10,7 @@ import RenderPanel from './RenderPanel';
 import { useEffect, useRef, useState } from 'react';
 import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { availableAPIs } from '../util/generation/image-render-api';
-import { RenderLog } from '@/app/engine/managers/ProjectManager';
+import { IRenderLog } from '@/app/engine/managers/ProjectManager';
 
 
 function EngineUIContainer() {
@@ -38,7 +38,7 @@ function EngineUIContainer() {
         prevRenderLogsLength.current = ProjectSettings.renderLogs.length;
     }, [ProjectSettings.renderLogs.length]);
 
-    const handleApplyRenderSettings = (renderLog: RenderLog) => {
+    const handleApplyRenderSettings = (renderLog: IRenderLog) => {
         // Extract settings from the renderLog
         const settings = {
             prompt: renderLog.prompt,
