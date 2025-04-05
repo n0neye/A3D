@@ -52,6 +52,7 @@ export class EnvironmentManager {
 
     constructor(engine: EditorEngine) {
         this.engine = engine;
+        this.createDefaultEnvironment();
     }
 
     createDefaultEnvironment(): void {

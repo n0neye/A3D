@@ -1,7 +1,20 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { defaultSettings, IProjectSettings, IRenderLog } from '@/app/engine/managers/ProjectManager';
-import { availableAPIs } from '../util/generation/image-render-api';
+import {  IProjectSettings, IRenderLog } from '@/app/engine/managers/ProjectManager';
 import { useEditorEngine } from './EditorEngineContext';
+import { availableAPIs } from '../util/generation/image-render-api';
+
+export const defaultSettings: IProjectSettings = {
+  prompt: '',
+  promptStrength: 0.9,
+  depthStrength: 0.9,
+  noiseStrength: 0,
+  selectedAPI: availableAPIs[0].id,
+  seed: Math.floor(Math.random() * 2147483647),
+  useRandomSeed: true,
+  selectedLoras: [],
+  renderLogs: [],
+  openOnRendered: true
+};
 
 
 // Define the context interface

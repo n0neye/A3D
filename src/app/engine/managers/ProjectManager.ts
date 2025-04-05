@@ -11,6 +11,7 @@ import { SerializedLightEntityData } from "../entity/LightEntity";
 import { EntityBase, SerializedEntityData, isEntity } from "../entity/EntityBase";
 import { LoraConfig } from "@/app/util/generation/lora";
 import { availableAPIs } from "@/app/util/generation/image-render-api";
+import { defaultSettings } from "@/app/context/ProjectSettingsContext";
 // Interface for serialized render settings
 export interface IProjectSettings {
     prompt: string;
@@ -36,21 +37,6 @@ export interface IRenderLog {
     selectedLoras?: any[];
 }
 
-// Default settings
-export const defaultSettings: IProjectSettings = {
-    prompt: '',
-    promptStrength: 0.9,
-    depthStrength: 0.9,
-    noiseStrength: 0,
-    selectedAPI: availableAPIs[0].id,
-    seed: Math.floor(Math.random() * 2147483647),
-    useRandomSeed: true,
-    selectedLoras: [],
-    renderLogs: [],
-    openOnRendered: true
-  };
-
-  
 export class ProjectManager {
     private engine: EditorEngine;
     private settings: IProjectSettings = defaultSettings;
@@ -107,7 +93,7 @@ export class ProjectManager {
         const projectData = this.serializeProject(this.settings);
         const jsonString = JSON.stringify(projectData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/mud' });
-    
+
         // Try to use the File System Access API if available (modern browsers)
         if ('showSaveFilePicker' in window) {
             try {
@@ -119,45 +105,45 @@ export class ProjectManager {
                         accept: { 'application/mud': ['.mud'] },
                     }],
                 });
-    
+
                 // Create a writable stream
                 // @ts-ignore - TypeScript might not recognize this API yet
                 const writable = await fileHandle.createWritable();
-    
+
                 // Write the blob to the file
                 // @ts-ignore - TypeScript might not recognize this API yet
                 await writable.write(blob);
-    
+
                 // Close the file
                 // @ts-ignore - TypeScript might not recognize this API yet
                 await writable.close();
-    
+
                 return;
             } catch (err) {
                 // User probably cancelled the save dialog or browser doesn't support it
                 console.log("File System Access API failed, falling back to download method");
             }
         } else {
-    
+
             // Fallback method for browsers that don't support File System Access API
             // This doesn't always show a Save As dialog, but we can try to encourage it
             const url = URL.createObjectURL(blob);
-    
+
             // Create and trigger download
             const a = document.createElement('a');
             a.href = url;
             a.download = fileName;
-    
+
             // Append to body and click (to ensure it works in all browsers)
             document.body.appendChild(a);
             a.click();
-    
+
             // Clean up
             setTimeout(() => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 100);
-    
+
         }
     }
 
@@ -166,17 +152,17 @@ export class ProjectManager {
     ): any {
         const scene = this.engine.getScene();
         const entities: EntityBase[] = [];
-    
+
         // Find all entities in the scene
         scene.rootNodes.forEach(node => {
             if (isEntity(node) && node.isEnabled()) {
                 entities.push(node);
             }
         });
-    
+
         // Serialize environment settings
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
-    
+
         // Create project data structure
         const project = {
             version: "1.0.1",
@@ -185,10 +171,10 @@ export class ProjectManager {
             environment: environment,
             ProjectSettings: settings
         };
-    
+
         return project;
     }
-    
+
     deserializeProject(
         data: any,
     ): void {
@@ -243,7 +229,7 @@ export class ProjectManager {
             });
         }
 
-        
+
         // Notify observers that the project has been loaded
         this.observers.notify('projectLoaded', { project: data });
     }
