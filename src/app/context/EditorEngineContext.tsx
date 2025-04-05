@@ -57,6 +57,12 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
     }
   }, [canvasRef.current]);
 
+  useEffect(() => {
+    if (isInitialized) {
+      console.log(`EditorEngineContext: isInitialized:`, isInitialized);
+    }
+  }, [isInitialized]);
+
   return (
     <EditorEngineContext.Provider
       value={{

@@ -44,7 +44,15 @@ export class CharacterEntity extends EntityBase {
     private _boneMaterialAlpha = 0.5;
     private _linesMaterialAlpha = 0.7;
 
-    constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps, options?: { scaling?: BABYLON.Vector3 }) {
+    constructor(
+        scene: Scene,
+        name: string,
+        id: string,
+        props: CharacterEntityProps,
+        options?: {
+            scaling?: BABYLON.Vector3,
+            onLoaded?: (entity: EntityBase) => void
+        }) {
         super(name, scene, 'character', {
             id: id,
             position: new BABYLON.Vector3(0, 0, 0),
@@ -58,10 +66,10 @@ export class CharacterEntity extends EntityBase {
             modelUrl: props.url
         });
 
-        this._loadingPromise = this._loadCharacter();
+        this._loadingPromise = this._loadCharacter(options?.onLoaded);
     }
 
-    private async _loadCharacter(): Promise<void> {
+    private async _loadCharacter(onLoaded?: (entity: EntityBase) => void): Promise<void> {
         if (!this.characterProps.url) {
             console.error("CharacterEntity: No URL provided.");
             return;
@@ -132,6 +140,7 @@ export class CharacterEntity extends EntityBase {
                 this.position = BABYLON.Vector3.Zero();
 
                 setupMeshShadows(this.rootMesh);
+                onLoaded?.(this);
             } else {
                 console.error(`No meshes loaded for character ${this.name}`);
             }
@@ -344,10 +353,10 @@ export class CharacterEntity extends EntityBase {
      */
     public onDeselect(): void {
         console.log(`CharacterEntity: Deselected ${this.name}`);
-        
+
         // Hide bone visualization
         this.showBoneVisualization(false);
-        
+
         // Deselect any selected bone
         this._deselectBone();
     }
@@ -547,15 +556,15 @@ export class CharacterEntity extends EntityBase {
     public highlightBone(boneControl: BoneControl): void {
         // Use existing _deselectBone first to clear any current selection
         this._deselectBone();
-        
+
         // Find the bone from the control
         const boneName = boneControl.bone.name;
         const bone = this.skeleton?.bones.find(b => b.name === boneName);
-        
+
         if (bone) {
             this._selectedBone = bone;
             this._selectedControl = boneControl;
-            
+
             // Apply highlight material if available
             if (this._highlightMaterial && boneControl.material) {
                 boneControl.material = this._highlightMaterial;
@@ -572,7 +581,7 @@ export class CharacterEntity extends EntityBase {
             if (this._selectedControl.material && this._visualizationMaterial) {
                 this._selectedControl.material = this._visualizationMaterial;
             }
-            
+
             // Clear selection
             this._selectedBone = null;
             this._selectedControl = null;
@@ -589,6 +598,6 @@ export class CharacterEntity extends EntityBase {
             line.dispose();
         });
 
-        this._isDisposed = true;        
+        this._isDisposed = true;
     }
 } 

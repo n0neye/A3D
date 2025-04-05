@@ -6,7 +6,6 @@ import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine
 import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } from '@/app/engine/entity/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
 import { CreateEntityAsyncCommand } from '@/app/lib/commands';
-import { duplicateEntity } from '@/app/engine/entity/entityUtils';
 import { EditorEngine } from '../EditorEngine';
 import { DeleteMeshCommand } from '@/app/lib/commands';
 
@@ -17,6 +16,7 @@ interface BaseEntityOptions {
   position?: BABYLON.Vector3;
   rotation?: BABYLON.Vector3;
   scaling?: BABYLON.Vector3;
+  onLoaded?: (entity: EntityBase) => void;
 }
 
 // Type-specific options using discriminated union
@@ -33,23 +33,26 @@ export class EntityFactory {
   /**
    * Create an entity based on type
    */
-  static createEntityDefault(scene: BABYLON.Scene, type: EntityType): EntityBase {
+  static createEntityDefault(scene: BABYLON.Scene, type: EntityType, onLoaded?: (entity: EntityBase) => void): EntityBase {
     const name = `entity-${Date.now()}`;
     const id = uuidv4();
 
     switch (type) {
       case 'generative':
-        return new GenerativeEntity(name, scene, { id });
+        return new GenerativeEntity(name, scene, { id, onLoaded });
       case 'shape':
         return new ShapeEntity(name, scene, {
           id,
-          props: { shapeType: 'cube' }
+          props: { shapeType: 'cube' },
+          onLoaded
         });
       case 'light':
-        return new LightEntity(name, scene, { id });
+        return new LightEntity(name, scene, { id, onLoaded });
       case 'character':
         return new CharacterEntity(scene, name, id, {
-          url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb'
+          url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb',
+        }, {
+          onLoaded
         });
       default:
         throw new Error(`Unknown entity type`);
@@ -60,32 +63,27 @@ export class EntityFactory {
     const name = options.name || `entity-${Date.now()}`;
     switch (options.type) {
       case 'generative':
-        return new GenerativeEntity(name, scene, {
-          id: options.id,
-          position: options.position,
-          rotation: options.rotation,
-          props: options.gnerativeProps
-        });
+        return new GenerativeEntity(name, scene, options);
       case 'shape':
         console.log(`Creating shape entity`, options.shapeProps);
         return new ShapeEntity(name, scene, {
           id: options.id,
           position: options.position,
           rotation: options.rotation,
-          props: options.shapeProps
+          props: options.shapeProps,
+          onLoaded: options.onLoaded
         });
       case 'light':
-        return new LightEntity(name, scene, {
-          id: options.id,
-          position: options.position,
-          props: options.lightProps
-        });
+        return new LightEntity(name, scene, options);
       case 'character':
         return new CharacterEntity(
           scene, name,
           options.id || uuidv4(),
           options.characterProps,
-          { scaling: options.scaling }
+          {
+            scaling: options.scaling,
+            onLoaded: options.onLoaded
+          }
         );
       default:
         // This ensures exhaustive type checking
@@ -120,6 +118,7 @@ export class EntityFactory {
         }
 
         newEntity.position.x += 0.2;
+        engine.selectEntity(newEntity);
         return newEntity;
       },
       scene

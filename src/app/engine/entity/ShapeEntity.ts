@@ -31,6 +31,7 @@ export class ShapeEntity extends EntityBase {
       rotation?: BABYLON.Vector3;
       scaling?: BABYLON.Vector3;
       props: ShapeEntityProps;
+      onLoaded?: (entity: ShapeEntity) => void;
     }
   ) {
     super(name, scene, 'shape', {
@@ -58,7 +59,8 @@ export class ShapeEntity extends EntityBase {
     }
 
     // Return the created mesh
-    console.log(`createShapeEntity: ${newMesh.name}`);
+    console.log(`ShapeEntity: constructor done`, options.onLoaded);
+    options.onLoaded?.(this);
   }
 
   /**

@@ -74,6 +74,7 @@ export class GenerativeEntity extends EntityBase {
       rotation?: BABYLON.Vector3;
       scaling?: BABYLON.Vector3;
       props?: GenerativeEntityProps;
+      onLoaded?: (entity: GenerativeEntity) => void;
     }
   ) {
     super(name, scene, 'generative', {
@@ -119,6 +120,7 @@ export class GenerativeEntity extends EntityBase {
       });
     }
 
+    options.onLoaded?.(this);
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {

@@ -37,6 +37,7 @@ export class LightEntity extends EntityBase {
       id?: string;
       position?: BABYLON.Vector3;
       props?: LightProps,
+      onLoaded?: (entity: LightEntity) => void;
     } = {}
   ) {
     super(name, scene, 'light', {
@@ -61,6 +62,8 @@ export class LightEntity extends EntityBase {
 
     // Create light visual representation
     this.gizmoMesh = this.createLightGizmo(scene);
+
+    options.onLoaded?.(this);
   }
 
   /**

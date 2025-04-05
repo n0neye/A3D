@@ -79,8 +79,7 @@ export class EditorEngine {
     }
 
     // Init other utils
-    const engine = EditorEngine.instance;
-    const scene = engine.core.getScene();
+    const scene = EditorEngine.instance.core.getScene();
     loadShapeMeshes(scene);
     createDefaultMaterials(scene);
     createSkybox(scene);
@@ -136,17 +135,17 @@ export class EditorEngine {
   // Public API methods for React components
   // Entity Management
   public selectEntity(entity: EntityBase | null): void {
-    this.selectionManager.select(entity);
-    
-    // Notify observers with type-safe payload
-    this.observer.notify('entitySelected', { entity });
+    console.log(`EditorEngine: selectEntity`, entity !== null, entity !== undefined, this.selectionManager);
+    // TODO: We've to get the instance again, as the UI may not have the lastest manager instance
+    EditorEngine.getInstance().getSelectionManager().select(entity);
+    EditorEngine.getInstance().observer.notify('entitySelected', { entity });
   }
   public createEntity(options: CreateEntityOptions): EntityBase {
     const entity = EntityFactory.createEntity(this.core.getScene(), options);
     return entity;
   }
-  public createEntityDefault(type: EntityType): EntityBase {
-    const entity = EntityFactory.createEntityDefault(this.core.getScene(), type);
+  public createEntityDefault(type: EntityType, options?: { onLoaded?: (entity: EntityBase) => void }): EntityBase {
+    const entity = EntityFactory.createEntityDefault(this.core.getScene(), type, options?.onLoaded);
     return entity;
   }
   public deleteEntity(entity: EntityBase): void {
