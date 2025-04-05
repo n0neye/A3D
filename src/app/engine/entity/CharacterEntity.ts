@@ -10,6 +10,7 @@ import { useOldEditorContext } from '@/app/context/OldEditorContext';
 import { HistoryManager } from '@/app/engine/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
 import { setupMeshShadows } from '@/app/util/editor/light-util';
+import { EditorEngine } from '../EditorEngine';
 
 export interface CharacterEntityProps {
     url: string;
@@ -355,7 +356,7 @@ export class CharacterEntity extends EntityBase {
      * Select a specific bone
      */
     public selectBone(boneControl: BoneControl): void {
-        const selectionManager = this._scene.metadata?.selectionManager;
+        const selectionManager = EditorEngine.getInstance().getSelectionManager();
         if (selectionManager) {
             selectionManager.select(boneControl);
         }

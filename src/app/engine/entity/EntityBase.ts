@@ -99,14 +99,14 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
    * Get the GizmoManager from the scene
    */
   public getGizmoManager(): BABYLON.GizmoManager | null {
-    return this._scene.metadata?.gizmoManager || null;
+    return EditorEngine.getInstance().getGizmoModeManager().getGizmoManager();
   }
 
   /**
    * Get the HistoryManager from the scene
    */
   public getHistoryManager(): HistoryManager | null {
-    return this._scene.metadata?.historyManager || null;
+    return EditorEngine.getInstance().getHistoryManager();
   }
 
   // ISelectable implementation

@@ -1,6 +1,5 @@
 import * as BABYLON from '@babylonjs/core';
 import { ISelectable } from '../../interfaces/ISelectable';
-import { getGizmoManager } from './SceneManagers';
 import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
@@ -9,7 +8,7 @@ import { Observer } from "@/app/engine/utils/Observer";
  * Manages selection of objects in the scene
  */
 export class SelectionManager {
-  
+
   // Observer for selection events
   public selectionObserver = new Observer<{
     entitySelected: { entity: EntityBase | null };
