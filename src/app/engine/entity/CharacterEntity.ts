@@ -517,10 +517,12 @@ export class CharacterEntity extends EntityBase {
         }
     }
 
+    // Dispose all resources
     public dispose(): void {
-        // We no longer need to clean up gizmo observers here, as BoneControl handles that
+        this.getChildMeshes().forEach(mesh => {
+            mesh.dispose();
+        });
 
-        // Rest of the dispose code for cleaning up resources
         this._boneMap.forEach(({ control }) => {
             control.dispose();
         });
@@ -529,11 +531,13 @@ export class CharacterEntity extends EntityBase {
             line.dispose();
         });
 
-        if (this._visualizationMaterial) {
-            this._visualizationMaterial.dispose();
-        }
+        this._visualizationMaterial.dispose();
+        this._highlightMaterial.dispose();
 
         this.skeleton?.dispose();
+
+        this._isDisposed = true;
+
         super.dispose();
     }
 
@@ -542,18 +546,5 @@ export class CharacterEntity extends EntityBase {
      */
     public updateBoneVisualization(): void {
         this._updateBoneLines();
-    }
-
-    public disposeCharacter(): void {
-        console.log("CharacterEntity: Disposing children", this.name);
-        this._boneMap.forEach(({ control }) => {
-            control.dispose();
-        });
-
-        this._boneLines.forEach(line => {
-            line.dispose();
-        });
-
-        this._isDisposed = true;
     }
 } 

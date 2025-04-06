@@ -54,12 +54,4 @@ export interface ISelectable {
   getId(): string;
 
   getName(): string;
-  
-  /**
-   * Apply a transformation of the specified type
-   */
-  applyTransformation(
-    transformType: 'position' | 'rotation' | 'scale', 
-    value: BABYLON.Vector3 | BABYLON.Quaternion
-  ): void;
 } 

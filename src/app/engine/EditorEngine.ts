@@ -74,10 +74,10 @@ export class EditorEngine {
   }
 
   public static async initEngine(canvas: HTMLCanvasElement): Promise<EditorEngine> {
+    if (EditorEngine.instance) { return EditorEngine.instance; }
+    
     console.log("EditorEngine initEngine");
-    if (!EditorEngine.instance) {
-      EditorEngine.instance = new EditorEngine(canvas);
-    }
+    EditorEngine.instance = new EditorEngine(canvas);
 
     // Init other utils
     const scene = EditorEngine.instance.core.getScene();

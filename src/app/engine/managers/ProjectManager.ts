@@ -192,14 +192,9 @@ export class ProjectManager {
         data: IProjectData,
     ): void {
         // Clear existing entities if needed
+        // Dispose all children of the existing entities
         const scene = this.engine.getScene();
         const existingEntities = scene.rootNodes.filter(node => isEntity(node));
-        // Dispose all children of the existing entities
-        existingEntities.forEach(entity => {
-            if (entity instanceof CharacterEntity) {
-                entity.disposeCharacter();
-            }
-        });
         existingEntities.forEach(entity => entity.dispose());
 
         // Apply environment settings if present

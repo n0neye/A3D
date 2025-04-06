@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import * as BABYLON from '@babylonjs/core';
 import { Button } from "@/components/ui/button";
 import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
 import { IconEye, IconEyeOff, IconRotateClockwise } from '@tabler/icons-react';
-import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 interface CharacterEditPanelProps {
   entity: CharacterEntity;

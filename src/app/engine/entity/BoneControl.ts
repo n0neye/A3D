@@ -260,41 +260,6 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     super.dispose();
   }
 
-  // Apply transformation (inherited from ISelectable)
-  applyTransformation(
-    transformType: 'position' | 'rotation' | 'scale',
-    value: BABYLON.Vector3 | BABYLON.Quaternion
-  ): void {
-    // Only handle rotation
-    if (transformType === 'rotation') {
-      // Apply to linked transform node if available
-      if (this.bone._linkedTransformNode) {
-        if (value instanceof BABYLON.Quaternion) {
-          this.bone._linkedTransformNode.rotationQuaternion = value;
-        } else if (value instanceof BABYLON.Vector3) {
-          this.bone._linkedTransformNode.rotation = value;
-        }
-      } else {
-        // Apply directly to bone
-        if (value instanceof BABYLON.Quaternion) {
-          this.bone.setRotationQuaternion(value);
-        } else if (value instanceof BABYLON.Vector3) {
-          this.bone.rotation = value;
-        }
-      }
-
-      // Apply same rotation to this control mesh
-      if (value instanceof BABYLON.Quaternion) {
-        this.rotationQuaternion = value.clone();
-      } else if (value instanceof BABYLON.Vector3) {
-        this.rotation = value.clone();
-      }
-
-      // Update character's bone visualization
-      this.character.updateBoneVisualization();
-    }
-  }
-
   getGizmoTarget(): BABYLON.AbstractMesh {
     return this;
   }
