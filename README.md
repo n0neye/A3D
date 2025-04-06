@@ -4,71 +4,101 @@ This project is a browser-based 3D scene editor that leverages AI for content ge
 
 ## System Architecture
 
-The application follows a simplified architecture centered around React components and context-based state management:
+The application follows a decoupled architecture that separates the 3D engine from the React UI layer:
 
 ```
-App
-├── EditorProvider (Context)
-└── EditorContainer
-    ├── Canvas (Babylon.js)
-    ├── GenerationMenu
-    ├── EntityPanel
-    └── RenderPanel
+Application
+├── Engine Layer
+│   ├── EditorEngine (Singleton)
+│   │   ├── BabylonCore
+│   │   ├── Managers
+│   │   │   ├── CameraManager
+│   │   │   ├── SelectionManager
+│   │   │   ├── GizmoModeManager
+│   │   │   ├── HistoryManager
+│   │   │   ├── InputManager
+│   │   │   ├── ProjectManager
+│   │   │   └── EnvironmentManager
+│   │   └── Services
+│   │       ├── RenderService
+│   │       └── EntityFactory
+│   └── Utils
+│       ├── Observer (Type-safe event system)
+│       └── Other utilities
+│
+└── UI Layer (React)
+    ├── EditorEngineContext (Bridge to Engine)
+    └── Components
+        ├── EditorUIContainer
+        ├── FramePanel
+        ├── RenderPanel
+        ├── EntityPanel
+        └── Other UI components
 ```
 
-### Key Components
+### Key Architectural Components
 
-- **EditorContainer**: The main container that initializes the Babylon.js scene and handles core interactions
-- **GenerationMenu**: Creates AI-generated entities based on user input
-- **EntityPanel**: Displays and manages properties of the selected entity
-- **RenderPanel**: Handles scene rendering and image export functions
+- **EditorEngine**: The central singleton that coordinates all engine functionality and provides a clean API for React components
+- **BabylonCore**: Low-level wrapper around Babylon.js engine and scene, handling initialization and rendering
+- **Managers**: Specialized classes that handle specific aspects of the editor (camera, selection, history, etc.)
+- **Services**: Higher-level operations that involve multiple managers or external systems
+- **Observer Pattern**: Type-safe event system that enables communication between components without tight coupling
 
-## State Management
+## Communication Patterns
 
-We use React Context (`EditorContext`) as the central state management solution. This context provides:
+We've moved from a direct reference model to a more loosely coupled event-based architecture:
 
-- Scene and engine references
-- Selected entity state
-- Gizmo manager for 3D manipulations
-- Entity selection utilities
+1. **Type-Safe Observer Pattern**: All communication between managers and with the UI uses a strongly-typed Observer system
+2. **Context as Bridge**: EditorEngineContext serves as the bridge between React components and the engine layer
+3. **Direct API Calls**: Simple operations use direct method calls on the EditorEngine singleton
 
-The context is accessible throughout the application using the `useEditorContext` hook.
+```typescript
+// Example of UI component interaction with the engine
+const { engine } = useEditorEngine();
+const handleCreateEntity = () => {
+  engine.createEntityDefaultCommand('generative');
+};
+```
 
 ## Entity System
 
-The core of the application revolves around `EntityBase` objects, which are extensions of Babylon.js `TransformNode` with additional metadata and capabilities:
+Entities are managed through the EditorEngine, with operations going through the proper managers:
 
 ```typescript
-// Basic entity structure
-interface EntityBase extends BABYLON.TransformNode {
-  metadata: EntityMetadata;
-  primaryMesh: BABYLON.AbstractMesh;
-  
-  // Methods
-  getCurrentGeneration(): GenerationData;
-  getEntityType(): EntityType;
-  getProcessingState(): EntityProcessingState;
-  setProcessingState(state: EntityProcessingState): void;
-  // ...
-}
+// Creation through commands (with history support)
+engine.createEntityCommand({
+  type: 'generative',
+  position: new BABYLON.Vector3(0, 1, 0)
+});
+
+// Selection
+engine.selectEntity(entity);
+
+// Deletion (with history support)
+engine.deleteEntity(entity);
 ```
 
-Entities can be created, manipulated, and deleted through the UI. Each entity maintains its own generation history and metadata.
+Each entity maintains its own generation history and metadata, accessible through a standardized API.
 
-## Interaction Flow
+## Input Handling
 
-1. **Creation**: Users create entities via the GenerationMenu
-2. **Selection**: Clicking on entities selects them and shows the EntityPanel
-3. **Manipulation**: Selected entities can be moved, rotated, and scaled using gizmos
-4. **Generation**: Entity appearances can be modified with AI-generated content
-5. **Rendering**: The scene can be rendered and exported using the RenderPanel
+All user input is managed by the InputManager, which:
 
-## Key Features
+1. Captures pointer events (clicks, drags, wheel)
+2. Maintains keyboard state
+3. Implements command shortcuts
+4. Delegates to appropriate managers based on context
 
-- **AI Generation**: Create and modify 3D objects with AI-generated images
-- **3D Manipulation**: Move, rotate, and scale entities with intuitive controls
-- **Image-to-3D**: Convert 2D images to 3D models with depth estimation
-- **Scene Export**: Take screenshots and export rendered scenes
+This centralizes input logic and removes it from UI components.
+
+## Rendering Pipeline
+
+The RenderService handles all rendering operations:
+
+- Taking screenshots with proper framing
+- Processing depth maps
+- Managing gizmo visibility during renders
+- Image processing for API operations
 
 ## Getting Started
 
@@ -80,8 +110,10 @@ Entities can be created, manipulated, and deleted through the UI. Each entity ma
 
 - Click "Add" buttons to create new entities
 - Click on entities to select them
-- Use gizmos to move, rotate, and scale entities
+- Use gizmos to move, rotate, and scale entities (keyboard shortcuts: W, E, R, T)
 - Delete selected entities with the Delete key
+- Duplicate selected entities with Ctrl+D
+- Undo/Redo with Ctrl+Z and Ctrl+Shift+Z
 - Use the Render panel to take screenshots and generate AI variations
 
 ## Development
@@ -91,3 +123,15 @@ The project uses:
 - Babylon.js for 3D rendering
 - TailwindCSS for styling
 - Various AI services for content generation
+
+## Extending the Engine
+
+To add new functionality:
+
+1. Create a new manager or service in the appropriate directory
+2. Register it with the EditorEngine singleton
+3. Expose a clean API through EditorEngine
+4. Subscribe to events using the Observer pattern
+5. Update the UI components to use the new functionality
+
+This architecture ensures clean separation of concerns and makes the codebase more maintainable.

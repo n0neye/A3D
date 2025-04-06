@@ -1,8 +1,10 @@
 import * as BABYLON from '@babylonjs/core';
-import { Command } from '../util/editor/managers/HistoryManager';
+import { Command } from '../engine/managers/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
-import { EntityBase } from '../util/entity/EntityBase';
+import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { usePostHog } from 'posthog-js/react';
+import { GizmoModeManager } from '../engine/managers/GizmoModeManager';
+import { EditorEngine } from '../engine/EditorEngine';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {
@@ -91,26 +93,18 @@ export class CreateMeshCommand implements Command {
 }
 
 // Command for deleting objects
-export class DeleteMeshCommand implements Command {
-  private isVisible: boolean;
-  private gizmoManager: BABYLON.GizmoManager | null;
+export class DeleteEntityCommand implements Command {
 
-  constructor(private entity: EntityBase | BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
-    // Check if it's an EntityBase or a Mesh
-    this.isVisible = entity.isEnabled();
-    this.gizmoManager = gizmoManager;
+  constructor(private entity: EntityBase) {
   }
 
   public execute(): void {
-    // Hide the entity or mesh
-    this.entity.setEnabled(false);
-    if (this.gizmoManager) {
-      this.gizmoManager.attachToMesh(null);
-    }
+    this.entity.delete();
+    EditorEngine.getInstance().getSelectionManager().deselectAll();
   }
 
   public undo(): void {
-    this.entity.setEnabled(this.isVisible);
+    this.entity.undoDelete();
   }
 }
 
@@ -118,11 +112,9 @@ export class DeleteMeshCommand implements Command {
 export class CreateEntityCommand implements Command {
   private entity: EntityBase | null = null;
   private factory: () => EntityBase;
-  private scene: BABYLON.Scene;
 
-  constructor(factory: () => EntityBase, scene: BABYLON.Scene) {
+  constructor(factory: () => EntityBase) {
     this.factory = factory;
-    this.scene = scene;
   }
 
   execute(): void {
@@ -148,10 +140,6 @@ export class CreateEntityCommand implements Command {
 
   redo(): void {
     this.execute();
-  }
-
-  getEntity(): EntityBase | null {
-    return this.entity;
   }
 } 
 

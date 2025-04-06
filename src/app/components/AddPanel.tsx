@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useEditorContext } from '../context/EditorContext';
-import { EntityType, } from '../util/entity/EntityBase';
-import { ShapeType } from '../util/entity/ShapeEntity';
+import { EntityType, EntityBase } from '@/app/engine/entity/EntityBase';
+import { ShapeType } from '@/app/engine/entity/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
@@ -17,27 +16,17 @@ import {
   IconBulb,
   IconUser,
 } from '@tabler/icons-react';
-import { EntityFactory } from '../util/entity/EntityFactory';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
+import { EditorEngine } from '../engine/EditorEngine';
 import * as BABYLON from '@babylonjs/core';
 
 const AddPanel: React.FC = () => {
-  const { scene, setSelectedEntity, historyManager } = useEditorContext();
   const [showShapesMenu, setShowShapesMenu] = useState(false);
   const [showCharactersMenu, setShowCharactersMenu] = useState(false);
 
   // Create an entity with command pattern
   const handleCreateGenerativeEntity = (entityType: EntityType) => {
-    if (!scene) return;
-
-    console.log(`Creating Generative entity`);
-    const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntityDefault(scene, entityType),
-      scene
-    );
-
-    // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
+    EditorEngine.getInstance().createEntityDefaultCommand(entityType);
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -45,21 +34,17 @@ const AddPanel: React.FC = () => {
       entityType: entityType
     });
 
-    // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
   };
 
   // Create a primitive shape
   const handleCreateShape = (shapeType: ShapeType) => {
-    if (!scene) return;
     console.log(`Creating ${shapeType} primitive`);
-    // Create a command with factory function
-    const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntity(scene, { type: 'shape', shapeProps: { shapeType: shapeType } }),
-      scene
-    );
-    // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
+    EditorEngine.getInstance().createEntityCommand({
+      type: 'shape',
+      shapeProps: {
+        shapeType: shapeType
+      },
+    })
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -67,54 +52,30 @@ const AddPanel: React.FC = () => {
       entityType: 'shape',
       shapeType: shapeType
     });
-
-    // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
     // Hide the shapes menu after creation
     setShowShapesMenu(false);
   };
 
   // Handle light entity creation
   const handleCreateLight = () => {
-    if (!scene) return;
-
-    // Create a command with factory function
-    const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntityDefault(scene, 'light'),
-      scene
-    );
-    // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
-
+    EditorEngine.getInstance().createEntityDefaultCommand('light');
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
       method: 'button',
       entityType: 'light'
     });
-
-    // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
   };
 
   // Handle character entity creation
   const handleCreateCharacter = (modelUrl: string, modelName: string, modelScale: number) => {
-    if (!scene) return;
-
-    // Create a command with factory function for character
-    const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntity(scene, { 
-        type: 'character',
-        characterProps: { 
-          url: modelUrl,
-          name: modelName+'-'+uuidv4(),
-        },
-        scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale)
-      }),
-      scene
-    );
-
-    // Execute the command through history manager
-    historyManager.executeCommand(createCommand);
+    EditorEngine.getInstance().createEntityCommand({
+      type: 'character',
+      characterProps: {
+        url: modelUrl,
+        name: modelName + '-' + uuidv4(),
+      },
+      scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale),
+    })
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -123,8 +84,6 @@ const AddPanel: React.FC = () => {
       characterModel: modelName
     });
 
-    // Select the newly created entity
-    setSelectedEntity(createCommand.getEntity());
     // Hide the characters menu after creation
     setShowCharactersMenu(false);
   };

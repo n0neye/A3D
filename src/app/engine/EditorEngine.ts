@@ -1,0 +1,190 @@
+/**
+ * EditorEngine.ts
+ * 
+ * The central coordination point for the entire 3D editor system.
+ * This singleton class:
+ * - Initializes and manages all subsystem managers
+ * - Provides a clean public API for React components
+ * - Handles communication between subsystems
+ * - Emits events for UI components to react to
+ * 
+ * It acts as a facade over the complex Babylon.js functionality,
+ * abstracting the details behind a simpler interface designed
+ * specifically for this editor application.
+ * 
+ * React components should interact ONLY with this EditorEngine,
+ * never directly with Babylon.js or individual managers.
+ */
+import * as BABYLON from '@babylonjs/core';
+import { BabylonCore } from './core/BabylonCore';
+import { CameraManager } from './managers/CameraManager';
+import { SelectionManager } from './managers/SelectionManager';
+import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
+import { EntityFactory, CreateEntityOptions } from './services/EntityFactory';
+import { Command, HistoryManager } from './managers/HistoryManager';
+import { loadShapeMeshes } from '../util/editor/shape-util';
+import { InputManager } from './managers/InputManager';
+import { createDefaultMaterials } from '../util/editor/material-util';
+import { RenderService } from './services/RenderService';
+import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
+import { ProjectManager } from './managers/ProjectManager';
+import { EnvironmentManager } from './managers/environmentManager';
+import { Observer } from './utils/Observer';
+import { CreateEntityCommand } from '../lib/commands';
+
+
+/**
+ * Main editor engine that coordinates all Babylon.js subsystems
+ * and provides a clean API for React components
+ */
+export class EditorEngine {
+  private static instance: EditorEngine;
+  private core: BabylonCore;
+
+  private cameraManager: CameraManager;
+  private selectionManager: SelectionManager;
+  private gizmoModeManager: GizmoModeManager;
+  private historyManager: HistoryManager;
+  private inputManager: InputManager;
+  private renderService: RenderService;
+  private projectManager: ProjectManager;
+  private environmentManager: EnvironmentManager;
+
+  public observer = new Observer<{
+  }>();
+
+  private constructor(canvas: HTMLCanvasElement) {
+    console.log("EditorEngine constructor");
+    this.core = new BabylonCore(canvas);
+
+    const scene = this.core.getScene();
+    const babylonEngine = this.core.getEngine();
+    this.cameraManager = new CameraManager(scene, canvas);
+    this.gizmoModeManager = new GizmoModeManager(scene);
+    this.selectionManager = new SelectionManager(scene, this.gizmoModeManager);
+    this.historyManager = new HistoryManager();
+    this.projectManager = new ProjectManager(this);
+    this.environmentManager = new EnvironmentManager(this);
+
+    // Create the input manager and pass references to other managers
+    this.inputManager = new InputManager(this, scene, this.selectionManager, this.historyManager);
+
+    // Create the render service
+    this.renderService = new RenderService(scene, this, babylonEngine);
+  }
+
+  public static async initEngine(canvas: HTMLCanvasElement): Promise<EditorEngine> {
+    if (EditorEngine.instance) { return EditorEngine.instance; }
+    
+    console.log("EditorEngine initEngine");
+    EditorEngine.instance = new EditorEngine(canvas);
+
+    // Init other utils
+    const scene = EditorEngine.instance.core.getScene();
+    await loadShapeMeshes(scene);
+    await createDefaultMaterials(scene);
+
+    EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default.json');
+
+    return EditorEngine.instance;
+  }
+
+
+  // Getters
+  public static getInstance(): EditorEngine {
+    return EditorEngine.instance;
+  }
+
+  public getScene(): BABYLON.Scene {
+    return this.core.getScene();
+  }
+
+  public getSelectionManager(): SelectionManager {
+    return this.selectionManager;
+  }
+
+  public getInputManager(): InputManager {
+    return this.inputManager;
+  }
+
+  public getRenderService(): RenderService {
+    return this.renderService;
+  }
+
+  public getCameraManager(): CameraManager {
+    return this.cameraManager;
+  }
+
+  public getProjectManager(): ProjectManager {
+    return this.projectManager;
+  }
+
+  public getHistoryManager(): HistoryManager {
+    return this.historyManager;
+  }
+
+  public getGizmoModeManager(): GizmoModeManager {
+    return this.gizmoModeManager;
+  }
+
+  public getEnvironmentManager(): EnvironmentManager {
+    return this.environmentManager;
+  }
+
+
+
+  // Public API methods for React components
+  // Entity Management
+  public selectEntity(entity: EntityBase | null): void {
+    console.log(`EditorEngine: selectEntity`, entity !== null, entity !== undefined, this.selectionManager);
+    // TODO: We've to get the instance again, as the UI may not have the lastest manager instance
+    if (entity) {
+      EditorEngine.getInstance().getSelectionManager().select(entity);
+    } else {
+      EditorEngine.getInstance().getSelectionManager().deselectAll();
+    }
+  }
+  public createEntityCommand(options: CreateEntityOptions): void {
+    const createCommand = new CreateEntityCommand(
+      () => EntityFactory.createEntity(this.core.getScene(), {
+        ...options,
+        onLoaded: (entity) => {
+          console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
+          EditorEngine.getInstance().selectEntity(entity);
+        }
+      }),
+    );
+    // Execute the command through history manager
+    this.executeCommand(createCommand);
+  }
+  public createEntityDefaultCommand(type: EntityType): void {
+    const createCommand = new CreateEntityCommand(
+      () => EntityFactory.createEntityDefault(this.core.getScene(), type, (entity) => {
+        console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
+        EditorEngine.getInstance().selectEntity(entity);
+      }),
+    );
+    this.executeCommand(createCommand);
+  }
+  public deleteEntity(entity: EntityBase): void {
+    EntityFactory.deleteEntity(entity, this);
+  }
+  public duplicateEntity(entity: EntityBase): void {
+    EntityFactory.duplicateEntity(entity, this);
+  }
+
+  // History Management
+  public executeCommand(command: Command): void {
+    this.historyManager.executeCommand(command);
+  }
+
+  // Gizmo Mode Management
+  public setGizmoMode(mode: GizmoMode): void {
+    this.gizmoModeManager.setGizmoMode(mode);
+  }
+
+  public getGizmoMode(): GizmoMode {
+    return this.gizmoModeManager.getGizmoMode();
+  }
+
+} 

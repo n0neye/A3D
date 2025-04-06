@@ -1,11 +1,9 @@
 import * as BABYLON from '@babylonjs/core';
 import { v4 as uuidv4 } from 'uuid';
-import { ShapeEntityProps } from './ShapeEntity';
-import { GenerativeEntityProps } from './GenerativeEntity';
-import { LightProps } from './LightEntity';
-import { HistoryManager } from '../editor/managers/HistoryManager';
+import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
-
+import { EditorEngine } from '../../engine/EditorEngine';
+import { GizmoMode } from '@/app/engine/managers/GizmoModeManager';
 /**
  * Base class for all entities in the scene
  * Extends TransformNode with common functionality
@@ -17,14 +15,14 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   id: string;
   entityType: EntityType;
   created: Date;
-  
+  engine: EditorEngine;
+
   // ISelectable implementation
   gizmoCapabilities: GizmoCapabilities = {
-    allowPosition: true,
-    allowRotation: true,
-    allowScale: true
+    allowedGizmoModes: [GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox],
+    gizmoVisualSize: 1
   };
-  
+
   cursorType: SelectableCursorType = 'move';
 
   constructor(
@@ -41,9 +39,11 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
     super(name, scene);
 
     // Initialize core properties
+    this.engine = EditorEngine.getInstance();
     this.id = options.id || uuidv4();
     this.entityType = entityType;
     this.created = new Date();
+
     // Set transform properties
     if (options.position) this.position = options.position;
     if (options.rotation) this.rotation = options.rotation;
@@ -80,8 +80,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
    * Base deserialization method (to be implemented in derived classes)
    */
   static async deserialize(scene: BABYLON.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
-    // Base implementation to be overridden by subclasses
-    return null;
+    throw new Error(`EntityBase.deserialize: Not implemented`);
   }
 
   /**
@@ -93,33 +92,26 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   }
 
   /**
-   * Get the GizmoManager from the scene
-   */
-  public getGizmoManager(): BABYLON.GizmoManager | null {
-    return this._scene.metadata?.gizmoManager || null;
-  }
-
-  /**
    * Get the HistoryManager from the scene
    */
   public getHistoryManager(): HistoryManager | null {
-    return this._scene.metadata?.historyManager || null;
+    return EditorEngine.getInstance().getHistoryManager();
   }
 
   // ISelectable implementation
   onSelect(): void {
     console.log(`EntityBase.onSelect: Entity selected: ${this.name} (${this.constructor.name})`);
   }
-  
+
   onDeselect(): void {
     console.log(`EntityBase.onDeselect: Entity deselected: ${this.name} (${this.constructor.name})`);
   }
-  
+
   getGizmoTarget(): BABYLON.AbstractMesh | BABYLON.TransformNode {
     console.log(`EntityBase.getGizmoTarget: Returning this entity: ${this.name}`);
     return this; // The entity itself is the target
   }
-  
+
   getId(): string {
     return this.id;
   }
@@ -127,30 +119,14 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   getName(): string {
     return this.name;
   }
-  
-  applyTransformation(
-    transformType: 'position' | 'rotation' | 'scale', 
-    value: BABYLON.Vector3 | BABYLON.Quaternion
-  ): void {
-    switch (transformType) {
-      case 'position':
-        if (value instanceof BABYLON.Vector3) {
-          this.position = value;
-        }
-        break;
-      case 'rotation':
-        if (value instanceof BABYLON.Quaternion) {
-          this.rotationQuaternion = value;
-        } else if (value instanceof BABYLON.Vector3) {
-          this.rotation = value;
-        }
-        break;
-      case 'scale':
-        if (value instanceof BABYLON.Vector3) {
-          this.scaling = value;
-        }
-        break;
-    }
+
+  delete(): void {
+    // Simply hide the entity for now
+    this.setEnabled(false);
+  }
+
+  undoDelete(): void {
+    this.setEnabled(true);
   }
 }
 
@@ -170,12 +146,14 @@ type Vector3Data = {
   y: number;
   z: number;
 }
-const toBabylonVector3 = (v: Vector3Data): BABYLON.Vector3 => {
+
+export const toBabylonVector3 = (v: Vector3Data): BABYLON.Vector3 => {
   return new BABYLON.Vector3(v.x, v.y, v.z);
 }
-const fromBabylonVector3 = (v: BABYLON.Vector3): Vector3Data => {
+export const fromBabylonVector3 = (v: BABYLON.Vector3): Vector3Data => {
   return { x: v.x, y: v.y, z: v.z };
 }
 
-// Make these utility functions available for export
-export { toBabylonVector3, fromBabylonVector3 };
+export function isEntity(node: BABYLON.Node | null): node is EntityBase {
+  return node instanceof EntityBase;
+}

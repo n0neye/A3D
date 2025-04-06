@@ -4,12 +4,13 @@ import { Scene } from '@babylonjs/core/scene';
 import { Skeleton } from '@babylonjs/core/Bones/skeleton';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
-import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
-import { BoneRotationCommand } from '../../lib/commands';
-import { useEditorContext } from '../../context/EditorContext';
-import { HistoryManager } from '../editor/managers/HistoryManager';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/util/analytics';
+import { BoneRotationCommand } from '@/app/lib/commands';
+import { useOldEditorContext } from '@/app/context/OldEditorContext';
+import { HistoryManager } from '@/app/engine/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
-import { setupMeshShadows } from '../editor/light-util';
+import { setupMeshShadows } from '@/app/util/editor/light-util';
+import { EditorEngine } from '../EditorEngine';
 
 export interface CharacterEntityProps {
     url: string;
@@ -34,8 +35,8 @@ export class CharacterEntity extends EntityBase {
     // Bone visualization properties
     private _boneMap: Map<string, { bone: BABYLON.Bone, control: BoneControl }> = new Map();
     private _boneLines: Map<string, BABYLON.LinesMesh> = new Map();
-    private _visualizationMaterial: BABYLON.Material | null = null;
-    private _highlightMaterial: BABYLON.Material | null = null;
+    public readonly _visualizationMaterial: BABYLON.StandardMaterial;
+    public readonly _highlightMaterial: BABYLON.StandardMaterial;
     private _boneColor = new BABYLON.Color3(0.5, 0.7, 1.0);
     private _selectedBone: BABYLON.Bone | null = null;
     private _selectedControl: BABYLON.Mesh | null = null;
@@ -43,7 +44,15 @@ export class CharacterEntity extends EntityBase {
     private _boneMaterialAlpha = 0.5;
     private _linesMaterialAlpha = 0.7;
 
-    constructor(scene: Scene, name: string, id: string, props: CharacterEntityProps, options?: { scaling?: BABYLON.Vector3 }) {
+    constructor(
+        scene: Scene,
+        name: string,
+        id: string,
+        props: CharacterEntityProps,
+        options?: {
+            scaling?: BABYLON.Vector3,
+            onLoaded?: (entity: EntityBase) => void
+        }) {
         super(name, scene, 'character', {
             id: id,
             position: new BABYLON.Vector3(0, 0, 0),
@@ -57,10 +66,22 @@ export class CharacterEntity extends EntityBase {
             modelUrl: props.url
         });
 
-        this._loadingPromise = this._loadCharacter();
+        this._loadingPromise = this._loadCharacter(options?.onLoaded);
+
+        // Create visualization material
+        this._visualizationMaterial = new BABYLON.StandardMaterial(`${this.name}_boneMaterial`, this._scene);
+        this._visualizationMaterial.emissiveColor = this._boneColor;
+        this._visualizationMaterial.diffuseColor = this._boneColor;
+        this._visualizationMaterial.specularColor = BABYLON.Color3.Black();
+        this._visualizationMaterial.alpha = this._boneMaterialAlpha;
+        this._visualizationMaterial.disableDepthWrite = true;
+
+        this._highlightMaterial = new BABYLON.StandardMaterial(`${this.name}_highlightMaterial`, this._scene);
+        this._highlightMaterial.emissiveColor = new BABYLON.Color3(1, 0.5, 0);
+        this._highlightMaterial.alpha = 0.8;
     }
 
-    private async _loadCharacter(): Promise<void> {
+    private async _loadCharacter(onLoaded?: (entity: EntityBase) => void): Promise<void> {
         if (!this.characterProps.url) {
             console.error("CharacterEntity: No URL provided.");
             return;
@@ -131,6 +152,7 @@ export class CharacterEntity extends EntityBase {
                 this.position = BABYLON.Vector3.Zero();
 
                 setupMeshShadows(this.rootMesh);
+                onLoaded?.(this);
             } else {
                 console.error(`No meshes loaded for character ${this.name}`);
             }
@@ -185,24 +207,6 @@ export class CharacterEntity extends EntityBase {
     private _createBoneVisualization(): void {
         if (!this.skeleton) return;
 
-        // Create visualization material if it doesn't exist
-        if (!this._visualizationMaterial) {
-            const material = new BABYLON.StandardMaterial(`${this.name}_boneMaterial`, this._scene);
-            material.emissiveColor = this._boneColor;
-            material.diffuseColor = this._boneColor;
-            material.specularColor = BABYLON.Color3.Black();
-            material.alpha = this._boneMaterialAlpha;
-            material.disableDepthWrite = true;
-            this._visualizationMaterial = material;
-        }
-
-        // Create highlight material if it doesn't exist
-        if (!this._highlightMaterial) {
-            const material = new BABYLON.StandardMaterial(`${this.name}_highlightMaterial`, this._scene);
-            material.emissiveColor = new BABYLON.Color3(1, 0.5, 0);
-            material.alpha = 0.8;
-            this._highlightMaterial = material;
-        }
 
         // Create bone control spheres for each bone
         this.skeleton.bones.forEach(bone => {
@@ -322,6 +326,7 @@ export class CharacterEntity extends EntityBase {
         // Update visibility of bone controls
         this._boneMap.forEach(({ control }) => {
             control.isVisible = visible;
+            control.isPickable = visible;
         });
 
         // Update visibility of bone lines
@@ -343,10 +348,10 @@ export class CharacterEntity extends EntityBase {
      */
     public onDeselect(): void {
         console.log(`CharacterEntity: Deselected ${this.name}`);
-        
+
         // Hide bone visualization
         this.showBoneVisualization(false);
-        
+
         // Deselect any selected bone
         this._deselectBone();
     }
@@ -355,7 +360,7 @@ export class CharacterEntity extends EntityBase {
      * Select a specific bone
      */
     public selectBone(boneControl: BoneControl): void {
-        const selectionManager = this._scene.metadata?.selectionManager;
+        const selectionManager = EditorEngine.getInstance().getSelectionManager();
         if (selectionManager) {
             selectionManager.select(boneControl);
         }
@@ -372,10 +377,9 @@ export class CharacterEntity extends EntityBase {
             }
 
             // Detach gizmo
-            const gizmoManager = this.getGizmoManager();
-            if (gizmoManager) {
-                gizmoManager.attachToMesh(null);
-            }
+            console.log("CharacterEntity: _deselectBone Detaching gizmo");
+            const gizmoModeManager = EditorEngine.getInstance().getGizmoModeManager();
+            gizmoModeManager.attachToSelectable(null);
 
             // Clear selection
             this._selectedBone = null;
@@ -513,10 +517,12 @@ export class CharacterEntity extends EntityBase {
         }
     }
 
+    // Dispose all resources
     public dispose(): void {
-        // We no longer need to clean up gizmo observers here, as BoneControl handles that
+        this.getChildMeshes().forEach(mesh => {
+            mesh.dispose();
+        });
 
-        // Rest of the dispose code for cleaning up resources
         this._boneMap.forEach(({ control }) => {
             control.dispose();
         });
@@ -525,12 +531,24 @@ export class CharacterEntity extends EntityBase {
             line.dispose();
         });
 
-        if (this._visualizationMaterial) {
-            this._visualizationMaterial.dispose();
-        }
+        this._visualizationMaterial.dispose();
+        this._highlightMaterial.dispose();
 
         this.skeleton?.dispose();
+
+        this._isDisposed = true;
+
         super.dispose();
+    }
+
+    public delete(): void {
+        super.delete();
+        // Hide all bones
+        this.showBoneVisualization(false);
+    }
+
+    public undoDelete(): void {
+        super.undoDelete();
     }
 
     /**
@@ -538,56 +556,5 @@ export class CharacterEntity extends EntityBase {
      */
     public updateBoneVisualization(): void {
         this._updateBoneLines();
-    }
-
-    /**
-     * Highlight a specific bone control
-     */
-    public highlightBone(boneControl: BoneControl): void {
-        // Use existing _deselectBone first to clear any current selection
-        this._deselectBone();
-        
-        // Find the bone from the control
-        const boneName = boneControl.bone.name;
-        const bone = this.skeleton?.bones.find(b => b.name === boneName);
-        
-        if (bone) {
-            this._selectedBone = bone;
-            this._selectedControl = boneControl;
-            
-            // Apply highlight material if available
-            if (this._highlightMaterial && boneControl.material) {
-                boneControl.material = this._highlightMaterial;
-            }
-        }
-    }
-
-    /**
-     * Remove highlight from currently highlighted bone
-     */
-    public unhighlightBone(boneControl: BoneControl): void {
-        if (this._selectedBone && this._selectedControl === boneControl) {
-            // Reset control appearance
-            if (this._selectedControl.material && this._visualizationMaterial) {
-                this._selectedControl.material = this._visualizationMaterial;
-            }
-            
-            // Clear selection
-            this._selectedBone = null;
-            this._selectedControl = null;
-        }
-    }
-
-    public disposeCharacter(): void {
-        console.log("CharacterEntity: Disposing children", this.name);
-        this._boneMap.forEach(({ control }) => {
-            control.dispose();
-        });
-
-        this._boneLines.forEach(line => {
-            line.dispose();
-        });
-
-        this._isDisposed = true;        
     }
 } 

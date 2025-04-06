@@ -1,14 +1,14 @@
 import * as BABYLON from '@babylonjs/core';
-import { HistoryManager } from '../util/editor/managers/HistoryManager';
+import { HistoryManager } from '../engine/managers/HistoryManager';
+import { GizmoMode } from '../engine/managers/GizmoModeManager';
 
 /**
  * Defines transformation capabilities for a selectable object
  */
 export interface GizmoCapabilities {
-  allowPosition: boolean;
-  allowRotation: boolean;
-  allowScale: boolean;
-  allowBoundingBox: boolean;
+  defaultGizmoMode?: GizmoMode;
+  allowedGizmoModes: GizmoMode[];
+  gizmoVisualSize: number;
 }
 
 /**
@@ -22,6 +22,7 @@ export type SelectableCursorType =
  * Interface for any object that can be selected in the editor
  */
 export interface ISelectable {
+  
   /**
    * Defines what gizmo operations are allowed on this object
    */
@@ -53,12 +54,4 @@ export interface ISelectable {
   getId(): string;
 
   getName(): string;
-  
-  /**
-   * Apply a transformation of the specified type
-   */
-  applyTransformation(
-    transformType: 'position' | 'rotation' | 'scale', 
-    value: BABYLON.Vector3 | BABYLON.Quaternion
-  ): void;
 } 

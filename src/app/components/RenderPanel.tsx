@@ -1,14 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { renderImage as generateRenderImage, dataURLtoBlob, availableAPIs, API_Info } from '../util/generation/image-render-api';
+import { renderImage as generateRenderImage, availableAPIs, API_Info } from '../util/generation/image-render-api';
 import { addNoiseToImage, resizeImage } from '../util/generation/image-processing';
-import { useEditorContext } from '../context/EditorContext';
-import * as BABYLON from '@babylonjs/core';
 import StylePanel from './StylePanel';
 import { LoraConfig, LoraInfo } from '../util/generation/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { EnableDepthRender, GetDepthMap, TakeFramedScreenshot } from '../util/generation/render-util';
-import { SerializedProjectSettings, downloadImage } from '../util/editor/project-util';
-import { useProjectSettings } from '../context/ProjectSettingsContext';
+import { downloadImage } from '../engine/utils/helpers';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
 
 // Import Shadcn components
@@ -19,16 +15,19 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
+import { useEditorEngine } from '../context/EditorEngineContext';
+import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
   isDebugMode: boolean;
-  onOpenGallery?: (shouldAutoOpen?: boolean) => void;
+  onOpenGallery: () => void;
 }
 
-const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
-  const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setGizmoVisible } = useEditorContext();
-  const { ProjectSettings, updateProjectSettings, addRenderLog } = useProjectSettings();
+const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelProps) => {
+  // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
+  const { engine } = useEditorEngine();
+  const { renderSettings, renderLogs } = useEditorEngine();
 
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -46,33 +45,40 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
     seed,
     useRandomSeed,
     selectedLoras,
-    renderLogs,
     openOnRendered
-  } = ProjectSettings;
+  } = renderSettings;
 
   // Find the selected API object from its ID in the context
   const [selectedAPI, setSelectedAPI] = useState(() => {
-    const api = availableAPIs.find(api => api.id === ProjectSettings.selectedAPI);
+    const api = availableAPIs.find(api => api.id === renderSettings.selectedAPI);
     return api || availableAPIs[0];
   });
 
   // Style panel state
   const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
 
+  const updateRenderSettings = (newSettings: Partial<IRenderSettings>) => {
+    engine.getProjectManager().updateRenderSettings(newSettings);
+  };
+
+  const addRenderLog = (image: IRenderLog) => {
+    engine.getProjectManager().addRenderLog(image);
+  };
+
   // Update functions that modify the context
-  const setPrompt = (value: string) => updateProjectSettings({ prompt: value });
-  const setPromptStrength = (value: number) => updateProjectSettings({ promptStrength: value });
-  const setDepthStrength = (value: number) => updateProjectSettings({ depthStrength: value });
-  const setNoiseStrength = (value: number) => updateProjectSettings({ noiseStrength: value });
-  const setSeed = (value: number) => updateProjectSettings({ seed: value });
-  const setUseRandomSeed = (value: boolean) => updateProjectSettings({ useRandomSeed: value });
-  const setSelectedLoras = (loras: LoraConfig[]) => updateProjectSettings({ selectedLoras: loras });
-  const setOpenOnRendered = (value: boolean) => updateProjectSettings({ openOnRendered: value });
+  const setPrompt = (value: string) => updateRenderSettings({ prompt: value });
+  const setPromptStrength = (value: number) => updateRenderSettings({ promptStrength: value });
+  const setDepthStrength = (value: number) => updateRenderSettings({ depthStrength: value });
+  const setNoiseStrength = (value: number) => updateRenderSettings({ noiseStrength: value });
+  const setSeed = (value: number) => updateRenderSettings({ seed: value });
+  const setUseRandomSeed = (value: boolean) => updateRenderSettings({ useRandomSeed: value });
+  const setSelectedLoras = (loras: LoraConfig[]) => updateRenderSettings({ selectedLoras: loras });
+  const setOpenOnRendered = (value: boolean) => updateRenderSettings({ openOnRendered: value });
 
   // Instead, modify the setSelectedAPI function to update context at the same time
   const handleAPIChange = (newAPI: API_Info) => {
     setSelectedAPI(newAPI);
-    updateProjectSettings({ selectedAPI: newAPI.id });
+    updateRenderSettings({ selectedAPI: newAPI.id });
   };
 
   // Add keyboard shortcut for Ctrl/Cmd+Enter
@@ -95,7 +101,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   }, [prompt, promptStrength, noiseStrength, selectedAPI, selectedLoras]); // Re-create handler when these dependencies change
 
   useEffect(() => {
-    console.log("renderLogs", renderLogs);
+    console.log("renderLogs changed", renderLogs);
     if (renderLogs.length > 0) {
       setImageUrl(renderLogs[renderLogs.length - 1].imageUrl);
     }
@@ -105,18 +111,18 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   // Style panel handlers
   const handleSelectStyle = (lora: LoraInfo) => {
     // Only add if not already present
-    if (!selectedLoras.some(l => l.info.id === lora.id)) {
+    if (!selectedLoras.some((config: LoraConfig) => config.info.id === lora.id)) {
       setSelectedLoras([...selectedLoras, { info: lora, strength: 0.5 }]);
     }
   };
 
   const handleRemoveStyle = (id: string) => {
-    setSelectedLoras(selectedLoras.filter(lora => lora.info.id !== id));
+    setSelectedLoras(selectedLoras.filter((lora: LoraConfig) => lora.info.id !== id));
   };
 
   const handleUpdateStyleStrength = (id: string, strength: number) => {
     setSelectedLoras(
-      selectedLoras.map(lora =>
+      selectedLoras.map((lora: LoraConfig) =>
         lora.info.id === id ? { ...lora, strength } : lora
       )
     );
@@ -138,7 +144,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
 
     return (
       <div className="space-y-3">
-        {selectedLoras.map(loraConfig => (
+        {selectedLoras.map((loraConfig: LoraConfig) => (
           <Card key={loraConfig.info.id} className="bg-card border-border p-1 flex flex-row items-center">
             <div className="h-14 w-14 mr-2 overflow-hidden rounded">
               <img
@@ -197,8 +203,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   const generateDebugImage = async () => {
     try {
       // Force a fresh render
-      if (!scene || !engine) throw new Error("Scene or engine not found");
-      const screenshot = await TakeFramedScreenshot(scene, engine);
+      const screenshot = await engine.getRenderService().takeFramedScreenshot();
       if (!screenshot) throw new Error("Failed to take screenshot");
       console.log("Screenshot generated:", screenshot?.substring(0, 100) + "...");
       setImageUrl(screenshot);
@@ -223,21 +228,11 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
 
   const handleSuccessfulRender = (result: any, currentSeed: number) => {
     if (result && result.imageUrl) {
-      // Add the render log to the context
-      addRenderLog({
-        imageUrl: result.imageUrl,
-        prompt: ProjectSettings.prompt,
-        model: selectedAPI.name,
-        timestamp: new Date(),
-        seed: currentSeed,
-        promptStrength: ProjectSettings.promptStrength,
-        depthStrength: selectedAPI.useDepthImage ? ProjectSettings.depthStrength : 0,
-        selectedLoras: ProjectSettings.selectedLoras,
-      });
-      
       // If openOnRendered is true, tell EditorContainer to auto-open when the image is added
-      if (ProjectSettings.openOnRendered && onOpenGallery) {
-        onOpenGallery(true);
+      if (renderSettings.openOnRendered && OpenGallery) {
+        setTimeout(() => {
+          OpenGallery();
+        }, 10);
       }
     }
   };
@@ -246,11 +241,11 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null);
-    setSelectedEntity(null);
-    
+    engine.getSelectionManager().select(null);
+
     // Start measuring time
     const startTime = Date.now();
-    
+
     // Track that render started
     trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_started', {
       test_mode: isTest,
@@ -258,18 +253,14 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       prompt_length: prompt.length,
       use_depth: selectedAPI.useDepthImage,
     });
-    
-    if (gizmoManager) {
-      gizmoManager.attachToNode(null);
-    }
-    
+
     // Hide gizmos before rendering
-    setGizmoVisible(false);
+    const renderService = engine.getRenderService();
+    renderService.setAllGizmoVisibility(false);
 
     try {
       // First, take a screenshot of the current scene
-      if (!scene || !engine) throw new Error("Scene or engine not found");
-      const screenshot = await TakeFramedScreenshot(scene, engine);
+      const screenshot = await renderService.takeFramedScreenshot();
       if (!screenshot) throw new Error("Failed to take screenshot");
 
       // Store the original screenshot
@@ -278,19 +269,18 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       // Apply noise to the screenshot if noiseStrength > 0
       let processedImage = screenshot;
       if (noiseStrength > 0) {
-        processedImage = await addNoiseToImage(screenshot, noiseStrength);
+        processedImage = await renderService.addNoiseToImage(screenshot, noiseStrength);
       }
 
-      // Resize the image to 512x512 before sending to API
-      const resizedImage = await resizeImage(processedImage, 1280, 720);
+      // Resize the image to final dimensions before sending to API
+      const resizedImage = await renderService.resizeImage(processedImage, 1280, 720);
 
       // Convert the resized image to blob for API
-      const imageBlob = dataURLtoBlob(resizedImage);
-
+      const imageBlob = renderService.dataURLtoBlob(resizedImage);
 
       let depthImage = undefined;
       if (selectedAPI.useDepthImage) {
-        depthImage = await EnableDepthRender(scene, engine, 1) || undefined;
+        depthImage = await renderService.enableDepthRender(1) || undefined;
         if (depthImage) {
           setImageUrl(depthImage);
         }
@@ -301,7 +291,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
       console.log(`%cPre-processing time: ${(preProcessingTime - startTime) / 1000} seconds`, "color: #4CAF50; font-weight: bold;");
 
       // Restore gizmos after rendering
-      setGizmoVisible(true);
+      renderService.setAllGizmoVisibility(true);
 
       if (isTest) {
         return;
@@ -358,28 +348,26 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         error_message: error instanceof Error ? error.message : String(error),
         prompt_length: prompt.length,
       });
-      
+
       console.error("Error generating preview:", error);
       alert("Failed to generate Render. Please try again.");
     } finally {
       // Restore gizmos after rendering
-      setGizmoVisible(true);
+      renderService.setAllGizmoVisibility(true);
       setIsLoading(false);
     }
   };
 
   const OnEnableDepthRender = async () => {
-    if (!scene || !engine) throw new Error("Scene or engine not found");
-    const depthSnapshot = await EnableDepthRender(scene, engine);
+    const depthSnapshot = await engine.getRenderService().enableDepthRender(1);
     if (!depthSnapshot) throw new Error("Failed to generate depth map");
     setImageUrl(depthSnapshot);
   }
 
   const onGetDepthMap = async () => {
-    if (!scene || !engine) throw new Error("Scene or engine not found");
-    const result = await GetDepthMap(scene, engine);
+    const result = await engine.getRenderService().enableDepthRender(1);
     if (!result) throw new Error("Failed to generate depth map");
-    setImageUrl(result.imageUrl);
+    setImageUrl(result);
   };
 
   return (
@@ -390,7 +378,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
         isOpen={isStylePanelOpen}
         onClose={() => setIsStylePanelOpen(false)}
         onSelectStyle={handleSelectStyle}
-        selectedLoraIds={selectedLoras.map(lora => lora.info.id)}
+        selectedLoraIds={selectedLoras ? selectedLoras.map((lora: LoraConfig) => lora.info.id) : []}
       />
 
       <div className={`fixed right-4 h-full flex justify-center items-center ${isDebugMode ? 'right-80' : ''}`}>
@@ -414,7 +402,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery }: RenderPanelProps) => {
                     src={imageUrl}
                     alt="Scene Preview"
                     className="w-full h-full object-contain cursor-pointer"
-                    onClick={() => onOpenGallery && onOpenGallery()}
+                    onClick={OpenGallery}
                   />
                   <Button
                     variant="ghost"

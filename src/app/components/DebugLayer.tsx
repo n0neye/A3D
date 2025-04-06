@@ -1,11 +1,11 @@
 
 import { Inspector } from '@babylonjs/inspector';
 import { useEffect, useState } from 'react';
-import { useEditorContext } from '../context/EditorContext';
+import { useOldEditorContext } from '../context/OldEditorContext';
 
 function DebugLayer() {
     const [showInspector, setShowInspector] = useState(false);
-    const { scene, isDebugMode, setIsDebugMode } = useEditorContext();
+    const { scene, isDebugMode, setIsDebugMode } = useOldEditorContext();
 
     useEffect(() => {
         if (!scene) return;

@@ -9,101 +9,108 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { IconVideo } from '@tabler/icons-react';
 import { ImageRatio } from '../util/generation/generation-util';
-import { useEditorContext } from '../context/EditorContext';
-import {
-  setRatioOverlayRatio,
-  setRatioOverlayPadding,
-  setRatioOverlayRightPadding,
-  setRatioOverlayVisibility,
-  getEnvironmentObjects,
-  setCameraFOV,
-  getCameraFOV,
-  setCameraFarClip,
-  getCameraFarClip  
-} from '../util/editor/editor-util';
+import { useEditorEngine } from '../context/EditorEngineContext';
 
 const FramePanel: React.FC = () => {
-  const { scene, engine, isGizmoVisible, setGizmoVisible } = useEditorContext();
+  const { engine } = useEditorEngine();
+  
+  // Local state to manage UI
   const [overlayVisible, setOverlayVisible] = useState(true);
-  const [padding, setPadding] = useState(10); // Default padding
-  const [rightExtraPadding, setRightExtraPadding] = useState(0); // Default extra right padding
-  const [ratio, setRatio] = useState<ImageRatio>('16:9'); // Default ratio
-  const [fov, setFov] = useState(0.8); // Default FOV in radians (approximately 45 degrees)
-  const [farClip, setFarClip] = useState(20); // Default far clip distance
+  const [padding, setPadding] = useState(10);
+  const [rightExtraPadding, setRightExtraPadding] = useState(0);
+  const [ratio, setRatio] = useState<ImageRatio>('16:9');
+  const [fov, setFov] = useState(0.8);
+  const [farClip, setFarClip] = useState(20);
+  const [isGizmoVisible, setIsGizmoVisible] = useState(true);
 
-  // Update the actual overlay when state changes
+  // Initialize state from camera manager settings
   useEffect(() => {
-    if (!scene) return;
-
-    setRatioOverlayVisibility(overlayVisible);
-    setRatioOverlayPadding(padding, scene);
-    setRatioOverlayRightPadding(rightExtraPadding, scene);
-    setRatioOverlayRatio(ratio, scene);
-  }, [overlayVisible, padding, rightExtraPadding, ratio, scene]);
-
-  // Update the camera FOV when state changes
-  useEffect(() => {
-    if (!scene) return;
-    setCameraFOV(fov, scene);
-  }, [fov, scene]);
-
-  // Update the camera far clip when state changes
-  useEffect(() => {
-    if (!scene) return;
-    setCameraFarClip(farClip, scene);
-  }, [farClip, scene]);
-
-  // Initialize state from current environment overlay settings
-  useEffect(() => {
-    if (!scene) return;
-
-    const env = getEnvironmentObjects();
-    if (env.ratioOverlay) {
-      setOverlayVisible(env.ratioOverlay.frame.isVisible);
-      setPadding(env.ratioOverlay.padding);
-      setRightExtraPadding(env.ratioOverlay.rightExtraPadding || 0);
-      setRatio(env.ratioOverlay.ratio);
-    }
+    if (!engine) return;
     
-    // Initialize FOV from current camera
-    const currentFOV = getCameraFOV(scene);
-    if (currentFOV) {
-      setFov(currentFOV);
-    }
+    const cameraManager = engine.getCameraManager();
+    
+    // Get initial camera settings
+    const cameraSettings = cameraManager.getCameraSettings();
+    setFov(cameraSettings.fov);
+    setFarClip(cameraSettings.farClip);
+    
+    // Get initial ratio overlay settings
+    const overlaySettings = cameraManager.getRatioOverlaySettings();
+    setOverlayVisible(overlaySettings.isVisible);
+    setPadding(overlaySettings.padding);
+    setRightExtraPadding(overlaySettings.rightExtraPadding);
+    setRatio(overlaySettings.ratio);
+    
+    // Set up type-safe subscriptions
+    const unsubFov = cameraManager.observer.subscribe('fovChanged', 
+      ({ fov }) => setFov(fov)
+    );
+    
+    const unsubFarClip = cameraManager.observer.subscribe('farClipChanged', 
+      ({ farClip }) => setFarClip(farClip)
+    );
+    
+    const unsubVisibility = cameraManager.observer.subscribe('ratioOverlayVisibilityChanged', 
+      ({ visible }) => setOverlayVisible(visible)
+    );
+    
+    const unsubPadding = cameraManager.observer.subscribe('ratioOverlayPaddingChanged', 
+      ({ padding }) => setPadding(padding)
+    );
+    
+    const unsubRightPadding = cameraManager.observer.subscribe('ratioOverlayRightPaddingChanged', 
+      ({ padding }) => setRightExtraPadding(padding)
+    );
+    
+    const unsubRatio = cameraManager.observer.subscribe('ratioOverlayRatioChanged', 
+      ({ ratio }) => setRatio(ratio)
+    );
+    
+    // Cleanup subscriptions
+    return () => {
+      unsubFov();
+      unsubFarClip();
+      unsubVisibility();
+      unsubPadding();
+      unsubRightPadding();
+      unsubRatio();
+    };
+  }, [engine]);
 
-    // Initialize far clip from current camera
-    const currentFarClip = getCameraFarClip(scene);
-    if (currentFarClip) {
-      setFarClip(currentFarClip);
-    }
-  }, [scene]);
-
+  // Event handlers
   const handleRatioChange = (newRatio: ImageRatio) => {
     setRatio(newRatio);
+    engine.getCameraManager().setRatioOverlayRatio(newRatio);
   };
 
   const handlePaddingChange = (newValues: number[]) => {
     setPadding(newValues[0]);
+    engine.getCameraManager().setRatioOverlayPadding(newValues[0]);
   };
 
   const handleRightExtraPaddingChange = (newValues: number[]) => {
     setRightExtraPadding(newValues[0]);
+    engine.getCameraManager().setRatioOverlayRightPadding(newValues[0]);
   };
 
   const handleVisibilityChange = (checked: boolean) => {
     setOverlayVisible(checked);
+    engine.getCameraManager().setRatioOverlayVisibility(checked);
   };
 
   const handleFovChange = (newValues: number[]) => {
     setFov(newValues[0]);
+    engine.getCameraManager().setFOV(newValues[0]);
   };
 
   const handleFarClipChange = (newValues: number[]) => {
     setFarClip(newValues[0]);
+    engine.getCameraManager().setFarClip(newValues[0]);
   };
 
   const handleGizmoVisibilityChange = (checked: boolean) => {
-    setGizmoVisible(checked);
+    setIsGizmoVisible(checked);
+    engine.getRenderService().setAllGizmoVisibility(checked);
   };
 
   // Convert radians to degrees for display

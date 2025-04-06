@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 import { CharacterEntity } from './CharacterEntity';
 import { BoneRotationCommand } from '../../lib/commands';
+import { EditorEngine } from '../EditorEngine';
+import { GizmoMode } from '../managers/GizmoModeManager';
 
 /**
  * A mesh that represents a bone for manipulation
@@ -12,12 +14,12 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
   public character: CharacterEntity;
   public bone: BABYLON.Bone;
 
+
   // ISelectable implementation - bones only support rotation
   gizmoCapabilities: GizmoCapabilities = {
-    allowPosition: false,
-    allowRotation: true,
-    allowScale: false,
-    allowBoundingBox: false
+    defaultGizmoMode: GizmoMode.Rotation,
+    allowedGizmoModes: [GizmoMode.Rotation],
+    gizmoVisualSize: 0.5
   };
 
   // Use rotate cursor to indicate rotation capability
@@ -109,34 +111,32 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     console.log(`BoneControl.onSelect: Bone selected: ${this.bone.name}`);
     this.rotation = this.bone.rotation;
 
-    
-
     // Set up gizmo rotation observers
-    const gizmoManager = this._getGizmoManager();
-    if (gizmoManager && gizmoManager.gizmos.rotationGizmo) {
+    // TODO: Prevent direct access to gizmo manager
+    const gizmoModeManager = EditorEngine.getInstance().getGizmoModeManager();
+    const _gizmoManager = gizmoModeManager.getGizmoManager();
+    if (_gizmoManager && _gizmoManager.gizmos.rotationGizmo) {
 
-      gizmoManager.attachToMesh(this);
-
-      gizmoManager.gizmos.rotationGizmo.scaleRatio = 0.5;
+      _gizmoManager.gizmos.rotationGizmo.scaleRatio = 0.5;
 
       // Add observer for start of rotation (when drag begins)
-      this._gizmoStartDragObserver = gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
+      this._gizmoStartDragObserver = _gizmoManager.gizmos.rotationGizmo.onDragStartObservable.add(
         () => this._handleGizmoRotationStart()
       );
 
       // Add observer for rotation updates (during drag)
-      this._gizmoRotationObserver = gizmoManager.gizmos.rotationGizmo.onDragObservable.add(
+      this._gizmoRotationObserver = _gizmoManager.gizmos.rotationGizmo.onDragObservable.add(
         () => this._handleGizmoRotation()
       );
 
       // Add observer for end of rotation (when drag ends)
-      this._gizmoEndDragObserver = gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(
+      this._gizmoEndDragObserver = _gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(
         () => this._handleGizmoRotationEnd()
       );
     }
 
     // Highlight this bone
-    this.character.highlightBone(this);
+    this.material = this.character._highlightMaterial;
   }
 
   onDeselect(): void {
@@ -146,17 +146,12 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     this._removeGizmoObservers();
 
     // Remove highlight
-    this.character.unhighlightBone(this);
-  }
-
-  // Helper to get the gizmo manager
-  private _getGizmoManager(): BABYLON.GizmoManager | null {
-    return this.getScene().metadata?.gizmoManager || null;
+    this.material = this.character._visualizationMaterial;
   }
 
   // Helper to get the history manager
   private _getHistoryManager() {
-    return this.getScene().metadata?.historyManager || null;
+    return EditorEngine.getInstance().getHistoryManager();
   }
 
   // Handle the start of gizmo rotation
@@ -238,7 +233,7 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
 
   // Remove all gizmo observers
   private _removeGizmoObservers(): void {
-    const gizmoManager = this._getGizmoManager();
+    const gizmoManager = EditorEngine.getInstance().getGizmoModeManager().getGizmoManager();
     if (!gizmoManager || !gizmoManager.gizmos.rotationGizmo) return;
 
     if (this._gizmoStartDragObserver) {
@@ -261,41 +256,6 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
   public dispose(): void {
     this._removeGizmoObservers();
     super.dispose();
-  }
-
-  // Apply transformation (inherited from ISelectable)
-  applyTransformation(
-    transformType: 'position' | 'rotation' | 'scale',
-    value: BABYLON.Vector3 | BABYLON.Quaternion
-  ): void {
-    // Only handle rotation
-    if (transformType === 'rotation') {
-      // Apply to linked transform node if available
-      if (this.bone._linkedTransformNode) {
-        if (value instanceof BABYLON.Quaternion) {
-          this.bone._linkedTransformNode.rotationQuaternion = value;
-        } else if (value instanceof BABYLON.Vector3) {
-          this.bone._linkedTransformNode.rotation = value;
-        }
-      } else {
-        // Apply directly to bone
-        if (value instanceof BABYLON.Quaternion) {
-          this.bone.setRotationQuaternion(value);
-        } else if (value instanceof BABYLON.Vector3) {
-          this.bone.rotation = value;
-        }
-      }
-
-      // Apply same rotation to this control mesh
-      if (value instanceof BABYLON.Quaternion) {
-        this.rotationQuaternion = value.clone();
-      } else if (value instanceof BABYLON.Vector3) {
-        this.rotation = value.clone();
-      }
-
-      // Update character's bone visualization
-      this.character.updateBoneVisualization();
-    }
   }
 
   getGizmoTarget(): BABYLON.AbstractMesh {

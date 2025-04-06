@@ -1,8 +1,8 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
-import { createShapeMesh } from '../editor/shape-util';
-import { defaultMaterial } from '../editor/material-util';
-import { setupMeshShadows } from '../editor/light-util';
+import { createShapeMesh } from '@/app/util/editor/shape-util';
+import { defaultMaterial } from '@/app/util/editor/material-util';
+import { setupMeshShadows } from '@/app/util/editor/light-util';
 
 /**
  * Entity that represents primitive shapes
@@ -31,6 +31,7 @@ export class ShapeEntity extends EntityBase {
       rotation?: BABYLON.Vector3;
       scaling?: BABYLON.Vector3;
       props: ShapeEntityProps;
+      onLoaded?: (entity: ShapeEntity) => void;
     }
   ) {
     super(name, scene, 'shape', {
@@ -58,7 +59,8 @@ export class ShapeEntity extends EntityBase {
     }
 
     // Return the created mesh
-    console.log(`createShapeEntity: ${newMesh.name}`);
+    console.log(`ShapeEntity: constructor done`, options.onLoaded);
+    options.onLoaded?.(this);
   }
 
   /**

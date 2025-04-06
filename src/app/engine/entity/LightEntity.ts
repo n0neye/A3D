@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
-import { environmentObjects } from '../editor/editor-util';
+import { EditorEngine } from '../EditorEngine';
 /**
  * Entity that represents lights in the scene
  */
@@ -37,6 +37,7 @@ export class LightEntity extends EntityBase {
       id?: string;
       position?: BABYLON.Vector3;
       props?: LightProps,
+      onLoaded?: (entity: LightEntity) => void;
     } = {}
   ) {
     super(name, scene, 'light', {
@@ -61,6 +62,8 @@ export class LightEntity extends EntityBase {
 
     // Create light visual representation
     this.gizmoMesh = this.createLightGizmo(scene);
+
+    options.onLoaded?.(this);
   }
 
   /**
@@ -102,6 +105,7 @@ export class LightEntity extends EntityBase {
     shadowGenerator.blurScale = 0.5;
 
     // Add to our global list
+    const environmentObjects = EditorEngine.getInstance().getEnvironmentManager().getEnvObjects();
     environmentObjects.shadowGenerators.push(shadowGenerator);
   }
 
@@ -211,5 +215,9 @@ export class LightEntity extends EntityBase {
       this.shadowGenerator.dispose();
     }
     super.dispose();
+  }
+
+  public static isLightEntity(entity: EntityBase): entity is LightEntity {
+    return entity.entityType === 'light';
   }
 } 

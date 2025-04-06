@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
-import { getRatioOverlayDimensions } from '../editor/editor-util';
 import { cropImageToRatioFrame, resizeImage } from './image-processing';
+import { EditorEngine } from '@/app/engine/EditorEngine';
 
 // Add this utility function to convert depth texture to image
 export const convertDepthTextureToImage = async (texture: BABYLON.Texture, width: number, height: number): Promise<string> => {
@@ -49,130 +49,6 @@ export const convertDepthTextureToImage = async (texture: BABYLON.Texture, width
     return canvas.toDataURL('image/png');
 };
 
-export const EnableDepthRender = async (scene: BABYLON.Scene, engine: BABYLON.Engine, seconds: number = 2) => {
-    try {
-        if (!scene.activeCamera) throw new Error("Active camera not found");
-
-        // Enable depth renderer with better settings
-        const depthRenderer = scene.enableDepthRenderer(
-            scene.activeCamera,
-            false,  // Don't colorize
-            true,   // Use logarithmic depth buffer for better precision
-            BABYLON.Engine.TEXTURE_NEAREST_LINEAR_MIPLINEAR,
-        );
-
-        // Adjust camera clip planes for better depth resolution
-        // scene.activeCamera.minZ = 0.1;
-        // scene.activeCamera.maxZ = 20.0;
-
-        // Force a render to update the depth values
-        scene.render();
-
-        // Create an improved shader with better normalization
-        BABYLON.Effect.ShadersStore['improvedDepthPixelShader'] = `
-        varying vec2 vUV;
-        uniform sampler2D textureSampler;
-        uniform float near;
-        uniform float far;
-        
-        void main(void) {
-          // Get raw depth value
-          float depth = texture2D(textureSampler, vUV).r;
-          
-          // Ensure depth is in valid range
-          depth = clamp(depth, 0.0, 1.0);
-          
-          // Use a power function with more aggressive scaling for better visibility
-          // depth = pow(depth, 0.45);
-          
-          // Invert for better visualization (closer is brighter)
-          float displayDepth = 1.0 - depth;
-          
-          // Ensure final output is strictly in 0-1 range
-          displayDepth = clamp(displayDepth, 0.0, 1.0);
-          
-          gl_FragColor = vec4(displayDepth, displayDepth, displayDepth, 1.0);
-        }
-      `;
-
-        // Create the post process with our improved shader
-        const postProcess = new BABYLON.PostProcess(
-            "depthVisualizer",
-            "improvedDepth",
-            ["near", "far"],  // Added uniforms for near/far planes
-            null,
-            1.0,
-            scene.activeCamera
-        );
-
-        // Set up the shader parameters and texture
-        postProcess.onApply = (effect) => {
-            effect.setTexture("textureSampler", depthRenderer.getDepthMap());
-            effect.setFloat("near", scene.activeCamera!.minZ);
-            effect.setFloat("far", scene.activeCamera!.maxZ);
-        };
-
-        //   wait for 1 frame
-        await new Promise(resolve => setTimeout(resolve, 1));
-
-        const depthSnapshot = await TakeFramedScreenshot(scene, engine);
-
-        // Normalize the depth map
-        const normalizedDepthSnapshot = await normalizeDepthMap(depthSnapshot || '');
-
-        setTimeout(() => {
-            // Detach depth renderer
-            if (scene.activeCamera && postProcess) {
-                scene.activeCamera.detachPostProcess(postProcess);
-                postProcess.dispose();
-            }
-        }, seconds * 1000);
-
-        // Return the normalized depth map
-        return normalizedDepthSnapshot;
-    } catch (error) {
-        console.error("Error generating depth map:", error);
-        return null;
-    }
-};
-
-
-// Modify the existing functions to use the cropping if overlay is active
-
-// Modify CreateScreenshotAsync to use the ratio frame if visible
-export async function TakeFramedScreenshot(scene: BABYLON.Scene, engine: BABYLON.Engine, maxSize: number = 1280): Promise<string | null> {
-    try {
-        if (!scene || !engine) return null;
-
-        // Get standard screenshot
-        const screenshot = await BABYLON.Tools.CreateScreenshotAsync(
-            engine,
-            scene.activeCamera as BABYLON.Camera,
-            { precision: 1 }
-        );
-
-        // Check if we have an active ratio overlay
-        const ratioDimensions = getRatioOverlayDimensions(scene);
-
-        if (ratioDimensions) {
-            // Crop to the ratio overlay
-            const { imageUrl, width, height } = await cropImageToRatioFrame(screenshot, ratioDimensions);
-            // Resize the screenshot if it's too large
-            if (width > maxSize || height > maxSize) {
-                const resized = await resizeImage(imageUrl, maxSize, maxSize);
-                return resized;
-            }
-            return imageUrl;
-        }
-
-        // Return the uncropped screenshot if no overlay
-        return screenshot;
-    } catch (error) {
-        console.error("Error taking screenshot:", error);
-        return null;
-    }
-}
-
 // Also update GetDepthMap to use the ratio frame
 export const GetDepthMap = async (scene: BABYLON.Scene, engine: BABYLON.Engine) => {
     try {
@@ -209,7 +85,8 @@ export const GetDepthMap = async (scene: BABYLON.Scene, engine: BABYLON.Engine) 
         depthSnapshot = await normalizeDepthMap(depthSnapshot);
 
         // Check if we have an active ratio overlay
-        const ratioDimensions = getRatioOverlayDimensions(scene);
+        const cameraManager = EditorEngine.getInstance().getCameraManager();
+        const ratioDimensions = cameraManager.getRatioOverlayDimensions();
 
         if (!ratioDimensions) { throw new Error("No ratio overlay dimensions found"); }
 

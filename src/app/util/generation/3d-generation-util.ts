@@ -9,8 +9,8 @@ import { setupMeshShadows } from "../editor/light-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "../storage-util";
 import { defaultPBRMaterial } from "../editor/material-util";
-import { GenerativeEntity } from "../entity/GenerativeEntity";
-import { loadModel } from "../entity/GenerativeEntity";
+import { GenerativeEntity } from "@/app/engine/entity//GenerativeEntity";
+import { loadModel } from "@/app/engine/entity//GenerativeEntity";
 
 
 /**
@@ -47,7 +47,6 @@ async function finalizeModelGeneration(
     isPersistentUrl: boolean,
     entity: GenerativeEntity,
     scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
     startTime: number
 ): Promise<GenerationResult> {
@@ -91,7 +90,6 @@ export async function generate3DModel_Trellis(
     imageUrl: string,
     entity: GenerativeEntity,
     scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
     options: {
         prompt?: string;
@@ -139,7 +137,6 @@ export async function generate3DModel_Trellis(
                 true,
                 entity,
                 scene,
-                gizmoManager,
                 derivedFromId,
                 startTime
             );
@@ -163,7 +160,6 @@ export async function generate3DModel_Runpod(
     imageUrl: string,
     entity: GenerativeEntity,
     scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
     options: {
         prompt?: string;
@@ -280,7 +276,6 @@ export async function generate3DModel_Runpod(
                 false,
                 entity,
                 scene,
-                gizmoManager,
                 derivedFromId,
                 startTime
             );
@@ -302,46 +297,3 @@ export async function generate3DModel_Runpod(
  */
 export type ModelApiProvider = 'trellis' | 'runpod';
 
-/**
- * Unified function to generate a 3D model using the specified API provider
- */
-export async function generate3DModel(
-    imageUrl: string,
-    entity: GenerativeEntity,
-    scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
-    derivedFromId: string,
-    options: {
-        prompt?: string;
-        apiProvider?: ModelApiProvider;
-    } = {}
-): Promise<GenerationResult> {
-    // Default to Trellis if no provider specified
-    const apiProvider = options.apiProvider || 'runpod';
-
-    console.log(`Generating 3D model using ${apiProvider} API...`);
-
-    // Call the appropriate provider's implementation
-    switch (apiProvider) {
-        case 'runpod':
-            return generate3DModel_Runpod(
-                imageUrl,
-                entity,
-                scene,
-                gizmoManager,
-                derivedFromId,
-                { prompt: options.prompt }
-            );
-
-        case 'trellis':
-        default:
-            return generate3DModel_Trellis(
-                imageUrl,
-                entity,
-                scene,
-                gizmoManager,
-                derivedFromId,
-                { prompt: options.prompt }
-            );
-    }
-}

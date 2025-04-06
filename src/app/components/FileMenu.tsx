@@ -1,49 +1,41 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { useEditorContext } from '../context/EditorContext';
-import { saveProjectToFile, loadProjectFromFile, SerializedProjectSettings } from '../util/editor/project-util';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import RenderPanel from './RenderPanel';
-import { useProjectSettings } from '../context/ProjectSettingsContext';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
-import { isEntity } from '../util/entity/entityUtils';
+import { isEntity } from '@/app/engine/entity/EntityBase';
+import { useEditorEngine } from '../context/EditorEngineContext';
 
 export default function FileMenu() {
-  const { scene } = useEditorContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { ProjectSettings, updateProjectSettings } = useProjectSettings();
+  const { renderSettings, engine } = useEditorEngine();
 
   const handleSaveProject = () => {
-    if (scene) {
-      const projectName = `proj-${new Date().toISOString().split('T')[0]}.mud`;
-      saveProjectToFile(scene, ProjectSettings, projectName);
-      
-      // Track save event
-      trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
-        entities_count: scene.rootNodes.filter(node => isEntity(node)).length,
-        has_settings: !!ProjectSettings,
-      });
-    }
-  };
+    const projectName = `proj-${new Date().toISOString().split('T')[0]}.mud`;
+    engine.getProjectManager().saveProjectToFile(projectName);
+
+    // Track save event
+    trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
+      entities_count: engine.getScene().rootNodes.filter(node => isEntity(node)).length,
+      has_settings: !!renderSettings,
+    });
+  }
 
   const handleOpenProject = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0] || !scene) return;
-    
+    if (!e.target.files || !e.target.files[0]) return;
+
     try {
       const file = e.target.files[0];
-      await loadProjectFromFile(file, scene, (settings: SerializedProjectSettings) => {
-        updateProjectSettings(settings);
-      });
+      await engine.getProjectManager().loadProjectFromFile(file);
       // Reset file input
       e.target.value = '';
-      
+
       // Track load event
       trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
         file_size: file.size,
@@ -53,7 +45,7 @@ export default function FileMenu() {
     } catch (error) {
       console.error('Error loading project:', error);
       alert('Failed to load project. See console for details.');
-      
+
       // Track load failure
       trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
         error_message: error instanceof Error ? error.message : String(error),
@@ -61,7 +53,7 @@ export default function FileMenu() {
       });
     }
   };
-  
+
   // Add keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -77,15 +69,15 @@ export default function FileMenu() {
         handleOpenProject();
       }
     };
-    
+
     // Add event listener
     window.addEventListener('keydown', handleKeyDown);
-    
+
     // Clean up
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [scene, ProjectSettings]); // Re-attach when scene or settings change
+  }, [renderSettings]); // Re-attach when scene or settings change
 
   return (
     <div className="flex gap-2 items-center">
@@ -93,9 +85,9 @@ export default function FileMenu() {
         {/* Save Button with Tooltip */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button 
+            <Button
               variant="outline"
-              onClick={handleSaveProject} 
+              onClick={handleSaveProject}
               className=""
             >
               <IconDeviceFloppy size={18} />
@@ -105,13 +97,13 @@ export default function FileMenu() {
             <p>Save Project (Ctrl+S)</p>
           </TooltipContent>
         </Tooltip>
-        
+
         {/* Open Button with Tooltip */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button 
+            <Button
               variant="outline"
-              onClick={handleOpenProject} 
+              onClick={handleOpenProject}
               className=""
             >
               <IconFolderOpen size={18} />
@@ -122,14 +114,14 @@ export default function FileMenu() {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      
+
       {/* Hidden file input for opening files */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        accept=".mud" 
-        className="hidden" 
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".mud"
+        className="hidden"
       />
     </div>
   );
