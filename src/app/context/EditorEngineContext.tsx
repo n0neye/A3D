@@ -18,7 +18,7 @@ import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
 import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
-import { GizmoMode } from '@/app/engine/managers/GizmoModeManager';
+import { GizmoMode } from '@/app/engine/managers/TransformControlManager';
 interface EditorEngineContextType {
   engine: EditorEngine;
   isInitialized: boolean;

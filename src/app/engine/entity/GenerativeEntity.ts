@@ -91,7 +91,7 @@ export class GenerativeEntity extends EntityBase {
     this.placeholderMesh = createShapeMesh(scene, "plane");
     this.placeholderMesh.material = placeholderMaterial;
     this.placeholderMesh.scale.set(width, height, 1);
-    
+
     // Add the mesh to the entity instead of setting parent
     this.add(this.placeholderMesh);
     this.placeholderMesh.userData = { rootEntity: this };
@@ -181,7 +181,7 @@ export class GenerativeEntity extends EntityBase {
       if (onFinish) {
         onFinish(this);
       }
-      
+
       // Notify that generation has changed
       this.onGenerationChanged.trigger({ entity: this });
       return true;
@@ -233,10 +233,19 @@ export class GenerativeEntity extends EntityBase {
     }
   }
 
+  /**
+   * Set the processing state
+   */
+  setProcessingState(state: GenerationStatus, message?: string): void {
+    this.status = state;
+    this.statusMessage = message || '';
+    this.onProgress.trigger({ entity: this, state, message: message || '' });
+  }
+
   applyGeneratedImage(imageUrl: string, scene: THREE.Scene, ratio?: ImageRatio): void {
     // Create a texture loader
     const textureLoader = new THREE.TextureLoader();
-    
+
     // Load the texture
     textureLoader.load(
       imageUrl,
@@ -246,16 +255,16 @@ export class GenerativeEntity extends EntityBase {
           map: texture,
           side: THREE.DoubleSide
         });
-        
+
         // Apply to the placeholder mesh
         this.placeholderMesh.material = material;
-        
+
         // Update the mesh size based on the ratio
         if (ratio) {
           const { width, height } = getPlaneSize(ratio);
           this.placeholderMesh.scale.set(width, height, 1);
         }
-        
+
         // Set to 2D mode
         this.setDisplayMode('2d');
       },
@@ -320,7 +329,7 @@ export class GenerativeEntity extends EntityBase {
       this.status = 'error';
       this.statusMessage = error instanceof Error ? error.message : String(error);
       this.onProgress.trigger({ entity: this, state: this.status, message: this.statusMessage });
-      return false;
+      return { success: false, generationLog: null };
     }
   }
 
@@ -367,7 +376,7 @@ export class GenerativeEntity extends EntityBase {
         this.placeholderMesh.geometry.dispose();
       }
     }
-    
+
     if (this.modelMesh) {
       if (this.modelMesh.material) {
         if (Array.isArray(this.modelMesh.material)) {
@@ -380,7 +389,7 @@ export class GenerativeEntity extends EntityBase {
         this.modelMesh.geometry.dispose();
       }
     }
-    
+
     super.dispose();
   }
 }
@@ -433,7 +442,7 @@ export async function loadModel(
 
     // Load the model using GLTFLoader
     const loader = new GLTFLoader();
-    
+
     // Create a promise wrapper for the async load
     const gltf = await new Promise<any>((resolve, reject) => {
       loader.load(
@@ -453,7 +462,7 @@ export async function loadModel(
     if (entity.modelMesh) {
       // Remove from parent
       entity.remove(entity.modelMesh);
-      
+
       // Dispose of resources
       if (entity.modelMesh.geometry) {
         entity.modelMesh.geometry.dispose();
@@ -468,54 +477,54 @@ export async function loadModel(
     }
 
     onProgress?.({ message: 'Processing model...' });
-    
+
     // Extract the scene from the GLTF
     const model = gltf.scene;
-    
+
     // Create a container mesh if needed
     let rootModelMesh: THREE.Mesh;
-    
+
     if (model.children.length === 1 && model.children[0] instanceof THREE.Mesh) {
       rootModelMesh = model.children[0];
       entity.add(rootModelMesh);
     } else {
       // Use the entire gltf.scene as the root
       entity.add(model);
-      
+
       // Find the first mesh to use as reference
       let firstMesh: THREE.Mesh | null = null;
-      model.traverse((obj) => {
+      model.traverse((obj: any) => {
         if (!firstMesh && obj instanceof THREE.Mesh) {
           firstMesh = obj;
         }
       });
-      
+
       rootModelMesh = firstMesh || new THREE.Mesh(
         new THREE.BoxGeometry(1, 1, 1),
         new THREE.MeshStandardMaterial({ color: 0xcccccc })
       );
     }
-    
+
     // Set model mesh in entity
     entity.modelMesh = rootModelMesh;
-    
+
     // Set userData on all meshes
-    model.traverse((obj) => {
+    model.traverse((obj: any) => {
       obj.userData = { ...obj.userData, rootEntity: entity };
-      
+
       // Apply default material to all meshes
       if (obj instanceof THREE.Mesh) {
         // Apply material (note: you might want to keep original materials)
         obj.material = defaultPBRMaterial;
-        
+
         // Setup shadows
         setupMeshShadows(obj);
       }
     });
-    
+
     // Switch to 3D display mode
     entity.setDisplayMode('3d');
-    
+
     onProgress?.({ message: '3D model loaded successfully!' });
     return true;
   } catch (error) {

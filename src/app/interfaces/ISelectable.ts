@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { HistoryManager } from '../engine/managers/HistoryManager';
-import { GizmoMode } from '../engine/managers/GizmoModeManager';
+import { GizmoMode } from '../engine/managers/TransformControlManager';
 
 /**
  * Defines transformation capabilities for a selectable object

@@ -10,7 +10,7 @@ export enum GizmoMode {
     BoundingBox = 3
 }
 
-export class GizmoModeManager {
+export class TransformControlManager {
     private scene: BABYLON.Scene;
     private gizmoManager: GizmoManager;
     private _lastMode: GizmoMode = GizmoMode.Position;
@@ -30,7 +30,7 @@ export class GizmoModeManager {
 
         if(!this._allowedModes.includes(mode)) {
             // Set to the first allowed mode
-            console.log(`GizmoModeManager.setGizmoMode: Invalid mode: ${mode} in allowed modes: ${this._allowedModes.join(', ')}, setting to first allowed mode: ${this._allowedModes[0]}`);
+            console.log(`transformControlManager.setGizmoMode: Invalid mode: ${mode} in allowed modes: ${this._allowedModes.join(', ')}, setting to first allowed mode: ${this._allowedModes[0]}`);
             mode = this._allowedModes[0];
         }
 
@@ -39,7 +39,7 @@ export class GizmoModeManager {
         this.gizmoManager.rotationGizmoEnabled = mode === GizmoMode.Rotation;
         this.gizmoManager.positionGizmoEnabled = mode === GizmoMode.Position;
         this.gizmoManager.boundingBoxGizmoEnabled = mode === GizmoMode.BoundingBox;
-        console.log(`GizmoModeManager.setGizmoMode: Set gizmo mode to: ${mode}`);
+        console.log(`transformControlManager.setGizmoMode: Set gizmo mode to: ${mode}`);
         this.observers.notify('gizmoModeChanged', { mode });
         this._lastMode = mode;
         return mode;
@@ -55,7 +55,7 @@ export class GizmoModeManager {
     }
 
     public attachToSelectable(selectable: ISelectable | null): void {
-        console.log(`GizmoModeManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.gizmoCapabilities);
+        console.log(`transformControlManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.gizmoCapabilities);
         // TODO: Update gizmo visual size, and gizmo capabilities
         if (selectable) {
             // Update allowed modes

@@ -26,7 +26,7 @@ import { loadShapeMeshes } from '../util/editor/shape-util';
 import { InputManager } from './managers/InputManager';
 import { createDefaultMaterials } from '../util/editor/material-util';
 import { RenderService } from './services/RenderService';
-import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
+import { GizmoMode, TransformControlManager } from './managers/TransformControlManager';
 import { ProjectManager } from './managers/ProjectManager';
 import { EnvironmentManager } from './managers/environmentManager';
 import { Observer } from './utils/Observer';
@@ -43,7 +43,7 @@ export class EditorEngine {
 
   private cameraManager: CameraManager;
   private selectionManager: SelectionManager;
-  private gizmoModeManager: GizmoModeManager;
+  private transformControlManager: TransformControlManager;
   private historyManager: HistoryManager;
   private inputManager: InputManager;
   private renderService: RenderService;
@@ -60,8 +60,8 @@ export class EditorEngine {
     const scene = this.core.getScene();
     const threeRenderer = this.core.getRenderer();
     this.cameraManager = new CameraManager(scene, canvas);
-    this.gizmoModeManager = new GizmoModeManager(scene);
-    this.selectionManager = new SelectionManager(scene, this.gizmoModeManager);
+    this.transformControlManager = new TransformControlManager(scene);
+    this.selectionManager = new SelectionManager(scene, this.transformControlManager);
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);
@@ -123,8 +123,8 @@ export class EditorEngine {
     return this.historyManager;
   }
 
-  public getGizmoModeManager(): GizmoModeManager {
-    return this.gizmoModeManager;
+  public gettransformControlManager(): TransformControlManager {
+    return this.transformControlManager;
   }
 
   public getEnvironmentManager(): EnvironmentManager {
@@ -180,10 +180,10 @@ export class EditorEngine {
 
   // Gizmo Mode Management
   public setGizmoMode(mode: GizmoMode): void {
-    this.gizmoModeManager.setGizmoMode(mode);
+    this.transformControlManager.setGizmoMode(mode);
   }
 
   public getGizmoMode(): GizmoMode {
-    return this.gizmoModeManager.getGizmoMode();
+    return this.transformControlManager.getGizmoMode();
   }
 } 

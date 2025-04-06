@@ -4,7 +4,7 @@ import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { Observer } from "@/app/engine/utils/Observer";
-import { GizmoModeManager } from './GizmoModeManager';
+import { TransformControlManager } from './TransformControlManager';
 /**
  * Manages selection of objects in the scene
  */
@@ -21,11 +21,11 @@ export class SelectionManager {
   private _scene: BABYLON.Scene;
   private _hoverObserver: BABYLON.Observer<BABYLON.PointerInfo> | null = null;
   private _hoveredMesh: BABYLON.AbstractMesh | null = null;
-  private _gizmoModeManager: GizmoModeManager;
+  private _transformControlManager: TransformControlManager;
 
-  constructor(scene: BABYLON.Scene, gizmoModeManager: GizmoModeManager) {
+  constructor(scene: BABYLON.Scene, transformControlManager: TransformControlManager) {
     this._scene = scene;
-    this._gizmoModeManager = gizmoModeManager;
+    this._transformControlManager = transformControlManager;
     this._setupHoverObserver();
   }
 
@@ -71,11 +71,11 @@ export class SelectionManager {
     console.log("Setting up gizmo for new selection:", newSelectable.getName());
 
     // Configure gizmos based on capabilities
-    // TODO update the capabilities of the gizmoModeManager
+    // TODO update the capabilities of the transformControlManager
 
     // Get the target to attach gizmos to
     console.log("SelectionManager.select: Attaching gizmo to:", newSelectable.getName());
-    this._gizmoModeManager.attachToSelectable(newSelectable);
+    this._transformControlManager.attachToSelectable(newSelectable);
 
     // Notify the selectable object
     newSelectable.onSelect();
@@ -94,7 +94,7 @@ export class SelectionManager {
       this._currentEntity = null;
     }
 
-    this._gizmoModeManager.attachToSelectable(null);
+    this._transformControlManager.attachToSelectable(null);
 
     this.selectionObserver.notify('entitySelected', { entity: null });
   }

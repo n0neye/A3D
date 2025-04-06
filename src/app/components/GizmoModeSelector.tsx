@@ -8,7 +8,7 @@ import {
   IconSquare // Bounding Box
 } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
-import { GizmoMode } from '../engine/managers/GizmoModeManager';
+import { GizmoMode } from '../engine/managers/TransformControlManager';
 
 const GizmoModeSelector: React.FC = () => {
   const { gizmoMode, gizmoAllowedModes, engine } = useEditorEngine();

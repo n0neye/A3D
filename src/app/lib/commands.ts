@@ -3,7 +3,7 @@ import { Command } from '../engine/managers/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { usePostHog } from 'posthog-js/react';
-import { GizmoModeManager } from '../engine/managers/GizmoModeManager';
+import { TransformControlManager } from '../engine/managers/TransformControlManager';
 import { EditorEngine } from '../engine/EditorEngine';
 
 // Base class for mesh transform operations

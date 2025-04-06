@@ -1,6 +1,6 @@
 # 3D AI Scene Editor
 
-This project is a browser-based 3D scene editor that leverages AI for content generation. It allows users to create, manipulate and render 3D scenes using Babylon.js with AI-assisted generation capabilities.
+This project is a browser-based 3D scene editor that leverages AI for content generation. It allows users to create, manipulate and render 3D scenes using Three.js with AI-assisted generation capabilities.
 
 ## System Architecture
 
@@ -10,11 +10,11 @@ The application follows a decoupled architecture that separates the 3D engine fr
 Application
 ├── Engine Layer
 │   ├── EditorEngine (Singleton)
-│   │   ├── BabylonCore
+│   │   ├── ThreeCore
 │   │   ├── Managers
 │   │   │   ├── CameraManager
 │   │   │   ├── SelectionManager
-│   │   │   ├── GizmoModeManager
+│   │   │   ├── TransformControlManager
 │   │   │   ├── HistoryManager
 │   │   │   ├── InputManager
 │   │   │   ├── ProjectManager
@@ -39,7 +39,7 @@ Application
 ### Key Architectural Components
 
 - **EditorEngine**: The central singleton that coordinates all engine functionality and provides a clean API for React components
-- **BabylonCore**: Low-level wrapper around Babylon.js engine and scene, handling initialization and rendering
+- **ThreeCore**: Low-level wrapper around Three.js engine and scene, handling initialization and rendering
 - **Managers**: Specialized classes that handle specific aspects of the editor (camera, selection, history, etc.)
 - **Services**: Higher-level operations that involve multiple managers or external systems
 - **Observer Pattern**: Type-safe event system that enables communication between components without tight coupling
@@ -68,7 +68,7 @@ Entities are managed through the EditorEngine, with operations going through the
 // Creation through commands (with history support)
 engine.createEntityCommand({
   type: 'generative',
-  position: new BABYLON.Vector3(0, 1, 0)
+  position: new THREE.Vector3(0, 1, 0)
 });
 
 // Selection
@@ -120,7 +120,7 @@ The RenderService handles all rendering operations:
 
 The project uses:
 - Next.js for the React framework
-- Babylon.js for 3D rendering
+- Three.js for 3D rendering
 - TailwindCSS for styling
 - Various AI services for content generation
 

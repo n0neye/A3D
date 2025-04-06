@@ -21,7 +21,7 @@ import { ISelectable } from '../../interfaces/ISelectable';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { GenerativeEntityProps } from '@/app/engine/entity/GenerativeEntity';
 import { EditorEngine } from '../EditorEngine';
-import { GizmoMode } from './GizmoModeManager';
+import { GizmoMode } from './TransformControlManager';
 
 export class InputManager {
   private engine: EditorEngine;
