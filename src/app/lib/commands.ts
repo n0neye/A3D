@@ -149,10 +149,6 @@ export class CreateEntityCommand implements Command {
   redo(): void {
     this.execute();
   }
-
-  getEntity(): EntityBase | null {
-    return this.entity;
-  }
 } 
 
 

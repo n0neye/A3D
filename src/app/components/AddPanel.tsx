@@ -17,7 +17,6 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
-import { useEditorEngine } from '../context/EditorEngineContext';
 import { EditorEngine } from '../engine/EditorEngine';
 import * as BABYLON from '@babylonjs/core';
 
@@ -27,12 +26,7 @@ const AddPanel: React.FC = () => {
 
   // Create an entity with command pattern
   const handleCreateGenerativeEntity = (entityType: EntityType) => {
-    const engine = EditorEngine.getInstance();
-    console.log(`Creating Generative entity`);
-
-    // Execute the command through history manager
-    const createCommand = new CreateEntityCommand(() => engine.createEntityDefault(entityType, { onLoaded: engine.selectEntity }));
-    engine.executeCommand(createCommand);
+    EditorEngine.getInstance().createEntityDefaultCommand(entityType);
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -45,17 +39,12 @@ const AddPanel: React.FC = () => {
   // Create a primitive shape
   const handleCreateShape = (shapeType: ShapeType) => {
     console.log(`Creating ${shapeType} primitive`);
-    const engine = EditorEngine.getInstance();
-    // Create a command with factory function
-    const createCommand = new CreateEntityCommand(() => engine.createEntity({
+    EditorEngine.getInstance().createEntityCommand({
       type: 'shape',
       shapeProps: {
         shapeType: shapeType
       },
-      onLoaded: engine.selectEntity
-    }));
-    // Execute the command through history manager
-    engine.executeCommand(createCommand);
+    })
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -69,14 +58,7 @@ const AddPanel: React.FC = () => {
 
   // Handle light entity creation
   const handleCreateLight = () => {
-    const engine = EditorEngine.getInstance();
-    // Create a command with factory function
-    const createCommand = new CreateEntityCommand(
-      () => engine.createEntityDefault('light', { onLoaded: engine.selectEntity }),
-    );
-    // Execute the command through history manager
-    engine.executeCommand(createCommand);
-
+    EditorEngine.getInstance().createEntityDefaultCommand('light');
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
       method: 'button',
@@ -86,26 +68,14 @@ const AddPanel: React.FC = () => {
 
   // Handle character entity creation
   const handleCreateCharacter = (modelUrl: string, modelName: string, modelScale: number) => {
-    const engine = EditorEngine.getInstance();
-
-    // Create a command with factory function for character
-    const createCommand = new CreateEntityCommand(
-      () => engine.createEntity({
-        type: 'character',
-        characterProps: {
-          url: modelUrl,
-          name: modelName + '-' + uuidv4(),
-        },
-        scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale),
-        onLoaded: (entity) => {
-          console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
-          EditorEngine.getInstance().selectEntity(entity);
-        }
-      }),
-    );
-
-    // Execute the command through history manager
-    engine.executeCommand(createCommand);
+    EditorEngine.getInstance().createEntityCommand({
+      type: 'character',
+      characterProps: {
+        url: modelUrl,
+        name: modelName + '-' + uuidv4(),
+      },
+      scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale),
+    })
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {

@@ -249,31 +249,13 @@ export class InputManager {
     }
 
     // Create entity command using the EntityFactory
-    const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntity(this.scene, {
-        type: 'generative',
-        position,
-        gnerativeProps: {
-          generationLogs: [],
-        } as GenerativeEntityProps
-      })
-    );
-
-    // Execute command
-    console.log("About to execute command", createCommand);
-    this.historyManager.executeCommand(createCommand);
-    console.log("Command executed");
-    
-    // Get the newly created entity and emit event
-    const newEntity = createCommand.getEntity();
-    console.log("Got entity from command", newEntity);
-    
-    if (newEntity) {
-      newEntity.setEnabled(true);
-      this.selectionManager.select(newEntity);
-    } else {
-      console.error("No entity returned from createCommand");
-    }
+    this.engine.createEntityCommand({
+      type: 'generative',
+      position,
+      gnerativeProps: {
+        generationLogs: [],
+      } as GenerativeEntityProps
+    })
   }
   
   private handleKeyDown = (event: KeyboardEvent): void => {

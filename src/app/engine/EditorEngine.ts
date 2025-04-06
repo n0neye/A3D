@@ -30,6 +30,7 @@ import { GizmoMode, GizmoModeManager } from './managers/GizmoModeManager';
 import { ProjectManager } from './managers/ProjectManager';
 import { EnvironmentManager } from './managers/environmentManager';
 import { Observer } from './utils/Observer';
+import { CreateEntityCommand } from '../lib/commands';
 
 
 /**
@@ -141,13 +142,27 @@ export class EditorEngine {
       EditorEngine.getInstance().getSelectionManager().deselectAll();
     }
   }
-  public createEntity(options: CreateEntityOptions): EntityBase {
-    const entity = EntityFactory.createEntity(this.core.getScene(), options);
-    return entity;
+  public createEntityCommand(options: CreateEntityOptions): void {
+    const createCommand = new CreateEntityCommand(
+      () => EntityFactory.createEntity(this.core.getScene(), {
+        ...options,
+        onLoaded: (entity) => {
+          console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
+          EditorEngine.getInstance().selectEntity(entity);
+        }
+      }),
+    );
+    // Execute the command through history manager
+    this.executeCommand(createCommand);
   }
-  public createEntityDefault(type: EntityType, options?: { onLoaded?: (entity: EntityBase) => void }): EntityBase {
-    const entity = EntityFactory.createEntityDefault(this.core.getScene(), type, options?.onLoaded);
-    return entity;
+  public createEntityDefaultCommand(type: EntityType): void {
+    const createCommand = new CreateEntityCommand(
+      () => EntityFactory.createEntityDefault(this.core.getScene(), type, (entity) => {
+        console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
+        EditorEngine.getInstance().selectEntity(entity);
+      }),
+    );
+    this.executeCommand(createCommand);
   }
   public deleteEntity(entity: EntityBase): void {
     EntityFactory.deleteEntity(entity, this);
