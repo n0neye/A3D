@@ -51,7 +51,7 @@ export interface ISelectable {
   /**
    * Get the unique identifier for this selectable object
    */
-  getId(): string;
+  getUUId(): string;
 
   getName(): string;
 } 

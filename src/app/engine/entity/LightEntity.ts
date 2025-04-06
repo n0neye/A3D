@@ -1,5 +1,5 @@
-import * as BABYLON from '@babylonjs/core';
-import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
+import * as THREE from 'three';
+import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from './EntityBase';
 import { EditorEngine } from '../EditorEngine';
 /**
  * Entity that represents lights in the scene
@@ -25,23 +25,22 @@ export interface SerializedLightEntityData extends SerializedEntityData {
 
 export class LightEntity extends EntityBase {
   // LightEntity specific properties
-  light: BABYLON.Light;
-  shadowGenerator?: BABYLON.ShadowGenerator;
-  gizmoMesh: BABYLON.Mesh;
+  light: THREE.Light;
+  gizmoMesh: THREE.Mesh;
   props: LightProps;
 
   constructor(
     name: string,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     options: {
-      id?: string;
-      position?: BABYLON.Vector3;
+      uuid?: string;
+      position?: THREE.Vector3;
       props?: LightProps,
       onLoaded?: (entity: LightEntity) => void;
     } = {}
   ) {
     super(name, scene, 'light', {
-      id: options.id,
+      entityId: options.uuid,
       position: options.position,
     });
 
@@ -69,79 +68,73 @@ export class LightEntity extends EntityBase {
   /**
    * Create the actual light
    */
-  private createLight(intensity: number, color: SerializedColor, shadowEnabled: boolean): BABYLON.Light {
+  private createLight(intensity: number, color: SerializedColor, shadowEnabled: boolean): THREE.Light {
     // Implementation for light creation
-    const light = new BABYLON.PointLight(`${this.name}-light`, new BABYLON.Vector3(0, 0, 0), this.getScene());
-    light.intensity = intensity;
-    light.diffuse = new BABYLON.Color3(color.r, color.g, color.b);
-    light.specular = light.diffuse;
-    light.shadowEnabled = shadowEnabled;
-    light.parent = this;
-
-    // Create shadow generator if needed
+    const light = new THREE.PointLight(
+      new THREE.Color(color.r, color.g, color.b),
+      intensity,
+      100, // distance
+      1    // decay
+    );
+    
+    // Set up shadows if enabled
     if (shadowEnabled) {
-      this.createShadowGenerator(light);
+      light.castShadow = true;
+      
+      // Configure shadow properties
+      light.shadow.mapSize.width = 2048;
+      light.shadow.mapSize.height = 2048;
+      light.shadow.camera.near = 0.1;
+      light.shadow.camera.far = 100;
+      light.shadow.bias = -0.005;
+      light.shadow.radius = 2;
+      light.shadow.blurSamples = 8;
     }
-
+    
+    // Add the light to this entity
+    this.add(light);
+    
     return light;
-  }
-
-  /**
-   * Create shadow generator
-   */
-  private createShadowGenerator(light: BABYLON.ShadowLight): void {
-    console.log("Creating shadow generator for light", light);
-    // Create with higher resolution for better quality
-    const shadowGenerator = new BABYLON.ShadowGenerator(2048, light);
-
-    // Better filtering technique for smoother shadows
-    shadowGenerator.usePercentageCloserFiltering = true; // Use PCF instead of blur
-    shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
-
-    // Fix self-shadowing artifacts with proper bias
-    shadowGenerator.bias = 0.05
-
-    shadowGenerator.useBlurExponentialShadowMap = true;
-    shadowGenerator.blurScale = 0.5;
-
-    // Add to our global list
-    const environmentObjects = EditorEngine.getInstance().getEnvironmentManager().getEnvObjects();
-    environmentObjects.shadowGenerators.push(shadowGenerator);
   }
 
   /**
    * Create visual representation of the light
    */
-  private createLightGizmo(scene: BABYLON.Scene): BABYLON.Mesh {
-
+  private createLightGizmo(scene: THREE.Scene): THREE.Mesh {
     // Create a visual representation for the light (a glowing sphere)
-    const lightSphere = BABYLON.MeshBuilder.CreateSphere(
-      `${name}-visual`,
-      { diameter: 0.2 },
-      scene
-    );
-    // Create an emissive material for the sphere
-    const lightMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
-    lightMaterial.emissiveColor = new BABYLON.Color3(this.props.color.r, this.props.color.g, this.props.color.b);
-    lightMaterial.disableLighting = true;
-    lightSphere.material = lightMaterial;
-
+    const geometry = new THREE.SphereGeometry(0.2);
+    const material = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(this.props.color.r, this.props.color.g, this.props.color.b),
+      emissive: new THREE.Color(this.props.color.r, this.props.color.g, this.props.color.b),
+      emissiveIntensity: 1.0
+    });
+    
+    const lightSphere = new THREE.Mesh(geometry, material);
+    
     // Make the sphere not cast shadows (it's just a visual indicator)
-    lightSphere.receiveShadows = false;
-
-    // Parent the sphere to the light entity
-    lightSphere.parent = this;
-    lightSphere.metadata = { rootEntity: this };
+    lightSphere.castShadow = false;
+    lightSphere.receiveShadow = false;
+    
+    // Add the sphere to this entity
+    this.add(lightSphere);
+    lightSphere.userData = { rootEntity: this };
+    
     return lightSphere;
   }
 
   /**
    * Set light color
    */
-  setColor(color: BABYLON.Color3): void {
-    if (this.light instanceof BABYLON.PointLight) {
-      this.light.diffuse = color;
-      this.light.specular = color;
+  setColor(color: THREE.Color): void {
+    if (this.light instanceof THREE.PointLight) {
+      this.light.color = color;
+      
+      // Update the gizmo color
+      if (this.gizmoMesh && this.gizmoMesh.material) {
+        const material = this.gizmoMesh.material as THREE.MeshBasicMaterial;
+        material.color = color;
+        material.emissive = color;
+      }
 
       // Update metadata
       this.props.color = {
@@ -166,28 +159,25 @@ export class LightEntity extends EntityBase {
    * Enable/disable shadows
    */
   setShadowEnabled(enabled: boolean): void {
-    this.light.shadowEnabled = enabled;
+    if (this.light instanceof THREE.PointLight || 
+        this.light instanceof THREE.DirectionalLight || 
+        this.light instanceof THREE.SpotLight) {
+      this.light.castShadow = enabled;
+    }
 
     // Update metadata
     this.props.shadowEnabled = enabled;
-
-    // Create or dispose shadow generator
-    if (enabled && !this.shadowGenerator && this.light instanceof BABYLON.ShadowLight) {
-      this.createShadowGenerator(this.light);
-    } else if (!enabled && this.shadowGenerator) {
-      this.shadowGenerator.dispose();
-      this.shadowGenerator = undefined;
-    }
   }
 
   /**
    * Deserialize a light entity from serialized data
    */
-  static async deserialize(scene: BABYLON.Scene, data: SerializedLightEntityData): Promise<LightEntity> {
-    const position = data.position ? toBabylonVector3(data.position) : undefined;
+  static async deserialize(scene: THREE.Scene, data: SerializedLightEntityData): Promise<LightEntity> {
+    const position = data.position ? toThreeVector3(data.position) : undefined;
+    const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
 
     return new LightEntity(data.name, scene, {
-      id: data.id,
+      uuid: data.entityId,
       position,
       props: data.props
     });
@@ -209,12 +199,41 @@ export class LightEntity extends EntityBase {
    */
   dispose(): void {
     if (this.light) {
-      this.light.dispose();
+      // Remove the light from this entity
+      this.remove(this.light);
+      
+      // Dispose of any resources associated with the light
+      if (this.light.shadow && this.light.shadow.map) {
+        this.light.shadow.map.dispose();
+      }
     }
-    if (this.shadowGenerator) {
-      this.shadowGenerator.dispose();
+    
+    if (this.gizmoMesh) {
+      // Remove the gizmo mesh from this entity
+      this.remove(this.gizmoMesh);
+      
+      // Dispose of geometry and material
+      if (this.gizmoMesh.geometry) {
+        this.gizmoMesh.geometry.dispose();
+      }
+      
+      if (this.gizmoMesh.material) {
+        if (Array.isArray(this.gizmoMesh.material)) {
+          this.gizmoMesh.material.forEach(material => material.dispose());
+        } else {
+          this.gizmoMesh.material.dispose();
+        }
+      }
     }
+    
     super.dispose();
+  }
+
+  /**
+   * Get the gizmo target for manipulation
+   */
+  getGizmoTarget(): THREE.Object3D {
+    return this;
   }
 
   public static isLightEntity(entity: EntityBase): entity is LightEntity {

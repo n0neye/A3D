@@ -11,6 +11,7 @@ import { get3DModelPersistentUrl, upload3DModelToGCP } from "../storage-util";
 import { defaultPBRMaterial } from "../editor/material-util";
 import { GenerativeEntity } from "@/app/engine/entity//GenerativeEntity";
 import { loadModel } from "@/app/engine/entity//GenerativeEntity";
+import * as THREE from 'three';
 
 
 /**
@@ -46,7 +47,7 @@ async function finalizeModelGeneration(
     modelUrl: string,
     isPersistentUrl: boolean,
     entity: GenerativeEntity,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     derivedFromId: string,
     startTime: number
 ): Promise<GenerationResult> {
@@ -89,7 +90,7 @@ async function finalizeModelGeneration(
 export async function generate3DModel_Trellis(
     imageUrl: string,
     entity: GenerativeEntity,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     derivedFromId: string,
     options: {
         prompt?: string;
@@ -159,7 +160,7 @@ export async function generate3DModel_Trellis(
 export async function generate3DModel_Runpod(
     imageUrl: string,
     entity: GenerativeEntity,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     derivedFromId: string,
     options: {
         prompt?: string;

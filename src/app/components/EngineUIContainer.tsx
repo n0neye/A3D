@@ -51,16 +51,15 @@ function EngineUIContainer() {
         <>
 
             <AddPanel />
-            <EntityPanel />
+            {/* <EntityPanel /> */}
 
             {/* Render Panel - no longer needs onImageGenerated */}
-            <RenderPanel
+            {/* <RenderPanel
                 isDebugMode={isDebugMode}
                 onOpenGallery={openGallery}
             />
 
 
-            {/* Top Toolbar */}
             <div className='fixed top-2  w-full flex justify-center items-center'>
                 <div className=" panel-shape p-1 flex gap-2">
                     <FileMenu />
@@ -77,7 +76,7 @@ function EngineUIContainer() {
                 currentIndex={currentGalleryIndex}
                 onSelectImage={setCurrentGalleryIndex}
                 onApplySettings={handleApplyRenderSettings}
-            />
+            /> */}
 
             {/* Add the Guide component */}
             <Guide />

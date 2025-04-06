@@ -1,5 +1,5 @@
-import * as BABYLON from '@babylonjs/core';
-import { EntityBase, fromBabylonVector3, SerializedEntityData, toBabylonVector3 } from './EntityBase';
+import * as THREE from 'three';
+import { EntityBase, SerializedEntityData, fromThreeVector3, toThreeVector3, toThreeEuler } from './EntityBase';
 import { ImageRatio, ProgressCallback } from '@/app/util/generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
 import { defaultPBRMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
@@ -8,6 +8,7 @@ import { createShapeMesh } from '@/app/util/editor/shape-util';
 import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '@/app/util/generation/3d-generation-util';
 import { doGenerateRealtimeImage, GenerationResult } from '@/app/util/generation/realtime-generation-util';
 import { EditorEngine } from '../EditorEngine';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 /**
  * Entity that represents AI-generated content
@@ -52,8 +53,8 @@ export class GenerativeEntity extends EntityBase {
   // EntityBase properties
   props: GenerativeEntityProps;
 
-  modelMesh?: BABYLON.Mesh;
-  placeholderMesh: BABYLON.Mesh;
+  modelMesh?: THREE.Mesh;
+  placeholderMesh: THREE.Mesh;
 
   status: GenerationStatus;
   statusMessage: string;
@@ -67,38 +68,37 @@ export class GenerativeEntity extends EntityBase {
 
   constructor(
     name: string,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     options: {
-      id?: string;
-      position?: BABYLON.Vector3;
-      rotation?: BABYLON.Vector3;
-      scaling?: BABYLON.Vector3;
+      uuid?: string;
+      position?: THREE.Vector3;
+      rotation?: THREE.Euler;
+      scaling?: THREE.Vector3;
       props?: GenerativeEntityProps;
       onLoaded?: (entity: GenerativeEntity) => void;
     }
   ) {
     super(name, scene, 'generative', {
-      id: options.id,
+      entityId: options.uuid,
       position: options.position,
       rotation: options.rotation,
+      scaling: options.scaling
     });
 
-    // Create initial props
-    // this.placeholderMesh = BABYLON.MeshBuilder.CreatePlane("placeholder", { size: 1 }, scene);
-
+    // Create initial placeholder mesh
     const ratio = '3:4';
     const { width, height } = getPlaneSize(ratio);
     this.placeholderMesh = createShapeMesh(scene, "plane");
     this.placeholderMesh.material = placeholderMaterial;
-    this.placeholderMesh.scaling = new BABYLON.Vector3(width, height, 1);
-    this.placeholderMesh.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-    this.placeholderMesh.parent = this;
-    this.placeholderMesh.metadata = { rootEntity: this };
+    this.placeholderMesh.scale.set(width, height, 1);
+    
+    // Add the mesh to the entity instead of setting parent
+    this.add(this.placeholderMesh);
+    this.placeholderMesh.userData = { rootEntity: this };
 
     this.props = options.props || {
       generationLogs: []
     };
-
 
     this.status = 'idle';
     this.statusMessage = '';
@@ -111,11 +111,10 @@ export class GenerativeEntity extends EntityBase {
     if (currentLog) {
       console.log("Constructor: applyGenerationLog", currentLog);
       this.applyGenerationLog(currentLog, (entity) => {
-
         // Temp solution: update the mesh scaling
         if (entity.modelMesh && options.scaling) {
           console.log("Constructor: applyGenerationLog: onFinish. Apply scaling", options.scaling);
-          entity.modelMesh.scaling = options.scaling;
+          entity.modelMesh.scale.copy(options.scaling);
         }
       });
     }
@@ -125,14 +124,18 @@ export class GenerativeEntity extends EntityBase {
 
   setDisplayMode(mode: "3d" | "2d"): void {
     if (this.modelMesh) {
-      this.modelMesh.setEnabled(mode === '3d');
+      this.modelMesh.visible = mode === '3d';
     }
-    this.placeholderMesh.setEnabled(mode === '2d');
+    this.placeholderMesh.visible = mode === '2d';
     this.temp_displayMode = mode;
   }
 
-  getPrimaryMesh(): BABYLON.Mesh | undefined {
+  getPrimaryMesh(): THREE.Mesh | undefined {
     return this.temp_displayMode === '3d' ? this.modelMesh : this.placeholderMesh;
+  }
+
+  getScene(): THREE.Scene {
+    return this.parent as THREE.Scene;
   }
 
   onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): GenerationLog {
@@ -142,126 +145,26 @@ export class GenerativeEntity extends EntityBase {
       prompt: prompt,
       assetType: assetType,
       fileUrl: fileUrl,
-      derivedFromId: derivedFromId
-    }
+      derivedFromId: derivedFromId,
+      imageParams: {
+        ratio: this.temp_ratio || '1:1'
+      }
+    };
+
+    // Add to props
     this.props.generationLogs.push(log);
-
-    // Update current generation
     this.props.currentGenerationId = log.id;
-    this.props.currentGenerationIdx = this.props.generationLogs.findIndex(l => l.id === log.id);
+    this.props.currentGenerationIdx = this.props.generationLogs.length - 1;
 
+    // Update prompt
     this.temp_prompt = prompt;
-    this.temp_ratio = log.imageParams?.ratio;
 
     return log;
   }
 
-  /**
-   * Get current generation data
-   */
-  getCurrentGenerationLog(): GenerationLog | null {
-    return this.props.generationLogs.find(log => log.id === this.props.currentGenerationId) || null;
-  }
-
-  getCurrentGenerationLogIdx(): number {
-    return this.props.generationLogs.findIndex(log => log.id === this.props.currentGenerationId);
-  }
-
-  /**
-   * Set the processing state
-   */
-  setProcessingState(state: GenerationStatus, message?: string): void {
-    this.status = state;
-    this.statusMessage = message || '';
-    this.onProgress.trigger({ entity: this, state, message: message || '' });
-  }
-
-  // Apply image to entity
-  async applyGeneratedImage(
-    imageUrl: string,
-    scene: BABYLON.Scene,
-    ratio?: ImageRatio
-  ): Promise<boolean> {
-    // Get the plane mesh
-    const planeMesh = this.placeholderMesh;
-    if (!planeMesh) return false;
-
-    if (planeMesh.material === placeholderMaterial) {
-      // Create material
-      const newMaterial = new BABYLON.StandardMaterial(`${name}-material`, scene);
-      newMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-      newMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
-      newMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-      newMaterial.backFaceCulling = false;
-      planeMesh.material = newMaterial;
-    }
-
-    console.log('applyImageToEntity', imageUrl);
-
-    if (ratio) {
-      const { width, height } = getPlaneSize(ratio);
-      planeMesh.scaling = new BABYLON.Vector3(width, height, 1);
-    }
-
-    // Download the image
-    const response = await fetch(imageUrl);
-
-    // Check content type for PNG
-    const contentType = response.headers.get('content-type');
-    const isPotentiallyTransparent = contentType && contentType.includes('png');
-
-    // convert to blob data url
-    const imageBlob = await response.blob();
-    const imageDataUrl = URL.createObjectURL(imageBlob);
-
-    // For regular objects, update the material texture
-    let material = planeMesh.material as BABYLON.StandardMaterial;
-    if (!material || !(material instanceof BABYLON.StandardMaterial)) {
-      material = new BABYLON.StandardMaterial(`${this.name}-material`, scene);
-    }
-    if (material) {
-      // Create a new texture
-      const texture = new BABYLON.Texture(imageDataUrl, scene);
-
-      // Apply texture to the material
-      material.diffuseTexture = texture;
-      material.emissiveTexture = texture;
-
-      // If the image is a PNG, check for transparency
-      if (isPotentiallyTransparent) {
-        console.log('isPotentiallyTransparent', isPotentiallyTransparent);
-
-        // Set material to handle transparency
-        material.diffuseTexture.hasAlpha = true;
-        material.useAlphaFromDiffuseTexture = true;
-        material.backFaceCulling = false;
-        material.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
-        material.needDepthPrePass = false;
-
-        // For best rendering quality with transparent textures
-        planeMesh.renderingGroupId = 1; // Render after opaque objects
-      } else {
-        // Reset transparency settings if the image is not a PNG
-        material.useAlphaFromDiffuseTexture = false;
-        material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
-        planeMesh.renderingGroupId = 0;
-      }
-
-    }
-
-    // Switch to 2D display mode
-    this.setDisplayMode('2d');
-    return true;
-  }
-
-
-  // Apply a specific generation log 
-  async applyGenerationLog(log: GenerationLog, onFinish?: (entity: GenerativeEntity) => void): Promise<void> {
+  async applyGenerationLog(log: GenerationLog, onFinish?: (entity: GenerativeEntity) => void): Promise<boolean> {
     try {
-
-      console.log("applyGenerationLog", log);
-
-      // Apply based on asset type
+      console.log('applyGenerationLog', log);
       if (log.assetType === 'image' && log.fileUrl) {
         // For image assets, apply the image to the entity
         this.applyGeneratedImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
@@ -275,35 +178,167 @@ export class GenerativeEntity extends EntityBase {
         this.setDisplayMode('3d');
       }
 
-      // Set as current state
-      this.props.currentGenerationId = log.id;
-      this.props.currentGenerationIdx = this.props.generationLogs.findIndex(l => l.id === log.id);
-
-      // update the temp prompt
-      this.temp_prompt = log.prompt;
-
-      // Trigger the event
+      if (onFinish) {
+        onFinish(this);
+      }
+      
+      // Notify that generation has changed
       this.onGenerationChanged.trigger({ entity: this });
-
-      onFinish && onFinish(this);
-
-      console.log("applyGenerationLog: currentGenerationIdx", this.props.currentGenerationIdx);
-
+      return true;
     } catch (error) {
-      console.error("Failed to apply generation log:", error);
+      console.error("Error applying generation log:", error);
+      return false;
     }
   }
 
-  // Update aspect ratio of the entity
-  public updateAspectRatio(ratio: ImageRatio): void {
-    if (!this.placeholderMesh) return;
+  getCurrentGenerationLog(): GenerationLog | undefined {
+    // Find current generation
+    const { currentGenerationId, generationLogs } = this.props;
+    if (!currentGenerationId || !generationLogs?.length) return undefined;
 
-    // Save the new ratio in metadata
-    this.temp_ratio = ratio;
+    const log = generationLogs.find(log => log.id === currentGenerationId);
+    return log;
+  }
 
-    // Get the new dimensions based on ratio
-    const { width, height } = getPlaneSize(ratio);
-    this.placeholderMesh.scaling = new BABYLON.Vector3(width, height, 1);
+  getCurrentGenerationLogIdx(): number {
+    const { currentGenerationId, generationLogs } = this.props;
+    if (!currentGenerationId || !generationLogs?.length) return -1;
+
+    const idx = generationLogs.findIndex(log => log.id === currentGenerationId);
+    if (idx === -1) {
+      return generationLogs.length - 1;
+    }
+    return idx;
+  }
+
+  goToPreviousGeneration(): void {
+    const { generationLogs } = this.props;
+    const currentIdx = this.getCurrentGenerationLogIdx();
+    if (currentIdx > 0) {
+      const prevLog = generationLogs[currentIdx - 1];
+      this.props.currentGenerationId = prevLog.id;
+      this.props.currentGenerationIdx = currentIdx - 1;
+      this.applyGenerationLog(prevLog);
+    }
+  }
+
+  goToNextGeneration(): void {
+    const { generationLogs } = this.props;
+    const currentIdx = this.getCurrentGenerationLogIdx();
+    if (currentIdx < generationLogs.length - 1) {
+      const nextLog = generationLogs[currentIdx + 1];
+      this.props.currentGenerationId = nextLog.id;
+      this.props.currentGenerationIdx = currentIdx + 1;
+      this.applyGenerationLog(nextLog);
+    }
+  }
+
+  applyGeneratedImage(imageUrl: string, scene: THREE.Scene, ratio?: ImageRatio): void {
+    // Create a texture loader
+    const textureLoader = new THREE.TextureLoader();
+    
+    // Load the texture
+    textureLoader.load(
+      imageUrl,
+      (texture) => {
+        // Update the material
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide
+        });
+        
+        // Apply to the placeholder mesh
+        this.placeholderMesh.material = material;
+        
+        // Update the mesh size based on the ratio
+        if (ratio) {
+          const { width, height } = getPlaneSize(ratio);
+          this.placeholderMesh.scale.set(width, height, 1);
+        }
+        
+        // Set to 2D mode
+        this.setDisplayMode('2d');
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading image texture:', error);
+      }
+    );
+  }
+
+  async generateRealtimeImage(
+    prompt: string,
+    options: {
+      negativePrompt?: string;
+      ratio?: ImageRatio;
+    } = { ratio: '1:1' }
+  ): Promise<GenerationResult> {
+    const scene = this.getScene();
+    return doGenerateRealtimeImage(prompt, this, scene, { ratio: options.ratio });
+  }
+
+  /**
+   * Generate a 3D model from an image
+   */
+  async generate3DModel(
+    imageUrl: string,
+    derivedFromId: string,
+    options: {
+      prompt?: string;
+      apiProvider?: ModelApiProvider;
+    } = {}
+  ): Promise<GenerationResult> {
+    // Set a default prompt if none is provided
+    const prompt = options.prompt || 'Generate a 3D model from this image';
+
+    // Set status
+    this.status = 'generating3D';
+    this.statusMessage = "Starting 3D generation...";
+    this.onProgress.trigger({ entity: this, state: this.status, message: this.statusMessage });
+
+    try {
+      // Use the specified API provider, or default to Runpod
+      if (options.apiProvider === 'trellis') {
+        return await generate3DModel_Trellis(
+          imageUrl,
+          this,
+          this.getScene(),
+          derivedFromId,
+          { prompt: options.prompt }
+        );
+      } else {
+        return await generate3DModel_Runpod(
+          imageUrl,
+          this,
+          this.getScene(),
+          derivedFromId,
+          { prompt: options.prompt }
+        );
+      }
+    } catch (error) {
+      console.error(`Error generating 3D model:`, error);
+      this.status = 'error';
+      this.statusMessage = error instanceof Error ? error.message : String(error);
+      this.onProgress.trigger({ entity: this, state: this.status, message: this.statusMessage });
+      return false;
+    }
+  }
+
+  /**
+   * Deserialize a generative entity from serialized data
+   */
+  static async deserialize(scene: THREE.Scene, data: SerializedGenerativeEntityData): Promise<GenerativeEntity> {
+    const position = data.position ? toThreeVector3(data.position) : undefined;
+    const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
+    const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
+
+    return new GenerativeEntity(data.name, scene, {
+      uuid: data.entityId,
+      position,
+      rotation,
+      scaling,
+      props: data.props
+    });
   }
 
   /**
@@ -313,112 +348,42 @@ export class GenerativeEntity extends EntityBase {
     const base = super.serialize();
     return {
       ...base,
-      scaling: this.modelMesh?.scaling ? fromBabylonVector3(this.modelMesh?.scaling) : { x: 1, y: 1, z: 1 },
       props: this.props,
     };
   }
 
-
-  /**
-   * Deserialize a generative entity from serialized data
-   */
-  static async deserialize(scene: BABYLON.Scene, data: SerializedGenerativeEntityData): Promise<GenerativeEntity> {
-    const position = data.position ? toBabylonVector3(data.position) : undefined;
-    const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
-    const scaling = data.scaling ? toBabylonVector3(data.scaling) : undefined;
-
-    return new GenerativeEntity(data.name, scene, {
-      id: data.id,
-      position,
-      rotation,
-      scaling,
-      props: data.props
-    });
-  }
-
-  /**
-   * Clean up resources
-   */
+  // Clean up resources
   dispose(): void {
-    if (this.modelMesh) {
-      this.modelMesh.dispose();
+    // Clean up materials and geometries
+    if (this.placeholderMesh) {
+      if (this.placeholderMesh.material) {
+        if (Array.isArray(this.placeholderMesh.material)) {
+          this.placeholderMesh.material.forEach(mat => mat.dispose());
+        } else {
+          this.placeholderMesh.material.dispose();
+        }
+      }
+      if (this.placeholderMesh.geometry) {
+        this.placeholderMesh.geometry.dispose();
+      }
     }
+    
+    if (this.modelMesh) {
+      if (this.modelMesh.material) {
+        if (Array.isArray(this.modelMesh.material)) {
+          this.modelMesh.material.forEach(mat => mat.dispose());
+        } else {
+          this.modelMesh.material.dispose();
+        }
+      }
+      if (this.modelMesh.geometry) {
+        this.modelMesh.geometry.dispose();
+      }
+    }
+    
     super.dispose();
   }
-
-  goToPreviousGeneration(): void {
-    if (this.props.currentGenerationIdx !== undefined && this.props.currentGenerationIdx > 0) {
-      this.props.currentGenerationIdx--;
-      this.props.currentGenerationId = this.props.generationLogs[this.props.currentGenerationIdx].id;
-      const newLog = this.props.generationLogs[this.props.currentGenerationIdx];
-      this.applyGenerationLog(newLog);
-      return
-    }
-  }
-
-  goToNextGeneration(): void {
-    if (this.props.currentGenerationIdx !== undefined && this.props.currentGenerationIdx < this.props.generationLogs.length - 1) {
-      this.props.currentGenerationIdx++;
-      this.props.currentGenerationId = this.props.generationLogs[this.props.currentGenerationIdx].id;
-      const newLog = this.props.generationLogs[this.props.currentGenerationIdx];
-      this.applyGenerationLog(newLog);
-    }
-  }
-
-  async generateRealtimeImage(
-    prompt: string,
-    options: {
-      ratio?: ImageRatio;
-    } = {}
-  ): Promise<GenerationResult> {
-    const scene = this.engine.getScene();
-    return doGenerateRealtimeImage(prompt, this, scene, { ratio: options.ratio });
-  }
-
-  /**
- * Unified function to generate a 3D model using the specified API provider
- */
-  async generate3DModel(
-    imageUrl: string,
-    derivedFromId: string,
-    options: {
-      prompt?: string;
-      apiProvider?: ModelApiProvider;
-    } = {}
-  ): Promise<GenerationResult> {
-    // Default to Trellis if no provider specified
-    const apiProvider = options.apiProvider || 'runpod';
-
-    console.log(`Generating 3D model using ${apiProvider} API...`);
-    const scene = this.engine.getScene();
-    const gizmoModeManager = this.engine.getGizmoModeManager();
-
-    // Call the appropriate provider's implementation
-    switch (apiProvider) {
-      case 'runpod':
-        return generate3DModel_Runpod(
-          imageUrl,
-          this,
-          scene,
-          derivedFromId,
-          { prompt: options.prompt }
-        );
-
-      case 'trellis':
-      default:
-        return generate3DModel_Trellis(
-          imageUrl,
-          this,
-          scene,
-          derivedFromId,
-          { prompt: options.prompt }
-        );
-    }
-  }
-
 }
-
-
 
 // Helper functions
 function getPlaneSize(ratio: ImageRatio): { width: number, height: number } {
@@ -435,7 +400,6 @@ function getPlaneSize(ratio: ImageRatio): { width: number, height: number } {
       return { width: 1, height: 1 };
   }
 }
-
 
 // Event handler class to provide add/remove interface
 export class EventHandler<T> {
@@ -460,89 +424,103 @@ export class EventHandler<T> {
 export async function loadModel(
   entity: GenerativeEntity,
   modelUrl: string,
-  scene: BABYLON.Scene,
+  scene: THREE.Scene,
   onProgress?: ProgressCallback
 ): Promise<boolean> {
   try {
     onProgress?.({ message: 'Downloading 3D model...' });
-
     console.log("loadModel", modelUrl);
 
-    // Load the model
-    const result = await BABYLON.ImportMeshAsync(
-      modelUrl,
-      scene,
-      {
-        onProgress: (progressEvent) => {
-          if (progressEvent.lengthComputable) {
-            const progress = (progressEvent.loaded / progressEvent.total * 100).toFixed(0);
+    // Load the model using GLTFLoader
+    const loader = new GLTFLoader();
+    
+    // Create a promise wrapper for the async load
+    const gltf = await new Promise<any>((resolve, reject) => {
+      loader.load(
+        modelUrl,
+        (gltf) => resolve(gltf),
+        (xhr) => {
+          if (xhr.lengthComputable) {
+            const progress = Math.round((xhr.loaded / xhr.total) * 100);
             onProgress?.({ message: `Downloading: ${progress}%` });
           }
         },
-        pluginExtension: ".glb",
-        name: "_.glb"
-      }
-    );
-
-    const meshes = result.meshes;
+        (error) => reject(error)
+      );
+    });
 
     // If there's an existing model mesh, dispose it
     if (entity.modelMesh) {
-      entity.modelMesh.dispose();
-    }
-
-    onProgress?.({ message: 'Generating...' });
-    console.log("loadModel: replaceWithModel. meshes", meshes);
-
-    if (meshes.length > 0) {
-      console.log("loadModel: meshes length", meshes.length);
-
-      // Create a root container mesh if needed
-      let rootModelMesh: BABYLON.Mesh;
-
-      if (meshes.length === 1) {
-        rootModelMesh = meshes[0] as BABYLON.Mesh;
-      } else {
-        // Create a dummy mesh as the container
-        rootModelMesh = new BABYLON.Mesh(`${entity.name}-model-root`, scene);
-        meshes.forEach((mesh) => {
-          mesh.parent = rootModelMesh;
-        });
+      // Remove from parent
+      entity.remove(entity.modelMesh);
+      
+      // Dispose of resources
+      if (entity.modelMesh.geometry) {
+        entity.modelMesh.geometry.dispose();
       }
-
-      // Parent the root model to the entity
-      rootModelMesh.parent = entity;
-
-      // Set up the model mesh in the entity
-      entity.modelMesh = rootModelMesh;
-
-      // Set metadata on all meshes
-      meshes.forEach((mesh) => {
-        mesh.metadata = {
-          ...mesh.metadata,
-          rootEntity: entity
-        };
-      });
-
-      // Find all materials
-      meshes.forEach((mesh) => {
-        mesh.material = defaultPBRMaterial;
-        console.log("loadModel: Applied default material", mesh.material.name, mesh.material);
-      });
-
-      // Switch to 3D display mode
-      entity.setDisplayMode('3d');
-
-      setupMeshShadows(entity.modelMesh);
-
-      onProgress?.({ message: '3D model loaded successfully!' });
-      return true;
-    } else {
-      throw new Error('No meshes found');
+      if (entity.modelMesh.material) {
+        if (Array.isArray(entity.modelMesh.material)) {
+          entity.modelMesh.material.forEach(mat => mat.dispose());
+        } else {
+          entity.modelMesh.material.dispose();
+        }
+      }
     }
+
+    onProgress?.({ message: 'Processing model...' });
+    
+    // Extract the scene from the GLTF
+    const model = gltf.scene;
+    
+    // Create a container mesh if needed
+    let rootModelMesh: THREE.Mesh;
+    
+    if (model.children.length === 1 && model.children[0] instanceof THREE.Mesh) {
+      rootModelMesh = model.children[0];
+      entity.add(rootModelMesh);
+    } else {
+      // Use the entire gltf.scene as the root
+      entity.add(model);
+      
+      // Find the first mesh to use as reference
+      let firstMesh: THREE.Mesh | null = null;
+      model.traverse((obj) => {
+        if (!firstMesh && obj instanceof THREE.Mesh) {
+          firstMesh = obj;
+        }
+      });
+      
+      rootModelMesh = firstMesh || new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshStandardMaterial({ color: 0xcccccc })
+      );
+    }
+    
+    // Set model mesh in entity
+    entity.modelMesh = rootModelMesh;
+    
+    // Set userData on all meshes
+    model.traverse((obj) => {
+      obj.userData = { ...obj.userData, rootEntity: entity };
+      
+      // Apply default material to all meshes
+      if (obj instanceof THREE.Mesh) {
+        // Apply material (note: you might want to keep original materials)
+        obj.material = defaultPBRMaterial;
+        
+        // Setup shadows
+        setupMeshShadows(obj);
+      }
+    });
+    
+    // Switch to 3D display mode
+    entity.setDisplayMode('3d');
+    
+    onProgress?.({ message: '3D model loaded successfully!' });
+    return true;
   } catch (error) {
-    console.error("Failed to replace with model:", error);
-    onProgress?.({ message: `Failed to replace with model: ${(error as Error).message}` });
+    console.error("Failed to load model:", error);
+    onProgress?.({ message: `Failed to load model: ${(error as Error).message}` });
     return false;
   }
 }

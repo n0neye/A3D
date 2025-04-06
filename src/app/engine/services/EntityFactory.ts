@@ -39,15 +39,15 @@ export class EntityFactory {
 
     switch (type) {
       case 'generative':
-        return new GenerativeEntity(name, scene, { id, onLoaded });
+        return new GenerativeEntity(name, scene, { uuid: id, onLoaded });
       case 'shape':
         return new ShapeEntity(name, scene, {
-          id,
+          uuid: id,
           props: { shapeType: 'cube' },
           onLoaded
         });
       case 'light':
-        return new LightEntity(name, scene, { id, onLoaded });
+        return new LightEntity(name, scene, { uuid: id, onLoaded });
       case 'character':
         return new CharacterEntity(
           scene, 
@@ -73,7 +73,7 @@ export class EntityFactory {
       case 'shape':
         console.log(`Creating shape entity`, options.shapeProps);
         return new ShapeEntity(name, scene, {
-          id: options.id,
+          uuid: options.id,
           position: options.position,
           rotation: options.rotation,
           props: options.shapeProps,

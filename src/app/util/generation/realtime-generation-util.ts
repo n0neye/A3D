@@ -6,6 +6,7 @@ import { GenerativeEntity, GenerationLog } from '@/app/engine/entity//Generative
 import { ProgressCallback, IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio } from "./generation-util";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
+import * as THREE from 'three';
 
 // Types for callbacks and results
 export interface Generation2DRealtimResult {
@@ -28,7 +29,7 @@ export function initializeRealtimeConnection(): void {
 export async function doGenerateRealtimeImage(
     promptInput: string,
     entity: GenerativeEntity,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     options: {
         ratio?: ImageRatio,
     } = {}
@@ -51,7 +52,7 @@ export async function doGenerateRealtimeImage(
 
     // update the entity name with first word of prompt
     entity.name = positivePrompt.split(' ')[0] + "_" + entity.name;
-    entity.id = positivePrompt.split(' ')[0] + "_" + entity.id;
+    entity.entityId = positivePrompt.split(' ')[0] + "_" + entity.entityId;
 
     // Determine dimensions
     const ratioMultipliers = RATIO_MAP[ratio];

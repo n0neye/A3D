@@ -1,57 +1,73 @@
-import * as BABYLON from '@babylonjs/core';
+import * as THREE from 'three';
 import { EditorEngine } from '@/app/engine/EditorEngine';
 
 /**
- * Creates a shadow generator for a given light
- * @param light The light to create a shadow generator for
- * @param scene The Babylon.js scene
- * @returns The created shadow generator
+ * Configures a renderer for shadows
+ * @param renderer The Three.js renderer
  */
-export const createShadowGenerator = (
-    light: BABYLON.IShadowLight,
-    scene: BABYLON.Scene
-): BABYLON.ShadowGenerator => {
-    console.log("Creating shadow generator for light", light);
-    // Create with higher resolution for better quality
-    const shadowGenerator = new BABYLON.ShadowGenerator(2048, light);
-
-    // Better filtering technique for smoother shadows
-    shadowGenerator.usePercentageCloserFiltering = true; // Use PCF instead of blur
-    shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_HIGH;
-
-    // Fix self-shadowing artifacts with proper bias
-    shadowGenerator.bias = 0.05
-
-    shadowGenerator.useBlurExponentialShadowMap = true;
-    shadowGenerator.blurScale = 0.5;
-
-    // Add to our global list
-    const environmentObjects = EditorEngine.getInstance().getEnvironmentManager().getEnvObjects();
-    environmentObjects.shadowGenerators.push(shadowGenerator);
-
-    return shadowGenerator;
+export const setupRendererForShadows = (renderer: THREE.WebGLRenderer): void => {
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Default soft shadow map
 };
 
 /**
- * Adds a mesh to all shadow generators (to cast shadows)
- * @param mesh The mesh to add
+ * Configures shadow properties for a light
+ * @param light The light to configure
  */
-export const addMeshToShadowCasters = (mesh: BABYLON.AbstractMesh): void => {
-    console.log("Adding mesh to shadow casters", mesh.name);
-    const environmentObjects = EditorEngine.getInstance().getEnvironmentManager().getEnvObjects();
-    environmentObjects.shadowGenerators.forEach(generator => {
-        generator.addShadowCaster(mesh);
-    });
+export const setupLightShadows = (
+  light: THREE.Light
+): void => {
+  // Only proceed if the light can cast shadows
+  if (!(light instanceof THREE.DirectionalLight || 
+        light instanceof THREE.PointLight || 
+        light instanceof THREE.SpotLight)) {
+    return;
+  }
+  
+  light.castShadow = true;
+  
+  // Configure shadow properties based on light type
+  if (light.shadow) {
+    // High resolution shadow maps
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
+    
+    // Configure near/far planes for the shadow camera
+    light.shadow.camera.near = 0.1;
+    light.shadow.camera.far = 100;
+    
+    // Fix shadow acne with appropriate bias
+    light.shadow.bias = -0.005;
+    
+    // Soft shadows
+    light.shadow.radius = 2;
+    light.shadow.blurSamples = 8;
+    
+    // Special handling for directional lights
+    if (light instanceof THREE.DirectionalLight) {
+      // Wider shadow camera for directional lights to cover more area
+      light.shadow.camera.left = -20;
+      light.shadow.camera.right = 20;
+      light.shadow.camera.top = 20;
+      light.shadow.camera.bottom = -20;
+    }
+  }
 };
 
 /**
  * Configures a mesh to cast and receive shadows
  * @param mesh The mesh to configure
  */
-export const setupMeshShadows = (mesh: BABYLON.AbstractMesh): void => {
-    // Set mesh to receive shadows
-    mesh.receiveShadows = true;
-
-    // Add mesh to all shadow generators (to cast shadows)
-    addMeshToShadowCasters(mesh);
+export const setupMeshShadows = (mesh: THREE.Mesh): void => {
+  // Set mesh to cast and receive shadows
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  
+  // Also set up shadows for child meshes
+  mesh.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
 };

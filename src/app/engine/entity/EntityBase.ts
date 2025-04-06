@@ -12,7 +12,7 @@ import { GizmoMode } from '@/app/engine/managers/GizmoModeManager';
 export type EntityType = 'generative' | 'shape' | 'light' | 'character';
 export class EntityBase extends THREE.Object3D implements ISelectable {
   // Core properties all entities share
-  id: string;
+  entityId: string;
   entityType: EntityType;
   created: Date;
   engine: EditorEngine;
@@ -30,7 +30,7 @@ export class EntityBase extends THREE.Object3D implements ISelectable {
     scene: THREE.Scene,
     entityType: EntityType,
     options: {
-      id?: string;
+      entityId?: string;
       position?: THREE.Vector3;
       rotation?: THREE.Euler;
       scaling?: THREE.Vector3;
@@ -41,7 +41,7 @@ export class EntityBase extends THREE.Object3D implements ISelectable {
 
     // Initialize core properties
     this.engine = EditorEngine.getInstance();
-    this.id = options.id || uuidv4();
+    this.entityId = options.entityId || uuidv4();
     this.entityType = entityType;
     this.created = new Date();
 
@@ -71,7 +71,7 @@ export class EntityBase extends THREE.Object3D implements ISelectable {
    */
   serialize(): SerializedEntityData {
     return {
-      id: this.id,
+      entityId: this.entityId,
       name: this.name,
       entityType: this.entityType,
       position: fromThreeVector3(this.position),
@@ -135,8 +135,8 @@ export class EntityBase extends THREE.Object3D implements ISelectable {
     return this; // The entity itself is the target
   }
 
-  getId(): string {
-    return this.id;
+  getUUId(): string {
+    return this.entityId;
   }
 
   getName(): string {
@@ -155,7 +155,7 @@ export class EntityBase extends THREE.Object3D implements ISelectable {
 
 
 export interface SerializedEntityData {
-  id: string;
+  entityId: string;
   name: string;
   entityType: EntityType;
   position: Vector3Data;

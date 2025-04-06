@@ -262,7 +262,7 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     return this;
   }
 
-  getId(): string {
+  getUUID(): string {
     return this.id;
   }
 

@@ -54,7 +54,7 @@ export class CharacterEntity extends EntityBase {
             onLoaded?: (entity: EntityBase) => void
         }) {
         super(name, scene, 'character', {
-            id: id,
+            entityId: id,
             position: new BABYLON.Vector3(0, 0, 0),
             scaling: options?.scaling || new BABYLON.Vector3(1, 1, 1)
         });
@@ -438,8 +438,8 @@ export class CharacterEntity extends EntityBase {
         data: SerializedCharacterEntityData,
     ): Promise<CharacterEntity> {
         try {
-            console.log("Deserializing character:", data.name, data.id);
-            const entity = new CharacterEntity(scene, data.name, data.id, data.characterProps);
+            console.log("Deserializing character:", data.name, data.entityId);
+            const entity = new CharacterEntity(scene, data.name, data.entityId, data.characterProps);
 
             // Wait for model to load before applying bone rotations
             await entity.waitUntilReady();
@@ -511,7 +511,7 @@ export class CharacterEntity extends EntityBase {
         } catch (error) {
             console.error("Error during character deserialization:", error);
             // Create a fallback entity without the bone rotations
-            const fallbackEntity = new CharacterEntity(scene, data.name, data.id, data.characterProps);
+            const fallbackEntity = new CharacterEntity(scene, data.name, data.entityId, data.characterProps);
             await fallbackEntity.waitUntilReady();
             return fallbackEntity;
         }
