@@ -1,4 +1,4 @@
-import * as BABYLON from '@babylonjs/core';
+import * as THREE from 'three';
 import { HistoryManager } from '../engine/managers/HistoryManager';
 import { GizmoMode } from '../engine/managers/GizmoModeManager';
 
@@ -44,9 +44,9 @@ export interface ISelectable {
   onDeselect(): void;
   
   /**
-   * Get the mesh or node to attach gizmos to
+   * Get the object to attach gizmos to
    */
-  getGizmoTarget(): BABYLON.AbstractMesh | BABYLON.TransformNode;
+  getGizmoTarget(): THREE.Object3D;
   
   /**
    * Get the unique identifier for this selectable object

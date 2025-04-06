@@ -1,4 +1,4 @@
-import * as BABYLON from '@babylonjs/core';
+import * as THREE from 'three';
 import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
 import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/app/engine/entity/GenerativeEntity';
 import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/ShapeEntity';
@@ -13,9 +13,9 @@ import { DeleteEntityCommand } from '@/app/lib/commands';
 interface BaseEntityOptions {
   name?: string;
   id?: string;
-  position?: BABYLON.Vector3;
-  rotation?: BABYLON.Vector3;
-  scaling?: BABYLON.Vector3;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  scaling?: THREE.Vector3;
   onLoaded?: (entity: EntityBase) => void;
 }
 
@@ -23,7 +23,7 @@ interface BaseEntityOptions {
 export type CreateEntityOptions =
   | (BaseEntityOptions & { type: 'generative', gnerativeProps: GenerativeEntityProps })
   | (BaseEntityOptions & { type: 'shape', shapeProps: ShapeEntityProps })
-  | (BaseEntityOptions & { type: 'light', lightProps: LightProps, rotation?: BABYLON.Vector3 })
+  | (BaseEntityOptions & { type: 'light', lightProps: LightProps, rotation?: THREE.Euler })
   | (BaseEntityOptions & { type: 'character', characterProps: CharacterEntityProps });
 
 /**
@@ -33,7 +33,7 @@ export class EntityFactory {
   /**
    * Create an entity based on type
    */
-  static createEntityDefault(scene: BABYLON.Scene, type: EntityType, onLoaded?: (entity: EntityBase) => void): EntityBase {
+  static createEntityDefault(scene: THREE.Scene, type: EntityType, onLoaded?: (entity: EntityBase) => void): EntityBase {
     const name = `entity-${Date.now()}`;
     const id = uuidv4();
 
@@ -49,17 +49,23 @@ export class EntityFactory {
       case 'light':
         return new LightEntity(name, scene, { id, onLoaded });
       case 'character':
-        return new CharacterEntity(scene, name, id, {
-          url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb',
-        }, {
-          onLoaded
-        });
+        return new CharacterEntity(
+          scene, 
+          name, 
+          id, 
+          {
+            url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb',
+          }, 
+          {
+            onLoaded
+          }
+        );
       default:
         throw new Error(`Unknown entity type`);
     }
   }
 
-  static createEntity(scene: BABYLON.Scene, options: CreateEntityOptions): EntityBase {
+  static createEntity(scene: THREE.Scene, options: CreateEntityOptions): EntityBase {
     const name = options.name || `entity-${Date.now()}`;
     switch (options.type) {
       case 'generative':
@@ -77,7 +83,8 @@ export class EntityFactory {
         return new LightEntity(name, scene, options);
       case 'character':
         return new CharacterEntity(
-          scene, name,
+          scene, 
+          name,
           options.id || uuidv4(),
           options.characterProps,
           {
@@ -98,9 +105,8 @@ export class EntityFactory {
 
     const duplicateCommand = new CreateEntityAsyncCommand(
       async () => {
-        console.log("Creating duplicate entity", entity.getEntityType(), entity.metadata?.aiData?.aiObjectType);
+        console.log("Creating duplicate entity", entity.getEntityType(), entity.userData?.aiData?.aiObjectType);
         // const duplicate = await duplicateEntity(entity, scene);
-
 
         const serializedEntityData = entity.serialize();
 
@@ -138,7 +144,7 @@ export class EntityFactory {
    * Deserialize an entity from serialized data
    */
   static deserializeEntity(
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     data: any
   ): Promise<EntityBase> {
     // Implementation for deserialization

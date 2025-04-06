@@ -1,5 +1,5 @@
-import * as BABYLON from "@babylonjs/core";
-import * as Materials from "@babylonjs/materials";
+import * as THREE from "three";
+import { TextureLoader } from "three";
 
 export const defaultTex = {
     // Concrete
@@ -13,123 +13,97 @@ export const defaultTex = {
     // normal: "./textures/patterned_clay_plaster_nor_gl_2k.jpg",
 }
 
-export let defaultMaterial: BABYLON.Material;
-export let defaultPBRMaterial: BABYLON.PBRMaterial;
-export let placeholderMaterial: BABYLON.StandardMaterial;
+export let defaultMaterial: THREE.Material;
+export let defaultPBRMaterial: THREE.MeshStandardMaterial;
+export let placeholderMaterial: THREE.MeshStandardMaterial;
 
-export const createDefaultMaterials = (scene: BABYLON.Scene) => {
-    const material = new Materials.TriPlanarMaterial(`BasicTriPlanarMaterial`, scene);
-    material.diffuseColor = new BABYLON.Color3(1, 1, 1);
-    material.backFaceCulling = false;
-    material.diffuseTextureX = new BABYLON.Texture(defaultTex.color, scene);
-    material.diffuseTextureY = new BABYLON.Texture(defaultTex.color, scene);
-    material.diffuseTextureZ = new BABYLON.Texture(defaultTex.color, scene);
-    material.normalTextureX = new BABYLON.Texture(defaultTex.normal, scene);
-    material.normalTextureY = new BABYLON.Texture(defaultTex.normal, scene);
-    material.normalTextureZ = new BABYLON.Texture(defaultTex.normal, scene);
-    material.tileSize = 3;
+// Helper for creating and loading a texture
+const loadTexture = (url: string, scene: THREE.Scene): THREE.Texture => {
+    const texture = new THREE.TextureLoader().load(url);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 1);
+    return texture;
+};
 
-    const material2 = new BABYLON.PBRMaterial(`BasicPBRMaterial`, scene);
-    material2.albedoColor = new BABYLON.Color3(1, 1, 1);
-    material2.backFaceCulling = false;
-    material2.albedoTexture = new BABYLON.Texture(defaultTex.color, scene);
-    material2.bumpTexture = new BABYLON.Texture(defaultTex.normal, scene);
+export const createDefaultMaterials = (scene: THREE.Scene) => {
+    // Create a standard material with repeated textures as our basic material
+    // Note: Three.js doesn't have a direct equivalent to TriPlanarMaterial
+    // For a full implementation, we would need a custom shader
+    const material = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        map: loadTexture(defaultTex.color, scene),
+        normalMap: loadTexture(defaultTex.normal, scene),
+    });
+    
+    // Set repeat scale to approximate the tileSize in the original
+    if (material.map) {
+        material.map.repeat.set(3, 3);
+    }
+    if (material.normalMap) {
+        material.normalMap.repeat.set(3, 3);
+    }
+
+    // Create a PBR material
+    const material2 = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        map: loadTexture(defaultTex.color, scene),
+        normalMap: loadTexture(defaultTex.normal, scene),
+        metalness: 0.0,
+        roughness: 0.8
+    });
 
     placeholderMaterial = createPlaceholderPlaneMaterial(scene);
     defaultMaterial = material;
     defaultPBRMaterial = material2;
 
-
     return material;
 }
 
-const createPlaceholderPlaneMaterial = (scene: BABYLON.Scene) => {
-    const material = new BABYLON.StandardMaterial("PlaceholderPlaneMaterial", scene);
+const createPlaceholderPlaneMaterial = (scene: THREE.Scene) => {
+    // Create a transparent material similar to the original placeholder
+    const material = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(0.2, 0.5, 0.9),
+        emissive: new THREE.Color(0.2, 0.5, 0.9),
+        transparent: true,
+        opacity: 0.5,
+        side: THREE.DoubleSide
+    });
 
-    // Make it transparent
-    material.alpha = 0.5;
-    material.transparencyMode = BABYLON.StandardMaterial.MATERIAL_ALPHABLEND;
+    // Load the opacity texture
+    const textureLoader = new TextureLoader();
+    textureLoader.load("./textures/rect-gradient-2-s.png", (texture) => {
+        material.alphaMap = texture;
+        material.needsUpdate = true;
+    });
 
-    // Set diffuse and emissive color
-    material.emissiveColor = new BABYLON.Color3(0.2, 0.5, 0.9);
-
-    material.opacityTexture = new BABYLON.Texture("./textures/rect-gradient-2-s.png", scene);
-
-
-    // Add breathing animation for the emissive effect
-    const breathingAnimation = new BABYLON.Animation(
-        "breathingAnimation",
-        "emissiveColor",
-        30,
-        BABYLON.Animation.ANIMATIONTYPE_COLOR3,
-        BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE
-    );
-
-    // Keyframes for breathing effect
-    const keys = [
-        { frame: 0, value: new BABYLON.Color3(0.1, 0.3, 0.7) },
-        { frame: 30, value: new BABYLON.Color3(0.2, 0.5, 0.9) },
-        { frame: 60, value: new BABYLON.Color3(0.1, 0.3, 0.7) }
-    ];
-
-    breathingAnimation.setKeys(keys);
-    material.animations = [breathingAnimation];
-    scene.beginAnimation(material, 0, 60, true);
+    // Add a simple animation for the emissive effect using Three.js animation system
+    // This is different from Babylon's animation system
+    // We'll use a simple approach with requestAnimationFrame for this example
+    const breatheMaterial = () => {
+        const time = Date.now() * 0.001; // Convert to seconds
+        const intensity = 0.5 + 0.2 * Math.sin(time); // Range from 0.3 to 0.7
+        
+        // Update the emissive intensity (not direct color as in Babylon)
+        material.emissiveIntensity = intensity;
+        
+        // Request next frame
+        requestAnimationFrame(breatheMaterial);
+    };
+    
+    // Start the animation
+    breatheMaterial();
 
     placeholderMaterial = material;
     return material;
 }
 
-const createFresnelPlaneMaterial = (scene: BABYLON.Scene) => {
-    const material = new BABYLON.StandardMaterial("FresnelPlaneMaterial", scene);
+// Note: We've removed createFresnelPlaneMaterial as Three.js doesn't have a direct
+// equivalent to Babylon's FresnelParameters. For a similar effect, we would need to
+// create a custom shader material. This could be implemented later if needed.
 
-    // Make it transparent
-    material.alpha = 0.3;
-    material.transparencyMode = BABYLON.StandardMaterial.MATERIAL_ALPHABLEND;
-
-    // Set diffuse and emissive color
-    // material.diffuseColor = new BABYLON.Color3(0.1, 0.2, 0.8);
-    material.emissiveColor = new BABYLON.Color3(0.2, 0.5, 0.9);
-
-    // Configure Fresnel parameters for edge glow
-    material.diffuseFresnelParameters = new BABYLON.FresnelParameters();
-    material.diffuseFresnelParameters.bias = 0.1;
-    material.diffuseFresnelParameters.power = 2;
-    material.diffuseFresnelParameters.leftColor = BABYLON.Color3.Blue();
-    material.diffuseFresnelParameters.rightColor = BABYLON.Color3.Black();
-
-
-    material.emissiveFresnelParameters = new BABYLON.FresnelParameters();
-    material.emissiveFresnelParameters.bias = 0.6;
-    material.emissiveFresnelParameters.power = 2;
-    material.emissiveFresnelParameters.leftColor = BABYLON.Color3.Blue();
-    material.emissiveFresnelParameters.rightColor = BABYLON.Color3.Black();
-
-    material.opacityFresnelParameters = new BABYLON.FresnelParameters();
-    material.opacityFresnelParameters.leftColor = new BABYLON.Color3(0,0.3,1);
-    material.opacityFresnelParameters.rightColor = new BABYLON.Color3(0,0,0);
-
-    // Add breathing animation for the emissive effect
-    // const breathingAnimation = new BABYLON.Animation(
-    //     "breathingAnimation",
-    //     "emissiveColor",
-    //     30,
-    //     BABYLON.Animation.ANIMATIONTYPE_COLOR3,
-    //     BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE
-    // );
-
-    // // Keyframes for breathing effect
-    // const keys = [
-    //     { frame: 0, value: new BABYLON.Color3(0.1, 0.3, 0.7) },
-    //     { frame: 30, value: new BABYLON.Color3(0.2, 0.5, 0.9) },
-    //     { frame: 60, value: new BABYLON.Color3(0.1, 0.3, 0.7) }
-    // ];
-
-    // breathingAnimation.setKeys(keys);
-    // material.animations = [breathingAnimation];
-    // scene.beginAnimation(material, 0, 60, true);
-
-    placeholderMaterial = material;
-    return material;
-}
+// TODO: For a true Fresnel effect in Three.js, we would need to implement a custom shader material
+// using ShaderMaterial or implement using Three.js's built-in Fresnel node if using the node material system
 

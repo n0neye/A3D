@@ -1,4 +1,4 @@
-import * as BABYLON from '@babylonjs/core';
+import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
@@ -6,11 +6,11 @@ import { EditorEngine } from '../../engine/EditorEngine';
 import { GizmoMode } from '@/app/engine/managers/GizmoModeManager';
 /**
  * Base class for all entities in the scene
- * Extends TransformNode with common functionality
+ * Extends Object3D with common functionality
  */
 // Entity types
 export type EntityType = 'generative' | 'shape' | 'light' | 'character';
-export class EntityBase extends BABYLON.TransformNode implements ISelectable {
+export class EntityBase extends THREE.Object3D implements ISelectable {
   // Core properties all entities share
   id: string;
   entityType: EntityType;
@@ -27,16 +27,17 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
 
   constructor(
     name: string,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     entityType: EntityType,
     options: {
       id?: string;
-      position?: BABYLON.Vector3;
-      rotation?: BABYLON.Vector3;
-      scaling?: BABYLON.Vector3;
+      position?: THREE.Vector3;
+      rotation?: THREE.Euler;
+      scaling?: THREE.Vector3;
     } = {}
   ) {
-    super(name, scene);
+    super();
+    this.name = name;
 
     // Initialize core properties
     this.engine = EditorEngine.getInstance();
@@ -45,10 +46,14 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
     this.created = new Date();
 
     // Set transform properties
-    if (options.position) this.position = options.position;
-    if (options.rotation) this.rotation = options.rotation;
-    if (options.scaling) this.scaling = options.scaling;
+    if (options.position) this.position.copy(options.position);
+    if (options.rotation) this.rotation.copy(options.rotation);
+    if (options.scaling && this.scale) {
+      this.scale.copy(options.scaling);
+    }
 
+    // Add to scene
+    scene.add(this);
   }
 
   // Common methods all entities share
@@ -69,9 +74,9 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
       id: this.id,
       name: this.name,
       entityType: this.entityType,
-      position: fromBabylonVector3(this.position),
-      rotation: fromBabylonVector3(this.rotation),
-      scaling: fromBabylonVector3(this.scaling),
+      position: fromThreeVector3(this.position),
+      rotation: fromThreeEuler(this.rotation),
+      scaling: fromThreeVector3(this.scale),
       created: this.created.toISOString(),
     };
   }
@@ -79,7 +84,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   /**
    * Base deserialization method (to be implemented in derived classes)
    */
-  static async deserialize(scene: BABYLON.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
+  static async deserialize(scene: THREE.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
     throw new Error(`EntityBase.deserialize: Not implemented`);
   }
 
@@ -88,7 +93,25 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
    * Should be extended by derived classes to clean up resources
    */
   dispose(): void {
-    super.dispose();
+    // Remove from parent
+    this.parent?.remove(this);
+    
+    // Dispose geometries and materials recursively
+    this.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        if (object.geometry) {
+          object.geometry.dispose();
+        }
+        
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -107,7 +130,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
     console.log(`EntityBase.onDeselect: Entity deselected: ${this.name} (${this.constructor.name})`);
   }
 
-  getGizmoTarget(): BABYLON.AbstractMesh | BABYLON.TransformNode {
+  getGizmoTarget(): THREE.Object3D {
     console.log(`EntityBase.getGizmoTarget: Returning this entity: ${this.name}`);
     return this; // The entity itself is the target
   }
@@ -122,11 +145,11 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
 
   delete(): void {
     // Simply hide the entity for now
-    this.setEnabled(false);
+    this.visible = false;
   }
 
   undoDelete(): void {
-    this.setEnabled(true);
+    this.visible = true;
   }
 }
 
@@ -136,7 +159,7 @@ export interface SerializedEntityData {
   name: string;
   entityType: EntityType;
   position: Vector3Data;
-  rotation: Vector3Data;
+  rotation: EulerData;
   scaling: Vector3Data;
   created: string;
 }
@@ -147,13 +170,29 @@ type Vector3Data = {
   z: number;
 }
 
-export const toBabylonVector3 = (v: Vector3Data): BABYLON.Vector3 => {
-  return new BABYLON.Vector3(v.x, v.y, v.z);
+type EulerData = {
+  x: number;
+  y: number;
+  z: number;
+  order?: string;
 }
-export const fromBabylonVector3 = (v: BABYLON.Vector3): Vector3Data => {
+
+export const toThreeVector3 = (v: Vector3Data): THREE.Vector3 => {
+  return new THREE.Vector3(v.x, v.y, v.z);
+}
+
+export const fromThreeVector3 = (v: THREE.Vector3): Vector3Data => {
   return { x: v.x, y: v.y, z: v.z };
 }
 
-export function isEntity(node: BABYLON.Node | null): node is EntityBase {
+export const toThreeEuler = (e: EulerData): THREE.Euler => {
+  return new THREE.Euler(e.x, e.y, e.z, e.order || 'XYZ');
+}
+
+export const fromThreeEuler = (e: THREE.Euler): EulerData => {
+  return { x: e.x, y: e.y, z: e.z, order: e.order };
+}
+
+export function isEntity(node: THREE.Object3D | null): node is EntityBase {
   return node instanceof EntityBase;
 }

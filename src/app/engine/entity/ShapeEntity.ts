@@ -1,5 +1,5 @@
-import * as BABYLON from '@babylonjs/core';
-import { EntityBase, SerializedEntityData, toBabylonVector3 } from './EntityBase';
+import * as THREE from 'three';
+import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from './EntityBase';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
 import { defaultMaterial } from '@/app/util/editor/material-util';
 import { setupMeshShadows } from '@/app/util/editor/light-util';
@@ -20,16 +20,16 @@ export interface SerializedShapeEntityData extends SerializedEntityData {
 export class ShapeEntity extends EntityBase {
   // ShapeEntity specific properties
   props: ShapeEntityProps;
-  modelMesh: BABYLON.Mesh;
+  modelMesh: THREE.Mesh;
 
   constructor(
     name: string,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     options: {
       id?: string;
-      position?: BABYLON.Vector3;
-      rotation?: BABYLON.Vector3;
-      scaling?: BABYLON.Vector3;
+      position?: THREE.Vector3;
+      rotation?: THREE.Euler;
+      scaling?: THREE.Vector3;
       props: ShapeEntityProps;
       onLoaded?: (entity: ShapeEntity) => void;
     }
@@ -44,9 +44,9 @@ export class ShapeEntity extends EntityBase {
     this.props = options.props;
 
     // Create the shape mesh
-    const newMesh = createShapeMesh(this._scene, this.props.shapeType);
+    const newMesh = createShapeMesh(scene, this.props.shapeType);
     newMesh.parent = this;
-    newMesh.metadata = { rootEntity: this };
+    newMesh.userData = { rootEntity: this };
     this.modelMesh = newMesh;
 
     // Apply the material and setup shadows
@@ -55,7 +55,7 @@ export class ShapeEntity extends EntityBase {
 
     // scale
     if (options?.scaling) {
-      newMesh.scaling = options.scaling;
+      newMesh.scale.copy(options.scaling);
     }
 
     // Return the created mesh
@@ -66,10 +66,10 @@ export class ShapeEntity extends EntityBase {
   /**
    * Deserialize a shape entity from serialized data
    */
-  static async deserialize(scene: BABYLON.Scene, data: SerializedShapeEntityData): Promise<ShapeEntity> {
-    const position = data.position ? toBabylonVector3(data.position) : undefined;
-    const rotation = data.rotation ? toBabylonVector3(data.rotation) : undefined;
-    const scaling = data.scaling ? toBabylonVector3(data.scaling) : undefined;
+  static async deserialize(scene: THREE.Scene, data: SerializedShapeEntityData): Promise<ShapeEntity> {
+    const position = data.position ? toThreeVector3(data.position) : undefined;
+    const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
+    const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
 
     return new ShapeEntity(data.name, scene, {
       id: data.id,
