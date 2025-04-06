@@ -20,7 +20,7 @@ import { BabylonCore } from './core/BabylonCore';
 import { CameraManager } from './managers/CameraManager';
 import { SelectionManager } from './managers/SelectionManager';
 import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
-import { EntityFactory, CreateEntityOptions } from './utils/EntityFactory';
+import { EntityFactory, CreateEntityOptions } from './services/EntityFactory';
 import { Command, HistoryManager } from './managers/HistoryManager';
 import { loadShapeMeshes } from '../util/editor/shape-util';
 import { InputManager } from './managers/InputManager';

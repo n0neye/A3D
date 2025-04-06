@@ -16,7 +16,7 @@ import { SelectionManager } from './SelectionManager';
 import { HistoryManager } from './HistoryManager';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { TransformCommand, CreateEntityCommand } from '../../lib/commands';
-import { EntityFactory } from '../utils/EntityFactory';
+import { EntityFactory } from '../services/EntityFactory';
 import { ISelectable } from '../../interfaces/ISelectable';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { GenerativeEntityProps } from '@/app/engine/entity/GenerativeEntity';
