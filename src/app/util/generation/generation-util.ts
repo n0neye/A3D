@@ -1,11 +1,7 @@
 import { fal, Result } from "@fal-ai/client";
-import * as BABYLON from '@babylonjs/core';
-import "@babylonjs/loaders/glTF";
-import { get3DSimulationData, getImageSimulationData, isSimulating } from "../simulation-data";
+import * as THREE from 'three';
 import { GenerationLog, GenerativeEntity } from '@/app/engine/entity//GenerativeEntity';
-import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { GenerationResult } from "./realtime-generation-util";
-import { TrellisOutput } from "@fal-ai/client/endpoints";
 
 
 export type ImageRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
@@ -51,7 +47,7 @@ export type ProgressCallback = (progress: GenerationProgress) => void;
 export async function generateBackground(
     prompt: string,
     entity: GenerativeEntity,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     options: {
         negativePrompt?: string;
     } = {}
@@ -127,7 +123,7 @@ export function blobToBase64(blob: Blob): Promise<string> {
 export async function removeBackground(
     imageUrl: string,
     entity: GenerativeEntity,
-    scene: BABYLON.Scene,
+    scene: THREE.Scene,
     derivedFromId: string
 ): Promise<GenerationResult> {
     // Update entity state

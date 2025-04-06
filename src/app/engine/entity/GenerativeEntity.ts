@@ -333,6 +333,23 @@ export class GenerativeEntity extends EntityBase {
     }
   }
 
+  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio): GenerationLog {
+    const log: GenerationLog = {
+      id: uuidv4(),
+      timestamp: Date.now(),
+      prompt: prompt,
+      assetType: 'image',
+      fileUrl: imageUrl,
+      imageParams: {
+        ratio: ratio
+      }
+    };
+    this.props.generationLogs.push(log);
+    this.props.currentGenerationId = log.id;
+    this.props.currentGenerationIdx = this.props.generationLogs.length - 1;
+    return log;
+  }
+
   /**
    * Deserialize a generative entity from serialized data
    */
