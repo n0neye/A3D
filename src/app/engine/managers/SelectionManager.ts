@@ -37,7 +37,7 @@ export class SelectionManager {
   /**
    * Select an object
    */
-  select(newSelectable: ISelectable | null): void {
+  select(newSelectable: ISelectable): void {
     console.log("SelectionManager.select called with:", newSelectable?.getName());
 
     // Determine if need to deselect the current Entity

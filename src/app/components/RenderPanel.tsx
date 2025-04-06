@@ -241,7 +241,6 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
   const handleRender = async (isTest: boolean = false) => {
     setIsLoading(true);
     setExecutionTime(null);
-    engine.getSelectionManager().select(null);
 
     // Start measuring time
     const startTime = Date.now();
@@ -255,6 +254,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
     });
 
     // Hide gizmos before rendering
+    engine.getSelectionManager().deselectAll();
     const renderService = engine.getRenderService();
     renderService.setAllGizmoVisibility(false);
 

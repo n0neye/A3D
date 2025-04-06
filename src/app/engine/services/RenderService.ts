@@ -43,7 +43,8 @@ export class RenderService {
             if (!this.scene || !this.engine) return null;
             
             // Get camera
-            const camera = this.engine.getCameraManager().getCamera();
+            const cameraManager = this.engine.getCameraManager();
+            const camera = cameraManager.getCamera();
             
             // Render the scene
             this.renderer.render(this.scene, camera);
@@ -52,12 +53,22 @@ export class RenderService {
             const screenshot = this.renderer.domElement.toDataURL('image/png');
 
             // Check if we have an active ratio overlay
-            const cameraManager = this.engine.getCameraManager();
             const ratioDimensions = cameraManager.getRatioOverlayDimensions();
 
+
             if (ratioDimensions) {
+                // Multiply the frame dimensions with pixel ratio to account for high-DPI displays
+                const pixelRatio = this.renderer.pixelRatio || window.devicePixelRatio;
+                const frame = {
+                    left: ratioDimensions.frame.left * pixelRatio,
+                    top: ratioDimensions.frame.top * pixelRatio,
+                    width: ratioDimensions.frame.width * pixelRatio,
+                    height: ratioDimensions.frame.height * pixelRatio
+                };
+
                 // Crop to the ratio overlay
-                const { imageUrl, width, height } = await cropImageToRatioFrame(screenshot, ratioDimensions.frame);
+                const { imageUrl, width, height } = await cropImageToRatioFrame(screenshot, frame);
+
                 // Resize the screenshot if it's too large
                 if (width > maxSize || height > maxSize) {
                     const resized = await resizeImage(imageUrl, maxSize, maxSize);
