@@ -16,6 +16,8 @@
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+// Import MOUSE enum for button configuration
+import { MOUSE } from 'three';
 import { ImageRatio, RATIO_MAP } from '../../util/generation/generation-util';
 import { Observer } from '../utils/Observer';
 
@@ -93,6 +95,13 @@ export class CameraManager {
     controls.panSpeed = 1.0;
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.0;
+    
+    // Configure mouse buttons:
+    controls.mouseButtons = {
+      LEFT: MOUSE.ROTATE,       // Left mouse button for panning
+      MIDDLE: MOUSE.ROTATE,  // Middle mouse button for rotation
+      RIGHT: MOUSE.PAN      // Right mouse button for zooming
+    };
     
     return controls;
   }
