@@ -117,7 +117,7 @@ export class CharacterEntity extends EntityBase {
                     if (object instanceof THREE.SkinnedMesh && object.skeleton && !skeletonFound) {
                         this.skeleton = object.skeleton;
                         skeletonFound = true;
-                        console.log(`Character ${this.name} loaded with skeleton: ${this.skeleton.name}`);
+                        console.log(`Character ${this.name} loaded with skeleton: ${this.skeleton.uuid}`);
 
                         // Store initial bone rotations for reset capability
                         this.skeleton.bones.forEach(bone => {
@@ -146,7 +146,11 @@ export class CharacterEntity extends EntityBase {
                 // Position the character at origin by default
                 this.position.set(0, 0, 0);
 
-                setupMeshShadows(this.rootMesh);
+                this.rootMesh.traverse(object => {
+                    if (object instanceof THREE.Mesh) {
+                        setupMeshShadows(object);
+                    }
+                });
                 onLoaded?.(this);
             } else {
                 console.error(`No scene loaded for character ${this.name}`);
@@ -462,16 +466,17 @@ export class CharacterEntity extends EntityBase {
             entity.rotation.y = data.rotation.y;
             entity.rotation.z = data.rotation.z;
 
-            entity.scaling.x = data.scaling.x;
-            entity.scaling.y = data.scaling.y;
-            entity.scaling.z = data.scaling.z;
+            entity.scale.x = data.scaling.x;
+            entity.scale.y = data.scaling.y;
+            entity.scale.z = data.scaling.z;
 
             // Apply saved bone rotations if available
             if (data.boneRotations && entity.skeleton) {
                 console.log("Applying bone rotations");
 
                 // First ensure all bones have their initial transforms updated
-                entity.skeleton.prepare();
+                entity.skeleton.bones.forEach(bone => bone.updateMatrixWorld(true));
+                entity.skeleton.update();
 
                 // Apply rotations in a try/catch to prevent errors from breaking deserialization
                 try {
@@ -503,8 +508,11 @@ export class CharacterEntity extends EntityBase {
 
     // Dispose all resources
     public dispose(): void {
-        this.getChildMeshes().forEach(mesh => {
-            mesh.dispose();
+        this.children.forEach(child => {
+            if (child instanceof THREE.Mesh) {
+                child.geometry.dispose();
+                child.material.dispose();
+            }
         });
 
         this._boneMap.forEach(({ control }) => {

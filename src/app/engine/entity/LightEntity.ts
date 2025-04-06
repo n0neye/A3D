@@ -103,7 +103,7 @@ export class LightEntity extends EntityBase {
   private createLightGizmo(scene: THREE.Scene): THREE.Mesh {
     // Create a visual representation for the light (a glowing sphere)
     const geometry = new THREE.SphereGeometry(0.2);
-    const material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshStandardMaterial({
       color: new THREE.Color(this.props.color.r, this.props.color.g, this.props.color.b),
       emissive: new THREE.Color(this.props.color.r, this.props.color.g, this.props.color.b),
       emissiveIntensity: 1.0
@@ -131,7 +131,7 @@ export class LightEntity extends EntityBase {
       
       // Update the gizmo color
       if (this.gizmoMesh && this.gizmoMesh.material) {
-        const material = this.gizmoMesh.material as THREE.MeshBasicMaterial;
+        const material = this.gizmoMesh.material as THREE.MeshStandardMaterial;
         material.color = color;
         material.emissive = color;
       }

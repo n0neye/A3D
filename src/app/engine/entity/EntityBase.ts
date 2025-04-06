@@ -186,7 +186,7 @@ export const fromThreeVector3 = (v: THREE.Vector3): Vector3Data => {
 }
 
 export const toThreeEuler = (e: EulerData): THREE.Euler => {
-  return new THREE.Euler(e.x, e.y, e.z, e.order || 'XYZ');
+  return new THREE.Euler(e.x, e.y, e.z, e.order as THREE.EulerOrder);
 }
 
 export const fromThreeEuler = (e: THREE.Euler): EulerData => {
