@@ -32,7 +32,7 @@
       "name": "Light",
       "entityType": "light",
       "position": {
-        "x": 0,
+        "x": 1,
         "y": 0.9742319003969611,
         "z": 0
       },

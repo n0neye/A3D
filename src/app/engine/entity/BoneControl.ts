@@ -42,12 +42,11 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     options: {
       entityId?: string;
       diameter?: number;
-      material?: THREE.Material;
     } = {}
   ) {
     // Create sphere geometry for the bone control
     const geometry = new THREE.SphereGeometry(options.diameter || 0.025, 16, 16);
-    const material = options.material || new THREE.MeshStandardMaterial({ color: 0x55aaff });
+    const material = CharacterEntity.DefaultBoneMaterial;
     
     // Call THREE.Mesh constructor
     super(geometry, material);
@@ -56,6 +55,7 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     this.name = name;
     this.entityId = options.entityId || uuidv4();
     this.character = character;
+    this.character.add(this);
     this.bone = bone;
 
     // Set metadata for identification
@@ -64,8 +64,8 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
       boneName: bone.name
     };
 
-    // Add to scene
-    scene.add(this);
+    // Set a high renderOrder to ensure it renders on top of other meshes
+    this.renderOrder = 1000;
   }
 
   // ISelectable implementation
@@ -88,9 +88,9 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     this._removeGizmoObservers();
 
     // Reset material to default visualization
-    if (this.character._visualizationMaterial) {
-      this.material = this.character._visualizationMaterial;
-    }
+    // if (this.character._defaultBoneMaterial) {
+    //   this.material = this.character._defaultBoneMaterial;
+    // }
   }
 
   // Helper to get the history manager

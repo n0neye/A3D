@@ -19,23 +19,24 @@ export interface SerializedCharacterEntityData extends SerializedEntityData {
 export class CharacterEntity extends EntityBase {
     public skeleton: THREE.Skeleton | null = null;
     public characterProps: CharacterEntityProps;
+    public rootMesh: THREE.Object3D | null = null;
+    public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
     private _isLoading = false;
     private _isDisposed = false;
     private _loadingPromise: Promise<void> | null = null;
-    public rootMesh: THREE.Object3D | null = null;
-    public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
 
     // Bone visualization properties
     private _boneMap: Map<string, { bone: THREE.Bone, control: BoneControl }> = new Map();
     private _boneLines: Map<string, THREE.Line> = new Map();
-    public _visualizationMaterial: THREE.Material | null = null;
-    public _highlightMaterial: THREE.Material | null = null;
-    private _boneColor = new THREE.Color(0.5, 0.7, 1.0);
     private _selectedBone: THREE.Bone | null = null;
     private _selectedControl: BoneControl | null = null;
     private _isVisualizationVisible = false;
-    private _boneMaterialAlpha = 0.5;
-    private _linesMaterialAlpha = 0.7;
+    public static DefaultBoneMaterial: THREE.Material;
+    public static HighlightBoneMaterial: THREE.Material;
+    public static LineMaterial: THREE.Material;
+    private static boneColor = new THREE.Color(0, 0, 1.0);
+    private static linesMaterialAlpha = 0.7;
+    private static boneMaterialAlpha = 0.5;
 
     constructor(
         scene: THREE.Scene,
@@ -62,28 +63,42 @@ export class CharacterEntity extends EntityBase {
         this._loadingPromise = this._loadCharacter(options?.onLoaded);
 
         // Create visualization material
-        this._createVisualizationMaterials(scene);
+        this._createMaterials(scene);
     }
 
-    private _createVisualizationMaterials(scene: THREE.Scene): void {
+    private _createMaterials(scene: THREE.Scene): void {
         // Create standard material for bones
-        this._visualizationMaterial = new THREE.MeshStandardMaterial({
-            color: this._boneColor,
-            emissive: this._boneColor,
-            transparent: true, 
-            opacity: this._boneMaterialAlpha,
-            depthWrite: false
-        });
+        if (!CharacterEntity.DefaultBoneMaterial) {
+            CharacterEntity.DefaultBoneMaterial = new THREE.MeshStandardMaterial({
+                color: CharacterEntity.boneColor,
+                emissive: CharacterEntity.boneColor,
+                transparent: true,
+                opacity: CharacterEntity.boneMaterialAlpha,
+                depthWrite: false
+            });
+        }
 
         // Create highlight material for selected bones
-        this._highlightMaterial = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(1, 0.5, 0),
-            emissive: new THREE.Color(1, 0.5, 0),
-            transparent: true, 
-            opacity: 0.8,
-            depthWrite: false
-        });
+        if (!CharacterEntity.HighlightBoneMaterial) {
+            CharacterEntity.HighlightBoneMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(1, 0.5, 0),
+                emissive: new THREE.Color(1, 0.5, 0),
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false
+            });
+        }
+
+        // Create line material
+        if (!CharacterEntity.LineMaterial) {
+            CharacterEntity.LineMaterial = new THREE.LineBasicMaterial({
+                color: CharacterEntity.boneColor,
+                transparent: true,
+                opacity: CharacterEntity.linesMaterialAlpha
+            });
+        }
     }
+
 
     private async _loadCharacter(onLoaded?: (entity: EntityBase) => void): Promise<void> {
         if (!this.characterProps.url) {
@@ -215,8 +230,7 @@ export class CharacterEntity extends EntityBase {
         this.skeleton.bones.forEach(bone => {
             // Skip fingers and other small bones for cleaner visualization
             const boneName = bone.name.toLowerCase();
-            if (boneName.includes('finger') || boneName.includes('thumb') ||
-                boneName.includes('toe') || boneName.includes('eye')) {
+            if (boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky')) {
                 return;
             }
 
@@ -226,9 +240,8 @@ export class CharacterEntity extends EntityBase {
                 this.engine.getScene(),
                 bone,
                 this,
-                { 
+                {
                     diameter: 0.05,
-                    material: this._visualizationMaterial || undefined
                 }
             );
 
@@ -258,19 +271,12 @@ export class CharacterEntity extends EntityBase {
                             new THREE.Vector3(0, 0, 0)
                         ];
                         const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                        
-                        // Create line material
-                        const material = new THREE.LineBasicMaterial({
-                            color: this._boneColor,
-                            transparent: true,
-                            opacity: this._linesMaterialAlpha
-                        });
-                        
+
                         // Create line mesh
-                        const line = new THREE.Line(geometry, material);
+                        const line = new THREE.Line(geometry, CharacterEntity.LineMaterial);
                         line.name = lineName;
                         line.visible = false;
-                        
+
                         // Add to scene
                         this.engine.getScene().add(line);
 
@@ -298,10 +304,10 @@ export class CharacterEntity extends EntityBase {
                     bone.getWorldPosition(boneControl.position);
                     boneControl.quaternion.copy(bone.quaternion);
                 }
-                
+
                 // Update lines between bones
                 const childBones = bone.children.filter(child => child instanceof THREE.Bone) as THREE.Bone[];
-                
+
                 childBones.forEach(childBone => {
                     // Only update if both bones have controls
                     if (this._boneMap.has(bone.name) && this._boneMap.has(childBone.name)) {
@@ -311,7 +317,7 @@ export class CharacterEntity extends EntityBase {
                         if (line) {
                             const parentPosition = new THREE.Vector3();
                             const childPosition = new THREE.Vector3();
-                            
+
                             bone.getWorldPosition(parentPosition);
                             childBone.getWorldPosition(childPosition);
 
@@ -354,10 +360,10 @@ export class CharacterEntity extends EntityBase {
      */
     public onSelect(): void {
         console.log(`CharacterEntity: Selected ${this.name}`);
-        
+
         // Show bone visualization when selected
         this.showBoneVisualization(true);
-        
+
         // Set up gizmo integration and input handling here
         // This will need adapting for the Three.js input system
     }
@@ -367,10 +373,10 @@ export class CharacterEntity extends EntityBase {
      */
     public onDeselect(): void {
         console.log(`CharacterEntity: Deselected ${this.name}`);
-        
+
         // Deselect any selected bone
         this._deselectBone();
-        
+
         // Hide bone visualization when deselected
         this.showBoneVisualization(false);
     }
@@ -383,13 +389,9 @@ export class CharacterEntity extends EntityBase {
         this._deselectBone();
 
         // Select new bone
+        control.onSelect();
         this._selectedBone = bone;
         this._selectedControl = control;
-
-        // Highlight the selected control
-        if (this._highlightMaterial) {
-            control.material = this._highlightMaterial;
-        }
 
         // Track bone selection
         trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
@@ -406,9 +408,7 @@ export class CharacterEntity extends EntityBase {
     private _deselectBone(): void {
         if (this._selectedBone && this._selectedControl) {
             // Reset control appearance
-            if (this._visualizationMaterial) {
-                this._selectedControl.material = this._visualizationMaterial;
-            }
+            this._selectedControl.material = CharacterEntity.DefaultBoneMaterial;
 
             // Clear selection
             this._selectedBone = null;
@@ -530,14 +530,6 @@ export class CharacterEntity extends EntityBase {
             }
             line.parent?.remove(line);
         });
-
-        if (this._visualizationMaterial) {
-            this._visualizationMaterial.dispose();
-        }
-        
-        if (this._highlightMaterial) {
-            this._highlightMaterial.dispose();
-        }
 
         this.skeleton?.dispose();
 

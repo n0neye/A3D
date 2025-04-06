@@ -61,7 +61,7 @@ export class EnvironmentManager {
     ): THREE.GridHelper => {
         // Create a grid helper
         const grid = new THREE.GridHelper(size, divisions);
-        grid.position.y = 0.01; // Slightly above 0 to avoid z-fighting
+        grid.position.y = -0.01; // Slightly above 0 to avoid z-fighting
         scene.add(grid);
         
         // Store in environment objects
@@ -120,7 +120,7 @@ export class EnvironmentManager {
         // scene.environment = textureCube;
 
         
-        scene.background = new THREE.Color(0.5,0.5,1); 
+        scene.background = new THREE.Color(0.3,0.3,0.3); 
         
     };
 
