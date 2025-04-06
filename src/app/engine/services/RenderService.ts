@@ -57,7 +57,7 @@ export class RenderService {
 
             if (ratioDimensions) {
                 // Crop to the ratio overlay
-                const { imageUrl, width, height } = await cropImageToRatioFrame(screenshot, ratioDimensions);
+                const { imageUrl, width, height } = await cropImageToRatioFrame(screenshot, ratioDimensions.frame);
                 // Resize the screenshot if it's too large
                 if (width > maxSize || height > maxSize) {
                     const resized = await resizeImage(imageUrl, maxSize, maxSize);

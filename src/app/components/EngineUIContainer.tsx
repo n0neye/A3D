@@ -1,4 +1,3 @@
-
 import AddPanel from './AddPanel';
 import EntityPanel from './EntityPanels/EntityPanel';
 import GizmoModeSelector from './GizmoModeSelector';
@@ -7,6 +6,7 @@ import FileMenu from './FileMenu';
 import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
 import RenderPanel from './RenderPanel';
+import RatioOverlay from './RatioOverlay';
 import { useEffect, useRef, useState } from 'react';
 import { availableAPIs } from '../util/generation/image-render-api';
 import { IRenderLog } from '@/app/engine/managers/ProjectManager';
@@ -50,6 +50,7 @@ function EngineUIContainer() {
     return (
         <>
 
+            <RatioOverlay />
             <AddPanel />
             <EntityPanel />
 

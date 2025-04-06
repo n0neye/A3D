@@ -37,10 +37,8 @@ export class CameraManager {
   private orbitControls: OrbitControls;
   private canvas: HTMLCanvasElement;
   
-  // Ratio overlay properties
-  private ratioOverlay: {
-    container: THREE.Group;
-    overlayMesh: THREE.Mesh; // Semi-transparent quad to represent the frame
+  // Simplify the ratio overlay to just contain the calculation-related properties
+  private ratioOverlaySettings: {
     padding: number;
     rightExtraPadding: number;
     ratio: ImageRatio;
@@ -58,8 +56,8 @@ export class CameraManager {
     this.mainCamera = this._createMainCamera();
     this.orbitControls = this._createOrbitControls(canvas);
     
-    // Initialize ratio overlay
-    this.ratioOverlay = this._initializeRatioOverlay();
+    // Initialize ratio overlay settings
+    this.ratioOverlaySettings = this._initializeRatioOverlaySettings();
     
     // Add window resize handler
     window.addEventListener('resize', this.onResize.bind(this));
@@ -99,94 +97,18 @@ export class CameraManager {
     return controls;
   }
 
-  private _initializeRatioOverlay(): {
-    container: THREE.Group;
-    overlayMesh: THREE.Mesh;
+  private _initializeRatioOverlaySettings(): {
     padding: number;
     rightExtraPadding: number;
     ratio: ImageRatio;
     isVisible: boolean;
   } {
-    // Create a container group for all overlay elements
-    const container = new THREE.Group();
-    container.name = "ratioOverlay";
-    
-    // Create the overlay mesh - this will be a colored quad rendered in screen space
-    // For Three.js we'll implement this differently - using an orthographic camera and a plane
-    // that we'll size based on the ratio
-    
-    // Create a semi-transparent material
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      transparent: true,
-      opacity: 0.3,
-      side: THREE.DoubleSide,
-      depthTest: false
-    });
-    
-    // Create a simple plane geometry
-    const geometry = new THREE.PlaneGeometry(1, 1);
-    
-    // Create the mesh
-    const overlayMesh = new THREE.Mesh(geometry, material);
-    overlayMesh.renderOrder = 999; // Make sure it renders last
-    
-    // Add to container
-    container.add(overlayMesh);
-    
-    // Add container to scene
-    this.scene.add(container);
-    
-    // Return the initialized object
     return {
-      container,
-      overlayMesh,
       padding: 10,
       rightExtraPadding: 0,
       ratio: '16:9',
       isVisible: true
     };
-  }
-
-  private _updateRatioOverlayDimensions(): void {
-    if (!this.ratioOverlay) return;
-    
-    const { padding, rightExtraPadding, ratio, container, overlayMesh } = this.ratioOverlay;
-    
-    // Get current dimensions
-    const width = this.canvas.clientWidth;
-    const height = this.canvas.clientHeight;
-    
-    // Calculate padding in pixels
-    const paddingPixels = (padding / 100) * Math.min(width, height);
-    const rightExtraPaddingPixels = (rightExtraPadding / 100) * Math.min(width, height);
-    
-    // Get aspect ratio
-    const { width: ratioWidth, height: ratioHeight } = RATIO_MAP[ratio];
-    const targetRatio = ratioWidth / ratioHeight;
-    
-    // Calculate frame dimensions
-    let frameWidth, frameHeight;
-    
-    if (width / height > targetRatio) {
-      // Screen is wider than target ratio
-      frameHeight = height - (paddingPixels * 2);
-      frameWidth = frameHeight * targetRatio;
-    } else {
-      // Screen is taller than target ratio
-      frameWidth = width - (paddingPixels * 2) - rightExtraPaddingPixels;
-      frameHeight = frameWidth / targetRatio;
-    }
-    
-    // Update the visibility
-    container.visible = this.ratioOverlay.isVisible;
-    
-    // For Three.js implementation, we'll use a different approach
-    // We need to create a complex shape with a hole in it to show the frame area
-    
-    // To be implemented - for now, we'll just update the overlay mesh
-    // We'll need a more complex implementation for Three.js using multiple meshes
-    // or a shader-based solution
   }
 
   // Public API methods
@@ -200,6 +122,14 @@ export class CameraManager {
     this.mainCamera.fov = clampedFOV;
     this.mainCamera.updateProjectionMatrix();
     this.observer.notify('fovChanged', { fov: clampedFOV });
+  }
+
+  
+  public getCameraSettings(): { fov: number, farClip: number } {
+    return {
+      fov: this.getFOV(),
+      farClip: this.getFarClip()
+    };
   }
 
   public getFOV(): number {
@@ -217,58 +147,47 @@ export class CameraManager {
   }
 
   public setRatioOverlayVisibility(visible: boolean): void {
-    if (this.ratioOverlay) {
-      this.ratioOverlay.isVisible = visible;
-      this.ratioOverlay.container.visible = visible;
+    if (this.ratioOverlaySettings) {
+      this.ratioOverlaySettings.isVisible = visible;
       this.observer.notify('ratioOverlayVisibilityChanged', { visible });
     }
   }
 
   public getRatioOverlayVisibility(): boolean {
-    return this.ratioOverlay?.isVisible || false;
+    return this.ratioOverlaySettings?.isVisible || false;
   }
 
   public setRatioOverlayPadding(padding: number): void {
-    if (this.ratioOverlay) {
-      this.ratioOverlay.padding = padding;
-      this._updateRatioOverlayDimensions();
+    if (this.ratioOverlaySettings) {
+      this.ratioOverlaySettings.padding = padding;
       this.observer.notify('ratioOverlayPaddingChanged', { padding });
     }
   }
 
   public getRatioOverlayPadding(): number {
-    return this.ratioOverlay?.padding || 10;
+    return this.ratioOverlaySettings?.padding || 10;
   }
 
   public setRatioOverlayRightPadding(padding: number): void {
-    if (this.ratioOverlay) {
-      this.ratioOverlay.rightExtraPadding = padding;
-      this._updateRatioOverlayDimensions();
+    if (this.ratioOverlaySettings) {
+      this.ratioOverlaySettings.rightExtraPadding = padding;
       this.observer.notify('ratioOverlayRightPaddingChanged', { padding });
     }
   }
 
   public getRatioOverlayRightPadding(): number {
-    return this.ratioOverlay?.rightExtraPadding || 0;
+    return this.ratioOverlaySettings?.rightExtraPadding || 0;
   }
 
   public setRatioOverlayRatio(ratio: ImageRatio): void {
-    if (this.ratioOverlay) {
-      this.ratioOverlay.ratio = ratio;
-      this._updateRatioOverlayDimensions();
+    if (this.ratioOverlaySettings) {
+      this.ratioOverlaySettings.ratio = ratio;
       this.observer.notify('ratioOverlayRatioChanged', { ratio });
     }
   }
 
   public getRatioOverlayRatio(): ImageRatio {
-    return this.ratioOverlay?.ratio || '16:9';
-  }
-
-  public getCameraSettings(): { fov: number, farClip: number } {
-    return {
-      fov: this.getFOV(),
-      farClip: this.getFarClip()
-    };
+    return this.ratioOverlaySettings?.ratio || '16:9';
   }
 
   public getRatioOverlaySettings(): {
@@ -285,15 +204,27 @@ export class CameraManager {
     };
   }
 
+  // Enhanced version of getRatioOverlayDimensions that provides all needed information
+  // for both the React UI and screenshot functionality
   public getRatioOverlayDimensions = (): {
-    left: number;
-    top: number;
-    width: number;
-    height: number;
+    frame: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    };
+    borders: {
+      top: { x: number; y: number; width: number; height: number };
+      right: { x: number; y: number; width: number; height: number };
+      bottom: { x: number; y: number; width: number; height: number };
+      left: { x: number; y: number; width: number; height: number };
+    };
+    isVisible: boolean;
   } | null => {
-    if (!this.ratioOverlay) return null;
+    if (!this.ratioOverlaySettings) return null;
+    if (!this.ratioOverlaySettings.isVisible) return { frame: { left: 0, top: 0, width: 0, height: 0 }, borders: { top: { x: 0, y: 0, width: 0, height: 0 }, right: { x: 0, y: 0, width: 0, height: 0 }, bottom: { x: 0, y: 0, width: 0, height: 0 }, left: { x: 0, y: 0, width: 0, height: 0 } }, isVisible: false };
 
-    const { padding, rightExtraPadding, ratio } = this.ratioOverlay;
+    const { padding, rightExtraPadding, ratio } = this.ratioOverlaySettings;
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
 
@@ -320,12 +251,46 @@ export class CameraManager {
     // Calculate position (centered on screen, but adjusted for extra right padding)
     const horizontalSpace = width - frameWidth;
     const leftPadding = (horizontalSpace - rightExtraPaddingPixels) / 2;
+    const rightPadding = leftPadding + rightExtraPaddingPixels;
+    const frameTop = (height - frameHeight) / 2;
+
+    // Calculate border positions and dimensions for the React UI
+    const borders = {
+      top: {
+        x: 0,
+        y: 0,
+        width: width,
+        height: frameTop
+      },
+      right: {
+        x: leftPadding + frameWidth,
+        y: frameTop,
+        width: rightPadding,
+        height: frameHeight
+      },
+      bottom: {
+        x: 0,
+        y: frameTop + frameHeight,
+        width: width,
+        height: frameTop
+      },
+      left: {
+        x: 0,
+        y: frameTop,
+        width: leftPadding,
+        height: frameHeight
+      }
+    };
 
     return {
-      left: leftPadding,
-      top: (height - frameHeight) / 2,
-      width: frameWidth,
-      height: frameHeight
+      frame: {
+        left: leftPadding,
+        top: frameTop,
+        width: frameWidth,
+        height: frameHeight
+      },
+      borders,
+      isVisible: this.ratioOverlaySettings.isVisible
     };
   };
 
@@ -334,24 +299,14 @@ export class CameraManager {
     // Update camera aspect ratio
     this.mainCamera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
     this.mainCamera.updateProjectionMatrix();
-    
-    // Update ratio overlay
-    setTimeout(() => {
-      this._updateRatioOverlayDimensions();
-    }, 1);
   }
 
-  // Update method for animation loop
+  // Update method doesn't need to update the overlay dimensions
+  // as this will be handled by the React component
   public update(): void {
-    // Update orbit controls - this is crucial for OrbitControls to work properly
-    // Especially when moving the mouse for orbit/pan operations
+    // Update orbit controls
     if (this.orbitControls) {
       this.orbitControls.update();
-    }
-    
-    // Update overlay if needed
-    if (this.ratioOverlay && this.ratioOverlay.isVisible) {
-      this._updateRatioOverlayDimensions();
     }
   }
 
