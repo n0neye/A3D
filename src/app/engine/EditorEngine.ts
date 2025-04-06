@@ -73,7 +73,7 @@ export class EditorEngine {
     this.renderService = new RenderService(scene, this, babylonEngine);
   }
 
-  public static initEngine(canvas: HTMLCanvasElement): EditorEngine {
+  public static async initEngine(canvas: HTMLCanvasElement): Promise<EditorEngine> {
     console.log("EditorEngine initEngine");
     if (!EditorEngine.instance) {
       EditorEngine.instance = new EditorEngine(canvas);
@@ -81,8 +81,10 @@ export class EditorEngine {
 
     // Init other utils
     const scene = EditorEngine.instance.core.getScene();
-    loadShapeMeshes(scene);
-    createDefaultMaterials(scene);
+    await loadShapeMeshes(scene);
+    await createDefaultMaterials(scene);
+
+    EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default.json');
 
     return EditorEngine.instance;
   }

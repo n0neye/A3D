@@ -43,27 +43,32 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (canvasRef.current) {
-      const engine = EditorEngine.initEngine(canvasRef.current);
-      setIsInitialized(true);
+      let unsubAll: (() => void)[] = [];
 
-      // Subscribe to engine events
-      const unsubGizmoMode = engine.getGizmoModeManager().observers.subscribe('gizmoModeChanged', ({ mode }) => setGizmoMode(mode));
-      const unsubGizmoAllowedModes = engine.getGizmoModeManager().observers.subscribe('gizmoAllowedModesChanged', ({ modes }) => setGizmoAllowedModes(modes));
-      const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe('entitySelected', ({ entity }) => setSelectedEntity(entity));
+      const initEngine = async () => {
 
-      // Subscribe to project manager events
-      const unsubRenderLogsChanged = engine.getProjectManager().observers.subscribe('renderLogsChanged', ({ renderLogs }) => setRenderLogs(renderLogs));
-      const unsubRenderSettingsChanged = engine.getProjectManager().observers.subscribe('renderSettingsChanged', ({ renderSettings }) => setRenderSettings(renderSettings));
-      const unsubProjectLoaded = engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setRenderSettings(project));
+        if (!canvasRef.current) return;
+        const engine = await EditorEngine.initEngine(canvasRef.current);
+        setIsInitialized(true);
+
+        // Subscribe to engine events
+        const unsubGizmoMode = engine.getGizmoModeManager().observers.subscribe('gizmoModeChanged', ({ mode }) => setGizmoMode(mode));
+        const unsubGizmoAllowedModes = engine.getGizmoModeManager().observers.subscribe('gizmoAllowedModesChanged', ({ modes }) => setGizmoAllowedModes(modes));
+        const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe('entitySelected', ({ entity }) => setSelectedEntity(entity));
+
+        // Subscribe to project manager events
+        const unsubRenderLogsChanged = engine.getProjectManager().observers.subscribe('renderLogsChanged', ({ renderLogs }) => setRenderLogs(renderLogs));
+        const unsubRenderSettingsChanged = engine.getProjectManager().observers.subscribe('renderSettingsChanged', ({ renderSettings }) => setRenderSettings(renderSettings));
+        const unsubProjectLoaded = engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setRenderSettings(project));
+
+        unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubRenderLogsChanged, unsubRenderSettingsChanged, unsubProjectLoaded);
+      }
+      
+      initEngine();
 
       // Return cleanup function
       return () => {
-        unsubGizmoMode();
-        unsubGizmoAllowedModes();
-        unsubEntitySelected();
-        unsubProjectLoaded();
-        unsubRenderLogsChanged();
-        unsubRenderSettingsChanged();
+        unsubAll.forEach(unsub => unsub());
       };
     }
   }, [canvasRef.current]);
