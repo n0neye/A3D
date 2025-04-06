@@ -2,7 +2,7 @@
  * EditorEngineContext.tsx
  * 
  * React context that bridges the React component world with the
- * Babylon.js EditorEngine. This context:
+ * Three.js EditorEngine. This context:
  * - Provides access to the EditorEngine singleton
  * - Converts engine events into React state updates
  * - Makes engine state (like selection) available to all components
@@ -46,7 +46,6 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       let unsubAll: (() => void)[] = [];
 
       const initEngine = async () => {
-
         if (!canvasRef.current) return;
         const engine = await EditorEngine.initEngine(canvasRef.current);
         setIsInitialized(true);
@@ -94,7 +93,6 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
       {children}
       {isInitialized && <EngineUIContainer />}
-
     </EditorEngineContext.Provider>
   );
 }

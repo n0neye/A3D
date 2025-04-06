@@ -29,6 +29,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@runware/sdk-js": "^1.1.37",
     "@tabler/icons-react": "^3.31.0",
+    "@types/three": "^0.175.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "install": "^0.13.0",
@@ -42,6 +43,7 @@
     "replicate": "^1.0.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.0.2",
+    "three": "^0.175.0",
     "tw-animate-css": "^1.2.4",
     "uuid": "^11.1.0",
     "yet-another-react-lightbox": "^3.21.8"

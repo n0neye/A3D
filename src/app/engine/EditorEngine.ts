@@ -8,15 +8,15 @@
  * - Handles communication between subsystems
  * - Emits events for UI components to react to
  * 
- * It acts as a facade over the complex Babylon.js functionality,
+ * It acts as a facade over the complex Three.js functionality,
  * abstracting the details behind a simpler interface designed
  * specifically for this editor application.
  * 
  * React components should interact ONLY with this EditorEngine,
- * never directly with Babylon.js or individual managers.
+ * never directly with Three.js or individual managers.
  */
-import * as BABYLON from '@babylonjs/core';
-import { BabylonCore } from './core/BabylonCore';
+import * as THREE from 'three';
+import { ThreeCore } from './core/ThreeCore';
 import { CameraManager } from './managers/CameraManager';
 import { SelectionManager } from './managers/SelectionManager';
 import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
@@ -34,12 +34,12 @@ import { CreateEntityCommand } from '../lib/commands';
 
 
 /**
- * Main editor engine that coordinates all Babylon.js subsystems
+ * Main editor engine that coordinates all Three.js subsystems
  * and provides a clean API for React components
  */
 export class EditorEngine {
   private static instance: EditorEngine;
-  private core: BabylonCore;
+  private core: ThreeCore;
 
   private cameraManager: CameraManager;
   private selectionManager: SelectionManager;
@@ -55,10 +55,10 @@ export class EditorEngine {
 
   private constructor(canvas: HTMLCanvasElement) {
     console.log("EditorEngine constructor");
-    this.core = new BabylonCore(canvas);
+    this.core = new ThreeCore(canvas);
 
     const scene = this.core.getScene();
-    const babylonEngine = this.core.getEngine();
+    const threeRenderer = this.core.getRenderer();
     this.cameraManager = new CameraManager(scene, canvas);
     this.gizmoModeManager = new GizmoModeManager(scene);
     this.selectionManager = new SelectionManager(scene, this.gizmoModeManager);
@@ -70,7 +70,7 @@ export class EditorEngine {
     this.inputManager = new InputManager(this, scene, this.selectionManager, this.historyManager);
 
     // Create the render service
-    this.renderService = new RenderService(scene, this, babylonEngine);
+    this.renderService = new RenderService(scene, this, threeRenderer);
   }
 
   public static async initEngine(canvas: HTMLCanvasElement): Promise<EditorEngine> {
@@ -95,7 +95,7 @@ export class EditorEngine {
     return EditorEngine.instance;
   }
 
-  public getScene(): BABYLON.Scene {
+  public getScene(): THREE.Scene {
     return this.core.getScene();
   }
 
@@ -186,5 +186,4 @@ export class EditorEngine {
   public getGizmoMode(): GizmoMode {
     return this.gizmoModeManager.getGizmoMode();
   }
-
 } 
