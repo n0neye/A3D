@@ -21,7 +21,7 @@ interface BaseEntityOptions {
 
 // Type-specific options using discriminated union
 export type CreateEntityOptions =
-  | (BaseEntityOptions & { type: 'generative', gnerativeProps: GenerativeEntityProps })
+  | (BaseEntityOptions & { type: 'generative', generativeProps: GenerativeEntityProps })
   | (BaseEntityOptions & { type: 'shape', shapeProps: ShapeEntityProps })
   | (BaseEntityOptions & { type: 'light', lightProps: LightProps, rotation?: THREE.Euler })
   | (BaseEntityOptions & { type: 'character', characterProps: CharacterEntityProps });
@@ -136,7 +136,7 @@ export class EntityFactory {
   }
 
   static deleteEntity(entity: EntityBase, engine: EditorEngine): void {
-    const deleteCommand = new DeleteEntityCommand(entity, engine.getTransformControlManager());
+    const deleteCommand = new DeleteEntityCommand(entity);
     engine.getHistoryManager().executeCommand(deleteCommand);
   }
 

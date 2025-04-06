@@ -160,7 +160,7 @@ export class EnvironmentManager {
         }
     
         // Serialize camera settings
-        const camera = this.engine.getCameraManager().mainCamera;
+        const camera = this.engine.getCameraManager().getCamera();
         if (camera) {
             serializedEnv.camera = {
                 fov: camera.fov,
@@ -215,7 +215,7 @@ export class EnvironmentManager {
         // Apply camera settings
         if (data.camera) {
             const cameraManager = this.engine.getCameraManager();
-            const camera = cameraManager.mainCamera;
+            const camera = cameraManager.getCamera();
             
             // Update FOV
             if (data.camera.fov !== undefined) {

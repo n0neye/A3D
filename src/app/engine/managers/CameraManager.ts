@@ -351,4 +351,8 @@ export class CameraManager {
       this._updateRatioOverlayDimensions();
     }
   }
+
+  public getCamera(): THREE.PerspectiveCamera {
+    return this.mainCamera;
+  }
 } 

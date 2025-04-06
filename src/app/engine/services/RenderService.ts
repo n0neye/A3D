@@ -11,7 +11,10 @@
  * By moving these concerns out of React components, we maintain
  * a clear separation between the 3D engine and the UI layer.
  */
-import * as BABYLON from '@babylonjs/core';
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { normalizeDepthMap } from '../../util/generation/render-util';
 import { resizeImage, addNoiseToImage, dataURLtoBlob, cropImageToRatioFrame } from '../../util/generation/image-processing';
 import { EditorEngine } from '../EditorEngine';
@@ -19,14 +22,16 @@ import { EntityBase } from '../entity/EntityBase';
 import { LightEntity } from '../entity/LightEntity';
 
 export class RenderService {
-    private scene: BABYLON.Scene;
+    private scene: THREE.Scene;
     private engine: EditorEngine;
-    private babylonEngine: BABYLON.Engine;
+    private renderer: THREE.WebGLRenderer;
+    private composer: EffectComposer | null = null;
+    private originalRenderTarget: THREE.WebGLRenderTarget | null = null;
 
-    constructor(scene: BABYLON.Scene, engine: EditorEngine, babylonEngine: BABYLON.Engine) {
+    constructor(scene: THREE.Scene, engine: EditorEngine, renderer: THREE.WebGLRenderer) {
         this.scene = scene;
         this.engine = engine;
-        this.babylonEngine = babylonEngine;
+        this.renderer = renderer;
     }
 
     /**
@@ -36,14 +41,15 @@ export class RenderService {
         const maxSize = 1024;
         try {
             if (!this.scene || !this.engine) return null;
-            const babylonEngine = this.babylonEngine;
-
-            // Get standard screenshot
-            const screenshot = await BABYLON.Tools.CreateScreenshotAsync(
-                babylonEngine,
-                this.scene.activeCamera as BABYLON.Camera,
-                { precision: 1 }
-            );
+            
+            // Get camera
+            const camera = this.engine.getCameraManager().getCamera();
+            
+            // Render the scene
+            this.renderer.render(this.scene, camera);
+            
+            // Get the canvas data as base64 image
+            const screenshot = this.renderer.domElement.toDataURL('image/png');
 
             // Check if we have an active ratio overlay
             const cameraManager = this.engine.getCameraManager();
@@ -66,107 +72,121 @@ export class RenderService {
             console.error("Error taking screenshot:", error);
             return null;
         }
-
     }
 
     /**
      * Enables depth rendering and returns a depth image
      */
     public async enableDepthRender(seconds: number = 1): Promise<string | null> {
-        const scene = this.scene;
         try {
-            if (!scene.activeCamera) throw new Error("Active camera not found");
-
-            // Enable depth renderer with better settings
-            const depthRenderer = scene.enableDepthRenderer(
-                scene.activeCamera,
-                false,  // Don't colorize
-                true,   // Use logarithmic depth buffer for better precision
-                BABYLON.Engine.TEXTURE_NEAREST_LINEAR_MIPLINEAR,
-            );
-
-            // Adjust camera clip planes for better depth resolution
-            // scene.activeCamera.minZ = 0.1;
-            // scene.activeCamera.maxZ = 20.0;
-
-            // Force a render to update the depth values
-            scene.render();
-
-            // Create an improved shader with better normalization
-            BABYLON.Effect.ShadersStore['improvedDepthPixelShader'] = `
-            varying vec2 vUV;
-            uniform sampler2D textureSampler;
-            uniform float near;
-            uniform float far;
+            const camera = this.engine.getCameraManager().getCamera();
             
-            void main(void) {
-              // Get raw depth value
-              float depth = texture2D(textureSampler, vUV).r;
-              
-              // Ensure depth is in valid range
-              depth = clamp(depth, 0.0, 1.0);
-              
-              // Use a power function with more aggressive scaling for better visibility
-              // depth = pow(depth, 0.45);
-              
-              // Invert for better visualization (closer is brighter)
-              float displayDepth = 1.0 - depth;
-              
-              // Ensure final output is strictly in 0-1 range
-              displayDepth = clamp(displayDepth, 0.0, 1.0);
-              
-              gl_FragColor = vec4(displayDepth, displayDepth, displayDepth, 1.0);
-            }
-          `;
-
-            // Create the post process with our improved shader
-            const postProcess = new BABYLON.PostProcess(
-                "depthVisualizer",
-                "improvedDepth",
-                ["near", "far"],  // Added uniforms for near/far planes
-                null,
-                1.0,
-                scene.activeCamera
+            // Save original renderer state
+            const originalClearColor = this.renderer.getClearColor(new THREE.Color());
+            const originalClearAlpha = this.renderer.getClearAlpha();
+            const originalAutoClear = this.renderer.autoClear;
+            
+            // Create a render target for depth rendering
+            const renderTarget = new THREE.WebGLRenderTarget(
+                this.renderer.domElement.width,
+                this.renderer.domElement.height
             );
-
-            // Set up the shader parameters and texture
-            postProcess.onApply = (effect) => {
-                effect.setTexture("textureSampler", depthRenderer.getDepthMap());
-                effect.setFloat("near", scene.activeCamera!.minZ);
-                effect.setFloat("far", scene.activeCamera!.maxZ);
-            };
-
-            //   wait for 1 frame
-            await new Promise(resolve => setTimeout(resolve, 1));
-
-            const depthSnapshot = await this.takeFramedScreenshot();
-
-            // Normalize the depth map
-            const normalizedDepthSnapshot = await normalizeDepthMap(depthSnapshot || '');
-
-            setTimeout(() => {
-                // Detach depth renderer
-                if (scene.activeCamera && postProcess) {
-                    scene.activeCamera.detachPostProcess(postProcess);
-                    postProcess.dispose();
+            this.originalRenderTarget = renderTarget;
+            
+            // Create depth material for all objects
+            const depthMaterial = new THREE.MeshDepthMaterial({
+                depthPacking: THREE.RGBADepthPacking,
+                side: THREE.DoubleSide
+            });
+            
+            // Store original materials
+            const originalMaterials = new Map<THREE.Object3D, THREE.Material | THREE.Material[]>();
+            
+            // Replace all materials with depth material
+            this.scene.traverse(object => {
+                if (object instanceof THREE.Mesh) {
+                    originalMaterials.set(object, object.material);
+                    object.material = depthMaterial;
                 }
-            }, seconds * 1000);
-
+            });
+            
+            // Render to target
+            this.renderer.setRenderTarget(renderTarget);
+            this.renderer.setClearColor(0xffffff);
+            this.renderer.setClearAlpha(1.0);
+            this.renderer.clear();
+            this.renderer.render(this.scene, camera);
+            
+            // Read pixels from render target
+            const width = renderTarget.width;
+            const height = renderTarget.height;
+            const buffer = new Uint8Array(width * height * 4);
+            this.renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer);
+            
+            // Create canvas to convert depth data to image
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext('2d')!;
+            const imageData = context.createImageData(width, height);
+            
+            // Convert depth data to grayscale image
+            // Note: We invert the depth values so closer objects are brighter
+            for (let i = 0; i < buffer.length; i += 4) {
+                const r = buffer[i];
+                const g = buffer[i + 1];
+                const b = buffer[i + 2];
+                
+                // Calculate depth from RGB components (depends on your depth packing)
+                // For RGBADepthPacking, you may need a more complex formula
+                const depth = (r + g + b) / 3;
+                
+                // Invert - closer objects are brighter
+                const invertedDepth = 255 - depth;
+                
+                imageData.data[i] = invertedDepth;
+                imageData.data[i + 1] = invertedDepth;
+                imageData.data[i + 2] = invertedDepth;
+                imageData.data[i + 3] = 255; // Full alpha
+            }
+            
+            // Put the image data on the canvas
+            context.putImageData(imageData, 0, 0);
+            
+            // Convert canvas to data URL
+            const depthSnapshot = canvas.toDataURL('image/png');
+            
+            // Normalize the depth map
+            const normalizedDepthSnapshot = await normalizeDepthMap(depthSnapshot);
+            
+            // Restore original materials
+            this.scene.traverse(object => {
+                if (object instanceof THREE.Mesh && originalMaterials.has(object)) {
+                    object.material = originalMaterials.get(object)!;
+                }
+            });
+            
+            // Restore original renderer state
+            this.renderer.setRenderTarget(null);
+            this.renderer.setClearColor(originalClearColor, originalClearAlpha);
+            this.renderer.autoClear = originalAutoClear;
+            
+            // Cleanup
+            renderTarget.dispose();
+            depthMaterial.dispose();
+            
             // Return the normalized depth map
             return normalizedDepthSnapshot;
         } catch (error) {
             console.error("Error generating depth map:", error);
             return null;
         }
-    };
-
+    }
 
     /**
      * Gets a depth map from the scene
      */
     public async getDepthMap(): Promise<{ imageUrl: string }> {
-        // Move GetDepthMap implementation here
-        // Implementation depends on your current GetDepthMap function
         const dataURL = await this.enableDepthRender(1);
         if (!dataURL) throw new Error("Failed to generate depth map");
         return { imageUrl: dataURL };
@@ -176,22 +196,31 @@ export class RenderService {
      * Controls visibility of all gizmos (temporary during rendering)
      */
     public setAllGizmoVisibility(visible: boolean): void {
-
         // Hide/show light entity gizmos
-        const lightEntities = this.scene.rootNodes.filter(node => node instanceof EntityBase && LightEntity.isLightEntity(node));
-
-        lightEntities.forEach(entity => {
-            // You'll need to add a visualMesh to LightEntity or update this logic
-            if (entity.gizmoMesh) {
-                entity.gizmoMesh.isVisible = visible;
+        this.scene.traverse(node => {
+            if (node instanceof EntityBase && node instanceof LightEntity) {
+                // Find and set visibility for light gizmos or helpers
+                const helpers = node.getObjectsByProperty('isHelper', true);
+                if (helpers) {
+                    helpers.forEach(helper => {
+                        helper.visible = visible;
+                    });
+                }
             }
         });
+
+        // Hide/show transform controls
+        const transformControls = this.engine.getTransformControlManager().getTransformControls();
+        if (transformControls) {
+            // @ts-ignore
+            transformControls.visible = visible;
+        }
 
         // Hide/show world grid
         const environmentObjects = this.engine.getEnvironmentManager().getEnvObjects();
         const worldGrid = environmentObjects.grid;
         if (worldGrid) {
-            worldGrid.isVisible = visible;
+            worldGrid.visible = visible;
         }
     }
 

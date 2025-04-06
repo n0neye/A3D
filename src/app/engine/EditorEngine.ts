@@ -60,14 +60,21 @@ export class EditorEngine {
     const scene = this.core.getScene();
     const threeRenderer = this.core.getRenderer();
     this.cameraManager = new CameraManager(scene, canvas);
-    this.transformControlManager = new TransformControlManager(scene);
-    this.selectionManager = new SelectionManager(scene, this.transformControlManager);
+    this.transformControlManager = new TransformControlManager(scene, this.cameraManager.getCamera(), threeRenderer);
+    this.selectionManager = new SelectionManager(scene, this.cameraManager.getCamera(), this.transformControlManager);
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);
 
     // Create the input manager and pass references to other managers
-    this.inputManager = new InputManager(this, scene, this.selectionManager, this.historyManager);
+    this.inputManager = new InputManager(
+      this, 
+      scene, 
+      this.cameraManager.getCamera(), 
+      threeRenderer,
+      this.selectionManager, 
+      this.historyManager
+    );
 
     // Create the render service
     this.renderService = new RenderService(scene, this, threeRenderer);

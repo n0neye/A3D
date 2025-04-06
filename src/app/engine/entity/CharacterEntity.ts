@@ -1,16 +1,9 @@
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { EntityBase, EntityType, SerializedEntityData } from './EntityBase';
-import { Scene } from '@babylonjs/core/scene';
-import { Skeleton } from '@babylonjs/core/Bones/skeleton';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/util/analytics';
-import { BoneRotationCommand } from '@/app/lib/commands';
-import { useOldEditorContext } from '@/app/context/OldEditorContext';
-import { HistoryManager } from '@/app/engine/managers/HistoryManager';
 import { BoneControl } from './BoneControl';
 import { setupMeshShadows } from '@/app/util/editor/light-util';
-import { EditorEngine } from '../EditorEngine';
 
 export interface CharacterEntityProps {
     url: string;
@@ -101,7 +94,7 @@ export class CharacterEntity extends EntityBase {
         console.log(`Loading character from: ${this.characterProps.url}`);
         try {
             // Use Three.js GLTFLoader to load the model
-            const loader = new THREE.GLTFLoader();
+            const loader = new GLTFLoader();
             const result = await loader.loadAsync(this.characterProps.url);
 
             console.log("CharacterEntity: GLTF load result:", result);
