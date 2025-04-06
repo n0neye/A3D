@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { EditorEngine } from "../EditorEngine";
 import { Observer } from "@/app/engine/utils/Observer";
 import { SerializedShapeEntityData } from "../entity/ShapeEntity";
@@ -165,9 +166,9 @@ export class ProjectManager {
         const entities: EntityBase[] = [];
 
         // Find all entities in the scene
-        scene.rootNodes.forEach(node => {
-            if (isEntity(node) && node.isEnabled()) {
-                entities.push(node);
+        scene.traverse(node => {
+            if (isEntity(node) && node.visible) {
+                entities.push(node as EntityBase);
             }
         });
 
@@ -194,12 +195,22 @@ export class ProjectManager {
         // Clear existing entities if needed
         // Dispose all children of the existing entities
         const scene = this.engine.getScene();
-        const existingEntities = scene.rootNodes.filter(node => isEntity(node));
-        existingEntities.forEach(entity => entity.dispose());
+        const existingEntities: EntityBase[] = [];
+        scene.traverse(node => {
+            if (isEntity(node)) {
+                existingEntities.push(node as EntityBase);
+            }
+        });
+
+        // Dispose entities
+        existingEntities.forEach(entity => {
+            entity.dispose();
+            scene.remove(entity);
+        });
 
         // Apply environment settings if present
         if (data.environment) {
-            this.engine.getEnvironmentManager().deserializeEnvironment(data.environment, this.engine);
+            this.engine.getEnvironmentManager().deserializeEnvironment(data.environment);
         }
 
 
