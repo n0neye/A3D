@@ -34,7 +34,7 @@ export class CharacterEntity extends EntityBase {
     public static DefaultBoneMaterial: THREE.Material;
     public static HighlightBoneMaterial: THREE.Material;
     public static LineMaterial: THREE.Material;
-    private static boneColor = new THREE.Color(0, 0, 1.0);
+    private static boneColor = new THREE.Color(0.5, 0.7, 1.0);
     private static linesMaterialAlpha = 0.7;
     private static boneMaterialAlpha = 0.5;
 
@@ -74,7 +74,7 @@ export class CharacterEntity extends EntityBase {
                 emissive: CharacterEntity.boneColor,
                 transparent: true,
                 opacity: CharacterEntity.boneMaterialAlpha,
-                depthWrite: false
+                depthTest: false
             });
         }
 
@@ -85,7 +85,7 @@ export class CharacterEntity extends EntityBase {
                 emissive: new THREE.Color(1, 0.5, 0),
                 transparent: true,
                 opacity: 0.8,
-                depthWrite: false
+                depthTest: false
             });
         }
 
@@ -94,7 +94,8 @@ export class CharacterEntity extends EntityBase {
             CharacterEntity.LineMaterial = new THREE.LineBasicMaterial({
                 color: CharacterEntity.boneColor,
                 transparent: true,
-                opacity: CharacterEntity.linesMaterialAlpha
+                opacity: CharacterEntity.linesMaterialAlpha,
+                depthTest: false
             });
         }
     }
