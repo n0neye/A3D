@@ -343,8 +343,11 @@ export class CameraManager {
 
   // Update method for animation loop
   public update(): void {
-    // Update orbit controls
-    this.orbitControls.update();
+    // Update orbit controls - this is crucial for OrbitControls to work properly
+    // Especially when moving the mouse for orbit/pan operations
+    if (this.orbitControls) {
+      this.orbitControls.update();
+    }
     
     // Update overlay if needed
     if (this.ratioOverlay && this.ratioOverlay.isVisible) {
@@ -354,5 +357,9 @@ export class CameraManager {
 
   public getCamera(): THREE.PerspectiveCamera {
     return this.mainCamera;
+  }
+
+  public getOrbitControls(): OrbitControls {
+    return this.orbitControls;
   }
 } 

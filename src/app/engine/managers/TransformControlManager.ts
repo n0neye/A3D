@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { Observer } from '../utils/Observer';
 import { ISelectable } from '@/app/interfaces/ISelectable';
+import { EditorEngine } from '../EditorEngine';
 
 export enum GizmoMode {
     Position = 0,
@@ -19,7 +20,7 @@ export class TransformControlManager {
     private _currentMode: GizmoMode = GizmoMode.Position;
     private _allowedModes: GizmoMode[] = [GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox];
     private _currentTarget: THREE.Object3D | null = null;
-    
+
     public observers = new Observer<{
         gizmoModeChanged: { mode: GizmoMode };
         gizmoAllowedModesChanged: { modes: GizmoMode[] };
@@ -31,15 +32,24 @@ export class TransformControlManager {
         this.scene = scene;
         this.camera = camera;
         this.renderer = renderer;
-        
+
         // Create transform controls
         this.transformControls = new TransformControls(camera, renderer.domElement);
-        
+
         // Add transform controls to scene
-        scene.add(this.transformControls as unknown as THREE.Object3D);
-        
+        const gizmo = this.transformControls.getHelper();
+        scene.add(gizmo);
+
         // Set up event listeners
         this.transformControls.addEventListener('dragging-changed', (event) => {
+            // Get orbit controls from camera manager and disable during transform
+            const cameraManager = EditorEngine.getInstance().getCameraManager();
+            const orbitControls = cameraManager.getOrbitControls();
+            
+            if (orbitControls) {
+                orbitControls.enabled = !event.value;
+            }
+            
             // Notify when transform starts/ends
             if (this._currentTarget) {
                 if (event.value) {
@@ -49,17 +59,17 @@ export class TransformControlManager {
                 }
             }
         });
-    }   
+    }
 
     public setGizmoMode(mode: GizmoMode): GizmoMode {
-        if(!this._allowedModes.includes(mode)) {
+        if (!this._allowedModes.includes(mode)) {
             // Set to the first allowed mode
             console.log(`TransformControlManager.setGizmoMode: Invalid mode: ${mode} in allowed modes: ${this._allowedModes.join(', ')}, setting to first allowed mode: ${this._allowedModes[0]}`);
             mode = this._allowedModes[0];
         }
 
         this._currentMode = mode;
-        
+
         // Update transform controls mode
         switch (mode) {
             case GizmoMode.Position:
@@ -77,7 +87,7 @@ export class TransformControlManager {
                 this.transformControls.setMode('translate');
                 break;
         }
-        
+
         console.log(`TransformControlManager.setGizmoMode: Set gizmo mode to: ${mode}`);
         this.observers.notify('gizmoModeChanged', { mode });
         this._lastMode = mode;
@@ -95,11 +105,11 @@ export class TransformControlManager {
 
     public attachToSelectable(selectable: ISelectable | null): void {
         console.log(`TransformControlManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.gizmoCapabilities);
-        
+
         // Detach from current target
         this.transformControls.detach();
         this._currentTarget = null;
-        
+
         if (selectable) {
             // Update allowed modes
             this.setAllowedModes(selectable.gizmoCapabilities.allowedGizmoModes);
@@ -107,21 +117,21 @@ export class TransformControlManager {
             // Get target object
             const target = selectable.getGizmoTarget();
             this._currentTarget = target;
-            
+
             // If selectable has a default gizmo mode, set it
-            if(selectable.gizmoCapabilities.defaultGizmoMode !== undefined) {
+            if (selectable.gizmoCapabilities.defaultGizmoMode !== undefined) {
                 this.setGizmoMode(selectable.gizmoCapabilities.defaultGizmoMode);
             } else {
                 this.setGizmoMode(this._lastMode);
             }
-            
+
             // Set transform controls size
             if (selectable.gizmoCapabilities.gizmoVisualSize) {
                 this.transformControls.size = selectable.gizmoCapabilities.gizmoVisualSize;
             } else {
                 this.transformControls.size = 1; // Default size
             }
-            
+
             // Attach to target
             this.transformControls.attach(target);
         }
@@ -131,7 +141,7 @@ export class TransformControlManager {
         // Detach from current target
         this.transformControls.detach();
         this._currentTarget = null;
-        
+
         if (node) {
             this._currentTarget = node;
             this.transformControls.attach(node);
@@ -141,9 +151,11 @@ export class TransformControlManager {
     public getTransformControls(): TransformControls {
         return this.transformControls;
     }
-    
+
     public dispose(): void {
         this.transformControls.dispose();
-        this.scene.remove(this.transformControls as unknown as THREE.Object3D);
+        // Remove the helper from the scene, not the control itself
+        const gizmo = this.transformControls.getHelper();
+        this.scene.remove(gizmo);
     }
 }

@@ -104,20 +104,24 @@ export class EnvironmentManager {
     };
 
     createSkybox = (scene: THREE.Scene): void => {
+        // TODO: Load equirectangular skybox from one image
         // Load cube texture for skybox
-        const loader = new THREE.CubeTextureLoader();
-        loader.setPath('./demoAssets/skybox/');
+        // const loader = new THREE.CubeTextureLoader();
+        // loader.setPath('./demoAssets/skybox/');
         
-        const textureCube = loader.load([
-            'px.jpg', 'nx.jpg',
-            'py.jpg', 'ny.jpg',
-            'pz.jpg', 'nz.jpg'
-        ]);
+        // const textureCube = loader.load([
+        //     'px.jpg', 'nx.jpg',
+        //     'py.jpg', 'ny.jpg',
+        //     'pz.jpg', 'nz.jpg'
+        // ]);
         
-        scene.background = textureCube;
-        
+        // scene.background = textureCube;
         // Also set as environment map for reflections
-        scene.environment = textureCube;
+        // scene.environment = textureCube;
+
+        
+        scene.background = new THREE.Color(0.5,0.5,1); 
+        
     };
 
     public getEnvObjects(): EnvironmentObjects {

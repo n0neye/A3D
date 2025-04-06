@@ -18,6 +18,7 @@
  * completely decoupled from the editor business logic.
  */
 import * as THREE from 'three';
+import { EditorEngine } from '../EditorEngine';
 
 /**
  * Core Three.js engine that's completely decoupled from React
@@ -27,6 +28,7 @@ export class ThreeCore {
   private scene: THREE.Scene;
   private canvas: HTMLCanvasElement;
   private clock: THREE.Clock;
+  private engineUpdate?: () => void;
   
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -58,6 +60,10 @@ export class ThreeCore {
     // Initialize scene
     this._setupScene();
   }
+
+  setEngineUpdate(engineUpdate: () => void): void {
+    this.engineUpdate = engineUpdate;
+  }
   
   public getScene(): THREE.Scene {
     return this.scene;
@@ -79,7 +85,16 @@ export class ThreeCore {
       // Update and render
       const delta = this.clock.getDelta();
       // This will be called by camera manager later
-      this.renderer.render(this.scene, new THREE.PerspectiveCamera()); //TODO: This is a placeholder, camera will be managed by CameraManager
+      if (this.engineUpdate) {
+        this.engineUpdate();
+      }
+
+      // TODO: A quick hack to get the camera manager after the engine is initialized
+      const editorEngine = EditorEngine.getInstance();
+      if(editorEngine?.getCameraManager()) {
+        const mainCamera = editorEngine.getCameraManager().getCamera();
+        this.renderer.render(this.scene, mainCamera);
+      } 
     };
     
     animate();

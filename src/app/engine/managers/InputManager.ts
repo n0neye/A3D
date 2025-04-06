@@ -86,6 +86,9 @@ export class InputManager {
   }
   
   private handlePointerDown = (event: PointerEvent): void => {
+    // Don't handle if right-click or middle-click (let OrbitControls handle these)
+    if (event.button === 2 || event.button === 1) return;
+    
     if (event.button === 0) { // Left click
       this.updateRaycaster(event);
       

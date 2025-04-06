@@ -68,21 +68,24 @@ export class EditorEngine {
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(
-      this, 
-      scene, 
-      this.cameraManager.getCamera(), 
+      this,
+      scene,
+      this.cameraManager.getCamera(),
       threeRenderer,
-      this.selectionManager, 
+      this.selectionManager,
       this.historyManager
     );
 
     // Create the render service
     this.renderService = new RenderService(scene, this, threeRenderer);
+
+    // Register the update method to be called by the core
+    this.core.setEngineUpdate(this.update);
   }
 
   public static async initEngine(canvas: HTMLCanvasElement): Promise<EditorEngine> {
     if (EditorEngine.instance) { return EditorEngine.instance; }
-    
+
     console.log("EditorEngine initEngine");
     EditorEngine.instance = new EditorEngine(canvas);
 
@@ -91,7 +94,7 @@ export class EditorEngine {
     await loadShapeMeshes(scene);
     await createDefaultMaterials(scene);
 
-    EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default.json');
+    // EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default.json');
 
     return EditorEngine.instance;
   }
@@ -143,7 +146,7 @@ export class EditorEngine {
   // Public API methods for React components
   // Entity Management
   public selectEntity(entity: EntityBase | null): void {
-    console.log(`EditorEngine: selectEntity`, entity !== null, entity !== undefined, this.selectionManager);
+    // console.log(`EditorEngine: selectEntity`, entity !== null, entity !== undefined, this.selectionManager);
     // TODO: We've to get the instance again, as the UI may not have the lastest manager instance
     if (entity) {
       EditorEngine.getInstance().getSelectionManager().select(entity);
@@ -192,5 +195,12 @@ export class EditorEngine {
 
   public getGizmoMode(): GizmoMode {
     return this.transformControlManager.getGizmoMode();
+  }
+
+  public update(): void {
+    // Update all managers that have update methods
+    EditorEngine.instance.cameraManager.update();
+
+    // Add other managers as needed
   }
 } 
