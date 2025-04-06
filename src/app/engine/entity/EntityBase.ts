@@ -144,12 +144,25 @@ export class EntityBase extends THREE.Object3D implements ISelectable {
   }
 
   delete(): void {
+    console.log(`EntityBase.delete: Deleting entity: ${this.name}`, this.children.length);
     // Simply hide the entity for now
+    this.children.forEach((child) => {
+      if (child instanceof THREE.Mesh) {
+        console.log(`EntityBase.delete: Hiding child mesh: ${child.name}`);
+        child.visible = false;
+      }
+    });
     this.visible = false;
   }
 
   undoDelete(): void {
+    console.log(`EntityBase.undoDelete: Undoing delete for entity: ${this.name}`);
     this.visible = true;
+    this.children.forEach((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.visible = true;
+      }
+    });
   }
 }
 

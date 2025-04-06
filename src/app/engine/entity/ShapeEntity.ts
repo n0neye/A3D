@@ -45,7 +45,7 @@ export class ShapeEntity extends EntityBase {
 
     // Create the shape mesh
     const newMesh = createShapeMesh(scene, this.props.shapeType);
-    newMesh.parent = this;
+    this.add(newMesh);
     newMesh.userData = { rootEntity: this };
     this.modelMesh = newMesh;
 
