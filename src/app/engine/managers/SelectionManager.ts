@@ -68,10 +68,7 @@ export class SelectionManager {
     this._currentSelection = newSelectable;
 
     // Configure for new selection
-    console.log("Setting up gizmo for new selection:", newSelectable.getName(),
-      "pos:", newSelectable.gizmoCapabilities.allowPosition,
-      "rot:", newSelectable.gizmoCapabilities.allowRotation,
-      "scale:", newSelectable.gizmoCapabilities.allowScale);
+    console.log("Setting up gizmo for new selection:", newSelectable.getName());
 
     // Configure gizmos based on capabilities
     // TODO update the capabilities of the gizmoModeManager

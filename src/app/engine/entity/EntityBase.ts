@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
 import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
 import { EditorEngine } from '../../engine/EditorEngine';
+import { GizmoMode } from '@/app/engine/managers/GizmoModeManager';
 /**
  * Base class for all entities in the scene
  * Extends TransformNode with common functionality
@@ -15,13 +16,10 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   entityType: EntityType;
   created: Date;
   engine: EditorEngine;
-  
+
   // ISelectable implementation
   gizmoCapabilities: GizmoCapabilities = {
-    allowPosition: true,
-    allowRotation: true,
-    allowScale: true,
-    allowBoundingBox: false,
+    allowedGizmoModes: [GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox],
     gizmoVisualSize: 1
   };
 

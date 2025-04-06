@@ -4,6 +4,7 @@ import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../inte
 import { CharacterEntity } from './CharacterEntity';
 import { BoneRotationCommand } from '../../lib/commands';
 import { EditorEngine } from '../EditorEngine';
+import { GizmoMode } from '../managers/GizmoModeManager';
 
 /**
  * A mesh that represents a bone for manipulation
@@ -16,11 +17,8 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
 
   // ISelectable implementation - bones only support rotation
   gizmoCapabilities: GizmoCapabilities = {
-    defaultGizmoMode: 'rotation',
-    allowPosition: false,
-    allowRotation: true,
-    allowScale: false,
-    allowBoundingBox: false,
+    defaultGizmoMode: GizmoMode.Rotation,
+    allowedGizmoModes: [GizmoMode.Rotation],
     gizmoVisualSize: 0.5
   };
 

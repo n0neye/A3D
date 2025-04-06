@@ -2,15 +2,23 @@ import * as BABYLON from '@babylonjs/core';
 import { GizmoManager } from '@babylonjs/core';
 import { Observer } from '../utils/Observer';
 import { ISelectable } from '@/app/interfaces/ISelectable';
-export type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
+
+export enum GizmoMode {
+    Position = 0,
+    Rotation = 1,
+    Scale = 2,
+    BoundingBox = 3
+}
 
 export class GizmoModeManager {
     private scene: BABYLON.Scene;
     private gizmoManager: GizmoManager;
-    private _lastMode: GizmoMode = 'position';
-    private _currentMode: GizmoMode = 'position';
+    private _lastMode: GizmoMode = GizmoMode.Position;
+    private _currentMode: GizmoMode = GizmoMode.Position;
+    private _allowedModes: GizmoMode[] = [GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox];
     public observers = new Observer<{
         gizmoModeChanged: { mode: GizmoMode };
+        gizmoAllowedModesChanged: { modes: GizmoMode[] };
     }>();
 
     constructor(scene: BABYLON.Scene) {
@@ -19,11 +27,18 @@ export class GizmoModeManager {
     }   
 
     public setGizmoMode(mode: GizmoMode): GizmoMode {
+
+        if(!this._allowedModes.includes(mode)) {
+            // Set to the first allowed mode
+            console.log(`GizmoModeManager.setGizmoMode: Invalid mode: ${mode} in allowed modes: ${this._allowedModes.join(', ')}, setting to first allowed mode: ${this._allowedModes[0]}`);
+            mode = this._allowedModes[0];
+        }
+
         this._currentMode = mode;
-        this.gizmoManager.scaleGizmoEnabled = mode === 'scale';
-        this.gizmoManager.rotationGizmoEnabled = mode === 'rotation';
-        this.gizmoManager.positionGizmoEnabled = mode === 'position';
-        this.gizmoManager.boundingBoxGizmoEnabled = mode === 'boundingBox';
+        this.gizmoManager.scaleGizmoEnabled = mode === GizmoMode.Scale;
+        this.gizmoManager.rotationGizmoEnabled = mode === GizmoMode.Rotation;
+        this.gizmoManager.positionGizmoEnabled = mode === GizmoMode.Position;
+        this.gizmoManager.boundingBoxGizmoEnabled = mode === GizmoMode.BoundingBox;
         console.log(`GizmoModeManager.setGizmoMode: Set gizmo mode to: ${mode}`);
         this.observers.notify('gizmoModeChanged', { mode });
         this._lastMode = mode;
@@ -34,10 +49,18 @@ export class GizmoModeManager {
         return this._currentMode;
     }
 
+    public setAllowedModes(modes: GizmoMode[]): void {
+        this._allowedModes = modes;
+        this.observers.notify('gizmoAllowedModesChanged', { modes });
+    }
+
     public attachToSelectable(selectable: ISelectable | null): void {
         console.log(`GizmoModeManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.gizmoCapabilities);
         // TODO: Update gizmo visual size, and gizmo capabilities
         if (selectable) {
+            // Update allowed modes
+            this.setAllowedModes(selectable.gizmoCapabilities.allowedGizmoModes);
+
             // if selectable has a default gizmo mode, set it
             if(selectable.gizmoCapabilities.defaultGizmoMode) {
                 this.setGizmoMode(selectable.gizmoCapabilities.defaultGizmoMode);

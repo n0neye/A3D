@@ -18,13 +18,13 @@ import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
 import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
-type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
-
+import { GizmoMode } from '@/app/engine/managers/GizmoModeManager';
 interface EditorEngineContextType {
   engine: EditorEngine;
   isInitialized: boolean;
   selectedEntity: EntityBase | null;
   gizmoMode: GizmoMode;
+  gizmoAllowedModes: GizmoMode[];
   renderSettings: IRenderSettings;
   renderLogs: IRenderLog[];
 }
@@ -35,7 +35,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const engine = EditorEngine.getInstance();
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
-  const [gizmoMode, setGizmoMode] = useState<GizmoMode>('position');
+  const [gizmoMode, setGizmoMode] = useState<GizmoMode>(GizmoMode.Position);
+  const [gizmoAllowedModes, setGizmoAllowedModes] = useState<GizmoMode[]>([GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox]);
   const [renderSettings, setRenderSettings] = useState<IRenderSettings>(defaultSettings);
   const [renderLogs, setRenderLogs] = useState<IRenderLog[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,6 +48,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
 
       // Subscribe to engine events
       const unsubGizmoMode = engine.getGizmoModeManager().observers.subscribe('gizmoModeChanged', ({ mode }) => setGizmoMode(mode));
+      const unsubGizmoAllowedModes = engine.getGizmoModeManager().observers.subscribe('gizmoAllowedModesChanged', ({ modes }) => setGizmoAllowedModes(modes));
       const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe('entitySelected', ({ entity }) => setSelectedEntity(entity));
 
       // Subscribe to project manager events
@@ -57,6 +59,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       // Return cleanup function
       return () => {
         unsubGizmoMode();
+        unsubGizmoAllowedModes();
         unsubEntitySelected();
         unsubProjectLoaded();
         unsubRenderLogsChanged();
@@ -78,6 +81,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         isInitialized,
         selectedEntity,
         gizmoMode,
+        gizmoAllowedModes,
         renderSettings: renderSettings,
         renderLogs,
       }}

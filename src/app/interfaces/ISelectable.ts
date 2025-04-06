@@ -7,10 +7,7 @@ import { GizmoMode } from '../engine/managers/GizmoModeManager';
  */
 export interface GizmoCapabilities {
   defaultGizmoMode?: GizmoMode;
-  allowPosition: boolean;
-  allowRotation: boolean;
-  allowScale: boolean;
-  allowBoundingBox: boolean;
+  allowedGizmoModes: GizmoMode[];
   gizmoVisualSize: number;
 }
 

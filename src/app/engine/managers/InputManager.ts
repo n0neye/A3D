@@ -21,6 +21,7 @@ import { ISelectable } from '../../interfaces/ISelectable';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { GenerativeEntityProps } from '@/app/engine/entity/GenerativeEntity';
 import { EditorEngine } from '../EditorEngine';
+import { GizmoMode } from './GizmoModeManager';
 
 export class InputManager {
   private engine: EditorEngine;
@@ -315,16 +316,16 @@ export class InputManager {
     // Handle gizmo mode changes
     switch (event.key.toLowerCase()) {
       case 'w':
-        this.engine.setGizmoMode('position');
+        this.engine.setGizmoMode(GizmoMode.Position);
         break;
       case 'e':
-        this.engine.setGizmoMode('scale');
+        this.engine.setGizmoMode(GizmoMode.Scale);
         break;
       case 'r':
-        this.engine.setGizmoMode('rotation');
+        this.engine.setGizmoMode(GizmoMode.Rotation);
         break;
       case 't':
-        this.engine.setGizmoMode('boundingBox');
+        this.engine.setGizmoMode(GizmoMode.BoundingBox);
         break;
     }
   }
