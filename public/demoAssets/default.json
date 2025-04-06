@@ -3,7 +3,7 @@
   "timestamp": "2025-04-05T08:46:28.093Z",
   "entities": [
     {
-      "id": "dba18014-0eac-433d-bcee-78150a412515",
+      "entityId": "dba18014-0eac-433d-bcee-78150a412515",
       "name": "entity-1743561307120",
       "entityType": "shape",
       "position": {
@@ -27,7 +27,7 @@
       }
     },
     {
-      "id": "76355aa7-4e86-4d0a-8cff-4378eff5ec5f",
+      "entityId": "76355aa7-4e86-4d0a-8cff-4378eff5ec5f",
       "name": "entity-1743561308611",
       "entityType": "light",
       "position": {
@@ -57,7 +57,7 @@
       }
     },
     {
-      "id": "be25befd-a327-4dff-8607-7df693155534",
+      "entityId": "be25befd-a327-4dff-8607-7df693155534",
       "name": "entity-1743561324084",
       "entityType": "shape",
       "position": {
@@ -81,7 +81,7 @@
       }
     },
     {
-      "id": "sitted_7d05b804-23cb-4e62-8a56-8b65825c487f",
+      "entityId": "sitted_7d05b804-23cb-4e62-8a56-8b65825c487f",
       "name": "sitted_entity-1743561342407",
       "entityType": "generative",
       "position": {
@@ -123,7 +123,7 @@
       }
     },
     {
-      "id": "skull_b6825e2b-2d99-4049-b19c-ead9334317fd",
+      "entityId": "skull_b6825e2b-2d99-4049-b19c-ead9334317fd",
       "name": "skull_entity-1743561366379",
       "entityType": "generative",
       "position": {
@@ -165,7 +165,7 @@
       }
     },
     {
-      "id": "flower_c5e5f17c-24a9-45d9-a993-007ced68f377",
+      "entityId": "flower_c5e5f17c-24a9-45d9-a993-007ced68f377",
       "name": "flower_entity-1743564264848",
       "entityType": "generative",
       "position": {
@@ -207,7 +207,7 @@
       }
     },
     {
-      "id": "98e4b871-45ba-43b7-b24f-73cf5108fe0c",
+      "entityId": "98e4b871-45ba-43b7-b24f-73cf5108fe0c",
       "name": "entity-1743564346932",
       "entityType": "shape",
       "position": {
@@ -231,7 +231,7 @@
       }
     },
     {
-      "id": "a_a5bc48ce-c374-48f7-868c-756ff80ba4be",
+      "entityId": "a_a5bc48ce-c374-48f7-868c-756ff80ba4be",
       "name": "a_entity-1743565188907",
       "entityType": "generative",
       "position": {
@@ -273,7 +273,7 @@
       }
     },
     {
-      "id": "ebaaabdd-5f6b-4171-975d-36ea8cad41c3",
+      "entityId": "ebaaabdd-5f6b-4171-975d-36ea8cad41c3",
       "name": "entity-1743602851398",
       "entityType": "character",
       "position": {

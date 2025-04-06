@@ -51,7 +51,7 @@ export class EnvironmentManager {
         const scene = this.engine.getScene();
         this.createWorldGrid(scene);              
         this.createSkybox(scene);
-        this.createLights(scene);
+        // this.createLights(scene);
     }
 
     createWorldGrid = (

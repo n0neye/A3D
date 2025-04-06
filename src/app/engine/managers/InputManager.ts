@@ -39,6 +39,10 @@ export class InputManager {
   // Keyboard state tracking
   private keysPressed: Map<string, boolean> = new Map();
   
+  // Add these variables at the top level of your InputManager class
+  private inspector: any = null;
+  private inspectorEnabled: boolean = false;
+  
   constructor(
     engine: EditorEngine, 
     scene: THREE.Scene, 
@@ -282,10 +286,47 @@ export class InputManager {
     return this.keysPressed.get(key) === true;
   }
   
+  private toggleInspector = async (): Promise<void> => {
+    try {
+      if (!this.inspectorEnabled) {
+        // Dynamically import three-inspect only when first needed
+        const { createInspector } = await import('three-inspect/vanilla');
+        
+        // Get the canvas container or fallback to document.body
+        const container = this.canvas.parentElement || document.body;
+        
+        // Create and initialize the inspector
+        this.inspector = createInspector(container, {
+          scene: this.scene,
+          camera: this.camera as THREE.PerspectiveCamera,
+          renderer: this.renderer
+        });
+        
+        console.log('Three-inspect debugger initialized');
+        this.inspectorEnabled = true;
+      } else if (this.inspector) {
+        // Dispose of the inspector when toggled off
+        this.inspector.dispose();
+        this.inspector = null;
+        this.inspectorEnabled = false;
+        console.log('Three-inspect debugger disabled');
+      }
+    } catch (error) {
+      console.error('Failed to initialize three-inspect:', error);
+    }
+  }
+  
   private processKeyboardShortcuts(event: KeyboardEvent): void {
     // Don't process if a text input or textarea is focused
     if (document.activeElement instanceof HTMLInputElement || 
         document.activeElement instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    // Toggle inspector (Ctrl+\)
+    if ((event.ctrlKey || event.metaKey) && event.key === '\\') {
+      event.preventDefault();
+      this.toggleInspector();
       return;
     }
 
@@ -345,5 +386,11 @@ export class InputManager {
     
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
+    
+    // Clean up inspector if it exists
+    if (this.inspector) {
+      this.inspector.dispose();
+      this.inspector = null;
+    }
   }
 } 
