@@ -4,6 +4,7 @@ import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { Observer } from "@/app/engine/utils/Observer";
+import { GizmoModeManager } from './GizmoModeManager';
 /**
  * Manages selection of objects in the scene
  */
@@ -18,13 +19,13 @@ export class SelectionManager {
   private _currentSelection: ISelectable | null = null;
   private _currentEntity: EntityBase | null = null;
   private _scene: BABYLON.Scene;
-  private _gizmoManager: BABYLON.GizmoManager;
   private _hoverObserver: BABYLON.Observer<BABYLON.PointerInfo> | null = null;
   private _hoveredMesh: BABYLON.AbstractMesh | null = null;
+  private _gizmoModeManager: GizmoModeManager;
 
-  constructor(scene: BABYLON.Scene, gizmoManager: BABYLON.GizmoManager) {
+  constructor(scene: BABYLON.Scene, gizmoModeManager: GizmoModeManager) {
     this._scene = scene;
-    this._gizmoManager = gizmoManager;
+    this._gizmoModeManager = gizmoModeManager;
     this._setupHoverObserver();
   }
 
@@ -35,19 +36,26 @@ export class SelectionManager {
   select(newSelectable: ISelectable): void {
     console.log("SelectionManager.select called with:", newSelectable?.getName());
 
-    // Determine if we're selecting a child of the current selection
-    const isChildOfCurrentSelection = this._isChildSelection(newSelectable, this._currentEntity);
-
-    // Check if the new selection belongs to the same character as the current selection
-    if (!isChildOfCurrentSelection) {
-      // deselect the current selection properly
-      if (this._currentEntity) {
+    // Determine if need to deselect the current Entity
+    if (this._currentEntity) {
+      // Check if the new selection belongs to the same character as the current selection
+      const isChildOfCurrentEntity = this._isChildOfEntity(newSelectable, this._currentEntity);
+      if (!isChildOfCurrentEntity) {
+        // deselect the current selection properly
         console.log("Deselecting previous:", this._currentEntity.getName());
         this._currentEntity.onDeselect();
         this._currentEntity = null;
+      } else {
+        // Dont change the current entity
       }
-    } else {
-      // Dont change the current entity
+    }
+
+    // Determine if need to deselect the current Selection
+    if(this._currentSelection && !(this._currentSelection instanceof EntityBase)){
+      // deselect the current selection properly
+      console.log("Deselecting previous:", this._currentSelection.getName());
+      this._currentSelection.onDeselect();
+      this._currentSelection = null;
     }
 
     // On select new entity
@@ -69,15 +77,15 @@ export class SelectionManager {
     // TODO update the capabilities of the gizmoModeManager
 
     // Get the target to attach gizmos to
-    const target = newSelectable.getGizmoTarget();
-    this._gizmoManager.attachToNode(target);
-    console.log("Attaching gizmo to:", target.name);
+    console.log("SelectionManager.select: Attaching gizmo to:", newSelectable.getName());
+    this._gizmoModeManager.attachToSelectable(newSelectable);
 
     // Notify the selectable object
     newSelectable.onSelect();
   }
 
   deselectAll(): void {
+    console.log("SelectionManager.deselectAll called");
     if (this._currentSelection) {
       console.log("Deselecting current:", this._currentSelection.getName());
       this._currentSelection.onDeselect();
@@ -89,11 +97,7 @@ export class SelectionManager {
       this._currentEntity = null;
     }
 
-
-    if (this._gizmoManager) {
-      console.log("Detaching gizmo from previous selection");
-      this._gizmoManager.attachToMesh(null);
-    }
+    this._gizmoModeManager.attachToSelectable(null);
 
     this.selectionObserver.notify('entitySelected', { entity: null });
   }
@@ -101,12 +105,11 @@ export class SelectionManager {
   /**
    * Check if the new selection is a child of the current selection
    */
-  private _isChildSelection(newSelection: ISelectable | null, currentSelection: ISelectable | null): boolean {
-    if (!newSelection || !currentSelection) return false;
+  private _isChildOfEntity(selectable: ISelectable, entity: EntityBase): boolean {
 
     // Check specifically for BoneControl being a child of CharacterEntity
-    if (newSelection instanceof BoneControl && currentSelection instanceof CharacterEntity) {
-      return newSelection.character === currentSelection;
+    if (selectable instanceof BoneControl && entity instanceof CharacterEntity) {
+      return selectable.character === entity;
     }
 
     // Add other parent-child relationships here as needed

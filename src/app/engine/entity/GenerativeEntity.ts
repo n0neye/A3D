@@ -391,7 +391,7 @@ export class GenerativeEntity extends EntityBase {
 
     console.log(`Generating 3D model using ${apiProvider} API...`);
     const scene = this.engine.getScene();
-    const gizmoManager = this.engine.getGizmoModeManager().getGizmoManager();
+    const gizmoModeManager = this.engine.getGizmoModeManager();
 
     // Call the appropriate provider's implementation
     switch (apiProvider) {
@@ -400,7 +400,6 @@ export class GenerativeEntity extends EntityBase {
           imageUrl,
           this,
           scene,
-          gizmoManager,
           derivedFromId,
           { prompt: options.prompt }
         );
@@ -411,7 +410,6 @@ export class GenerativeEntity extends EntityBase {
           imageUrl,
           this,
           scene,
-          gizmoManager,
           derivedFromId,
           { prompt: options.prompt }
         );

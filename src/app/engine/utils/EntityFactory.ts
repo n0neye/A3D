@@ -130,7 +130,7 @@ export class EntityFactory {
   }
 
   static deleteEntity(entity: EntityBase, engine: EditorEngine): void {
-    const deleteCommand = new DeleteMeshCommand(entity, engine.getGizmoModeManager().getGizmoManager());
+    const deleteCommand = new DeleteMeshCommand(entity, engine.getGizmoModeManager());
     engine.getHistoryManager().executeCommand(deleteCommand);
   }
 

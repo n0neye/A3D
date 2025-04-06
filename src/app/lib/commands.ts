@@ -3,6 +3,7 @@ import { Command } from '../engine/managers/HistoryManager';
 import { Vector3, Quaternion } from '@babylonjs/core';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { usePostHog } from 'posthog-js/react';
+import { GizmoModeManager } from '../engine/managers/GizmoModeManager';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {
@@ -93,19 +94,20 @@ export class CreateMeshCommand implements Command {
 // Command for deleting objects
 export class DeleteMeshCommand implements Command {
   private isVisible: boolean;
-  private gizmoManager: BABYLON.GizmoManager | null;
+  private gizmoModeManager: GizmoModeManager | null;
 
-  constructor(private entity: EntityBase | BABYLON.Mesh, gizmoManager: BABYLON.GizmoManager | null = null) {
+  constructor(private entity: EntityBase | BABYLON.Mesh, gizmoModeManager: GizmoModeManager | null = null) {
     // Check if it's an EntityBase or a Mesh
     this.isVisible = entity.isEnabled();
-    this.gizmoManager = gizmoManager;
+    this.gizmoModeManager = gizmoModeManager;
   }
 
   public execute(): void {
     // Hide the entity or mesh
     this.entity.setEnabled(false);
-    if (this.gizmoManager) {
-      this.gizmoManager.attachToMesh(null);
+    if (this.gizmoModeManager) {
+      console.log("DeleteMeshCommand: Detaching gizmo");
+      this.gizmoModeManager.attachToSelectable(null);
     }
   }
 

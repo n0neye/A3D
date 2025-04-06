@@ -1,6 +1,7 @@
 import * as BABYLON from '@babylonjs/core';
 import { GizmoManager } from '@babylonjs/core';
 import { Observer } from '../utils/Observer';
+import { ISelectable } from '@/app/interfaces/ISelectable';
 export type GizmoMode = 'position' | 'rotation' | 'scale' | 'boundingBox';
 
 export class GizmoModeManager {
@@ -18,12 +19,28 @@ export class GizmoModeManager {
 
     public setGizmoMode(mode: GizmoMode): GizmoMode {
         this._currentMode = mode;
+        this.gizmoManager.scaleGizmoEnabled = mode === 'scale';
+        this.gizmoManager.rotationGizmoEnabled = mode === 'rotation';
+        this.gizmoManager.positionGizmoEnabled = mode === 'position';
+        this.gizmoManager.boundingBoxGizmoEnabled = mode === 'boundingBox';
+        console.log(`GizmoModeManager.setGizmoMode: Set gizmo mode to: ${mode}`);
         this.observers.notify('gizmoModeChanged', { mode });
         return mode;
     }
 
     public getGizmoMode(): GizmoMode {
         return this._currentMode;
+    }
+
+    public attachToSelectable(selectable: ISelectable | null): void {
+        console.log(`GizmoModeManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.gizmoCapabilities);
+        // TODO: Update gizmo visual size, and gizmo capabilities
+        if (selectable) {
+            if(selectable.gizmoCapabilities.defaultGizmoMode) {
+                this.setGizmoMode(selectable.gizmoCapabilities.defaultGizmoMode);
+            }
+        }
+        this.gizmoManager.attachToNode(selectable?.getGizmoTarget() || null);
     }
 
     public getGizmoManager(): GizmoManager {

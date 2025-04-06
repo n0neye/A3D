@@ -35,8 +35,8 @@ export class CharacterEntity extends EntityBase {
     // Bone visualization properties
     private _boneMap: Map<string, { bone: BABYLON.Bone, control: BoneControl }> = new Map();
     private _boneLines: Map<string, BABYLON.LinesMesh> = new Map();
-    private _visualizationMaterial: BABYLON.Material | null = null;
-    private _highlightMaterial: BABYLON.Material | null = null;
+    public readonly _visualizationMaterial: BABYLON.StandardMaterial;
+    public readonly _highlightMaterial: BABYLON.StandardMaterial;
     private _boneColor = new BABYLON.Color3(0.5, 0.7, 1.0);
     private _selectedBone: BABYLON.Bone | null = null;
     private _selectedControl: BABYLON.Mesh | null = null;
@@ -67,6 +67,18 @@ export class CharacterEntity extends EntityBase {
         });
 
         this._loadingPromise = this._loadCharacter(options?.onLoaded);
+
+        // Create visualization material
+        this._visualizationMaterial = new BABYLON.StandardMaterial(`${this.name}_boneMaterial`, this._scene);
+        this._visualizationMaterial.emissiveColor = this._boneColor;
+        this._visualizationMaterial.diffuseColor = this._boneColor;
+        this._visualizationMaterial.specularColor = BABYLON.Color3.Black();
+        this._visualizationMaterial.alpha = this._boneMaterialAlpha;
+        this._visualizationMaterial.disableDepthWrite = true;
+
+        this._highlightMaterial = new BABYLON.StandardMaterial(`${this.name}_highlightMaterial`, this._scene);
+        this._highlightMaterial.emissiveColor = new BABYLON.Color3(1, 0.5, 0);
+        this._highlightMaterial.alpha = 0.8;
     }
 
     private async _loadCharacter(onLoaded?: (entity: EntityBase) => void): Promise<void> {
@@ -195,24 +207,6 @@ export class CharacterEntity extends EntityBase {
     private _createBoneVisualization(): void {
         if (!this.skeleton) return;
 
-        // Create visualization material if it doesn't exist
-        if (!this._visualizationMaterial) {
-            const material = new BABYLON.StandardMaterial(`${this.name}_boneMaterial`, this._scene);
-            material.emissiveColor = this._boneColor;
-            material.diffuseColor = this._boneColor;
-            material.specularColor = BABYLON.Color3.Black();
-            material.alpha = this._boneMaterialAlpha;
-            material.disableDepthWrite = true;
-            this._visualizationMaterial = material;
-        }
-
-        // Create highlight material if it doesn't exist
-        if (!this._highlightMaterial) {
-            const material = new BABYLON.StandardMaterial(`${this.name}_highlightMaterial`, this._scene);
-            material.emissiveColor = new BABYLON.Color3(1, 0.5, 0);
-            material.alpha = 0.8;
-            this._highlightMaterial = material;
-        }
 
         // Create bone control spheres for each bone
         this.skeleton.bones.forEach(bone => {
@@ -383,10 +377,9 @@ export class CharacterEntity extends EntityBase {
             }
 
             // Detach gizmo
-            const gizmoManager = this.getGizmoManager();
-            if (gizmoManager) {
-                gizmoManager.attachToMesh(null);
-            }
+            console.log("CharacterEntity: _deselectBone Detaching gizmo");
+            const gizmoModeManager = EditorEngine.getInstance().getGizmoModeManager();
+            gizmoModeManager.attachToSelectable(null);
 
             // Clear selection
             this._selectedBone = null;
@@ -549,44 +542,6 @@ export class CharacterEntity extends EntityBase {
      */
     public updateBoneVisualization(): void {
         this._updateBoneLines();
-    }
-
-    /**
-     * Highlight a specific bone control
-     */
-    public highlightBone(boneControl: BoneControl): void {
-        // Use existing _deselectBone first to clear any current selection
-        this._deselectBone();
-
-        // Find the bone from the control
-        const boneName = boneControl.bone.name;
-        const bone = this.skeleton?.bones.find(b => b.name === boneName);
-
-        if (bone) {
-            this._selectedBone = bone;
-            this._selectedControl = boneControl;
-
-            // Apply highlight material if available
-            if (this._highlightMaterial && boneControl.material) {
-                boneControl.material = this._highlightMaterial;
-            }
-        }
-    }
-
-    /**
-     * Remove highlight from currently highlighted bone
-     */
-    public unhighlightBone(boneControl: BoneControl): void {
-        if (this._selectedBone && this._selectedControl === boneControl) {
-            // Reset control appearance
-            if (this._selectedControl.material && this._visualizationMaterial) {
-                this._selectedControl.material = this._visualizationMaterial;
-            }
-
-            // Clear selection
-            this._selectedBone = null;
-            this._selectedControl = null;
-        }
     }
 
     public disposeCharacter(): void {

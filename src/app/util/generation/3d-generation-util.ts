@@ -47,7 +47,6 @@ async function finalizeModelGeneration(
     isPersistentUrl: boolean,
     entity: GenerativeEntity,
     scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
     startTime: number
 ): Promise<GenerationResult> {
@@ -91,7 +90,6 @@ export async function generate3DModel_Trellis(
     imageUrl: string,
     entity: GenerativeEntity,
     scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
     options: {
         prompt?: string;
@@ -139,7 +137,6 @@ export async function generate3DModel_Trellis(
                 true,
                 entity,
                 scene,
-                gizmoManager,
                 derivedFromId,
                 startTime
             );
@@ -163,7 +160,6 @@ export async function generate3DModel_Runpod(
     imageUrl: string,
     entity: GenerativeEntity,
     scene: BABYLON.Scene,
-    gizmoManager: BABYLON.GizmoManager | null,
     derivedFromId: string,
     options: {
         prompt?: string;
@@ -280,7 +276,6 @@ export async function generate3DModel_Runpod(
                 false,
                 entity,
                 scene,
-                gizmoManager,
                 derivedFromId,
                 startTime
             );

@@ -60,7 +60,7 @@ export class EditorEngine {
     const babylonEngine = this.core.getEngine();
     this.cameraManager = new CameraManager(scene, canvas);
     this.gizmoModeManager = new GizmoModeManager(scene);
-    this.selectionManager = new SelectionManager(scene, this.gizmoModeManager.getGizmoManager());
+    this.selectionManager = new SelectionManager(scene, this.gizmoModeManager);
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);
@@ -135,7 +135,11 @@ export class EditorEngine {
   public selectEntity(entity: EntityBase | null): void {
     console.log(`EditorEngine: selectEntity`, entity !== null, entity !== undefined, this.selectionManager);
     // TODO: We've to get the instance again, as the UI may not have the lastest manager instance
-    EditorEngine.getInstance().getSelectionManager().select(entity);
+    if (entity) {
+      EditorEngine.getInstance().getSelectionManager().select(entity);
+    } else {
+      EditorEngine.getInstance().getSelectionManager().deselectAll();
+    }
   }
   public createEntity(options: CreateEntityOptions): EntityBase {
     const entity = EntityFactory.createEntity(this.core.getScene(), options);

@@ -15,13 +15,14 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
   entityType: EntityType;
   created: Date;
   engine: EditorEngine;
-
+  
   // ISelectable implementation
   gizmoCapabilities: GizmoCapabilities = {
     allowPosition: true,
     allowRotation: true,
     allowScale: true,
-    allowBoundingBox: false
+    allowBoundingBox: false,
+    gizmoVisualSize: 1
   };
 
   cursorType: SelectableCursorType = 'move';
@@ -44,6 +45,7 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
     this.id = options.id || uuidv4();
     this.entityType = entityType;
     this.created = new Date();
+
     // Set transform properties
     if (options.position) this.position = options.position;
     if (options.rotation) this.rotation = options.rotation;
@@ -89,13 +91,6 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
    */
   dispose(): void {
     super.dispose();
-  }
-
-  /**
-   * Get the GizmoManager from the scene
-   */
-  public getGizmoManager(): BABYLON.GizmoManager | null {
-    return EditorEngine.getInstance().getGizmoModeManager().getGizmoManager();
   }
 
   /**
