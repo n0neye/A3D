@@ -191,6 +191,11 @@ export class InputManager {
   
   private handleRegularClick = (event: PointerEvent): void => {
     console.log("handleRegularClick called");
+
+    const transformControlManager = this.engine.getTransformControlManager();
+    if(transformControlManager.getIsDragging()) {
+      return;
+    }
     
     // Perform raycasting to find intersected objects
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);

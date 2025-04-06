@@ -359,7 +359,9 @@ export class CameraManager {
     return this.mainCamera;
   }
 
-  public getOrbitControls(): OrbitControls {
-    return this.orbitControls;
+  public setOrbitControlsEnabled(enabled: boolean): void {
+    if (this.orbitControls) {
+      this.orbitControls.enabled = enabled;
+    }
   }
 } 

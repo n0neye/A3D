@@ -13,13 +13,12 @@ export enum GizmoMode {
 
 export class TransformControlManager {
     private scene: THREE.Scene;
-    private camera: THREE.Camera;
-    private renderer: THREE.WebGLRenderer;
     private transformControls: TransformControls;
     private _lastMode: GizmoMode = GizmoMode.Position;
     private _currentMode: GizmoMode = GizmoMode.Position;
     private _allowedModes: GizmoMode[] = [GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox];
     private _currentTarget: THREE.Object3D | null = null;
+    private _isDragging: boolean = false;
 
     public observers = new Observer<{
         gizmoModeChanged: { mode: GizmoMode };
@@ -30,8 +29,6 @@ export class TransformControlManager {
 
     constructor(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
         this.scene = scene;
-        this.camera = camera;
-        this.renderer = renderer;
 
         // Create transform controls
         this.transformControls = new TransformControls(camera, renderer.domElement);
@@ -42,17 +39,15 @@ export class TransformControlManager {
 
         // Set up event listeners
         this.transformControls.addEventListener('dragging-changed', (event) => {
-            // Get orbit controls from camera manager and disable during transform
+            this._isDragging = event.value as boolean;
+
+            // Pause camera orbit controls when dragging
             const cameraManager = EditorEngine.getInstance().getCameraManager();
-            const orbitControls = cameraManager.getOrbitControls();
-            
-            if (orbitControls) {
-                orbitControls.enabled = !event.value;
-            }
+            cameraManager.setOrbitControlsEnabled(!this._isDragging);
             
             // Notify when transform starts/ends
             if (this._currentTarget) {
-                if (event.value) {
+                if (this._isDragging) {
                     this.observers.notify('transformStarted', { target: this._currentTarget });
                 } else {
                     this.observers.notify('transformEnded', { target: this._currentTarget });
@@ -150,6 +145,10 @@ export class TransformControlManager {
 
     public getTransformControls(): TransformControls {
         return this.transformControls;
+    }
+
+    public getIsDragging(): boolean {
+        return this._isDragging;
     }
 
     public dispose(): void {
