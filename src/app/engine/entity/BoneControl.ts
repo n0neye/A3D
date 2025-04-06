@@ -73,6 +73,9 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     console.log(`BoneControl.onSelect: Bone selected: ${this.bone.name}`);
     this.rotation.copy(this.bone.rotation);
 
+    // Set material to selected material
+    this.material = CharacterEntity.HighlightBoneMaterial;
+
     // Set up gizmo rotation observers
     const transformControlManager = EditorEngine.getInstance().getTransformControlManager();
     
@@ -86,6 +89,8 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
 
     // Remove gizmo observers
     this._removeGizmoObservers();
+
+    this.material = CharacterEntity.DefaultBoneMaterial;
 
     // Reset material to default visualization
     // if (this.character._defaultBoneMaterial) {

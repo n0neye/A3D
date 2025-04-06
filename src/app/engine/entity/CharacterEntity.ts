@@ -28,8 +28,8 @@ export class CharacterEntity extends EntityBase {
     // Bone visualization properties
     private _boneMap: Map<string, { bone: THREE.Bone, control: BoneControl }> = new Map();
     private _boneLines: Map<string, THREE.Line> = new Map();
-    private _selectedBone: THREE.Bone | null = null;
-    private _selectedControl: BoneControl | null = null;
+    // private _selectedBone: THREE.Bone | null = null;
+    // private _selectedControl: BoneControl | null = null;
     private _isVisualizationVisible = false;
     public static DefaultBoneMaterial: THREE.Material;
     public static HighlightBoneMaterial: THREE.Material;
@@ -364,9 +364,6 @@ export class CharacterEntity extends EntityBase {
 
         // Show bone visualization when selected
         this.showBoneVisualization(true);
-
-        // Set up gizmo integration and input handling here
-        // This will need adapting for the Three.js input system
     }
 
     /**
@@ -375,46 +372,8 @@ export class CharacterEntity extends EntityBase {
     public onDeselect(): void {
         console.log(`CharacterEntity: Deselected ${this.name}`);
 
-        // Deselect any selected bone
-        this._deselectBone();
-
         // Hide bone visualization when deselected
         this.showBoneVisualization(false);
-    }
-
-    /**
-     * Select a bone and its control
-     */
-    public selectBone(bone: THREE.Bone, control: BoneControl): void {
-        // Deselect previous bone
-        this._deselectBone();
-
-        // Select new bone
-        control.onSelect();
-        this._selectedBone = bone;
-        this._selectedControl = control;
-
-        // Track bone selection
-        trackEvent(ANALYTICS_EVENTS.CHARACTER_EDIT, {
-            action: 'select_bone',
-            boneName: bone.name
-        });
-
-        console.log(`Selected bone: ${bone.name}`);
-    }
-
-    /**
-     * Deselect the current bone
-     */
-    private _deselectBone(): void {
-        if (this._selectedBone && this._selectedControl) {
-            // Reset control appearance
-            this._selectedControl.material = CharacterEntity.DefaultBoneMaterial;
-
-            // Clear selection
-            this._selectedBone = null;
-            this._selectedControl = null;
-        }
     }
 
     // --- Serialization ---

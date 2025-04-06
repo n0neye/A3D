@@ -204,22 +204,22 @@ export class InputManager {
     // Perform raycasting to find intersected objects
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
 
-    // First check for bone controls (they have special selection behavior)
+    // If no intersections, deselect
+    if (intersects.length === 0) {
+      console.log("No object picked, deselecting");
+      this.selectionManager.deselectAll();
+      return;
+    }
+
+    // Check for bone controls (they have special selection behavior)
     const boneControl = intersects.find(intersect =>
       intersect.object instanceof BoneControl
     )?.object;
 
     if (boneControl && boneControl instanceof BoneControl) {
       console.log("Bone picked:", boneControl.name);
-      boneControl.character.selectBone(boneControl.bone, boneControl);
+      // boneControl.character.selectBone(boneControl.bone, boneControl);
       this.selectionManager.select(boneControl);
-      return;
-    }
-
-    // If no intersections, deselect
-    if (intersects.length === 0) {
-      console.log("No object picked, deselecting");
-      this.selectionManager.deselectAll();
       return;
     }
 
