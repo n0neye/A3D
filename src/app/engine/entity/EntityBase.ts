@@ -120,29 +120,13 @@ export class EntityBase extends BABYLON.TransformNode implements ISelectable {
     return this.name;
   }
 
-  applyTransformation(
-    transformType: 'position' | 'rotation' | 'scale',
-    value: BABYLON.Vector3 | BABYLON.Quaternion
-  ): void {
-    switch (transformType) {
-      case 'position':
-        if (value instanceof BABYLON.Vector3) {
-          this.position = value;
-        }
-        break;
-      case 'rotation':
-        if (value instanceof BABYLON.Quaternion) {
-          this.rotationQuaternion = value;
-        } else if (value instanceof BABYLON.Vector3) {
-          this.rotation = value;
-        }
-        break;
-      case 'scale':
-        if (value instanceof BABYLON.Vector3) {
-          this.scaling = value;
-        }
-        break;
-    }
+  delete(): void {
+    // Simply hide the entity for now
+    this.setEnabled(false);
+  }
+
+  undoDelete(): void {
+    this.setEnabled(true);
   }
 }
 

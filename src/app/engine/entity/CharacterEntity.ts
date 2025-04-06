@@ -541,6 +541,16 @@ export class CharacterEntity extends EntityBase {
         super.dispose();
     }
 
+    public delete(): void {
+        super.delete();
+        // Hide all bones
+        this.showBoneVisualization(false);
+    }
+
+    public undoDelete(): void {
+        super.undoDelete();
+    }
+
     /**
      * Update the bone visualization to reflect the current state
      */

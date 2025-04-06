@@ -116,8 +116,6 @@ export class BoneControl extends BABYLON.Mesh implements ISelectable {
     const gizmoModeManager = EditorEngine.getInstance().getGizmoModeManager();
     const _gizmoManager = gizmoModeManager.getGizmoManager();
     if (_gizmoManager && _gizmoManager.gizmos.rotationGizmo) {
-      console.log("BoneControl.onSelect: Attaching gizmo", this.name);
-      gizmoModeManager.attachToSelectable(this);
 
       _gizmoManager.gizmos.rotationGizmo.scaleRatio = 0.5;
 

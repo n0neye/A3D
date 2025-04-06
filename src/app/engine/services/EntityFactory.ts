@@ -7,7 +7,7 @@ import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } 
 import { v4 as uuidv4 } from 'uuid';
 import { CreateEntityAsyncCommand } from '@/app/lib/commands';
 import { EditorEngine } from '../EditorEngine';
-import { DeleteMeshCommand } from '@/app/lib/commands';
+import { DeleteEntityCommand } from '@/app/lib/commands';
 
 // Base properties common to all entities
 interface BaseEntityOptions {
@@ -130,7 +130,7 @@ export class EntityFactory {
   }
 
   static deleteEntity(entity: EntityBase, engine: EditorEngine): void {
-    const deleteCommand = new DeleteMeshCommand(entity, engine.getGizmoModeManager());
+    const deleteCommand = new DeleteEntityCommand(entity, engine.getGizmoModeManager());
     engine.getHistoryManager().executeCommand(deleteCommand);
   }
 
