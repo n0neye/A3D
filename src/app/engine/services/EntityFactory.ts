@@ -136,7 +136,7 @@ export class EntityFactory {
   }
 
   static deleteEntity(entity: EntityBase, engine: EditorEngine): void {
-    const deleteCommand = new DeleteEntityCommand(entity, engine.gettransformControlManager());
+    const deleteCommand = new DeleteEntityCommand(entity, engine.getTransformControlManager());
     engine.getHistoryManager().executeCommand(deleteCommand);
   }
 

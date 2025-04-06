@@ -1,202 +1,181 @@
-import * as BABYLON from '@babylonjs/core';
+import * as THREE from 'three';
 import { ISelectable } from '../../interfaces/ISelectable';
-import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
-import { BoneControl } from '@/app/engine/entity/BoneControl';
-import { EntityBase } from '@/app/engine/entity/EntityBase';
-import { Observer } from "@/app/engine/utils/Observer";
-import { TransformControlManager } from './TransformControlManager';
+import { CharacterEntity } from '../entity/CharacterEntity';
+import { BoneControl } from '../entity/BoneControl';
+import { Observer } from '../utils/Observer';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
+import { GizmoMode } from './TransformControlManager';
+
+export interface SelectionObserverEvents {
+  entitySelected: { entity: ISelectable | null };
+  parentEntitySelected: { entity: ISelectable | null };
+}
+
 /**
  * Manages selection of objects in the scene
  */
 export class SelectionManager {
-
-  // Observer for selection events
-  public selectionObserver = new Observer<{
-    entitySelected: { entity: EntityBase | null };
-  }
-  >();
-
   private _currentSelection: ISelectable | null = null;
-  private _currentEntity: EntityBase | null = null;
-  private _scene: BABYLON.Scene;
-  private _hoverObserver: BABYLON.Observer<BABYLON.PointerInfo> | null = null;
-  private _hoveredMesh: BABYLON.AbstractMesh | null = null;
-  private _transformControlManager: TransformControlManager;
-
-  constructor(scene: BABYLON.Scene, transformControlManager: TransformControlManager) {
+  private _parentSelection: ISelectable | null = null; // Track parent selection separately
+  private _scene: THREE.Scene;
+  private _camera: THREE.Camera;
+  private _transformControls: TransformControls;
+  
+  // Observer for selection events
+  public selectionObserver = new Observer<SelectionObserverEvents>();
+  
+  constructor(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
     this._scene = scene;
-    this._transformControlManager = transformControlManager;
-    this._setupHoverObserver();
+    this._camera = camera;
+    
+    // Create transform controls
+    this._transformControls = new TransformControls(camera, renderer.domElement);
+    this._transformControls.addEventListener('dragging-changed', (event) => {
+      // Disable orbit controls when using transform controls
+      // This would need to be implemented based on your orbit controls setup
+    });
+    
+    // Add to scene
+    scene.add(this._transformControls);
   }
-
-
+  
   /**
    * Select an object
    */
-  select(newSelectable: ISelectable): void {
-    console.log("SelectionManager.select called with:", newSelectable?.getName());
-
-    // Determine if need to deselect the current Entity
-    if (this._currentEntity) {
-      // Check if the new selection belongs to the same character as the current selection
-      const isChildOfCurrentEntity = this._isChildOfEntity(newSelectable, this._currentEntity);
-      if (!isChildOfCurrentEntity) {
-        // deselect the current selection properly
-        console.log("Deselecting previous:", this._currentEntity.getName());
-        this._currentEntity.onDeselect();
-        this._currentEntity = null;
-      } else {
-        // Dont change the current entity
-      }
-    }
-
-    // Determine if need to deselect the current Selection
-    if(this._currentSelection && !(this._currentSelection instanceof EntityBase)){
+  select(selectable: ISelectable | null): void {
+    console.log("SelectionManager.select called with:", selectable?.getName());
+    
+    // Determine if we're selecting a child of the current selection
+    const isChildOfCurrentSelection = this._isChildSelection(selectable, this._currentSelection);
+    
+    // Check if the new selection belongs to the same character as the current selection
+    if (!isChildOfCurrentSelection) {
+      // If we're selecting something not related to current selection, 
       // deselect the current selection properly
-      console.log("Deselecting previous:", this._currentSelection.getName());
-      this._currentSelection.onDeselect();
-      this._currentSelection = null;
+      if (this._currentSelection) {
+        console.log("Deselecting previous:", this._currentSelection.getName());
+        this._currentSelection.onDeselect();
+      }
+      
+      // Also clear the parent selection
+      this._parentSelection = null;
+    } else {
+      console.log("Selecting a child of current selection - keeping parent active");
+      // Keep track of parent
+      this._parentSelection = this._currentSelection;
     }
-
-    // On select new entity
-    if (newSelectable && newSelectable instanceof EntityBase) {
-      this._currentEntity = newSelectable;
-      this.selectionObserver.notify('entitySelected', { entity: newSelectable });
-    }
-
+    
+    // Detach transform controls
+    this._transformControls.detach();
+    
     // Update current selection
-    this._currentSelection = newSelectable;
-
+    this._currentSelection = selectable;
+    
     // Configure for new selection
-    console.log("Setting up gizmo for new selection:", newSelectable.getName());
-
-    // Configure gizmos based on capabilities
-    // TODO update the capabilities of the transformControlManager
-
-    // Get the target to attach gizmos to
-    console.log("SelectionManager.select: Attaching gizmo to:", newSelectable.getName());
-    this._transformControlManager.attachToSelectable(newSelectable);
-
-    // Notify the selectable object
-    newSelectable.onSelect();
-  }
-
-  deselectAll(): void {
-    console.log("SelectionManager.deselectAll called");
-    if (this._currentSelection) {
-      console.log("Deselecting current:", this._currentSelection.getName());
-      this._currentSelection.onDeselect();
-      this._currentSelection = null;
+    if (selectable) {
+      console.log("Setting up transform controls for new selection:", selectable.getName());
+      
+      // Get the target to attach transform controls to
+      const target = selectable.getGizmoTarget();
+      console.log("Attaching transform controls to:", target.name);
+      
+      // Set transform controls mode based on capabilities
+      const capabilities = selectable.gizmoCapabilities;
+      const defaultMode = capabilities.defaultGizmoMode || GizmoMode.Position;
+      
+      // Set the mode if it's allowed
+      if (capabilities.allowedGizmoModes.includes(defaultMode)) {
+        this.setTransformControlsMode(defaultMode);
+      } else if (capabilities.allowedGizmoModes.length > 0) {
+        // Fall back to first allowed mode
+        this.setTransformControlsMode(capabilities.allowedGizmoModes[0]);
+      }
+      
+      // Attach transform controls to target
+      this._transformControls.attach(target);
+      
+      // Notify the selectable object
+      selectable.onSelect();
     }
-    if (this._currentEntity) {
-      console.log("Deselecting current entity:", this._currentEntity.getName());
-      this._currentEntity.onDeselect();
-      this._currentEntity = null;
+    
+    // Notify observers
+    this.selectionObserver.notify('entitySelected', { entity: selectable });
+    if (this._parentSelection) {
+      this.selectionObserver.notify('parentEntitySelected', { entity: this._parentSelection });
     }
-
-    this._transformControlManager.attachToSelectable(null);
-
-    this.selectionObserver.notify('entitySelected', { entity: null });
   }
-
+  
+  /**
+   * Set the transform controls mode
+   */
+  setTransformControlsMode(mode: GizmoMode): void {
+    switch (mode) {
+      case GizmoMode.Position:
+        this._transformControls.setMode('translate');
+        break;
+      case GizmoMode.Rotation:
+        this._transformControls.setMode('rotate');
+        break;
+      case GizmoMode.Scale:
+        this._transformControls.setMode('scale');
+        break;
+      case GizmoMode.BoundingBox:
+        // Three.js doesn't have a built-in bounding box mode
+        // You would need to implement this separately
+        this._transformControls.setMode('translate');
+        break;
+    }
+  }
+  
   /**
    * Check if the new selection is a child of the current selection
    */
-  private _isChildOfEntity(selectable: ISelectable, entity: EntityBase): boolean {
-
+  private _isChildSelection(newSelection: ISelectable | null, currentSelection: ISelectable | null): boolean {
+    if (!newSelection || !currentSelection) return false;
+    
     // Check specifically for BoneControl being a child of CharacterEntity
-    if (selectable instanceof BoneControl && entity instanceof CharacterEntity) {
-      return selectable.character === entity;
+    if (newSelection instanceof BoneControl && currentSelection instanceof CharacterEntity) {
+      return newSelection.character === currentSelection;
     }
-
+    
     // Add other parent-child relationships here as needed
-
+    
     return false;
   }
-
+  
   /**
    * Get the current selection
    */
   getCurrentSelection(): ISelectable | null {
     return this._currentSelection;
   }
-
+  
   /**
    * Get the parent selection (if any)
    */
-  getCurrentEntity(): EntityBase | null {
-    return this._currentEntity;
+  getParentSelection(): ISelectable | null {
+    return this._parentSelection;
   }
-
+  
   /**
-   * Set up pointer hover observer for cursor changes
+   * Deselect all objects
    */
-  private _setupHoverObserver(): void {
-    console.log("Setting up hover observer");
-    // this._hoverObserver = this._scene.onPointerObservable.add((pointerInfo) => {
-    //   // Only handle pointer move events
-    //   if (pointerInfo.type !== BABYLON.PointerEventTypes.POINTERMOVE) {
-    //     return;
-    //   }
-
-    //   // Pick the mesh under the pointer
-    //   const pickInfo = this._scene.pick(
-    //     this._scene.pointerX, 
-    //     this._scene.pointerY
-    //   );
-
-    //   // Get the picked mesh
-    //   const pickedMesh = pickInfo.pickedMesh;
-
-    //   // If hovering over a new mesh
-    //   if (pickedMesh !== this._hoveredMesh) {
-    //     console.log("Hover changed to:", pickedMesh?.name);
-    //     // Update hover state
-    //     this._hoveredMesh = pickedMesh;
-
-    //     // Find ISelectable from mesh
-    //     let selectable: ISelectable | null = null;
-
-    //     if (pickedMesh) {
-    //       // Check if mesh itself is selectable
-    //       if ((pickedMesh as any).gizmoCapabilities) {
-    //         console.log("Mesh is directly selectable");
-    //         selectable = pickedMesh as unknown as ISelectable;
-    //       } 
-    //       // Check if mesh has a selectable entity as metadata
-    //       else if (pickedMesh.metadata?.rootEntity && 
-    //               (pickedMesh.metadata.rootEntity as any).gizmoCapabilities) {
-    //         console.log("Mesh has selectable rootEntity");
-    //         selectable = pickedMesh.metadata.rootEntity as ISelectable;
-    //       }
-    //     }
-
-    //     // Update cursor based on selectable
-    //     this._updateCursor(selectable);
-    //   }
-    // });
+  deselectAll(): void {
+    this.select(null);
   }
-
+  
   /**
-   * Update cursor style based on hovered selectable
+   * Get the transform controls
    */
-  private _updateCursor(selectable: ISelectable | null): void {
-    if (selectable) {
-      // Use Babylon's built-in cursor management
-      this._scene.hoverCursor = selectable.cursorType;
-    } else {
-      // Reset to default
-      this._scene.hoverCursor = "default";
-    }
+  getTransformControls(): TransformControls {
+    return this._transformControls;
   }
-
+  
   /**
    * Clean up resources
    */
   dispose(): void {
-    if (this._hoverObserver) {
-      this._scene.onPointerObservable.remove(this._hoverObserver);
-      this._hoverObserver = null;
-    }
+    this._transformControls.dispose();
+    this._scene.remove(this._transformControls);
   }
 }

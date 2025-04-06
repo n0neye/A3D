@@ -123,7 +123,7 @@ export class EditorEngine {
     return this.historyManager;
   }
 
-  public gettransformControlManager(): TransformControlManager {
+  public getTransformControlManager(): TransformControlManager {
     return this.transformControlManager;
   }
 

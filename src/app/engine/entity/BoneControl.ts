@@ -74,7 +74,7 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     this.rotation.copy(this.bone.rotation);
 
     // Set up gizmo rotation observers
-    const transformControlManager = EditorEngine.getInstance().gettransformControlManager();
+    const transformControlManager = EditorEngine.getInstance().getTransformControlManager();
     
     // TODO: Update with Three.js gizmo implementation
     // Placeholder for now - we'll add the actual Three.js gizmo integration later

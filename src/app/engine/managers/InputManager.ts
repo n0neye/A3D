@@ -11,7 +11,7 @@
  * This isolates all input logic in one place rather than spreading
  * it across multiple components or the EditorEngine itself.
  */
-import * as BABYLON from '@babylonjs/core';
+import * as THREE from 'three';
 import { SelectionManager } from './SelectionManager';
 import { HistoryManager } from './HistoryManager';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
@@ -25,75 +25,110 @@ import { GizmoMode } from './TransformControlManager';
 
 export class InputManager {
   private engine: EditorEngine;
-  private scene: BABYLON.Scene;
+  private scene: THREE.Scene;
+  private camera: THREE.Camera;
+  private renderer: THREE.WebGLRenderer;
   private selectionManager: SelectionManager;
   private historyManager: HistoryManager;
+  private canvas: HTMLCanvasElement;
+  
+  // Raycaster for picking objects
+  private raycaster: THREE.Raycaster;
+  private pointer: THREE.Vector2;
   
   // Keyboard state tracking
   private keysPressed: Map<string, boolean> = new Map();
   
-  constructor(engine: EditorEngine, scene: BABYLON.Scene, selectionManager: SelectionManager, historyManager: HistoryManager) {
+  constructor(
+    engine: EditorEngine, 
+    scene: THREE.Scene, 
+    camera: THREE.Camera,
+    renderer: THREE.WebGLRenderer,
+    selectionManager: SelectionManager, 
+    historyManager: HistoryManager
+  ) {
     this.engine = engine;
     this.scene = scene;
+    this.camera = camera;
+    this.renderer = renderer;
     this.selectionManager = selectionManager;
     this.historyManager = historyManager;
+    this.canvas = this.renderer.domElement;
+    
+    // Initialize raycaster and pointer
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
     
     this.initialize();
   }
   
   private initialize(): void {
-    // Set up pointer observables
-    this.scene.onPointerObservable.add(this.handlePointerEvent);
+    // Set up pointer event listeners
+    this.canvas.addEventListener('pointerdown', this.handlePointerDown);
+    this.canvas.addEventListener('pointerup', this.handlePointerUp);
+    this.canvas.addEventListener('pointermove', this.handlePointerMove);
+    this.canvas.addEventListener('wheel', this.handlePointerWheel);
     
     // Set up keyboard event listeners
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
   }
   
-  private handlePointerEvent = (pointerInfo: BABYLON.PointerInfo): void => {
-    switch (pointerInfo.type) {
-      case BABYLON.PointerEventTypes.POINTERDOWN:
-        this.handlePointerDown(pointerInfo);
-        break;
-      case BABYLON.PointerEventTypes.POINTERUP:
-        this.handlePointerUp(pointerInfo);
-        break;
-      case BABYLON.PointerEventTypes.POINTERMOVE:
-        this.handlePointerMove(pointerInfo);
-        break;
-      case BABYLON.PointerEventTypes.POINTERWHEEL:
-        this.handlePointerWheel(pointerInfo);
-        break;
-    }
+  private updateRaycaster(event: MouseEvent): void {
+    // Calculate pointer position in normalized device coordinates
+    // (-1 to +1) for both components
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    // Update the raycaster
+    this.raycaster.setFromCamera(this.pointer, this.camera);
   }
   
-  private handlePointerDown = (pointerInfo: BABYLON.PointerInfo): void => {
-    if (pointerInfo.event.button === 0) { // Left click
+  private handlePointerDown = (event: PointerEvent): void => {
+    if (event.button === 0) { // Left click
+      this.updateRaycaster(event);
+      
       if (this.isKeyPressed('Control') || this.isKeyPressed('Meta')) {
-        this.handleCtrlClick(pointerInfo);
+        this.handleCtrlClick(event);
       } else {
-        this.handleRegularClick(pointerInfo);
+        this.handleRegularClick(event);
       }
     }
   }
   
-  private handlePointerUp = (pointerInfo: BABYLON.PointerInfo): void => {
+  private handlePointerUp = (event: PointerEvent): void => {
     // Handle pointer up events
   }
   
-  private handlePointerMove = (pointerInfo: BABYLON.PointerInfo): void => {
-    // Handle pointer move events
+  private handlePointerMove = (event: PointerEvent): void => {
+    // Handle pointer move events for hover effects
+    this.updateRaycaster(event);
+    
+    // Perform raycasting to find intersected objects
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    
+    // Update cursor based on what's being hovered
+    if (intersects.length > 0) {
+      const object = this.findSelectableFromIntersection(intersects[0].object);
+      if (object) {
+        this.canvas.style.cursor = object.cursorType;
+      } else {
+        this.canvas.style.cursor = 'default';
+      }
+    } else {
+      this.canvas.style.cursor = 'default';
+    }
   }
   
-  private handlePointerWheel = (pointerInfo: BABYLON.PointerInfo): void => {
+  private handlePointerWheel = (event: WheelEvent): void => {
     const currentSelection = this.selectionManager.getCurrentSelection();
     if (!currentSelection) return;
 
     const currentEntity = currentSelection instanceof EntityBase ? currentSelection : null;
     if (!currentEntity) return;
 
-    // @ts-ignore
-    const wheelDelta = pointerInfo.event.deltaY;
+    const wheelDelta = event.deltaY;
     const scaleFactor = 0.001; // Adjust this for sensitivity
     const rotationFactor = 0.0025; // Adjust this for sensitivity
 
@@ -103,160 +138,123 @@ export class InputManager {
     const isRKeyPressed = this.isKeyPressed('r') || this.isKeyPressed('R');
 
     if (isEKeyPressed || isRKeyPressed || isWKeyPressed) {
-      // Disable camera zoom
-      const camera = this.scene.activeCamera as BABYLON.ArcRotateCamera;
-      camera.inputs.remove(camera.inputs.attached.mousewheel);
+      // Prevent default scroll behavior
+      event.preventDefault();
 
-      // W+Wheel: Move the selected entity up
+      // W+Wheel: Move the selected entity up/down
       if (isWKeyPressed) {
         currentEntity.position.y += wheelDelta * -0.001;
       }
-
+      
       // E+Wheel: Scale the selected entity
-      if (isEKeyPressed) {
-        // Create scale command - record the starting state
-        const scaleCommand = new TransformCommand(currentEntity);
-
-        // Calculate scale factor based on wheel direction
-        const delta = -wheelDelta * scaleFactor;
-        const newScale = currentEntity.scaling.clone();
-
-        // Apply uniform scaling
-        newScale.x += newScale.x * delta;
-        newScale.y += newScale.y * delta;
-        newScale.z += newScale.z * delta;
-
-        // Apply the new scale
-        currentEntity.scaling = newScale;
-
-        // Update the final state and record the command
-        scaleCommand.updateFinalState();
-        this.historyManager.executeCommand(scaleCommand);
-
-        // Prevent default browser zoom
-        pointerInfo.event.preventDefault();
+      else if (isEKeyPressed) {
+        const scaleDelta = 1 + (wheelDelta * scaleFactor);
+        currentEntity.scale.multiplyScalar(scaleDelta);
       }
-
+      
       // R+Wheel: Rotate the selected entity around Y axis
       else if (isRKeyPressed) {
-        // Create rotation command - record the starting state
-        const rotationCommand = new TransformCommand(currentEntity);
-
-        // Calculate rotation amount based on wheel direction
-        const delta = wheelDelta * rotationFactor;
-
-        // Apply rotation around y-axis
-        currentEntity.rotate(BABYLON.Vector3.Up(), delta);
-
-        // Update the final state and record the command
-        rotationCommand.updateFinalState();
-        this.historyManager.executeCommand(rotationCommand);
-
-        // Prevent default browser behavior
-        pointerInfo.event.preventDefault();
+        currentEntity.rotation.y += wheelDelta * rotationFactor;
       }
-
-      // Enable camera zoom
-      setTimeout(() => {
-        camera.inputs.add(new BABYLON.ArcRotateCameraMouseWheelInput);
-        camera.wheelPrecision = 40;
-      }, 50);
     }
   }
   
-  private handleRegularClick = (pointerInfo: BABYLON.PointerInfo): void => {
-    console.log("handleRegularClick called");
-
-    // First, check for bone controls (they have special selection behavior)
-    const bonePickInfo = this.scene.pick(
-      this.scene.pointerX,
-      this.scene.pointerY,
-      (mesh) => mesh.name.startsWith('bone_') // Only pick meshes that start with 'bone_'
-    );
-
-    // If we picked a bone control, select the bone and return
-    if (bonePickInfo.hit && bonePickInfo.pickedMesh && bonePickInfo.pickedMesh instanceof BoneControl && bonePickInfo.pickedMesh.isPickable) {
-      console.log("Bone picked:", bonePickInfo.pickedMesh.name);
-      const boneControl = bonePickInfo.pickedMesh as BoneControl;
-      boneControl.character.selectBone(boneControl);
-      this.selectionManager.select(boneControl);
-      return;
+  private findSelectableFromIntersection(object: THREE.Object3D): ISelectable | null {
+    // Check if the object itself is selectable
+    if (this.isSelectable(object)) {
+      return object as unknown as ISelectable;
     }
-
-    // Regular picking for entities and other selectables
-    const pickInfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY);
-    const mesh = pickInfo.pickedMesh;
-    console.log("Picked mesh:", mesh?.name, "metadata:", mesh?.metadata);
-
-    // Clicked on empty space - deselect
-    if (!mesh) {
-      console.log("No mesh picked, deselecting");
-      this.selectionManager.deselectAll();
-      return;
-    }
-
-    // Find the selectable object
-    let selectable: ISelectable | null = null;
-
-    // First check if the mesh has a rootEntity that's selectable
-    if (mesh.metadata?.rootEntity && (mesh.metadata.rootEntity as any).gizmoCapabilities) {
-      console.log("Mesh has selectable rootEntity");
-      selectable = mesh.metadata.rootEntity as ISelectable;
-      this.selectionManager.select(selectable);
-    }
-    // Then check if the mesh itself is directly selectable (for BoneControl etc.)
-    else if ((mesh as any).gizmoCapabilities) {
-      console.log("Mesh is directly selectable");
-      selectable = mesh as unknown as ISelectable;
-      this.selectionManager.select(selectable);
-    }
-    // Nothing selectable found
-    else {
-      console.log("Nothing selectable found, deselecting");
-      this.selectionManager.deselectAll();
-    }
-  }
-  
-  private handleCtrlClick = (pointerInfo: BABYLON.PointerInfo): void => {
-    console.log("CtrlClick", pointerInfo);
     
-    // Cast a ray from the camera through the mouse position
-    const pickInfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY);
-    let position: BABYLON.Vector3;
+    // Check if it has a selectable in userData
+    if (object.userData?.rootEntity && this.isSelectable(object.userData.rootEntity)) {
+      return object.userData.rootEntity as ISelectable;
+    }
+    
+    // Check parent hierarchy
+    let parent = object.parent;
+    while (parent) {
+      if (this.isSelectable(parent)) {
+        return parent as unknown as ISelectable;
+      }
+      parent = parent.parent;
+    }
+    
+    return null;
+  }
+  
+  private isSelectable(object: any): boolean {
+    return object && object.gizmoCapabilities !== undefined;
+  }
+  
+  private handleRegularClick = (event: PointerEvent): void => {
+    console.log("handleRegularClick called");
+    
+    // Perform raycasting to find intersected objects
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    
+    // First check for bone controls (they have special selection behavior)
+    const boneControl = intersects.find(intersect => 
+      intersect.object instanceof BoneControl || 
+      intersect.object.userData?.isBoneControl
+    )?.object;
+    
+    if (boneControl) {
+      console.log("Bone picked:", boneControl.name);
+      const control = boneControl instanceof BoneControl ? 
+        boneControl : 
+        boneControl.userData.boneControl;
+        
+      control.character.selectBone(control);
+      this.selectionManager.select(control);
+      return;
+    }
+    
+    // If no intersections, deselect
+    if (intersects.length === 0) {
+      console.log("No object picked, deselecting");
+      this.selectionManager.deselectAll();
+      return;
+    }
+    
+    // Find the first selectable object in the intersection list
+    for (const intersect of intersects) {
+      const selectable = this.findSelectableFromIntersection(intersect.object);
+      if (selectable) {
+        console.log("Selected:", selectable.getName());
+        this.selectionManager.select(selectable);
+        return;
+      }
+    }
+    
+    // If we got here, nothing selectable was found
+    console.log("Nothing selectable found, deselecting");
+    this.selectionManager.deselectAll();
+  }
+  
+  private handleCtrlClick = (event: PointerEvent): void => {
+    console.log("CtrlClick", event);
+    
+    // Perform raycasting to find intersected objects
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    let position: THREE.Vector3;
 
-    if (pickInfo.hit) {
+    if (intersects.length > 0) {
       // If we hit something, use that point
-      position = pickInfo.pickedPoint!.clone();
+      position = intersects[0].point.clone();
     } else {
-      // Create at the position where the user clicked, but at a fixed distance from camera
-      const camera = this.scene.activeCamera as BABYLON.ArcRotateCamera;
-      if (!camera) return;
-
-      // Camera center
-      const cameraCenter = camera.getTarget();
-      const cameraPosition = camera.position;
-      const distance = cameraPosition.subtract(cameraCenter).length();
-
-      // Create a ray from the camera through the clicked point on the screen
-      const ray = this.scene.createPickingRay(
-        this.scene.pointerX,
-        this.scene.pointerY,
-        BABYLON.Matrix.Identity(),
-        camera
-      );
-
-      // Calculate position along the ray at the specified distance
-      position = ray.origin.add(ray.direction.scale(distance));
+      // Create at a point in front of the camera
+      position = new THREE.Vector3(0, 0, -5);
+      position.applyMatrix4(this.camera.matrixWorld);
     }
 
     // Create entity command using the EntityFactory
     this.engine.createEntityCommand({
       type: 'generative',
       position,
-      gnerativeProps: {
+      generativeProps: {
         generationLogs: [],
       } as GenerativeEntityProps
-    })
+    });
   }
   
   private handleKeyDown = (event: KeyboardEvent): void => {
@@ -332,8 +330,12 @@ export class InputManager {
   
   public dispose(): void {
     // Clean up event listeners
+    this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
+    this.canvas.removeEventListener('pointerup', this.handlePointerUp);
+    this.canvas.removeEventListener('pointermove', this.handlePointerMove);
+    this.canvas.removeEventListener('wheel', this.handlePointerWheel);
+    
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
-    // Scene listeners will be cleaned up when scene is disposed
   }
 } 
