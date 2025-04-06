@@ -25,9 +25,12 @@ export interface SerializedLightEntityData extends SerializedEntityData {
 
 export class LightEntity extends EntityBase {
   // LightEntity specific properties
-  light: THREE.Light;
-  gizmoMesh: THREE.Mesh;
+  _light: THREE.Light;
+  _gizmoMesh: THREE.Mesh;
+  _material: THREE.MeshStandardMaterial;
+  
   props: LightProps;
+
 
   constructor(
     name: string,
@@ -47,7 +50,7 @@ export class LightEntity extends EntityBase {
     console.log("LightEntity: constructor", options);
 
     // Create the light
-    this.light = this.createLight(
+    this._light = this.createLight(
       options.props?.intensity || 0.7,
       options.props?.color || { r: 1, g: 1, b: 1 },
       options.props?.shadowEnabled || false
@@ -60,7 +63,9 @@ export class LightEntity extends EntityBase {
     };
 
     // Create light visual representation
-    this.gizmoMesh = this.createLightGizmo(scene);
+    const { lightSphere, material } = this.createLightGizmo();
+    this._gizmoMesh = lightSphere;
+    this._material = material as THREE.MeshStandardMaterial;
 
     options.onLoaded?.(this);
   }
@@ -76,11 +81,11 @@ export class LightEntity extends EntityBase {
       100, // distance
       1    // decay
     );
-    
+
     // Set up shadows if enabled
     if (shadowEnabled) {
       light.castShadow = true;
-      
+
       // Configure shadow properties
       light.shadow.mapSize.width = 2048;
       light.shadow.mapSize.height = 2048;
@@ -90,17 +95,17 @@ export class LightEntity extends EntityBase {
       light.shadow.radius = 2;
       light.shadow.blurSamples = 8;
     }
-    
+
     // Add the light to this entity
     this.add(light);
-    
+
     return light;
   }
 
   /**
    * Create visual representation of the light
    */
-  private createLightGizmo(scene: THREE.Scene): THREE.Mesh {
+  private createLightGizmo(): { lightSphere: THREE.Mesh, material: THREE.MeshStandardMaterial } {
     // Create a visual representation for the light (a glowing sphere)
     const geometry = new THREE.SphereGeometry(0.2);
     const material = new THREE.MeshStandardMaterial({
@@ -108,30 +113,30 @@ export class LightEntity extends EntityBase {
       emissive: new THREE.Color(this.props.color.r, this.props.color.g, this.props.color.b),
       emissiveIntensity: 1.0
     });
-    
+
     const lightSphere = new THREE.Mesh(geometry, material);
-    
+
     // Make the sphere not cast shadows (it's just a visual indicator)
     lightSphere.castShadow = false;
     lightSphere.receiveShadow = false;
-    
+
     // Add the sphere to this entity
     this.add(lightSphere);
     lightSphere.userData = { rootEntity: this };
-    
-    return lightSphere;
+
+    return { lightSphere, material };
   }
 
   /**
    * Set light color
    */
   setColor(color: THREE.Color): void {
-    if (this.light instanceof THREE.PointLight) {
-      this.light.color = color;
-      
+    if (this._light instanceof THREE.PointLight) {
+      this._light.color = color;
+
       // Update the gizmo color
-      if (this.gizmoMesh && this.gizmoMesh.material) {
-        const material = this.gizmoMesh.material as THREE.MeshStandardMaterial;
+      if (this._gizmoMesh && this._gizmoMesh.material) {
+        const material = this._gizmoMesh.material as THREE.MeshStandardMaterial;
         material.color = color;
         material.emissive = color;
       }
@@ -149,7 +154,7 @@ export class LightEntity extends EntityBase {
    * Set light intensity
    */
   setIntensity(intensity: number): void {
-    this.light.intensity = intensity;
+    this._light.intensity = intensity;
 
     // Update metadata
     this.props.intensity = intensity;
@@ -159,10 +164,10 @@ export class LightEntity extends EntityBase {
    * Enable/disable shadows
    */
   setShadowEnabled(enabled: boolean): void {
-    if (this.light instanceof THREE.PointLight || 
-        this.light instanceof THREE.DirectionalLight || 
-        this.light instanceof THREE.SpotLight) {
-      this.light.castShadow = enabled;
+    if (this._light instanceof THREE.PointLight ||
+      this._light instanceof THREE.DirectionalLight ||
+      this._light instanceof THREE.SpotLight) {
+      this._light.castShadow = enabled;
     }
 
     // Update metadata
@@ -198,34 +203,34 @@ export class LightEntity extends EntityBase {
    * Clean up resources
    */
   dispose(): void {
-    if (this.light) {
+    if (this._light) {
       // Remove the light from this entity
-      this.remove(this.light);
-      
+      this.remove(this._light);
+
       // Dispose of any resources associated with the light
-      if (this.light.shadow && this.light.shadow.map) {
-        this.light.shadow.map.dispose();
+      if (this._light.shadow && this._light.shadow.map) {
+        this._light.shadow.map.dispose();
       }
     }
-    
-    if (this.gizmoMesh) {
+
+    if (this._gizmoMesh) {
       // Remove the gizmo mesh from this entity
-      this.remove(this.gizmoMesh);
-      
+      this.remove(this._gizmoMesh);
+
       // Dispose of geometry and material
-      if (this.gizmoMesh.geometry) {
-        this.gizmoMesh.geometry.dispose();
+      if (this._gizmoMesh.geometry) {
+        this._gizmoMesh.geometry.dispose();
       }
-      
-      if (this.gizmoMesh.material) {
-        if (Array.isArray(this.gizmoMesh.material)) {
-          this.gizmoMesh.material.forEach(material => material.dispose());
+
+      if (this._gizmoMesh.material) {
+        if (Array.isArray(this._gizmoMesh.material)) {
+          this._gizmoMesh.material.forEach(material => material.dispose());
         } else {
-          this.gizmoMesh.material.dispose();
+          this._gizmoMesh.material.dispose();
         }
       }
     }
-    
+
     super.dispose();
   }
 
@@ -238,5 +243,40 @@ export class LightEntity extends EntityBase {
 
   public static isLightEntity(entity: EntityBase): entity is LightEntity {
     return entity.entityType === 'light';
+  }
+
+  /**
+   * Convert RGB (0-1) to hex color string
+   */
+  public rgbToHex(r: number, g: number, b: number): string {
+    return "#" + ((1 << 24) + (Math.round(r * 255) << 16) + (Math.round(g * 255) << 8) + Math.round(b * 255)).toString(16).slice(1);
+  }
+
+  /**
+   * Convert hex color to RGB (0-1)
+   */
+  public hexToRgb(hex: string): { r: number, g: number, b: number } {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16) / 255,
+      g: parseInt(result[2], 16) / 255,
+      b: parseInt(result[3], 16) / 255
+    } : { r: 1, g: 1, b: 1 };
+  }
+
+  /**
+   * Set light color from hex string
+   */
+  public setColorFromHex(hexColor: string): void {
+    const rgb = this.hexToRgb(hexColor);
+    this.setColor(new THREE.Color(rgb.r, rgb.g, rgb.b));
+  }
+
+  /**
+   * Get current light color as hex
+   */
+  public getColorAsHex(): string {
+    const color = this._light.color;
+    return this.rgbToHex(color.r, color.g, color.b);
   }
 } 
