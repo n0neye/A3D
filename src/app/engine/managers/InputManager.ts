@@ -31,24 +31,24 @@ export class InputManager {
   private selectionManager: SelectionManager;
   private historyManager: HistoryManager;
   private canvas: HTMLCanvasElement;
-  
+
   // Raycaster for picking objects
   private raycaster: THREE.Raycaster;
   private pointer: THREE.Vector2;
-  
+
   // Keyboard state tracking
   private keysPressed: Map<string, boolean> = new Map();
-  
+
   // Add these variables at the top level of your InputManager class
   private inspector: any = null;
   private inspectorEnabled: boolean = false;
-  
+
   constructor(
-    engine: EditorEngine, 
-    scene: THREE.Scene, 
+    engine: EditorEngine,
+    scene: THREE.Scene,
     camera: THREE.Camera,
     renderer: THREE.WebGLRenderer,
-    selectionManager: SelectionManager, 
+    selectionManager: SelectionManager,
     historyManager: HistoryManager
   ) {
     this.engine = engine;
@@ -58,44 +58,44 @@ export class InputManager {
     this.selectionManager = selectionManager;
     this.historyManager = historyManager;
     this.canvas = this.renderer.domElement;
-    
+
     // Initialize raycaster and pointer
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
-    
+
     this.initialize();
   }
-  
+
   private initialize(): void {
     // Set up pointer event listeners
     this.canvas.addEventListener('pointerdown', this.handlePointerDown);
     this.canvas.addEventListener('pointerup', this.handlePointerUp);
     this.canvas.addEventListener('pointermove', this.handlePointerMove);
     this.canvas.addEventListener('wheel', this.handlePointerWheel);
-    
+
     // Set up keyboard event listeners
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
   }
-  
+
   private updateRaycaster(event: MouseEvent): void {
     // Calculate pointer position in normalized device coordinates
     // (-1 to +1) for both components
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    
+
     // Update the raycaster
     this.raycaster.setFromCamera(this.pointer, this.camera);
   }
-  
+
   private handlePointerDown = (event: PointerEvent): void => {
     // Don't handle if right-click or middle-click (let OrbitControls handle these)
     if (event.button === 2 || event.button === 1) return;
-    
+
     if (event.button === 0) { // Left click
       this.updateRaycaster(event);
-      
+
       if (this.isKeyPressed('Control') || this.isKeyPressed('Meta')) {
         this.handleCtrlClick(event);
       } else {
@@ -103,18 +103,18 @@ export class InputManager {
       }
     }
   }
-  
+
   private handlePointerUp = (event: PointerEvent): void => {
     // Handle pointer up events
   }
-  
+
   private handlePointerMove = (event: PointerEvent): void => {
     // Handle pointer move events for hover effects
     this.updateRaycaster(event);
-    
+
     // Perform raycasting to find intersected objects
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-    
+
     // Update cursor based on what's being hovered
     if (intersects.length > 0) {
       const object = this.findSelectableFromIntersection(intersects[0].object);
@@ -127,7 +127,7 @@ export class InputManager {
       this.canvas.style.cursor = 'default';
     }
   }
-  
+
   private handlePointerWheel = (event: WheelEvent): void => {
     const currentSelection = this.selectionManager.getCurrentSelection();
     if (!currentSelection) return;
@@ -152,31 +152,31 @@ export class InputManager {
       if (isWKeyPressed) {
         currentEntity.position.y += wheelDelta * -0.001;
       }
-      
+
       // E+Wheel: Scale the selected entity
       else if (isEKeyPressed) {
         const scaleDelta = 1 + (wheelDelta * scaleFactor);
         currentEntity.scale.multiplyScalar(scaleDelta);
       }
-      
+
       // R+Wheel: Rotate the selected entity around Y axis
       else if (isRKeyPressed) {
         currentEntity.rotation.y += wheelDelta * rotationFactor;
       }
     }
   }
-  
+
   private findSelectableFromIntersection(object: THREE.Object3D): ISelectable | null {
     // Check if the object itself is selectable
     if (this.isSelectable(object)) {
       return object as unknown as ISelectable;
     }
-    
+
     // Check if it has a selectable in userData
     if (object.userData?.rootEntity && this.isSelectable(object.userData.rootEntity)) {
       return object.userData.rootEntity as ISelectable;
     }
-    
+
     // Check parent hierarchy
     let parent = object.parent;
     while (parent) {
@@ -185,49 +185,44 @@ export class InputManager {
       }
       parent = parent.parent;
     }
-    
+
     return null;
   }
-  
+
   private isSelectable(object: any): boolean {
     return object && object.gizmoCapabilities !== undefined;
   }
-  
+
   private handleRegularClick = (event: PointerEvent): void => {
     console.log("handleRegularClick called");
 
     const transformControlManager = this.engine.getTransformControlManager();
-    if(transformControlManager.getIsDragging()) {
+    if (transformControlManager.getIsDragging()) {
       return;
     }
-    
+
     // Perform raycasting to find intersected objects
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-    
+
     // First check for bone controls (they have special selection behavior)
-    const boneControl = intersects.find(intersect => 
-      intersect.object instanceof BoneControl || 
-      intersect.object.userData?.isBoneControl
+    const boneControl = intersects.find(intersect =>
+      intersect.object instanceof BoneControl
     )?.object;
-    
-    if (boneControl) {
+
+    if (boneControl && boneControl instanceof BoneControl) {
       console.log("Bone picked:", boneControl.name);
-      const control = boneControl instanceof BoneControl ? 
-        boneControl : 
-        boneControl.userData.boneControl;
-        
-      control.character.selectBone(control);
-      this.selectionManager.select(control);
+      boneControl.character.selectBone(boneControl.bone, boneControl);
+      this.selectionManager.select(boneControl);
       return;
     }
-    
+
     // If no intersections, deselect
     if (intersects.length === 0) {
       console.log("No object picked, deselecting");
       this.selectionManager.deselectAll();
       return;
     }
-    
+
     // Find the first selectable object in the intersection list
     for (const intersect of intersects) {
       const selectable = this.findSelectableFromIntersection(intersect.object);
@@ -237,15 +232,15 @@ export class InputManager {
         return;
       }
     }
-    
+
     // If we got here, nothing selectable was found
     console.log("Nothing selectable found, deselecting");
     this.selectionManager.deselectAll();
   }
-  
+
   private handleCtrlClick = (event: PointerEvent): void => {
     console.log("CtrlClick", event);
-    
+
     // Perform raycasting to find intersected objects
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
     let position: THREE.Vector3;
@@ -268,40 +263,40 @@ export class InputManager {
       } as GenerativeEntityProps
     });
   }
-  
+
   private handleKeyDown = (event: KeyboardEvent): void => {
     // Update key state
     this.keysPressed.set(event.key, true);
-    
+
     // Handle keyboard shortcuts
     this.processKeyboardShortcuts(event);
   }
-  
+
   private handleKeyUp = (event: KeyboardEvent): void => {
     // Update key state
     this.keysPressed.set(event.key, false);
   }
-  
+
   private isKeyPressed(key: string): boolean {
     return this.keysPressed.get(key) === true;
   }
-  
+
   private toggleInspector = async (): Promise<void> => {
     try {
       if (!this.inspectorEnabled) {
         // Dynamically import three-inspect only when first needed
         const { createInspector } = await import('three-inspect/vanilla');
-        
+
         // Get the canvas container or fallback to document.body
         const container = this.canvas.parentElement || document.body;
-        
+
         // Create and initialize the inspector
         this.inspector = createInspector(container, {
           scene: this.scene,
           camera: this.camera as THREE.PerspectiveCamera,
           renderer: this.renderer
         });
-        
+
         console.log('Three-inspect debugger initialized');
         this.inspectorEnabled = true;
       } else if (this.inspector) {
@@ -315,11 +310,11 @@ export class InputManager {
       console.error('Failed to initialize three-inspect:', error);
     }
   }
-  
+
   private processKeyboardShortcuts(event: KeyboardEvent): void {
     // Don't process if a text input or textarea is focused
-    if (document.activeElement instanceof HTMLInputElement || 
-        document.activeElement instanceof HTMLTextAreaElement) {
+    if (document.activeElement instanceof HTMLInputElement ||
+      document.activeElement instanceof HTMLTextAreaElement) {
       return;
     }
 
@@ -354,7 +349,7 @@ export class InputManager {
 
     // Handle redo (Ctrl+Shift+Z or Command+Shift+Z or Ctrl+Y)
     if (((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'z') ||
-        ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y')) {
+      ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y')) {
       console.log("Redo triggered");
       this.historyManager.redo();
       event.preventDefault(); // Prevent browser's default redo
@@ -376,17 +371,17 @@ export class InputManager {
         break;
     }
   }
-  
+
   public dispose(): void {
     // Clean up event listeners
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     this.canvas.removeEventListener('pointerup', this.handlePointerUp);
     this.canvas.removeEventListener('pointermove', this.handlePointerMove);
     this.canvas.removeEventListener('wheel', this.handlePointerWheel);
-    
+
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
-    
+
     // Clean up inspector if it exists
     if (this.inspector) {
       this.inspector.dispose();
