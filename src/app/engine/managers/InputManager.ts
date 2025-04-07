@@ -17,11 +17,11 @@ import { HistoryManager } from './HistoryManager';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { TransformCommand, CreateEntityCommand } from '../../lib/commands';
 import { EntityFactory } from '../services/EntityFactory';
-import { ISelectable } from '../../interfaces/ISelectable';
+import { ISelectable, isISelectable } from '../../interfaces/ISelectable';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { GenerativeEntityProps } from '@/app/engine/entity/GenerativeEntity';
 import { EditorEngine } from '../EditorEngine';
-import { GizmoMode } from './TransformControlManager';
+import { TransformMode } from './TransformControlManager';
 
 export class InputManager {
   private engine: EditorEngine;
@@ -168,29 +168,25 @@ export class InputManager {
 
   private findSelectableFromIntersection(object: THREE.Object3D): ISelectable | null {
     // Check if the object itself is selectable
-    if (this.isSelectable(object)) {
+    if (isISelectable(object)) {
       return object as unknown as ISelectable;
     }
 
     // Check if it has a selectable in userData
-    if (object.userData?.rootEntity && this.isSelectable(object.userData.rootEntity)) {
+    if (object.userData?.rootEntity && isISelectable(object.userData.rootEntity)) {
       return object.userData.rootEntity as ISelectable;
     }
 
     // Check parent hierarchy
     let parent = object.parent;
     while (parent) {
-      if (this.isSelectable(parent)) {
+      if (isISelectable(parent)) {
         return parent as unknown as ISelectable;
       }
       parent = parent.parent;
     }
 
     return null;
-  }
-
-  private isSelectable(object: any): boolean {
-    return object && object.gizmoCapabilities !== undefined;
   }
 
   private handleRegularClick = (event: PointerEvent): void => {
@@ -358,16 +354,16 @@ export class InputManager {
     // Handle gizmo mode changes
     switch (event.key.toLowerCase()) {
       case 'w':
-        this.engine.setGizmoMode(GizmoMode.Position);
+        this.engine.setTransformControlMode(TransformMode.Position);
         break;
       case 'e':
-        this.engine.setGizmoMode(GizmoMode.Scale);
+        this.engine.setTransformControlMode(TransformMode.Scale);
         break;
       case 'r':
-        this.engine.setGizmoMode(GizmoMode.Rotation);
+        this.engine.setTransformControlMode(TransformMode.Rotation);
         break;
       case 't':
-        this.engine.setGizmoMode(GizmoMode.BoundingBox);
+        this.engine.setTransformControlMode(TransformMode.BoundingBox);
         break;
     }
   }

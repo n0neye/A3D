@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ISelectable } from '@/app/interfaces/ISelectable';
+import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
 import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
 import { BoneControl } from '@/app/engine/entity/BoneControl';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
@@ -143,21 +143,21 @@ export class SelectionManager {
       const obj = intersect.object;
       
       // Check if the object itself is a selectable
-      if (this._isSelectable(obj)) {
+      if (isISelectable(obj)) {
         return obj as unknown as ISelectable;
       }
       
       // Check if the object has a parent that is selectable (traverse up)
       let parent: THREE.Object3D | null = obj.parent;
       while (parent) {
-        if (this._isSelectable(parent)) {
+        if (isISelectable(parent)) {
           return parent as unknown as ISelectable;
         }
         parent = parent.parent;
       }
       
       // Check if object has userData with entity reference
-      if (obj.userData && obj.userData.rootEntity && this._isSelectable(obj.userData.rootEntity)) {
+      if (obj.userData && obj.userData.rootEntity && isISelectable(obj.userData.rootEntity)) {
         return obj.userData.rootEntity as ISelectable;
       }
     }
@@ -165,12 +165,6 @@ export class SelectionManager {
     return null;
   }
 
-  /**
-   * Check if an object is a selectable
-   */
-  private _isSelectable(obj: any): boolean {
-    return obj && obj.gizmoCapabilities !== undefined && typeof obj.getGizmoTarget === 'function';
-  }
 
   /**
    * Check if the new selection is a child of the current selection
@@ -219,10 +213,10 @@ export class SelectionManager {
     let selectable: ISelectable | null = null;
     
     if (object) {
-      if (this._isSelectable(object)) {
+      if (isISelectable(object)) {
         selectable = object as unknown as ISelectable;
       } else if (object.userData && object.userData.rootEntity && 
-                this._isSelectable(object.userData.rootEntity)) {
+                isISelectable(object.userData.rootEntity)) {
         selectable = object.userData.rootEntity as ISelectable;
       }
     }

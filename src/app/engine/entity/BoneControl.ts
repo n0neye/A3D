@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
-import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
+import { ISelectable, SelectableConfig, SelectableCursorType } from '../../interfaces/ISelectable';
 import { CharacterEntity } from './CharacterEntity';
 import { BoneRotationCommand } from '../../lib/commands';
 import { EditorEngine } from '../EditorEngine';
-import { GizmoMode } from '../managers/TransformControlManager';
+import { TransformMode } from '../managers/TransformControlManager';
 
 /**
  * A mesh that represents a bone for manipulation
@@ -15,19 +15,16 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
   public bone: THREE.Bone;
 
   // ISelectable implementation - bones only support rotation
-  gizmoCapabilities: GizmoCapabilities = {
-    defaultGizmoMode: GizmoMode.Rotation,
-    allowedGizmoModes: [GizmoMode.Rotation],
-    gizmoVisualSize: 0.5
+  selectableConfig: SelectableConfig = {
+    defaultTransformMode: TransformMode.Rotation,
+    defaultTransformSpace: 'local',
+    allowedTransformModes: [TransformMode.Rotation],
+    controlSize: 0.5
   };
 
   // Use rotate cursor to indicate rotation capability
   cursorType: SelectableCursorType = 'rotate';
 
-  // Gizmo observers
-  private _gizmoStartDragObserver: (() => void) | null = null;
-  private _gizmoRotationObserver: (() => void) | null = null;
-  private _gizmoEndDragObserver: (() => void) | null = null;
 
   // Command tracking for rotation
   private _currentRotationCommand: BoneRotationCommand | null = null;
@@ -52,11 +49,13 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     super(geometry, material);
     
     // Set properties
-    this.name = name;
+    this.name = `boneControl_${bone.name}`;
     this.entityId = options.entityId || uuidv4();
     this.character = character;
-    this.character.add(this);
     this.bone = bone;
+
+    // Make boneControl and the bone siblings to share the local space
+    this.bone.parent?.add(this);
 
     // Set metadata for identification
     this.userData = {
@@ -86,9 +85,6 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
 
   onDeselect(): void {
     console.log(`BoneControl.onDeselect: Bone deselected: ${this.bone.name}`);
-
-    // Remove gizmo observers
-    this._removeGizmoObservers();
 
     this.material = CharacterEntity.DefaultBoneMaterial;
 
@@ -150,17 +146,9 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     this._currentRotationCommand = null;
   }
 
-  // Remove all gizmo observers
-  private _removeGizmoObservers(): void {
-    // TODO: Update for Three.js gizmo system
-    this._gizmoStartDragObserver = null;
-    this._gizmoRotationObserver = null;
-    this._gizmoEndDragObserver = null;
-  }
 
   // Clean up resources
   public dispose(): void {
-    this._removeGizmoObservers();
     
     // Dispose geometry and material
     if (this.geometry) {
@@ -204,5 +192,21 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
 
   undoDelete(): void {
     this.visible = true;
+  }
+
+  onTransformStart(): void {
+    // sync the bone's rotation with the control mesh
+    console.log(`BoneControl.onTransformStart: Syncing bone ${this.bone.name} rotation with control mesh`);
+    if (this.quaternion) {
+      this.bone.quaternion.copy(this.quaternion);
+    }
+  } 
+
+  onTransformUpdate(): void {
+    // sync the bone's rotation with the control mesh
+    console.log(`BoneControl.onTransformUpdate: Syncing bone ${this.bone.name} rotation with control mesh`);
+    if (this.quaternion) {
+      this.bone.quaternion.copy(this.quaternion);
+    }
   }
 } 

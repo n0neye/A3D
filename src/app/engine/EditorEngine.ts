@@ -26,7 +26,7 @@ import { loadShapeMeshes } from '../util/editor/shape-util';
 import { InputManager } from './managers/InputManager';
 import { createDefaultMaterials } from '../util/editor/material-util';
 import { RenderService } from './services/RenderService';
-import { GizmoMode, TransformControlManager } from './managers/TransformControlManager';
+import { TransformMode, TransformControlManager } from './managers/TransformControlManager';
 import { ProjectManager } from './managers/ProjectManager';
 import { EnvironmentManager } from './managers/environmentManager';
 import { Observer } from './utils/Observer';
@@ -189,12 +189,8 @@ export class EditorEngine {
   }
 
   // Gizmo Mode Management
-  public setGizmoMode(mode: GizmoMode): void {
-    this.transformControlManager.setGizmoMode(mode);
-  }
-
-  public getGizmoMode(): GizmoMode {
-    return this.transformControlManager.getGizmoMode();
+  public setTransformControlMode(mode: TransformMode): void {
+    this.transformControlManager.setTransformControlMode(mode);
   }
 
   public update(): void {

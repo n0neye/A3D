@@ -8,7 +8,7 @@ import {
   IconSquare // Bounding Box
 } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
-import { GizmoMode } from '../engine/managers/TransformControlManager';
+import { TransformMode } from '../engine/managers/TransformControlManager';
 
 const GizmoModeSelector: React.FC = () => {
   const { gizmoMode, gizmoAllowedModes, engine } = useEditorEngine();
@@ -19,10 +19,10 @@ const GizmoModeSelector: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={gizmoMode === GizmoMode.Position ? 'default' : 'outline'}
-              disabled={!gizmoAllowedModes.includes(GizmoMode.Position)}
+              variant={gizmoMode === TransformMode.Position ? 'default' : 'outline'}
+              disabled={!gizmoAllowedModes.includes(TransformMode.Position)}
               size="icon"
-              onClick={() => engine.setGizmoMode(GizmoMode.Position)}
+              onClick={() => engine.setTransformControlMode(TransformMode.Position)}
               aria-label="position gizmo"
             >
               <IconArrowsMove className="h-4 w-4" />
@@ -36,10 +36,10 @@ const GizmoModeSelector: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={gizmoMode === GizmoMode.Scale ? 'default' : 'outline'}
-              disabled={!gizmoAllowedModes.includes(GizmoMode.Scale)}
+              variant={gizmoMode === TransformMode.Scale ? 'default' : 'outline'}
+              disabled={!gizmoAllowedModes.includes(TransformMode.Scale)}
               size="icon"
-              onClick={() => engine.setGizmoMode(GizmoMode.Scale)}
+              onClick={() => engine.setTransformControlMode(TransformMode.Scale)}
               aria-label="scale gizmo"
             >
               <IconArrowsMaximize className="h-4 w-4" />
@@ -53,10 +53,10 @@ const GizmoModeSelector: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={gizmoMode === GizmoMode.Rotation ? 'default' : 'outline'}
-              disabled={!gizmoAllowedModes.includes(GizmoMode.Rotation)}
+              variant={gizmoMode === TransformMode.Rotation ? 'default' : 'outline'}
+              disabled={!gizmoAllowedModes.includes(TransformMode.Rotation)}
               size="icon"
-              onClick={() => engine.setGizmoMode(GizmoMode.Rotation)}
+              onClick={() => engine.setTransformControlMode(TransformMode.Rotation)}
               aria-label="rotation gizmo"
             >
               <IconRotate className="h-4 w-4" />

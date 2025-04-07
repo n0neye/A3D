@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { Observer } from '../utils/Observer';
-import { ISelectable } from '@/app/interfaces/ISelectable';
+import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
 import { EditorEngine } from '../EditorEngine';
 
-export enum GizmoMode {
+export enum TransformMode {
     Position = 0,
     Rotation = 1,
     Scale = 2,
@@ -14,15 +14,16 @@ export enum GizmoMode {
 export class TransformControlManager {
     private scene: THREE.Scene;
     private transformControls: TransformControls;
-    private _lastMode: GizmoMode = GizmoMode.Position;
-    private _currentMode: GizmoMode = GizmoMode.Position;
-    private _allowedModes: GizmoMode[] = [GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox];
+    private _lastMode: TransformMode = TransformMode.Position;
+    private _lastSpace: 'world' | 'local' = 'world';
+    private _currentMode: TransformMode = TransformMode.Position;
+    private _allowedModes: TransformMode[] = [TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox];
     private _currentTarget: THREE.Object3D | null = null;
     private _isDragging: boolean = false;
 
     public observers = new Observer<{
-        gizmoModeChanged: { mode: GizmoMode };
-        gizmoAllowedModesChanged: { modes: GizmoMode[] };
+        gizmoModeChanged: { mode: TransformMode };
+        gizmoAllowedModesChanged: { modes: TransformMode[] };
         transformStarted: { target: THREE.Object3D };
         transformEnded: { target: THREE.Object3D };
     }>();
@@ -39,12 +40,13 @@ export class TransformControlManager {
 
         // Set up event listeners
         this.transformControls.addEventListener('dragging-changed', (event) => {
+            // console.log(`TransformControlManager.dragging-changed: `, event);
             this._isDragging = event.value as boolean;
 
             // Pause camera orbit controls when dragging
             const cameraManager = EditorEngine.getInstance().getCameraManager();
             cameraManager.setOrbitControlsEnabled(!this._isDragging);
-            
+
             // Notify when transform starts/ends
             if (this._currentTarget) {
                 if (this._isDragging) {
@@ -52,11 +54,34 @@ export class TransformControlManager {
                 } else {
                     this.observers.notify('transformEnded', { target: this._currentTarget });
                 }
+
+                if (isISelectable(this._currentTarget)) {
+                    const selectable = this._currentTarget as ISelectable;
+                    if (this._isDragging) {
+                        selectable.onTransformStart?.();
+                    } else {
+                        selectable.onTransformEnd?.();
+                    }
+                }
+            }
+        });
+
+        // Dragging changed observer
+        this.transformControls.addEventListener('change', (event) => {
+            // console.log(`TransformControlManager.change: `, event);
+        });
+
+        // objectChange
+        this.transformControls.addEventListener('objectChange', (event) => {
+            console.log(`TransformControlManager.objectChange: `, this._currentTarget, event);
+            if (isISelectable(this._currentTarget)) {
+                const selectable = this._currentTarget as ISelectable;
+                selectable.onTransformUpdate?.();
             }
         });
     }
 
-    public setGizmoMode(mode: GizmoMode): GizmoMode {
+    public setTransformControlMode(mode: TransformMode): TransformMode {
         if (!this._allowedModes.includes(mode)) {
             // Set to the first allowed mode
             console.log(`TransformControlManager.setGizmoMode: Invalid mode: ${mode} in allowed modes: ${this._allowedModes.join(', ')}, setting to first allowed mode: ${this._allowedModes[0]}`);
@@ -67,16 +92,16 @@ export class TransformControlManager {
 
         // Update transform controls mode
         switch (mode) {
-            case GizmoMode.Position:
+            case TransformMode.Position:
                 this.transformControls.setMode('translate');
                 break;
-            case GizmoMode.Rotation:
+            case TransformMode.Rotation:
                 this.transformControls.setMode('rotate');
                 break;
-            case GizmoMode.Scale:
+            case TransformMode.Scale:
                 this.transformControls.setMode('scale');
                 break;
-            case GizmoMode.BoundingBox:
+            case TransformMode.BoundingBox:
                 // Three.js doesn't have a built-in bounding box mode
                 // Default to translate for now
                 this.transformControls.setMode('translate');
@@ -89,17 +114,17 @@ export class TransformControlManager {
         return mode;
     }
 
-    public getGizmoMode(): GizmoMode {
-        return this._currentMode;
+    public setTransformControlSpace(space: 'world' | 'local'): void {
+        this.transformControls.setSpace(space);
     }
 
-    public setAllowedModes(modes: GizmoMode[]): void {
+    public setAllowedModes(modes: TransformMode[]): void {
         this._allowedModes = modes;
         this.observers.notify('gizmoAllowedModesChanged', { modes });
     }
 
     public attachToSelectable(selectable: ISelectable | null): void {
-        console.log(`TransformControlManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.gizmoCapabilities);
+        console.log(`TransformControlManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.selectableConfig);
 
         // Detach from current target
         this.transformControls.detach();
@@ -107,22 +132,29 @@ export class TransformControlManager {
 
         if (selectable) {
             // Update allowed modes
-            this.setAllowedModes(selectable.gizmoCapabilities.allowedGizmoModes);
+            this.setAllowedModes(selectable.selectableConfig.allowedTransformModes);
 
             // Get target object
             const target = selectable.getGizmoTarget();
             this._currentTarget = target;
 
             // If selectable has a default gizmo mode, set it
-            if (selectable.gizmoCapabilities.defaultGizmoMode !== undefined) {
-                this.setGizmoMode(selectable.gizmoCapabilities.defaultGizmoMode);
+            if (selectable.selectableConfig.defaultTransformMode !== undefined) {
+                this.setTransformControlMode(selectable.selectableConfig.defaultTransformMode);
             } else {
-                this.setGizmoMode(this._lastMode);
+                this.setTransformControlMode(this._lastMode);
+            }
+
+            // Set transform control space
+            if (selectable.selectableConfig.defaultTransformSpace !== undefined) {
+                this.setTransformControlSpace(selectable.selectableConfig.defaultTransformSpace);
+            } else {
+                this.setTransformControlSpace(this._lastSpace);
             }
 
             // Set transform controls size
-            if (selectable.gizmoCapabilities.gizmoVisualSize) {
-                this.transformControls.size = selectable.gizmoCapabilities.gizmoVisualSize;
+            if (selectable.selectableConfig.controlSize) {
+                this.transformControls.size = selectable.selectableConfig.controlSize;
             } else {
                 this.transformControls.size = 1; // Default size
             }

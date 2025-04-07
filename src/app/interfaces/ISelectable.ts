@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 import { HistoryManager } from '../engine/managers/HistoryManager';
-import { GizmoMode } from '../engine/managers/TransformControlManager';
+import { TransformMode } from '../engine/managers/TransformControlManager';
 
 /**
  * Defines transformation capabilities for a selectable object
  */
-export interface GizmoCapabilities {
-  defaultGizmoMode?: GizmoMode;
-  allowedGizmoModes: GizmoMode[];
-  gizmoVisualSize: number;
+export interface SelectableConfig {
+  defaultTransformMode?: TransformMode;
+  defaultTransformSpace?: 'world' | 'local';
+  allowedTransformModes: TransformMode[];
+  controlSize: number;
 }
 
 /**
@@ -23,35 +24,35 @@ export type SelectableCursorType =
  */
 export interface ISelectable {
   
-  /**
-   * Defines what gizmo operations are allowed on this object
-   */
-  readonly gizmoCapabilities: GizmoCapabilities;
+  // Defines what gizmo operations are allowed on this object
+  readonly selectableConfig: SelectableConfig;
   
-  /**
-   * The cursor type to display when hovering over this object
-   */
+  // Cursor type
   readonly cursorType: SelectableCursorType;
   
-  /**
-   * Called when the object is selected
-   */
+  // Selectable callbacks
   onSelect(): void;
-  
-  /**
-   * Called when the object is deselected
-   */
   onDeselect(): void;
   
-  /**
-   * Get the object to attach gizmos to
-   */
+  // Get the threejs object to attach gizmos to
   getGizmoTarget(): THREE.Object3D;
   
-  /**
-   * Get the unique identifier for this selectable object
-   */
+  // Get the unique identifier for this selectable object
   getUUId(): string;
 
+  // Get the name of this selectable object
   getName(): string;
+
+  // Optional transform callbacks
+  onTransformStart?(): void;
+  onTransformUpdate?(): void;
+  onTransformEnd?(): void;
 } 
+
+// Is ISelectable
+export function isISelectable(obj: any): obj is ISelectable {
+  return obj && obj.selectableConfig !== undefined;
+}
+
+
+

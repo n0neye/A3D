@@ -18,13 +18,13 @@ import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
 import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
-import { GizmoMode } from '@/app/engine/managers/TransformControlManager';
+import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 interface EditorEngineContextType {
   engine: EditorEngine;
   isInitialized: boolean;
   selectedEntity: EntityBase | null;
-  gizmoMode: GizmoMode;
-  gizmoAllowedModes: GizmoMode[];
+  gizmoMode: TransformMode;
+  gizmoAllowedModes: TransformMode[];
   renderSettings: IRenderSettings;
   renderLogs: IRenderLog[];
 }
@@ -35,8 +35,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const engine = EditorEngine.getInstance();
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
-  const [gizmoMode, setGizmoMode] = useState<GizmoMode>(GizmoMode.Position);
-  const [gizmoAllowedModes, setGizmoAllowedModes] = useState<GizmoMode[]>([GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox]);
+  const [gizmoMode, setGizmoMode] = useState<TransformMode>(TransformMode.Position);
+  const [gizmoAllowedModes, setGizmoAllowedModes] = useState<TransformMode[]>([TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox]);
   const [renderSettings, setRenderSettings] = useState<IRenderSettings>(defaultSettings);
   const [renderLogs, setRenderLogs] = useState<IRenderLog[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);

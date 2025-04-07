@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
-import { ISelectable, GizmoCapabilities, SelectableCursorType } from '../../interfaces/ISelectable';
+import { ISelectable, SelectableConfig, SelectableCursorType } from '../../interfaces/ISelectable';
 import { EditorEngine } from '../../engine/EditorEngine';
-import { GizmoMode } from '@/app/engine/managers/TransformControlManager';
+import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 /**
  * Base class for all entities in the scene
  * Extends Object3D with common functionality
@@ -18,9 +18,9 @@ export class EntityBase extends THREE.Object3D implements ISelectable {
   engine: EditorEngine;
 
   // ISelectable implementation
-  gizmoCapabilities: GizmoCapabilities = {
-    allowedGizmoModes: [GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox],
-    gizmoVisualSize: 1
+  selectableConfig: SelectableConfig = {
+    allowedTransformModes: [TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox],
+    controlSize: 1
   };
 
   cursorType: SelectableCursorType = 'move';

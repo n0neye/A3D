@@ -247,7 +247,7 @@ export class CharacterEntity extends EntityBase {
             );
 
             // Position at the bone's world position
-            bone.getWorldPosition(boneControl.position);
+            // bone.getWorldPosition(boneControl.position);
 
             // Hide initially
             boneControl.visible = false;
@@ -302,7 +302,9 @@ export class CharacterEntity extends EntityBase {
                 // Update control position to match bone
                 const boneControl = this._boneMap.get(bone.name)?.control;
                 if (boneControl) {
-                    bone.getWorldPosition(boneControl.position);
+                    // bone.getWorldPosition(boneControl.position);
+                    // Copy the local position
+                    boneControl.position.copy(bone.position);
                     boneControl.quaternion.copy(bone.quaternion);
                 }
 
