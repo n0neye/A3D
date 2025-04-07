@@ -8,8 +8,11 @@ export class HistoryManager {
   private undoStack: Command[] = [];
   private redoStack: Command[] = [];
 
-  executeCommand(command: Command): void {
-    command.execute();
+  // If pushOnly is true, the command will not be executed, but will be added to the undo stack
+  executeCommand(command: Command, pushOnly: boolean = false): void {
+    if(!pushOnly) {
+      command.execute();
+    }
     this.undoStack.push(command);
     this.redoStack = []; // Clear redo stack when new command is executed
   }

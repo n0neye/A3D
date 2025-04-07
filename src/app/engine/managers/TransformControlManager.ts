@@ -3,6 +3,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { Observer } from '../utils/Observer';
 import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
 import { EditorEngine } from '../EditorEngine';
+import { TransformCommand } from '@/app/lib/commands';
 
 export enum TransformMode {
     Position = 0,
@@ -20,6 +21,9 @@ export class TransformControlManager {
     private _allowedModes: TransformMode[] = [TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox];
     private _currentTarget: THREE.Object3D | null = null;
     private _isDragging: boolean = false;
+    
+    // Track the current transform command for history
+    private _currentTransformCommand: TransformCommand | null = null;
 
     public observers = new Observer<{
         gizmoModeChanged: { mode: TransformMode };
@@ -50,8 +54,12 @@ export class TransformControlManager {
             // Notify when transform starts/ends
             if (this._currentTarget) {
                 if (this._isDragging) {
+                    // Handle transform start
+                    this._handleTransformStart();
                     this.observers.notify('transformStarted', { target: this._currentTarget });
                 } else {
+                    // Handle transform end
+                    this._handleTransformEnd();
                     this.observers.notify('transformEnded', { target: this._currentTarget });
                 }
 
@@ -73,12 +81,47 @@ export class TransformControlManager {
 
         // objectChange
         this.transformControls.addEventListener('objectChange', (event) => {
-            console.log(`TransformControlManager.objectChange: `, this._currentTarget, event);
+            // console.log(`TransformControlManager.objectChange: `, this._currentTarget, event);
             if (isISelectable(this._currentTarget)) {
                 const selectable = this._currentTarget as ISelectable;
                 selectable.onTransformUpdate?.();
             }
         });
+    }
+
+    /**
+     * Handles the start of a transform operation
+     * Creates a transform command to track the change
+     */
+    private _handleTransformStart(): void {
+        if (!this._currentTarget) return;
+
+        console.log(`TransformControlManager: Starting transform on ${this._currentTarget.name}`);
+        
+        // Create a transform command to track this operation
+        this._currentTransformCommand = new TransformCommand(this._currentTarget);
+    }
+
+    /**
+     * Handles the end of a transform operation
+     * Finalizes the command and adds it to history
+     */
+    private _handleTransformEnd(): void {
+        if (!this._currentTarget || !this._currentTransformCommand) return;
+
+        console.log(`TransformControlManager: Ending transform on ${this._currentTarget.name}`);
+        
+        // Update the final state of the command
+        this._currentTransformCommand.updateFinalState();
+        
+        // Add to history manager if there were actual changes
+        const historyManager = EditorEngine.getInstance().getHistoryManager();
+        if (historyManager) {
+            historyManager.executeCommand(this._currentTransformCommand, true);
+        }
+        
+        // Clear the current command
+        this._currentTransformCommand = null;
     }
 
     public setTransformControlMode(mode: TransformMode): TransformMode {
@@ -124,6 +167,7 @@ export class TransformControlManager {
     }
 
     public attachToSelectable(selectable: ISelectable | null): void {
+
         console.log(`TransformControlManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.selectableConfig);
 
         // Detach from current target
@@ -165,6 +209,7 @@ export class TransformControlManager {
     }
 
     public attachToNode(node: THREE.Object3D | null): void {
+
         // Detach from current target
         this.transformControls.detach();
         this._currentTarget = null;
