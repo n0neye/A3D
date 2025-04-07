@@ -176,7 +176,7 @@ export class ProjectManager {
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
 
         // Create project data structure
-        const project:IProjectData = {
+        const project: IProjectData = {
             version: "1.0.1",
             timestamp: new Date().toISOString(),
             entities: entities.map(entity => entity.serialize()),
@@ -188,11 +188,10 @@ export class ProjectManager {
         return project;
     }
 
+    clearScene(): void {
+        // Deselect
+        this.engine.getSelectionManager().deselectAll();
 
-    deserializeProject(
-        data: IProjectData,
-    ): void {
-        // Clear existing entities if needed
         // Dispose all children of the existing entities
         const scene = this.engine.getScene();
         const existingEntities: EntityBase[] = [];
@@ -207,6 +206,14 @@ export class ProjectManager {
             entity.dispose();
             scene.remove(entity);
         });
+    }
+    
+    deserializeProject(
+        data: IProjectData,
+    ): void {
+        this.clearScene();
+        
+        const scene = this.engine.getScene();
 
         // Apply environment settings if present
         if (data.environment) {
@@ -250,11 +257,11 @@ export class ProjectManager {
 
 
         // Notify observers that the project has been loaded
-        if(data.renderSettings) {
+        if (data.renderSettings) {
             this.settings = data.renderSettings;
             this.observers.notify('projectLoaded', { project: data.renderSettings });
         }
-        if(data.renderLogs) {
+        if (data.renderLogs) {
             this.renderLogs = data.renderLogs;
             this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs, isNewRenderLog: false });
         }
@@ -266,7 +273,7 @@ export class ProjectManager {
         this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
     }
 
-    addRenderLog(log: IRenderLog): void { 
+    addRenderLog(log: IRenderLog): void {
         this.renderLogs.push(log);
         console.log("ProjectManager: addRenderLog", this.renderLogs);
         this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: true });

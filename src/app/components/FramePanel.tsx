@@ -113,9 +113,6 @@ const FramePanel: React.FC = () => {
     engine.getRenderService().setAllGizmoVisibility(checked);
   };
 
-  // Convert radians to degrees for display
-  const fovDegrees = Math.round(fov * 180 / Math.PI);
-
   return (
     <div className='group relative'>
       <Button
@@ -134,14 +131,14 @@ const FramePanel: React.FC = () => {
         <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="fov-slider" className="text-xs">Field of View</Label>
-              <span className="text-xs text-gray-400">{fovDegrees}°</span>
+              <span className="text-xs text-gray-400">{fov}°</span>
             </div>
             <Slider
               id="fov-slider"
               value={[fov]}
-              min={0.35}
-              max={1.57}
-              step={0.01}
+              min={10}
+              max={90}
+              step={1}
               onValueChange={handleFovChange}
             />
           </div>
