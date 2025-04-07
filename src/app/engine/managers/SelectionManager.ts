@@ -18,17 +18,11 @@ export class SelectionManager {
 
   private _currentSelection: ISelectable | null = null;
   private _currentEntity: EntityBase | null = null;
-  private _scene: THREE.Scene;
-  private _camera: THREE.Camera;
-  private _raycaster: THREE.Raycaster;
   private _transformControlManager: TransformControlManager;
   private _hoveredObject: THREE.Object3D | null = null;
 
-  constructor(scene: THREE.Scene, camera: THREE.Camera, transformControlManager: TransformControlManager) {
-    this._scene = scene;
-    this._camera = camera;
+  constructor(transformControlManager: TransformControlManager) {
     this._transformControlManager = transformControlManager;
-    this._raycaster = new THREE.Raycaster();
     
     // Set up hover detection
     this._setupHoverDetection();
@@ -120,51 +114,6 @@ export class SelectionManager {
     this.selectionObserver.notify('entitySelected', { entity: null });
     this.selectionObserver.notify('selectableSelected', { selectable: null });
   }
-
-  /**
-   * Pick a selectable object from the scene using raycasting
-   */
-  pickSelectableAt(x: number, y: number): ISelectable | null {
-    // Convert screen coordinates to normalized device coordinates
-    const rect = this._scene.userData.renderer?.domElement.getBoundingClientRect();
-    if (!rect) return null;
-    
-    const normalizedX = ((x - rect.left) / rect.width) * 2 - 1;
-    const normalizedY = -((y - rect.top) / rect.height) * 2 + 1;
-    
-    // Update raycaster
-    this._raycaster.setFromCamera(new THREE.Vector2(normalizedX, normalizedY), this._camera);
-    
-    // Check for intersections
-    const intersects = this._raycaster.intersectObjects(this._scene.children, true);
-    
-    // Look for a selectable object
-    for (const intersect of intersects) {
-      const obj = intersect.object;
-      
-      // Check if the object itself is a selectable
-      if (isISelectable(obj)) {
-        return obj as unknown as ISelectable;
-      }
-      
-      // Check if the object has a parent that is selectable (traverse up)
-      let parent: THREE.Object3D | null = obj.parent;
-      while (parent) {
-        if (isISelectable(parent)) {
-          return parent as unknown as ISelectable;
-        }
-        parent = parent.parent;
-      }
-      
-      // Check if object has userData with entity reference
-      if (obj.userData && obj.userData.rootEntity && isISelectable(obj.userData.rootEntity)) {
-        return obj.userData.rootEntity as ISelectable;
-      }
-    }
-    
-    return null;
-  }
-
 
   /**
    * Check if the new selection is a child of the current selection

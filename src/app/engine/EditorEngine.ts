@@ -61,7 +61,7 @@ export class EditorEngine {
     const threeRenderer = this.core.getRenderer();
     this.cameraManager = new CameraManager(scene, canvas);
     this.transformControlManager = new TransformControlManager(scene, this.cameraManager.getCamera(), threeRenderer);
-    this.selectionManager = new SelectionManager(scene, this.cameraManager.getCamera(), this.transformControlManager);
+    this.selectionManager = new SelectionManager(this.transformControlManager);
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);

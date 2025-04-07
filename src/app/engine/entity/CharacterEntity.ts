@@ -24,6 +24,16 @@ export class CharacterEntity extends EntityBase {
     private _isLoading = false;
     private _isDisposed = false;
     private _loadingPromise: Promise<void> | null = null;
+    private _isVisualizationVisible = false;
+    private _drawLines = true;
+
+    // Materials
+    public static DefaultBoneMaterial: THREE.Material;
+    public static HighlightBoneMaterial: THREE.Material;
+    public static LineMaterial: THREE.Material;
+    private static boneColor = new THREE.Color(0.5, 0.7, 1.0);
+    private static linesMaterialAlpha = 0.7;
+    private static boneMaterialAlpha = 0.5;
 
     // Bone visualization properties
     private _boneMap: Map<string, {
@@ -32,16 +42,6 @@ export class CharacterEntity extends EntityBase {
         childBones: THREE.Bone[],
         lineConfigs: { line: THREE.Line, targetBone: THREE.Bone }[]
     }> = new Map();
-    // private _boneLines: Map<string, THREE.Line> = new Map();
-    // private _selectedBone: THREE.Bone | null = null;
-    // private _selectedControl: BoneControl | null = null;
-    private _isVisualizationVisible = false;
-    public static DefaultBoneMaterial: THREE.Material;
-    public static HighlightBoneMaterial: THREE.Material;
-    public static LineMaterial: THREE.Material;
-    private static boneColor = new THREE.Color(0.5, 0.7, 1.0);
-    private static linesMaterialAlpha = 0.7;
-    private static boneMaterialAlpha = 0.5;
 
     constructor(
         scene: THREE.Scene,
@@ -258,6 +258,11 @@ export class CharacterEntity extends EntityBase {
 
             // Hide initially
             boneControl.visible = false;
+
+            if(!this._drawLines) {
+                this._boneMap.set(bone.name, { bone, control: boneControl, childBones: [], lineConfigs: [] });
+                return;
+            }
 
             // Create lines between the bone and its child bones
             const childBones = bone.children.filter(child => child instanceof THREE.Bone) as THREE.Bone[];

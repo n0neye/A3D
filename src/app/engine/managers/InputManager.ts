@@ -43,6 +43,7 @@ export class InputManager {
   private inspector: any = null;
   private inspectorEnabled: boolean = false;
 
+
   constructor(
     engine: EditorEngine,
     scene: THREE.Scene,
@@ -202,18 +203,20 @@ export class InputManager {
 
     // If no intersections, deselect
     if (intersects.length === 0) {
-      console.log("No object picked, deselecting");
+      console.log("InputManager: No object picked, deselecting");
       this.selectionManager.deselectAll();
       return;
     }
 
+    console.log("InputManager: Intersects:", intersects);
+
     // Check for bone controls (they have special selection behavior)
     const boneControl = intersects.find(intersect =>
-      intersect.object instanceof BoneControl
+      (intersect.object.visible && intersect.object instanceof BoneControl)
     )?.object;
 
     if (boneControl && boneControl instanceof BoneControl) {
-      console.log("Bone picked:", boneControl.name);
+      console.log("InputManager: Bone picked:", boneControl.name);
       // boneControl.character.selectBone(boneControl.bone, boneControl);
       this.selectionManager.select(boneControl);
       return;
@@ -223,19 +226,19 @@ export class InputManager {
     for (const intersect of intersects) {
       const selectable = this.findSelectableFromIntersection(intersect.object);
       if (selectable) {
-        console.log("Selected:", selectable.getName());
+        console.log("InputManager: Selected:", selectable.getName());
         this.selectionManager.select(selectable);
         return;
       }
     }
 
     // If we got here, nothing selectable was found
-    console.log("Nothing selectable found, deselecting");
+    console.log("InputManager: Nothing selectable found, deselecting");
     this.selectionManager.deselectAll();
   }
 
   private handleCtrlClick = (event: PointerEvent): void => {
-    console.log("CtrlClick", event);
+    console.log("InputManager: CtrlClick", event);
 
     // Perform raycasting to find intersected objects
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
