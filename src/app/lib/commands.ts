@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Command } from '../engine/managers/HistoryManager';
 import { EntityBase } from '@/app/engine/entity/EntityBase';
 import { EditorEngine } from '../engine/EditorEngine';
+import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {
@@ -12,14 +13,24 @@ export class TransformCommand implements Command {
   private newPosition: THREE.Vector3;
   private newRotation: THREE.Quaternion; 
   private newScaling: THREE.Vector3;
+  
+  private target: THREE.Object3D;
+  private selectable: ISelectable | null;
 
-  constructor(private node: THREE.Object3D) {
-    // Store initial state
-    this.initialPosition = node.position.clone();
+  constructor(target: THREE.Object3D | ISelectable) {
+    // Handle if we receive an ISelectable directly or an Object3D
+    if (isISelectable(target)) {
+      this.selectable = target;
+      this.target = target.getGizmoTarget();
+    } else {
+      this.target = target;
+      this.selectable = isISelectable(target) ? target : null;
+    }
     
-    // Three.js objects use quaternion by default, not a separate rotationQuaternion property
-    this.initialRotation = node.quaternion.clone();
-    this.initialScaling = node.scale.clone();
+    // Store initial state
+    this.initialPosition = this.target.position.clone();
+    this.initialRotation = this.target.quaternion.clone();
+    this.initialScaling = this.target.scale.clone();
     
     // The new state will be set later
     this.newPosition = this.initialPosition.clone();
@@ -29,21 +40,31 @@ export class TransformCommand implements Command {
 
   // Call this after the transform is complete to capture the final state
   public updateFinalState() {
-    this.newPosition = this.node.position.clone();
-    this.newRotation = this.node.quaternion.clone();
-    this.newScaling = this.node.scale.clone();
+    this.newPosition = this.target.position.clone();
+    this.newRotation = this.target.quaternion.clone();
+    this.newScaling = this.target.scale.clone();
   }
 
   public execute(): void {
-    this.node.position.copy(this.newPosition);
-    this.node.quaternion.copy(this.newRotation);
-    this.node.scale.copy(this.newScaling);
+    this.target.position.copy(this.newPosition);
+    this.target.quaternion.copy(this.newRotation);
+    this.target.scale.copy(this.newScaling);
+    
+    // Notify selectable of transform update
+    this.selectable?.onTransformUpdate?.();
   }
 
   public undo(): void {
-    this.node.position.copy(this.initialPosition);
-    this.node.quaternion.copy(this.initialRotation);
-    this.node.scale.copy(this.initialScaling);
+    this.target.position.copy(this.initialPosition);
+    this.target.quaternion.copy(this.initialRotation);
+    this.target.scale.copy(this.initialScaling);
+    
+    // Notify selectable of transform update
+    this.selectable?.onTransformUpdate?.();
+  }
+  
+  public redo(): void {
+    this.execute();
   }
 }
 
@@ -164,60 +185,5 @@ export class CreateEntityAsyncCommand implements Command {
 
   getEntity(): EntityBase | null {
     return this.entity;
-  }
-} 
-
-// Updated BoneRotationCommand for Three.js
-export class BoneRotationCommand implements Command {
-  private initialRotation: THREE.Quaternion;
-  private finalRotation: THREE.Quaternion;
-  private boneName: string;
-  
-  constructor(
-    private bone: THREE.Bone,
-    private controlMesh: THREE.Mesh
-  ) {
-    this.boneName = bone.name;
-    
-    // Store initial quaternion
-    this.initialRotation = bone.quaternion.clone();
-      
-    // Initially, final rotation equals initial (will be updated at end of drag)
-    this.finalRotation = this.initialRotation.clone();
-  }
-
-  // Call this after the rotation is complete
-  public updateFinalState(): void {
-    // Capture the final rotation state after dragging
-    this.finalRotation = this.bone.quaternion.clone();
-  }
-
-  // We don't need to apply changes here - the mesh already has the right rotation
-  public execute(): void {
-    console.log(`Execute rotation for bone: ${this.boneName}`);
-    // The rotation is already applied by the gizmo's natural behavior
-    // But we'll make sure it's consistent
-    this.bone.quaternion.copy(this.finalRotation);
-    this.controlMesh.quaternion.copy(this.finalRotation);
-  }
-
-  // Restore the initial rotation
-  public undo(): void {
-    console.log(`Undo rotation for bone: ${this.boneName}`);
-    // Apply the initial rotation to the bone
-    this.bone.quaternion.copy(this.initialRotation);
-    
-    // Also update the control mesh to match
-    this.controlMesh.quaternion.copy(this.initialRotation);
-  }
-  
-  // Reapply the final rotation
-  public redo(): void {
-    console.log(`Redo rotation for bone: ${this.boneName}`);
-    // Apply the final rotation to the bone
-    this.bone.quaternion.copy(this.finalRotation);
-    
-    // Also update the control mesh to match
-    this.controlMesh.quaternion.copy(this.finalRotation);
   }
 } 

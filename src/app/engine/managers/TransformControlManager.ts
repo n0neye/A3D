@@ -81,7 +81,7 @@ export class TransformControlManager {
 
         // objectChange
         this.transformControls.addEventListener('objectChange', (event) => {
-            // console.log(`TransformControlManager.objectChange: `, this._currentTarget, event);
+            console.log(`TransformControlManager.objectChange: `, isISelectable(this._currentTarget));
             if (isISelectable(this._currentTarget)) {
                 const selectable = this._currentTarget as ISelectable;
                 selectable.onTransformUpdate?.();
