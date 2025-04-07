@@ -26,8 +26,13 @@ export class CharacterEntity extends EntityBase {
     private _loadingPromise: Promise<void> | null = null;
 
     // Bone visualization properties
-    private _boneMap: Map<string, { bone: THREE.Bone, control: BoneControl }> = new Map();
-    private _boneLines: Map<string, THREE.Line> = new Map();
+    private _boneMap: Map<string, {
+        bone: THREE.Bone,
+        control: BoneControl,
+        childBones: THREE.Bone[],
+        lineConfigs: { line: THREE.Line, targetBone: THREE.Bone }[]
+    }> = new Map();
+    // private _boneLines: Map<string, THREE.Line> = new Map();
     // private _selectedBone: THREE.Bone | null = null;
     // private _selectedControl: BoneControl | null = null;
     private _isVisualizationVisible = false;
@@ -224,14 +229,19 @@ export class CharacterEntity extends EntityBase {
     /**
      * Creates visualization elements for the skeleton's bones
      */
+
+    private _isFingerBone(bone: THREE.Bone): boolean {
+        const boneName = bone.name.toLowerCase();
+        return boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky');
+    }
+
     private _createBoneVisualization(): void {
         if (!this.skeleton) return;
 
         // Create bone control spheres for each bone
         this.skeleton.bones.forEach(bone => {
             // Skip fingers and other small bones for cleaner visualization
-            const boneName = bone.name.toLowerCase();
-            if (boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky')) {
+            if (this._isFingerBone(bone)) {
                 return;
             }
 
@@ -252,40 +262,37 @@ export class CharacterEntity extends EntityBase {
             // Hide initially
             boneControl.visible = false;
 
-            // Store in bone map
-            this._boneMap.set(bone.name, { bone, control: boneControl });
-        });
-
-        // Create bone lines to visualize the skeleton structure
-        this.skeleton.bones.forEach(bone => {
             const childBones = bone.children.filter(child => child instanceof THREE.Bone) as THREE.Bone[];
 
-            if (childBones.length > 0) {
-                childBones.forEach(childBone => {
-                    // Only create lines if both bones have controls
-                    if (this._boneMap.has(bone.name) && this._boneMap.has(childBone.name)) {
-                        const lineName = `line_${bone.name}_to_${childBone.name}_${this.id}`;
+            const lineConfigs: { line: THREE.Line, targetBone: THREE.Bone }[] = [];
+            childBones.forEach(childBone => {
+                if (this._isFingerBone(childBone)) {
+                    return;
+                }
 
-                        // Create line geometry
-                        const points = [
-                            new THREE.Vector3(0, 0, 0),
-                            new THREE.Vector3(0, 0, 0)
-                        ];
-                        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const lineName = `line_${bone.name}_to_${childBone.name}_${this.id}`;
+                const geometry = new THREE.BufferGeometry();
+                const line = new THREE.Line(geometry, CharacterEntity.LineMaterial);
+                line.name = lineName;
+                line.visible = true;
+                boneControl.add(line);
+                
+                // Set position of line to the bone control
+                line.position.copy(boneControl.position);
 
-                        // Create line mesh
-                        const line = new THREE.Line(geometry, CharacterEntity.LineMaterial);
-                        line.name = lineName;
-                        line.visible = false;
+                // Set points of line to the bone control and child bone
+                const points = [
+                    boneControl.position,
+                    childBone.position
+                ];
+                geometry.setFromPoints(points);
 
-                        // Add to scene
-                        this.engine.getScene().add(line);
+                lineConfigs.push({ line, targetBone: childBone });
 
-                        // Store in bone lines map
-                        this._boneLines.set(lineName, line);
-                    }
-                });
-            }
+            });
+
+            // Store in bone map
+            this._boneMap.set(bone.name, { bone, control: boneControl, childBones, lineConfigs });
         });
     }
 
@@ -302,36 +309,19 @@ export class CharacterEntity extends EntityBase {
                 // Update control position to match bone
                 const boneControl = this._boneMap.get(bone.name)?.control;
                 if (boneControl) {
-                    // bone.getWorldPosition(boneControl.position);
-                    // Copy the local position
+                    // Copy the local position and rotation
                     boneControl.position.copy(bone.position);
                     boneControl.quaternion.copy(bone.quaternion);
+
+                    // Update lines between bones
+                    const lineConfigs = this._boneMap.get(bone.name)?.lineConfigs;
+                    // if (lineConfigs) {
+                    //     lineConfigs.forEach(({ line, targetBone }) => {
+                    //         line.visible = true;
+                    //         line.geometry.setFromPoints([boneControl.position, targetBone.position]);
+                    //     });
+                    // }
                 }
-
-                // Update lines between bones
-                const childBones = bone.children.filter(child => child instanceof THREE.Bone) as THREE.Bone[];
-
-                childBones.forEach(childBone => {
-                    // Only update if both bones have controls
-                    if (this._boneMap.has(bone.name) && this._boneMap.has(childBone.name)) {
-                        const lineName = `line_${bone.name}_to_${childBone.name}_${this.id}`;
-                        const line = this._boneLines.get(lineName);
-
-                        if (line) {
-                            const parentPosition = new THREE.Vector3();
-                            const childPosition = new THREE.Vector3();
-
-                            bone.getWorldPosition(parentPosition);
-                            childBone.getWorldPosition(childPosition);
-
-                            // Update line geometry
-                            const points = [parentPosition, childPosition];
-                            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                            line.geometry.dispose();
-                            line.geometry = geometry;
-                        }
-                    }
-                });
             });
         }
     }
@@ -343,13 +333,11 @@ export class CharacterEntity extends EntityBase {
         this._isVisualizationVisible = visible;
 
         // Update visibility of bone controls
-        this._boneMap.forEach(({ control }) => {
+        this._boneMap.forEach(({ control, lineConfigs }) => {
             control.visible = visible;
-        });
-
-        // Update visibility of bone lines
-        this._boneLines.forEach(line => {
-            line.visible = visible;
+            lineConfigs.forEach(({ line }) => {
+                line.visible = visible;
+            });
         });
 
         // Update line positions if becoming visible
@@ -481,17 +469,17 @@ export class CharacterEntity extends EntityBase {
             control.dispose();
         });
 
-        this._boneLines.forEach(line => {
-            if (line.geometry) line.geometry.dispose();
-            if (line.material) {
-                if (Array.isArray(line.material)) {
-                    line.material.forEach(m => m.dispose());
-                } else {
-                    line.material.dispose();
-                }
-            }
-            line.parent?.remove(line);
-        });
+        // this._boneLines.forEach(line => {
+        //     if (line.geometry) line.geometry.dispose();
+        //     if (line.material) {
+        //         if (Array.isArray(line.material)) {
+        //             line.material.forEach(m => m.dispose());
+        //         } else {
+        //             line.material.dispose();
+        //         }
+        //     }
+        //     line.parent?.remove(line);
+        // });
 
         this.skeleton?.dispose();
 
