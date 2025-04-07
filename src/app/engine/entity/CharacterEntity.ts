@@ -34,6 +34,7 @@ export class CharacterEntity extends EntityBase {
     private static boneColor = new THREE.Color(0.5, 0.7, 1.0);
     private static linesMaterialAlpha = 0.7;
     private static boneMaterialAlpha = 0.5;
+    private static boneControlSize = 0.05;
 
     // Bone visualization properties
     private _boneMap: Map<string, {
@@ -252,7 +253,8 @@ export class CharacterEntity extends EntityBase {
                 bone,
                 this,
                 {
-                    diameter: 0.05,
+                    // Quick hack to keep initial size consistent
+                    diameter: CharacterEntity.boneControlSize / 2,
                 }
             );
 
@@ -483,4 +485,5 @@ export class CharacterEntity extends EntityBase {
     public undoDelete(): void {
         super.undoDelete();
     }
+
 } 

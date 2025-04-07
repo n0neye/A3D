@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, fromThreeVector3, toThreeVector3, toThreeEuler } from './EntityBase';
 import { ImageRatio, ProgressCallback } from '@/app/util/generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
-import { defaultPBRMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
+import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
 import { setupMeshShadows } from '@/app/util/editor/light-util';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
 import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '@/app/util/generation/3d-generation-util';
@@ -138,6 +138,19 @@ export class GenerativeEntity extends EntityBase {
     return this.parent as THREE.Scene;
   }
 
+  
+  // Update aspect ratio of the entity
+  public updateAspectRatio(ratio: ImageRatio): void {
+    if (!this.placeholderMesh) return;
+
+    // Save the new ratio in metadata
+    this.temp_ratio = ratio;
+
+    // Get the new dimensions based on ratio
+    const { width, height } = getPlaneSize(ratio);
+    this.placeholderMesh.scale.set(width, height, 1);
+  }
+
   onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): GenerationLog {
     const log: GenerationLog = {
       id: uuidv4(),
@@ -257,7 +270,7 @@ export class GenerativeEntity extends EntityBase {
         });
 
         // Apply to the placeholder mesh
-        this.placeholderMesh.material = material;
+        this.placeholderMesh.material as THREE.Material;
 
         // Update the mesh size based on the ratio
         if (ratio) {
@@ -518,26 +531,35 @@ export async function loadModel(
 
       rootModelMesh = firstMesh || new THREE.Mesh(
         new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshStandardMaterial({ color: 0xcccccc })
+        defaultGenerative3DMaterial
       );
     }
 
     // Set model mesh in entity
     entity.modelMesh = rootModelMesh;
 
+    // const material = new THREE.MeshLambertMaterial({
+    //     color: new THREE.Color(1, 1, 1),
+    //     flatShading: false,
+    // });
+
+    // entity.modelMesh.material = material;
+
     // Set userData on all meshes
-    model.traverse((obj: any) => {
-      obj.userData = { ...obj.userData, rootEntity: entity };
+    // model.traverse((obj: any) => {
+    //   obj.userData = { ...obj.userData, rootEntity: entity };
 
-      // Apply default material to all meshes
-      if (obj instanceof THREE.Mesh) {
-        // Apply material (note: you might want to keep original materials)
-        obj.material = defaultPBRMaterial;
+    //   // Apply default material to all meshes
+    //   if (obj instanceof THREE.Mesh) {
+    //     // Apply material (note: you might want to keep original materials)
+    //     obj.material = defaultGenerative3DMaterial;
 
-        // Setup shadows
-        setupMeshShadows(obj);
-      }
-    });
+    //     // Setup shadows
+    //     setupMeshShadows(obj);
+    //   }
+    // });
+
+    setupMeshShadows(rootModelMesh);
 
     // Switch to 3D display mode
     entity.setDisplayMode('3d');

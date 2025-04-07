@@ -49,9 +49,9 @@ export class EnvironmentManager {
 
     createDefaultEnvironment(): void {
         const scene = this.engine.getScene();
-        this.createWorldGrid(scene);              
-        this.createSkybox(scene);
-        // this.createLights(scene);
+        this.createWorldGrid(scene);
+        this.createSkybox(scene, "./demoAssets/skybox/qwantani_puresky_4k.jpg");
+        this.createLights(scene);
     }
 
     createWorldGrid = (
@@ -63,77 +63,74 @@ export class EnvironmentManager {
         const grid = new THREE.GridHelper(size, divisions);
         grid.position.y = -0.01; // Slightly above 0 to avoid z-fighting
         scene.add(grid);
-        
+
         // Store in environment objects
         this.envObjects.grid = grid;
-        
+
         return grid;
     };
 
     createLights = (scene: THREE.Scene): void => {
         // Create ambient light
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-        scene.add(ambientLight);
-        this.envObjects.ambientLight = ambientLight;
-        
+        // const ambientLight = new THREE.AmbientLight(new THREE.Color(1, 0.3, 0.3), 1);
+        // scene.add(ambientLight);
+        // this.envObjects.ambientLight = ambientLight;
+
         // Create directional light (sun)
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-        sunLight.position.set(10, 10, 10);
-        sunLight.castShadow = true;
-        
-        // Configure shadow properties
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
-        sunLight.shadow.camera.near = 0.5;
-        sunLight.shadow.camera.far = 50;
-        
-        // Set up shadow camera frustum
-        const d = 20;
-        sunLight.shadow.camera.left = -d;
-        sunLight.shadow.camera.right = d;
-        sunLight.shadow.camera.top = d;
-        sunLight.shadow.camera.bottom = -d;
-        
-        scene.add(sunLight);
-        this.envObjects.sun = sunLight;
-        
-        // Create helper for the sun
-        const sunHelper = new THREE.DirectionalLightHelper(sunLight, 5);
-        scene.add(sunHelper);
-        this.envObjects.sunHelper = sunHelper;
+        // const sunLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        // sunLight.position.set(0, 2, 0);
+        // sunLight.castShadow = false;
+
+        // // Configure shadow properties
+        // sunLight.shadow.mapSize.width = 2048;
+        // sunLight.shadow.mapSize.height = 2048;
+        // sunLight.shadow.camera.near = 0.5;
+        // sunLight.shadow.camera.far = 50;
+
+        // // Set up shadow camera frustum
+        // const d = 20;
+        // sunLight.shadow.camera.left = -d;
+        // sunLight.shadow.camera.right = d;
+        // sunLight.shadow.camera.top = d;
+        // sunLight.shadow.camera.bottom = -d;
+
+        // scene.add(sunLight);
+        // this.envObjects.sun = sunLight;
+
+        // // Create helper for the sun
+        // const sunHelper = new THREE.DirectionalLightHelper(sunLight, 5);
+        // scene.add(sunHelper);
+        // this.envObjects.sunHelper = sunHelper;
     };
 
-    createSkybox = (scene: THREE.Scene): void => {
-        // TODO: Load equirectangular skybox from one image
-        // Load cube texture for skybox
-        // const loader = new THREE.CubeTextureLoader();
-        // loader.setPath('./demoAssets/skybox/');
-        
-        // const textureCube = loader.load([
-        //     'px.jpg', 'nx.jpg',
-        //     'py.jpg', 'ny.jpg',
-        //     'pz.jpg', 'nz.jpg'
-        // ]);
-        
-        // scene.background = textureCube;
-        // Also set as environment map for reflections
-        // scene.environment = textureCube;
-
-        
-        scene.background = new THREE.Color(0.3,0.3,0.3); 
-        
+    createSkybox = (scene: THREE.Scene, equirectangularPath?: string): void => {
+        if (equirectangularPath) {
+            // Load equirectangular texture
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.load(equirectangularPath, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                
+                // Set as background and environment map
+                scene.background = texture;
+                scene.environment = texture; // For reflections on materials
+                scene.environmentIntensity = 0.2;
+            });
+        } else {
+            // Fallback to solid color background
+            scene.background = new THREE.Color(0.3, 0.3, 0.3);
+        }
     };
 
     public getEnvObjects(): EnvironmentObjects {
         return this.envObjects;
     }
-    
+
     // Serialize environment settings
     serializeEnvironment(): SerializedEnvironment {
         const scene = this.engine.getScene();
         const env = this.envObjects;
         const serializedEnv: SerializedEnvironment = {};
-    
+
         // Serialize sun properties
         if (env.sun) {
             serializedEnv.sun = {
@@ -150,7 +147,7 @@ export class EnvironmentManager {
                 }
             };
         }
-    
+
         // Serialize ambient light properties
         if (env.ambientLight) {
             serializedEnv.ambientLight = {
@@ -162,7 +159,7 @@ export class EnvironmentManager {
                 }
             };
         }
-    
+
         // Serialize camera settings
         const camera = this.engine.getCameraManager().getCamera();
         if (camera) {
@@ -179,13 +176,13 @@ export class EnvironmentManager {
                 }
             };
         }
-    
+
         return serializedEnv;
     }
 
     deserializeEnvironment(data: SerializedEnvironment): void {
         const scene = this.engine.getScene();
-    
+
         // Apply sun settings
         if (data.sun && this.envObjects.sun) {
             this.envObjects.sun.intensity = data.sun.intensity;
@@ -199,13 +196,13 @@ export class EnvironmentManager {
                 data.sun.direction.y,
                 data.sun.direction.z
             );
-            
+
             // Update helper if it exists
             if (this.envObjects.sunHelper) {
                 this.envObjects.sunHelper.update();
             }
         }
-    
+
         // Apply ambient light settings
         if (data.ambientLight && this.envObjects.ambientLight) {
             this.envObjects.ambientLight.intensity = data.ambientLight.intensity;
@@ -215,22 +212,22 @@ export class EnvironmentManager {
                 data.ambientLight.color.b
             );
         }
-        
+
         // Apply camera settings
         if (data.camera) {
             const cameraManager = this.engine.getCameraManager();
             const camera = cameraManager.getCamera();
-            
+
             // Update FOV
             if (data.camera.fov !== undefined) {
                 cameraManager.setFOV(data.camera.fov);
             }
-            
+
             // Update far clip
             if (data.camera.farClip !== undefined) {
                 cameraManager.setFarClip(data.camera.farClip);
             }
-            
+
             // Update position
             if (data.camera.position) {
                 camera.position.set(
@@ -239,7 +236,7 @@ export class EnvironmentManager {
                     data.camera.position.z
                 );
             }
-            
+
             // Orbit controls target would need to be updated separately
             // This would require exposing the orbit controls
         }

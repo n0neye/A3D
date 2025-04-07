@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from './EntityBase';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
-import { defaultMaterial } from '@/app/util/editor/material-util';
+import { defaultShapeMaterial } from '@/app/util/editor/material-util';
 import { setupMeshShadows } from '@/app/util/editor/light-util';
 
 /**
@@ -50,7 +50,7 @@ export class ShapeEntity extends EntityBase {
     this.modelMesh = newMesh;
 
     // Apply the material and setup shadows
-    newMesh.material = defaultMaterial;
+    newMesh.material = defaultShapeMaterial;
     setupMeshShadows(newMesh);
 
     // scale

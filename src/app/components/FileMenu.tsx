@@ -18,7 +18,7 @@ export default function FileMenu() {
 
     // Track save event
     trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
-      entities_count: engine.getScene().rootNodes.filter(node => isEntity(node)).length,
+      entities_count: engine.getScene().children.filter(node => isEntity(node)).length,
       has_settings: !!renderSettings,
     });
   }

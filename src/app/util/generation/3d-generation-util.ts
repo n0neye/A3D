@@ -8,7 +8,7 @@ import { blobToBase64, ProgressCallback } from "./generation-util";
 import { setupMeshShadows } from "../editor/light-util";
 import { v4 as uuidv4 } from 'uuid';
 import { get3DModelPersistentUrl, upload3DModelToGCP } from "../storage-util";
-import { defaultPBRMaterial } from "../editor/material-util";
+import { defaultGenerative3DMaterial } from "../editor/material-util";
 import { GenerativeEntity } from "@/app/engine/entity//GenerativeEntity";
 import { loadModel } from "@/app/engine/entity//GenerativeEntity";
 import * as THREE from 'three';
