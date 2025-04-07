@@ -15,8 +15,8 @@ export interface SelectableConfig {
 /**
  * Standard CSS cursor types that can be used for selections
  */
-export type SelectableCursorType = 
-  'default' | 'pointer' | 'grab' | 'grabbing' | 
+export type SelectableCursorType =
+  'default' | 'pointer' | 'grab' | 'grabbing' |
   'move' | 'rotate' | 'nesw-resize' | 'nwse-resize' | 'ns-resize' | 'ew-resize';
 
 /**
@@ -45,7 +45,7 @@ export function Selectable<TBase extends Constructor<THREE.Object3D>>(Base: TBas
 
     constructor(...args: any[]) {
       super(...args);
-      
+
       // Add the selectable flag to userData for easy checking
       this.userData = {
         ...this.userData,
@@ -72,8 +72,16 @@ export function Selectable<TBase extends Constructor<THREE.Object3D>>(Base: TBas
     /**
      * Get the Object3D to attach gizmos to
      */
-    getGizmoTarget(): THREE.Object3D {
-      return this;
+    getGizmoTarget(): THREE.Object3D | null {
+      return null;
+    }
+
+    setGizmoVisible(visible: boolean): void {
+      console.log(`EntityBase.setGizmoVisible: Setting gizmo visibility to ${visible} for entity: ${this.name}`);
+      const gizmo = this.getGizmoTarget();
+      if (gizmo) {
+        gizmo.visible = visible;
+      }
     }
 
     /**
@@ -93,10 +101,10 @@ export function Selectable<TBase extends Constructor<THREE.Object3D>>(Base: TBas
     /**
      * Optional transform callbacks with default empty implementations
      */
-    onTransformStart(): void {}
-    onTransformUpdate(): void {}
-    onTransformEnd(): void {}
-    
+    onTransformStart(): void { }
+    onTransformUpdate(): void { }
+    onTransformEnd(): void { }
+
     /**
      * Check if this object is currently selected
      */
@@ -114,13 +122,14 @@ export interface ISelectable {
   // Properties
   readonly selectableConfig: SelectableConfig;
   readonly cursorType: SelectableCursorType;
-  
+
   // Selection methods
   onSelect(): void;
   onDeselect(): void;
-  
+
   // Utility methods
-  getGizmoTarget(): THREE.Object3D;
+  getGizmoTarget(): THREE.Object3D | null;
+  setGizmoVisible(visible: boolean): void;
   getUUId(): string;
   getName(): string;
 

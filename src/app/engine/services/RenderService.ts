@@ -41,14 +41,14 @@ export class RenderService {
         const maxSize = 1024;
         try {
             if (!this.scene || !this.engine) return null;
-            
+
             // Get camera
             const cameraManager = this.engine.getCameraManager();
             const camera = cameraManager.getCamera();
-            
+
             // Render the scene
             this.renderer.render(this.scene, camera);
-            
+
             // Get the canvas data as base64 image
             const screenshot = this.renderer.domElement.toDataURL('image/png');
 
@@ -91,28 +91,28 @@ export class RenderService {
     public async enableDepthRender(seconds: number = 1): Promise<string | null> {
         try {
             const camera = this.engine.getCameraManager().getCamera();
-            
+
             // Save original renderer state
             const originalClearColor = this.renderer.getClearColor(new THREE.Color());
             const originalClearAlpha = this.renderer.getClearAlpha();
             const originalAutoClear = this.renderer.autoClear;
-            
+
             // Create a render target for depth rendering
             const renderTarget = new THREE.WebGLRenderTarget(
                 this.renderer.domElement.width,
                 this.renderer.domElement.height
             );
             this.originalRenderTarget = renderTarget;
-            
+
             // Create depth material for all objects
             const depthMaterial = new THREE.MeshDepthMaterial({
                 depthPacking: THREE.RGBADepthPacking,
                 side: THREE.DoubleSide
             });
-            
+
             // Store original materials
             const originalMaterials = new Map<THREE.Object3D, THREE.Material | THREE.Material[]>();
-            
+
             // Replace all materials with depth material
             this.scene.traverse(object => {
                 if (object instanceof THREE.Mesh) {
@@ -120,72 +120,72 @@ export class RenderService {
                     object.material = depthMaterial;
                 }
             });
-            
+
             // Render to target
             this.renderer.setRenderTarget(renderTarget);
             this.renderer.setClearColor(0xffffff);
             this.renderer.setClearAlpha(1.0);
             this.renderer.clear();
             this.renderer.render(this.scene, camera);
-            
+
             // Read pixels from render target
             const width = renderTarget.width;
             const height = renderTarget.height;
             const buffer = new Uint8Array(width * height * 4);
             this.renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer);
-            
+
             // Create canvas to convert depth data to image
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
             const context = canvas.getContext('2d')!;
             const imageData = context.createImageData(width, height);
-            
+
             // Convert depth data to grayscale image
             // Note: We invert the depth values so closer objects are brighter
             for (let i = 0; i < buffer.length; i += 4) {
                 const r = buffer[i];
                 const g = buffer[i + 1];
                 const b = buffer[i + 2];
-                
+
                 // Calculate depth from RGB components (depends on your depth packing)
                 // For RGBADepthPacking, you may need a more complex formula
                 const depth = (r + g + b) / 3;
-                
+
                 // Invert - closer objects are brighter
                 const invertedDepth = 255 - depth;
-                
+
                 imageData.data[i] = invertedDepth;
                 imageData.data[i + 1] = invertedDepth;
                 imageData.data[i + 2] = invertedDepth;
                 imageData.data[i + 3] = 255; // Full alpha
             }
-            
+
             // Put the image data on the canvas
             context.putImageData(imageData, 0, 0);
-            
+
             // Convert canvas to data URL
             const depthSnapshot = canvas.toDataURL('image/png');
-            
+
             // Normalize the depth map
             const normalizedDepthSnapshot = await normalizeDepthMap(depthSnapshot);
-            
+
             // Restore original materials
             this.scene.traverse(object => {
                 if (object instanceof THREE.Mesh && originalMaterials.has(object)) {
                     object.material = originalMaterials.get(object)!;
                 }
             });
-            
+
             // Restore original renderer state
             this.renderer.setRenderTarget(null);
             this.renderer.setClearColor(originalClearColor, originalClearAlpha);
             this.renderer.autoClear = originalAutoClear;
-            
+
             // Cleanup
             renderTarget.dispose();
             depthMaterial.dispose();
-            
+
             // Return the normalized depth map
             return normalizedDepthSnapshot;
         } catch (error) {
@@ -209,16 +209,22 @@ export class RenderService {
     public setAllGizmoVisibility(visible: boolean): void {
         // Hide/show light entity gizmos
         this.scene.traverse(node => {
-            if (node instanceof EntityBase && node instanceof LightEntity) {
-                // Find and set visibility for light gizmos or helpers
-                const helpers = node.getObjectsByProperty('isHelper', true);
-                if (helpers) {
-                    helpers.forEach(helper => {
-                        helper.visible = visible;
-                    });
-                }
+            if (node instanceof EntityBase ) {
+                node.setGizmoVisible(visible);
+            }
+            // if is helper, set visible
+            if (node.userData?.isHelper) {
+                node.visible = visible;
             }
         });
+
+
+        // const helpers = this.scene.getObjectsByProperty('isHelper', true);
+        // if (helpers) {
+        //     helpers.forEach(helper => {
+        //         helper.visible = visible;
+        //     });
+        // }
 
         // Hide/show transform controls
         const transformControls = this.engine.getTransformControlManager().getTransformControls();

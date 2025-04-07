@@ -114,34 +114,14 @@ export class EntityBase extends Selectable(THREE.Object3D) {
     });
   }
 
-  /**
-   * Get the HistoryManager from the scene
-   */
   public getHistoryManager(): HistoryManager | null {
     return EditorEngine.getInstance().getHistoryManager();
-  }
-
-  // ISelectable implementation
-  onSelect(): void {
-    console.log(`EntityBase.onSelect: Entity selected: ${this.name} (${this.constructor.name})`);
-  }
-
-  onDeselect(): void {
-    console.log(`EntityBase.onDeselect: Entity deselected: ${this.name} (${this.constructor.name})`);
-  }
-
-  getGizmoTarget(): THREE.Object3D {
-    console.log(`EntityBase.getGizmoTarget: Returning this entity: ${this.name}`);
-    return this; // The entity itself is the target
   }
 
   getUUId(): string {
     return this.entityId;
   }
 
-  getName(): string {
-    return this.name;
-  }
 
   delete(): void {
     console.log(`EntityBase.delete: Deleting entity: ${this.name}`, this.children.length);

@@ -238,7 +238,7 @@ export class LightEntity extends EntityBase {
    * Get the gizmo target for manipulation
    */
   getGizmoTarget(): THREE.Object3D {
-    return this;
+    return this._gizmoMesh;
   }
 
   public static isLightEntity(entity: EntityBase): entity is LightEntity {
