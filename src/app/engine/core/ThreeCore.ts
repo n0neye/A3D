@@ -45,6 +45,7 @@ export class ThreeCore {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1;
     
     // Initialize scene
     this.scene = new THREE.Scene();

@@ -5,10 +5,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
 import { setupMeshShadows } from '@/app/util/editor/light-util';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
-import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '@/app/util/generation/3d-generation-util';
+import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalizeModelGeneration } from '@/app/util/generation/3d-generation-util';
 import { doGenerateRealtimeImage, GenerationResult } from '@/app/util/generation/realtime-generation-util';
 import { EditorEngine } from '../EditorEngine';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { get3DSimulationData } from '@/app/util/simulation-data';
 
 /**
  * Entity that represents AI-generated content
@@ -54,6 +55,7 @@ export class GenerativeEntity extends EntityBase {
   props: GenerativeEntityProps;
 
   modelMesh?: THREE.Mesh;
+  // gltfModel?: THREE.Object3D;
   placeholderMesh: THREE.Mesh;
 
   status: GenerationStatus;
@@ -123,8 +125,10 @@ export class GenerativeEntity extends EntityBase {
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
+    console.log("setDisplayMode", mode, this.modelMesh);
     if (this.modelMesh) {
       this.modelMesh.visible = mode === '3d';
+      console.log("setDisplayMode: modelMesh", this.modelMesh.visible);
     }
     this.placeholderMesh.visible = mode === '2d';
     this.temp_displayMode = mode;
@@ -138,7 +142,7 @@ export class GenerativeEntity extends EntityBase {
     return this.parent as THREE.Scene;
   }
 
-  
+
   // Update aspect ratio of the entity
   public updateAspectRatio(ratio: ImageRatio): void {
     if (!this.placeholderMesh) return;
@@ -152,6 +156,7 @@ export class GenerativeEntity extends EntityBase {
   }
 
   onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): GenerationLog {
+    console.log("onNewGeneration", assetType, fileUrl, prompt, derivedFromId);
     const log: GenerationLog = {
       id: uuidv4(),
       timestamp: Date.now(),
@@ -172,6 +177,8 @@ export class GenerativeEntity extends EntityBase {
     // Update prompt
     this.temp_prompt = prompt;
 
+    this.applyGenerationLog(log);
+
     return log;
   }
 
@@ -180,11 +187,10 @@ export class GenerativeEntity extends EntityBase {
       console.log('applyGenerationLog', log);
       if (log.assetType === 'image' && log.fileUrl) {
         // For image assets, apply the image to the entity
-        this.applyGeneratedImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
+        this.applyImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
         this.setDisplayMode('2d');
       } else if (log.assetType === 'model' && log.fileUrl) {
-        // For model assets, we need to set 3D display mode
-        // (Assuming the model is already loaded and attached to this entity)
+        // Load the model into the entity
         await loadModel(this, log.fileUrl, this.getScene(), (progress) => {
           console.log("loadModel progress", progress);
         });
@@ -255,7 +261,7 @@ export class GenerativeEntity extends EntityBase {
     this.onProgress.trigger({ entity: this, state, message: message || '' });
   }
 
-  applyGeneratedImage(imageUrl: string, scene: THREE.Scene, ratio?: ImageRatio): void {
+  applyImage(imageUrl: string, scene: THREE.Scene, ratio?: ImageRatio): void {
     // Create a texture loader
     const textureLoader = new THREE.TextureLoader();
 
@@ -264,13 +270,13 @@ export class GenerativeEntity extends EntityBase {
       imageUrl,
       (texture) => {
         // Update the material
-        const material = new THREE.MeshBasicMaterial({
+        const newMaterial = new THREE.MeshBasicMaterial({
           map: texture,
           side: THREE.DoubleSide
         });
 
         // Apply to the placeholder mesh
-        this.placeholderMesh.material as THREE.Material;
+        this.placeholderMesh.material = newMaterial;
 
         // Update the mesh size based on the ratio
         if (ratio) {
@@ -317,6 +323,21 @@ export class GenerativeEntity extends EntityBase {
     this.status = 'generating3D';
     this.statusMessage = "Starting 3D generation...";
     this.onProgress.trigger({ entity: this, state: this.status, message: this.statusMessage });
+
+
+    if (options.prompt === "_") {
+      // Wait for 1 second
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const result = get3DSimulationData();
+      return finalizeModelGeneration(
+        result.data.model_mesh.url,
+        true,
+        this,
+        this.getScene(),
+        derivedFromId,
+        performance.now()
+      );
+    }
 
     try {
       // Use the specified API provider, or default to Runpod
@@ -474,7 +495,7 @@ export async function loadModel(
     const loader = new GLTFLoader();
 
     // Create a promise wrapper for the async load
-    const gltf = await new Promise<any>((resolve, reject) => {
+    const gltf = await new Promise<GLTF>((resolve, reject) => {
       loader.load(
         modelUrl,
         (gltf) => resolve(gltf),
@@ -545,7 +566,7 @@ export async function loadModel(
     boundingBox.getCenter(center);
     const size = new THREE.Vector3();
     boundingBox.getSize(size);
-    
+
     // Adjust the position to put the bottom center at the pivot point
     model.position.set(
       model.position.x,                // Center horizontally

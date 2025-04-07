@@ -47,17 +47,23 @@ export const createDefaultMaterials = (scene: THREE.Scene) => {
     });
     defaultGenerative3DMaterial.name = "defaultGenerative3DMaterial";
 
-    placeholderMaterial = createPlaceholderPlaneMaterial(scene);
+    placeholderMaterial = createPlaceholderPlaneMaterial();
 }
 
-const createPlaceholderPlaneMaterial = (scene: THREE.Scene) => {
+const createPlaceholderPlaneMaterial = () => {
     // Create a transparent material similar to the original placeholder
     const material = new THREE.MeshStandardMaterial({
         color: new THREE.Color(0.2, 0.5, 0.9),
         emissive: new THREE.Color(0.2, 0.5, 0.9),
         transparent: true,
         opacity: 0.5,
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
+        flatShading: false,
+        blendAlpha: THREE.AdditiveBlending,
+        blending: THREE.AdditiveBlending,
+        alphaTest: 0,
+        alphaHash: false
+        
     });
 
     // Load the opacity texture
@@ -68,8 +74,6 @@ const createPlaceholderPlaneMaterial = (scene: THREE.Scene) => {
     });
 
     // Add a simple animation for the emissive effect using Three.js animation system
-    // This is different from Babylon's animation system
-    // We'll use a simple approach with requestAnimationFrame for this example
     const breatheMaterial = () => {
         const time = Date.now() * 0.001; // Convert to seconds
         const intensity = 0.5 + 0.2 * Math.sin(time); // Range from 0.3 to 0.7
@@ -87,11 +91,4 @@ const createPlaceholderPlaneMaterial = (scene: THREE.Scene) => {
     placeholderMaterial = material;
     return material;
 }
-
-// Note: We've removed createFresnelPlaneMaterial as Three.js doesn't have a direct
-// equivalent to Babylon's FresnelParameters. For a similar effect, we would need to
-// create a custom shader material. This could be implemented later if needed.
-
-// TODO: For a true Fresnel effect in Three.js, we would need to implement a custom shader material
-// using ShaderMaterial or implement using Three.js's built-in Fresnel node if using the node material system
 

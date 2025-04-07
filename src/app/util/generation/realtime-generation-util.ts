@@ -90,7 +90,7 @@ export async function doGenerateRealtimeImage(
 
         
         // Apply the image to the entity
-        await entity.applyGeneratedImage(result.imageUrl, scene, ratio);
+        await entity.applyImage(result.imageUrl, scene, ratio);
         
         // Add to history
         const log = entity.onNewGeneration("image", result.imageUrl, promptInput);

@@ -131,7 +131,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
 
   useEffect(() => {
-    console.log("generation logs changed: ", props.entity.props.generationLogs, props.entity.props.currentGenerationIdx);
+    console.log("GenerativeEntityPanel: generation logs changed: ", props.entity.props.generationLogs, props.entity.props.currentGenerationIdx);
   }, [props.entity.props.generationLogs, props.entity.props.currentGenerationIdx, props.entity.props.currentGenerationId, updateCounter]);
 
 

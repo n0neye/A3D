@@ -43,7 +43,7 @@ async function processImageUrl(imageUrl: string): Promise<{ processedUrl: string
 }
 
 // Handle the final model loading process that's common to both implementations
-async function finalizeModelGeneration(
+export async function finalizeModelGeneration(
     modelUrl: string,
     isPersistentUrl: boolean,
     entity: GenerativeEntity,
@@ -113,23 +113,17 @@ export async function generate3DModel_Trellis(
 
         let result: Result<TrellisOutput> | null = null;
 
-        if (options.prompt === "_") {
-            // Wait for 1 second
-            await new Promise(resolve => setTimeout(resolve, 500));
-            result = get3DSimulationData();
-        } else {
-            result = await fal.subscribe("fal-ai/trellis", {
-                input: params,
-                logs: true,
-                onQueueUpdate: (update) => {
-                    if (update.status === "IN_PROGRESS") {
-                        const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
-                        const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s est`;
-                        entity.setProcessingState("generating3D", latestLog);
-                    }
-                },
-            });
-        }
+        result = await fal.subscribe("fal-ai/trellis", {
+            input: params,
+            logs: true,
+            onQueueUpdate: (update) => {
+                if (update.status === "IN_PROGRESS") {
+                    const estimatedTime = Math.max(30000 - (performance.now() - startTime), 0);
+                    const latestLog = `Processing... ${(estimatedTime / 1000).toFixed(1)}s est`;
+                    entity.setProcessingState("generating3D", latestLog);
+                }
+            },
+        });
 
         // Return result
         if (result.data?.model_mesh?.url) {
@@ -170,7 +164,7 @@ export async function generate3DModel_Runpod(
         // Setup processing state
         const startTime = performance.now();
         entity.setProcessingState("generating3D", "Processing image...");
-        
+
         // Process source image 
         console.log("Fetching source image from:", imageUrl);
         const response = await fetch(imageUrl);
