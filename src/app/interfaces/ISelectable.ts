@@ -20,38 +20,123 @@ export type SelectableCursorType =
   'move' | 'rotate' | 'nesw-resize' | 'nwse-resize' | 'ns-resize' | 'ew-resize';
 
 /**
- * Interface for any object that can be selected in the editor
+ * Type for the constructor of a class
+ */
+export type Constructor<T = {}> = new (...args: any[]) => T;
+
+/**
+ * Selectable mixin that can be applied to any class
+ * This creates a new class that extends the base class with ISelectable functionality
+ */
+export function Selectable<TBase extends Constructor<THREE.Object3D>>(Base: TBase) {
+  return class SelectableClass extends Base {
+    // Properties required for being selectable
+    selectableConfig: SelectableConfig = {
+      defaultTransformMode: TransformMode.Position,
+      defaultTransformSpace: 'world',
+      allowedTransformModes: [TransformMode.Position, TransformMode.Rotation, TransformMode.Scale],
+      controlSize: 1.0
+    };
+
+    cursorType: SelectableCursorType = 'pointer';
+
+    // Using a property to track if we've been selected
+    private _isSelected: boolean = false;
+
+    constructor(...args: any[]) {
+      super(...args);
+      
+      // Add the selectable flag to userData for easy checking
+      this.userData = {
+        ...this.userData,
+        isSelectable: true
+      };
+    }
+
+    /**
+     * Called when this object is selected
+     */
+    onSelect(): void {
+      this._isSelected = true;
+      console.log(`SelectableClass: Selected ${this.name}`);
+    }
+
+    /**
+     * Called when this object is deselected
+     */
+    onDeselect(): void {
+      this._isSelected = false;
+      console.log(`SelectableClass: Deselected ${this.name}`);
+    }
+
+    /**
+     * Get the Object3D to attach gizmos to
+     */
+    getGizmoTarget(): THREE.Object3D {
+      return this;
+    }
+
+    /**
+     * Get a unique identifier for this object
+     */
+    getUUId(): string {
+      return this.uuid;
+    }
+
+    /**
+     * Get the name of this object
+     */
+    getName(): string {
+      return this.name;
+    }
+
+    /**
+     * Optional transform callbacks with default empty implementations
+     */
+    onTransformStart(): void {}
+    onTransformUpdate(): void {}
+    onTransformEnd(): void {}
+    
+    /**
+     * Check if this object is currently selected
+     */
+    isSelected(): boolean {
+      return this._isSelected;
+    }
+  };
+}
+
+/**
+ * Interface that describes what a selectable object should implement
+ * This is kept for type checking and documentation purposes
  */
 export interface ISelectable {
-  
-  // Defines what gizmo operations are allowed on this object
+  // Properties
   readonly selectableConfig: SelectableConfig;
-  
-  // Cursor type
   readonly cursorType: SelectableCursorType;
   
-  // Selectable callbacks
+  // Selection methods
   onSelect(): void;
   onDeselect(): void;
   
-  // Get the threejs object to attach gizmos to
+  // Utility methods
   getGizmoTarget(): THREE.Object3D;
-  
-  // Get the unique identifier for this selectable object
   getUUId(): string;
-
-  // Get the name of this selectable object
   getName(): string;
 
   // Optional transform callbacks
   onTransformStart?(): void;
   onTransformUpdate?(): void;
   onTransformEnd?(): void;
-} 
+}
 
-// Is ISelectable
+/**
+ * Type guard to check if an object implements ISelectable
+ * Works with both objects implementing the interface directly
+ * and objects created with the Selectable mixin
+ */
 export function isISelectable(obj: any): obj is ISelectable {
-  return obj && obj.selectableConfig !== undefined;
+  return obj?.userData?.isSelectable === true;
 }
 
 

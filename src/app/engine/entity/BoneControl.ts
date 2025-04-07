@@ -5,11 +5,12 @@ import { CharacterEntity } from './CharacterEntity';
 import { BoneRotationCommand } from '../../lib/commands';
 import { EditorEngine } from '../EditorEngine';
 import { TransformMode } from '../managers/TransformControlManager';
+import { Selectable } from '../../interfaces/ISelectable';
 
 /**
  * A mesh that represents a bone for manipulation
  */
-export class BoneControl extends THREE.Mesh implements ISelectable {
+export class BoneControl extends Selectable(THREE.Mesh) {
   public entityId: string;
   public character: CharacterEntity;
   public bone: THREE.Bone;
@@ -21,6 +22,7 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
     allowedTransformModes: [TransformMode.Rotation],
     controlSize: 0.5
   };
+
 
   // Use rotate cursor to indicate rotation capability
   cursorType: SelectableCursorType = 'rotate';
@@ -69,6 +71,7 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
 
   // ISelectable implementation
   onSelect(): void {
+    super.onSelect();
     console.log(`BoneControl.onSelect: Bone selected: ${this.bone.name}`);
     this.rotation.copy(this.bone.rotation);
 
@@ -84,6 +87,7 @@ export class BoneControl extends THREE.Mesh implements ISelectable {
   }
 
   onDeselect(): void {
+    super.onDeselect();
     console.log(`BoneControl.onDeselect: Bone deselected: ${this.bone.name}`);
 
     this.material = CharacterEntity.DefaultBoneMaterial;

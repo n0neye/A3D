@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
 import { HistoryManager } from '../../engine/managers/HistoryManager';
-import { ISelectable, SelectableConfig, SelectableCursorType } from '../../interfaces/ISelectable';
+import { ISelectable, Selectable, SelectableConfig, SelectableCursorType } from '../../interfaces/ISelectable';
 import { EditorEngine } from '../../engine/EditorEngine';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 /**
@@ -10,7 +10,7 @@ import { TransformMode } from '@/app/engine/managers/TransformControlManager';
  */
 // Entity types
 export type EntityType = 'generative' | 'shape' | 'light' | 'character';
-export class EntityBase extends THREE.Object3D implements ISelectable {
+export class EntityBase extends Selectable(THREE.Object3D) {
   // Core properties all entities share
   entityId: string;
   entityType: EntityType;
