@@ -54,8 +54,7 @@ export class GenerativeEntity extends EntityBase {
   // EntityBase properties
   props: GenerativeEntityProps;
 
-  modelMesh?: THREE.Mesh;
-  // gltfModel?: THREE.Object3D;
+  gltfModel?: THREE.Object3D;
   placeholderMesh: THREE.Mesh;
 
   status: GenerationStatus;
@@ -114,9 +113,9 @@ export class GenerativeEntity extends EntityBase {
       console.log("Constructor: applyGenerationLog", currentLog);
       this.applyGenerationLog(currentLog, (entity) => {
         // Temp solution: update the mesh scaling
-        if (entity.modelMesh && options.scaling) {
+        if (entity.gltfModel && options.scaling) {
           console.log("Constructor: applyGenerationLog: onFinish. Apply scaling", options.scaling);
-          entity.modelMesh.scale.copy(options.scaling);
+          entity.gltfModel.scale.copy(options.scaling);
         }
       });
     }
@@ -125,17 +124,15 @@ export class GenerativeEntity extends EntityBase {
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
-    console.log("setDisplayMode", mode, this.modelMesh);
-    if (this.modelMesh) {
-      this.modelMesh.visible = mode === '3d';
-      console.log("setDisplayMode: modelMesh", this.modelMesh.visible);
+    if (this.gltfModel) {
+      this.gltfModel.visible = mode === '3d';
     }
     this.placeholderMesh.visible = mode === '2d';
     this.temp_displayMode = mode;
   }
 
-  getPrimaryMesh(): THREE.Mesh | undefined {
-    return this.temp_displayMode === '3d' ? this.modelMesh : this.placeholderMesh;
+  getPrimaryMesh(): THREE.Object3D | undefined {
+    return this.temp_displayMode === '3d' ? this.gltfModel : this.placeholderMesh;
   }
 
   getScene(): THREE.Scene {
@@ -428,17 +425,13 @@ export class GenerativeEntity extends EntityBase {
       }
     }
 
-    if (this.modelMesh) {
-      if (this.modelMesh.material) {
-        if (Array.isArray(this.modelMesh.material)) {
-          this.modelMesh.material.forEach(mat => mat.dispose());
-        } else {
-          this.modelMesh.material.dispose();
+    if (this.gltfModel) {
+      this.gltfModel.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          child.material.dispose();
         }
-      }
-      if (this.modelMesh.geometry) {
-        this.modelMesh.geometry.dispose();
-      }
+      });
     }
 
     super.dispose();
@@ -510,71 +503,49 @@ export async function loadModel(
     });
 
     // If there's an existing model mesh, dispose it
-    if (entity.modelMesh) {
+    if (entity.gltfModel) {
       // Remove from parent
-      entity.remove(entity.modelMesh);
+      entity.remove(entity.gltfModel);
 
       // Dispose of resources
-      if (entity.modelMesh.geometry) {
-        entity.modelMesh.geometry.dispose();
-      }
-      if (entity.modelMesh.material) {
-        if (Array.isArray(entity.modelMesh.material)) {
-          entity.modelMesh.material.forEach(mat => mat.dispose());
-        } else {
-          entity.modelMesh.material.dispose();
+      entity.gltfModel.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          child.material.dispose();
         }
-      }
+      });
     }
 
     onProgress?.({ message: 'Processing model...' });
 
     // Extract the scene from the GLTF
-    const model = gltf.scene;
-
-    // Create a container mesh if needed
-    let rootModelMesh: THREE.Mesh;
-
-    if (model.children.length === 1 && model.children[0] instanceof THREE.Mesh) {
-      rootModelMesh = model.children[0];
-      entity.add(rootModelMesh);
-    } else {
-      // Use the entire gltf.scene as the root
-      entity.add(model);
-
-      // Find the first mesh to use as reference
-      let firstMesh: THREE.Mesh | null = null;
-      model.traverse((obj: any) => {
-        if (!firstMesh && obj instanceof THREE.Mesh) {
-          firstMesh = obj;
-        }
-      });
-
-      rootModelMesh = firstMesh || new THREE.Mesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        defaultGenerative3DMaterial
-      );
-    }
+    const newModel = gltf.scene;
+    entity.add(newModel);
 
     // Set model mesh in entity
-    entity.modelMesh = rootModelMesh;
+    entity.gltfModel = newModel;
 
     // Position the model on the pivot point
     // Calculate the bounding box to center the model
-    const boundingBox = new THREE.Box3().setFromObject(model);
+    const boundingBox = new THREE.Box3().setFromObject(newModel);
     const center = new THREE.Vector3();
     boundingBox.getCenter(center);
     const size = new THREE.Vector3();
     boundingBox.getSize(size);
 
     // Adjust the position to put the bottom center at the pivot point
-    model.position.set(
-      model.position.x,                // Center horizontally
+    newModel.position.set(
+      newModel.position.x,                // Center horizontally
       -boundingBox.min.y,       // Bottom at the pivot point
-      model.position.z                 // Center depth-wise
+      newModel.position.z                 // Center depth-wise
     );
 
-    setupMeshShadows(rootModelMesh);
+    // setupMeshShadows
+    newModel.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        setupMeshShadows(child);
+      }
+    });
 
     // Switch to 3D display mode
     entity.setDisplayMode('3d');

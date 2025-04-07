@@ -62,12 +62,4 @@ export const setupMeshShadows = (mesh: THREE.Mesh): void => {
   // Set mesh to cast and receive shadows
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  
-  // Also set up shadows for child meshes
-  mesh.traverse((child) => {
-    if (child instanceof THREE.Mesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
 };
