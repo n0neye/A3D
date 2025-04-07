@@ -538,26 +538,20 @@ export async function loadModel(
     // Set model mesh in entity
     entity.modelMesh = rootModelMesh;
 
-    // const material = new THREE.MeshLambertMaterial({
-    //     color: new THREE.Color(1, 1, 1),
-    //     flatShading: false,
-    // });
-
-    // entity.modelMesh.material = material;
-
-    // Set userData on all meshes
-    // model.traverse((obj: any) => {
-    //   obj.userData = { ...obj.userData, rootEntity: entity };
-
-    //   // Apply default material to all meshes
-    //   if (obj instanceof THREE.Mesh) {
-    //     // Apply material (note: you might want to keep original materials)
-    //     obj.material = defaultGenerative3DMaterial;
-
-    //     // Setup shadows
-    //     setupMeshShadows(obj);
-    //   }
-    // });
+    // Position the model on the pivot point
+    // Calculate the bounding box to center the model
+    const boundingBox = new THREE.Box3().setFromObject(model);
+    const center = new THREE.Vector3();
+    boundingBox.getCenter(center);
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+    
+    // Adjust the position to put the bottom center at the pivot point
+    model.position.set(
+      model.position.x,                // Center horizontally
+      -boundingBox.min.y,       // Bottom at the pivot point
+      model.position.z                 // Center depth-wise
+    );
 
     setupMeshShadows(rootModelMesh);
 
