@@ -71,7 +71,7 @@ export class InputManager {
     // Set up pointer event listeners
     this.canvas.addEventListener('pointerdown', this.handlePointerDown);
     this.canvas.addEventListener('pointerup', this.handlePointerUp);
-    this.canvas.addEventListener('pointermove', this.handlePointerMove);
+    // this.canvas.addEventListener('pointermove', this.handlePointerMove);
     this.canvas.addEventListener('wheel', this.handlePointerWheel);
 
     // Set up keyboard event listeners
@@ -114,7 +114,9 @@ export class InputManager {
     this.updateRaycaster(event);
 
     // Perform raycasting to find intersected objects
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    // TODO: better way to do this, maybe manage a list of selectables
+    const selectables = this.scene.children.filter(child => isISelectable(child));
+    const intersects = this.raycaster.intersectObjects(selectables, false);
 
     // Update cursor based on what's being hovered
     if (intersects.length > 0) {
@@ -168,9 +170,14 @@ export class InputManager {
   }
 
   private findSelectableFromIntersection(object: THREE.Object3D): ISelectable | null {
+    // Skip objects explicitly marked as not selectable
+    if (object.userData?.notSelectable === true) {
+        return null;
+    }
+    
     // Check if the object itself is selectable
     if (isISelectable(object)) {
-      return object as unknown as ISelectable;
+        return object as unknown as ISelectable;
     }
 
     // Check if it has a selectable in userData
@@ -199,7 +206,9 @@ export class InputManager {
     }
 
     // Perform raycasting to find intersected objects
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    // TODO: better way to do this, maybe manage a list of selectables
+    const selectables = this.scene.children.filter(child => isISelectable(child));
+    const intersects = this.raycaster.intersectObjects(selectables, true);
 
     // If no intersections, deselect
     if (intersects.length === 0) {
@@ -375,7 +384,7 @@ export class InputManager {
     // Clean up event listeners
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     this.canvas.removeEventListener('pointerup', this.handlePointerUp);
-    this.canvas.removeEventListener('pointermove', this.handlePointerMove);
+    // this.canvas.removeEventListener('pointermove', this.handlePointerMove);
     this.canvas.removeEventListener('wheel', this.handlePointerWheel);
 
     window.removeEventListener('keydown', this.handleKeyDown);

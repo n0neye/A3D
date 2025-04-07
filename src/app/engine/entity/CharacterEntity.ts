@@ -289,6 +289,11 @@ export class CharacterEntity extends EntityBase {
                 ];
                 geometry.setFromPoints(points);
 
+                // Prevent line from being pickable by raycaster without using layers
+                // This is the most reliable approach
+                line.raycast = () => {}; // Empty raycast function prevents picking
+                line.userData.notSelectable = true; // Flag for additional filtering if needed
+                
                 lineConfigs.push({ line, targetBone: childBone });
             });
 
