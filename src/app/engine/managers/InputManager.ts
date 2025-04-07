@@ -109,14 +109,17 @@ export class InputManager {
     // Handle pointer up events
   }
 
+  getSelectableObjects(): THREE.Object3D[] {
+    // TODO: better way to do this, maybe manage a list of selectables
+    return this.scene.children.filter(child => (isISelectable(child) && child.visible));
+  }
+
   private handlePointerMove = (event: PointerEvent): void => {
     // Handle pointer move events for hover effects
     this.updateRaycaster(event);
 
     // Perform raycasting to find intersected objects
-    // TODO: better way to do this, maybe manage a list of selectables
-    const selectables = this.scene.children.filter(child => isISelectable(child));
-    const intersects = this.raycaster.intersectObjects(selectables, false);
+    const intersects = this.raycaster.intersectObjects(this.getSelectableObjects(), false);
 
     // Update cursor based on what's being hovered
     if (intersects.length > 0) {
@@ -206,9 +209,7 @@ export class InputManager {
     }
 
     // Perform raycasting to find intersected objects
-    // TODO: better way to do this, maybe manage a list of selectables
-    const selectables = this.scene.children.filter(child => isISelectable(child));
-    const intersects = this.raycaster.intersectObjects(selectables, true);
+    const intersects = this.raycaster.intersectObjects(this.getSelectableObjects(), true);
 
     // If no intersections, deselect
     if (intersects.length === 0) {
@@ -250,7 +251,7 @@ export class InputManager {
     console.log("InputManager: CtrlClick", event);
 
     // Perform raycasting to find intersected objects
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    const intersects = this.raycaster.intersectObjects(this.getSelectableObjects(), true);
     let position: THREE.Vector3;
 
     if (intersects.length > 0) {
