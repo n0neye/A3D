@@ -373,6 +373,10 @@ export class RenderService {
                 // Show gizmos again
                 this.setAllGizmoVisibility(true);
 
+                // Restore camera far value
+                camera.far = originalFar;
+                camera.updateProjectionMatrix();
+
                 // Cleanup
                 renderTarget.dispose();
             }, seconds * 1000);
