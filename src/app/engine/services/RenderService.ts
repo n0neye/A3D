@@ -86,105 +86,108 @@ export class RenderService {
     }
 
     /**
-     * Enables depth rendering and returns a depth image
+     * Show the depth map of current camera, apply to post processing, return the image, and restore original state after given seconds
      */
     public async enableDepthRender(seconds: number = 1): Promise<string | null> {
         try {
             const camera = this.engine.getCameraManager().getCamera();
+            const renderer = this.renderer;
+            const scene = this.scene;
 
-            // Save original renderer state
-            const originalClearColor = this.renderer.getClearColor(new THREE.Color());
-            const originalClearAlpha = this.renderer.getClearAlpha();
-            const originalAutoClear = this.renderer.autoClear;
+            // Store gizmo visibility state and hide all gizmos
+            this.setAllGizmoVisibility(false);
 
-            // Create a render target for depth rendering
-            const renderTarget = new THREE.WebGLRenderTarget(
-                this.renderer.domElement.width,
-                this.renderer.domElement.height
-            );
-            this.originalRenderTarget = renderTarget;
+            // Create a render target with depth texture
+            const width = renderer.domElement.width;
+            const height = renderer.domElement.height;
+            const renderTarget = new THREE.WebGLRenderTarget(width, height);
+            renderTarget.texture.minFilter = THREE.NearestFilter;
+            renderTarget.texture.magFilter = THREE.NearestFilter;
+            renderTarget.texture.generateMipmaps = false;
+            renderTarget.depthTexture = new THREE.DepthTexture(width, height);
+            renderTarget.depthTexture.format = THREE.DepthFormat;
+            renderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-            // Create depth material for all objects
-            const depthMaterial = new THREE.MeshDepthMaterial({
-                depthPacking: THREE.RGBADepthPacking,
-                side: THREE.DoubleSide
-            });
+            // Create post-processing for depth visualization
+            const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const postMaterial = new THREE.ShaderMaterial({
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    #include <packing>
+                    varying vec2 vUv;
+                    uniform sampler2D tDepth;
+                    uniform float cameraNear;
+                    uniform float cameraFar;
 
-            // Store original materials
-            const originalMaterials = new Map<THREE.Object3D, THREE.Material | THREE.Material[]>();
+                    float readDepth(sampler2D depthSampler, vec2 coord) {
+                        float fragCoordZ = texture2D(depthSampler, coord).x;
+                        float viewZ = perspectiveDepthToViewZ(fragCoordZ, cameraNear, cameraFar);
+                        return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
+                    }
 
-            // Replace all materials with depth material
-            this.scene.traverse(object => {
-                if (object instanceof THREE.Mesh) {
-                    originalMaterials.set(object, object.material);
-                    object.material = depthMaterial;
+                    void main() {
+                        float depth = readDepth(tDepth, vUv);
+                        gl_FragColor.rgb = 1.0 - vec3(depth);
+                        gl_FragColor.a = 1.0;
+                    }
+                `,
+                uniforms: {
+                    cameraNear: { value: camera.near },
+                    cameraFar: { value: camera.far },
+                    tDepth: { value: null }
                 }
             });
 
-            // Render to target
-            this.renderer.setRenderTarget(renderTarget);
-            this.renderer.setClearColor(0xffffff);
-            this.renderer.setClearAlpha(1.0);
-            this.renderer.clear();
-            this.renderer.render(this.scene, camera);
+            const postScene = new THREE.Scene();
+            const postQuad = new THREE.Mesh(
+                new THREE.PlaneGeometry(2, 2),
+                postMaterial
+            );
+            postScene.add(postQuad);
 
-            // Read pixels from render target
-            const width = renderTarget.width;
-            const height = renderTarget.height;
-            const buffer = new Uint8Array(width * height * 4);
-            this.renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, buffer);
-
-            // Create canvas to convert depth data to image
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const context = canvas.getContext('2d')!;
-            const imageData = context.createImageData(width, height);
-
-            // Convert depth data to grayscale image
-            // Note: We invert the depth values so closer objects are brighter
-            for (let i = 0; i < buffer.length; i += 4) {
-                const r = buffer[i];
-                const g = buffer[i + 1];
-                const b = buffer[i + 2];
-
-                // Calculate depth from RGB components (depends on your depth packing)
-                // For RGBADepthPacking, you may need a more complex formula
-                const depth = (r + g + b) / 3;
-
-                // Invert - closer objects are brighter
-                const invertedDepth = 255 - depth;
-
-                imageData.data[i] = invertedDepth;
-                imageData.data[i + 1] = invertedDepth;
-                imageData.data[i + 2] = invertedDepth;
-                imageData.data[i + 3] = 255; // Full alpha
-            }
-
-            // Put the image data on the canvas
-            context.putImageData(imageData, 0, 0);
+            // Save original render target
+            const originalRenderTarget = renderer.getRenderTarget();
+            
+            // Render scene to target with depth texture
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(scene, camera);
+            
+            // Process depth texture
+            postMaterial.uniforms.tDepth.value = renderTarget.depthTexture;
+            
+            // Render depth visualization to canvas
+            renderer.setRenderTarget(null);
+            renderer.render(postScene, postCamera);
+            
+            // Create a temporary canvas to store the result
+            const canvas = renderer.domElement;
 
             // Convert canvas to data URL
             const depthSnapshot = canvas.toDataURL('image/png');
 
+            // Schedule restoration of original state
+            setTimeout(() => {
+                // Restore render target
+                renderer.setRenderTarget(originalRenderTarget);
+                
+                // Restore scene with original camera
+                renderer.render(scene, camera);
+                
+                // Show gizmos again
+                this.setAllGizmoVisibility(true);
+                
+                // Clean up
+                renderTarget.dispose();
+            }, seconds * 1000);
+
             // Normalize the depth map
             const normalizedDepthSnapshot = await normalizeDepthMap(depthSnapshot);
-
-            // Restore original materials
-            this.scene.traverse(object => {
-                if (object instanceof THREE.Mesh && originalMaterials.has(object)) {
-                    object.material = originalMaterials.get(object)!;
-                }
-            });
-
-            // Restore original renderer state
-            this.renderer.setRenderTarget(null);
-            this.renderer.setClearColor(originalClearColor, originalClearAlpha);
-            this.renderer.autoClear = originalAutoClear;
-
-            // Cleanup
-            renderTarget.dispose();
-            depthMaterial.dispose();
 
             // Return the normalized depth map
             return normalizedDepthSnapshot;
