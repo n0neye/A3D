@@ -146,20 +146,6 @@ export async function renderImage(params: ImageToImageParams): Promise<ImageToIm
     throw new Error('No result from renderImage');
   }
 
-  // Add render log
-  const renderLog: IRenderLog = {
-    timestamp: new Date(),
-    imageUrl: result.imageUrl,
-    prompt: params.prompt,
-    model: params.modelApiInfo.name,
-    seed: result.seed,
-    promptStrength: params.promptStrength,
-    depthStrength: params.depthStrength,
-    selectedLoras: params.loras,
-  };
-
-  // Add render log to project manager
-  EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog);
 
   return result;
 }
