@@ -43,12 +43,13 @@ async function processImageUrl(imageUrl: string): Promise<{ processedUrl: string
 }
 
 // Handle the final model loading process that's common to both implementations
-export async function finalizeModelGeneration(
+export async function finalize3DGeneration(
     modelUrl: string,
     isPersistentUrl: boolean,
     entity: GenerativeEntity,
     scene: THREE.Scene,
     derivedFromId: string,
+    prompt: string,
     startTime: number
 ): Promise<GenerationResult> {
     // Log time
@@ -77,7 +78,7 @@ export async function finalizeModelGeneration(
     }
 
     // Add generation log
-    const log = entity.onNewGeneration("model", persistentUrl, "", derivedFromId);
+    const log = entity.onNewGeneration("model", persistentUrl, prompt, derivedFromId);
 
     entity.setProcessingState("idle", "");
 
@@ -127,12 +128,13 @@ export async function generate3DModel_Trellis(
 
         // Return result
         if (result.data?.model_mesh?.url) {
-            return finalizeModelGeneration(
+            return finalize3DGeneration(
                 result.data.model_mesh.url,
                 true,
                 entity,
                 scene,
                 derivedFromId,
+                options.prompt || "",
                 startTime
             );
         }
@@ -266,12 +268,13 @@ export async function generate3DModel_Runpod(
             console.log("Model converted to blob URL with filename:", fileName);
 
             // When we load the model later, we need to modify loadModel to handle blob URLs better
-            return finalizeModelGeneration(
+            return finalize3DGeneration(
                 modelUrl,
                 false,
                 entity,
                 scene,
                 derivedFromId,
+                options.prompt || "",
                 startTime
             );
         }

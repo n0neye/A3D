@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
 import { setupMeshShadows } from '@/app/util/editor/light-util';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
-import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalizeModelGeneration } from '@/app/util/generation/3d-generation-util';
+import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/app/util/generation/3d-generation-util';
 import { doGenerateRealtimeImage, GenerationResult } from '@/app/util/generation/realtime-generation-util';
 import { EditorEngine } from '../EditorEngine';
 import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -326,12 +326,13 @@ export class GenerativeEntity extends EntityBase {
       // Wait for 1 second
       await new Promise(resolve => setTimeout(resolve, 500));
       const result = get3DSimulationData();
-      return finalizeModelGeneration(
+      return finalize3DGeneration(
         result.data.model_mesh.url,
         true,
         this,
         this.getScene(),
         derivedFromId,
+        options.prompt || "",
         performance.now()
       );
     }

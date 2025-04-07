@@ -6,7 +6,7 @@ import { GenerationResult } from '../../util/generation/realtime-generation-util
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
-import { GenerativeEntity, GenerationStatus } from '@/app/engine/entity/GenerativeEntity';
+import { GenerativeEntity, GenerationStatus, GenerationLog } from '@/app/engine/entity/GenerativeEntity';
 
 import { ImageRatio } from "../../util/generation/generation-util";
 
@@ -27,6 +27,16 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   // Add a state variable to force re-renders
   const [updateCounter, setUpdateCounter] = useState(0);
+
+  const applyGenerationLogToUI = (genLog: GenerationLog) => {
+    if (genLog.assetType === 'image') {
+      setCurrentRatio(genLog.imageParams?.ratio || "3:4");
+    }
+    if (genLog.assetType === 'model') {
+      setIsGenerating3D(false);
+    }
+    trySetPrompt('applyGenLogToUI', genLog.prompt);
+  }
 
   // Update when selected entity changes
   useEffect(() => {
@@ -132,6 +142,10 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   useEffect(() => {
     console.log("GenerativeEntityPanel: generation logs changed: ", props.entity.props.generationLogs, props.entity.props.currentGenerationIdx);
+    const currentGenLog = props.entity.getCurrentGenerationLog();
+    if (currentGenLog) {
+      applyGenerationLogToUI(currentGenLog);
+    }
   }, [props.entity.props.generationLogs, props.entity.props.currentGenerationIdx, props.entity.props.currentGenerationId, updateCounter]);
 
 
