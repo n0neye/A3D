@@ -273,44 +273,74 @@ export class RenderService {
 
             // Save original render target
             const originalRenderTarget = renderer.getRenderTarget();
-
-            // Render scene to target with depth texture
-            renderer.setRenderTarget(renderTarget);
+            
+            // Variable to store our depth snapshot
+            let depthSnapshot: string | null = null;
+            
+            // Storage for our render loop function
+            let renderLoopId: number | null = null;
+            let frameCount = 0;
+            
+            // Create a promise that will resolve when we have the snapshot
+            const snapshotPromise = new Promise<string | null>((resolve) => {
+                // Function to render depth effect
+                const renderDepthEffect = () => {
+                    // Render scene to target with depth texture
+                    renderer.setRenderTarget(renderTarget);
+                    renderer.render(scene, camera);
+                    
+                    // Process depth texture
+                    postMaterial.uniforms.tDepth.value = renderTarget.depthTexture;
+                    
+                    // Render depth visualization to canvas
+                    renderer.setRenderTarget(null);
+                    renderer.render(postScene, postCamera);
+                    
+                    // Increment frame counter
+                    frameCount++;
+                    
+                    // Capture on the 3rd frame to ensure it's fully rendered
+                    if (frameCount === 3 && depthSnapshot === null) {
+                        // Capture the visualization from the canvas
+                        depthSnapshot = renderer.domElement.toDataURL('image/png');
+                        resolve(depthSnapshot);
+                    }
+                    
+                    // Continue rendering loop
+                    renderLoopId = requestAnimationFrame(renderDepthEffect);
+                };
+                
+                // Start render loop
+                renderDepthEffect();
+            });
+            
+            // Wait for the depth snapshot
+            depthSnapshot = await snapshotPromise;
+            
+            // Continue showing the depth effect for the specified time
+            await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+            
+            // Clean up rendering loop
+            if (renderLoopId !== null) {
+                cancelAnimationFrame(renderLoopId);
+            }
+            
+            // Restore original state
+            renderer.setRenderTarget(originalRenderTarget);
             renderer.render(scene, camera);
-
-            // Process depth texture
-            postMaterial.uniforms.tDepth.value = renderTarget.depthTexture;
-
-            // Render depth visualization to canvas
-            renderer.setRenderTarget(null);
-            renderer.render(postScene, postCamera);
-
-            // Create a temporary canvas to store the result
-            const canvas = renderer.domElement;
-
-            // Convert canvas to data URL
-            const depthSnapshot = canvas.toDataURL('image/png');
-
-            // Schedule restoration of original state
-            setTimeout(() => {
-                // Restore render target
-                renderer.setRenderTarget(originalRenderTarget);
-
-                // Restore scene with original camera
-                renderer.render(scene, camera);
-
-                // Show gizmos again
-                this.setAllGizmoVisibility(true);
-
-                // Clean up
-                renderTarget.dispose();
-            }, seconds * 1000);
-
-            // Normalize the depth map
-            const normalizedDepthSnapshot = await normalizeDepthMap(depthSnapshot);
-
-            // Return the normalized depth map
-            return normalizedDepthSnapshot;
+            
+            // Show gizmos again
+            this.setAllGizmoVisibility(true);
+            
+            // Cleanup
+            renderTarget.dispose();
+            
+            // Normalize the depth map if we got one
+            if (depthSnapshot) {
+                return await normalizeDepthMap(depthSnapshot);
+            }
+            
+            return null;
         } catch (error) {
             console.error("Error generating depth map:", error);
             return null;
