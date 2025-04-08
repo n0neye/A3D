@@ -11,6 +11,7 @@ export class TimelineManager {
     private project: THEATRE.IProject;
     private mainSheet: THEATRE.ISheet;
     private isPlaying: boolean = false;
+    private debugUI: HTMLElement | null = null;
 
     // Observer for timeline events
     public observers = new Observer<{
@@ -77,6 +78,9 @@ export class TimelineManager {
                     this.engine.getCameraManager().setOrbitControlsEnabled(true);
                     console.log('TimelineManager: Orbit controls re-enabled');
                 }
+                
+                // Update debug UI button text if it exists
+                this.updateDebugUIPlaybackState();
             }
         );
 
@@ -87,8 +91,44 @@ export class TimelineManager {
                 console.log('TimelineManager: PointerChanged:', position);
                 // Notify observers about timeline position change
                 this.observers.notify('timelineUpdated', { time: position });
+                
+                // Update position display in debug UI
+                this.updateDebugUIPosition(position);
             }
         );
+        
+        // Initialize debug UI
+        this.createDebugUI();
+    }
+
+    
+    /**
+     * Update the playback state in the debug UI
+     */
+    private updateDebugUIPlaybackState(): void {
+        if (!this.debugUI) return;
+        
+        const playButton = this.debugUI.querySelector('#timeline-play-button');
+        if (playButton) {
+            (playButton as HTMLButtonElement).textContent = this.isPlaying ? 'Pause' : 'Play';
+        }
+    }
+    
+    /**
+     * Update the position display in the debug UI
+     */
+    private updateDebugUIPosition(position: number): void {
+        if (!this.debugUI) return;
+        
+        const positionDisplay = this.debugUI.querySelector('#timeline-position');
+        if (positionDisplay) {
+            positionDisplay.textContent = `Position: ${position.toFixed(2)}s`;
+        }
+        
+        const slider = this.debugUI.querySelector('input[type="range"]');
+        if (slider) {
+            (slider as HTMLInputElement).value = position.toString();
+        }
     }
 
     /**
@@ -144,5 +184,93 @@ export class TimelineManager {
      */
     public isPlayingAnimation(): boolean {
         return this.isPlaying;
+    }
+    
+    /**
+     * Toggle debug UI visibility
+     */
+    public toggleDebugUI(visible?: boolean): void {
+        if (!this.debugUI) return;
+        
+        if (visible === undefined) {
+            visible = this.debugUI.style.display === 'none';
+        }
+        
+        this.debugUI.style.display = visible ? 'block' : 'none';
+    }
+
+    
+    /**
+     * Create a debug UI for controlling the timeline
+     */
+    private createDebugUI(): void {
+        // Only create UI in non-production environments
+        if (process.env.NODE_ENV === 'production') return;
+        
+        // Create UI container
+        const container = document.createElement('div');
+        container.id = 'timeline-debug-ui';
+        container.style.cssText = `position: fixed; bottom: 10px; left: 10px; z-index: 1000; background-color: rgba(0, 0, 0, 0.7); padding: 10px; border-radius: 5px; color: white; font-family: Arial, sans-serif; font-size: 12px;`;
+
+        // Title
+        const title = document.createElement('div');
+        title.textContent = 'Timeline Debug';
+        title.style.cssText = `margin-bottom: 5px;`;
+        container.appendChild(title);
+        
+        // Position display
+        const positionDisplay = document.createElement('div');
+        positionDisplay.id = 'timeline-position';
+        positionDisplay.textContent = 'Position: 0.00s';
+        positionDisplay.style.cssText = `margin-bottom: 5px;`;
+        container.appendChild(positionDisplay);
+        
+        // Play/Pause button
+        const playButton = document.createElement('button');
+        playButton.id = 'timeline-play-button';
+        playButton.textContent = 'Play';
+        playButton.style.cssText = `margin-right: 5px; padding: 3px 8px;`;
+        playButton.addEventListener('click', () => {
+            if (this.isPlaying) {
+                this.pause();
+            } else {
+                this.play();
+            }
+        });
+        container.appendChild(playButton);
+        
+        // Reset button
+        const resetButton = document.createElement('button');
+        resetButton.textContent = 'Reset';
+        resetButton.style.padding = '3px 8px';
+        resetButton.addEventListener('click', () => {
+            this.setPosition(0);
+        });
+        container.appendChild(resetButton);
+        
+        // Position control
+        const positionControl = document.createElement('div');
+        positionControl.style.marginTop = '5px';
+        
+        const positionSlider = document.createElement('input');
+        positionSlider.type = 'range';
+        positionSlider.min = '0';
+        positionSlider.max = '5'; // Default to 5 seconds duration
+        positionSlider.step = '0.01';
+        positionSlider.value = '0';
+        positionSlider.style.width = '100%';
+        positionSlider.addEventListener('input', (e) => {
+            const newPosition = parseFloat((e.target as HTMLInputElement).value);
+            this.setPosition(newPosition);
+        });
+        positionControl.appendChild(positionSlider);
+        
+        container.appendChild(positionControl);
+                
+        // Add to document
+        document.body.appendChild(container);
+        
+        // Store reference
+        this.debugUI = container;
     }
 }
