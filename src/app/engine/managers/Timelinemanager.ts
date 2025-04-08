@@ -12,12 +12,14 @@ export class TimelineManager {
     private mainSheet: THEATRE.ISheet;
     private isPlaying: boolean = false;
     private debugUI: HTMLElement | null = null;
+    private cameraSheetObj: THEATRE.ISheetObject;
 
     // Observer for timeline events
     public observers = new Observer<{
         timelineUpdated: { time: number };
         playbackStateChanged: { isPlaying: boolean };
         entityAnimationCreated: { entityId: string };
+        keyframeAdded: { time: number };
     }>();
 
     constructor(engine: EditorEngine) {
@@ -37,7 +39,7 @@ export class TimelineManager {
         const camera = this.engine.getCameraManager().getCamera();
         const dummyCube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
         this.engine.getScene().add(dummyCube);
-        const cameraSheetObj = this.mainSheet.object('Camera', {
+        this.cameraSheetObj = this.mainSheet.object('Camera', {
             // Note that the rotation is in radians
             // (full rotation: 2 * Math.PI)
             rotation: THEATRE.types.compound({
@@ -45,10 +47,10 @@ export class TimelineManager {
                 y: THEATRE.types.number(camera.rotation.y, { range: [-2, 2] }),
                 z: THEATRE.types.number(camera.rotation.z, { range: [-2, 2] }),
             }),
-        })
+        }) as any;
 
 
-        cameraSheetObj.onValuesChange((values) => {
+        this.cameraSheetObj.onValuesChange((values) => {
             // Pause orbit controls
             this.engine.getCameraManager().setOrbitControlsEnabled(false);
             console.log('TimelineManager: Camera values changed', values);
@@ -101,6 +103,38 @@ export class TimelineManager {
         this.createDebugUI();
     }
 
+    /**
+     * Add a keyframe for the current camera rotation at the current timeline position
+     */
+    public addCameraKeyframe(): void {
+        const camera = this.engine.getCameraManager().getCamera();
+        const currentPosition = this.getPosition();
+        
+        // Get current camera rotation and normalize to the range [-2, 2]
+        const normalizedX = camera.rotation.x / Math.PI;
+        const normalizedY = camera.rotation.y / Math.PI;
+        const normalizedZ = camera.rotation.z / Math.PI;
+        
+        console.log('TimelineManager: Adding keyframe at position', currentPosition, 'with rotation', { 
+            x: normalizedX, y: normalizedY, z: normalizedZ 
+        });
+        
+        // Use Theatre.js transaction API to create a keyframe
+        studio.transaction(({ set }) => {
+            set(this.cameraSheetObj.props.rotation, {
+                x: normalizedX,
+                y: normalizedY,
+                z: normalizedZ
+            });
+            
+            // Tell Theatre.js to sequence this value (add a keyframe)
+            this.mainSheet.sequence.position = currentPosition;
+        });
+        
+        // Notify observers that a keyframe was added
+        this.observers.notify('keyframeAdded', { time: currentPosition });
+        console.log('TimelineManager: Keyframe added successfully');
+    }
     
     /**
      * Update the playback state in the debug UI
@@ -242,11 +276,20 @@ export class TimelineManager {
         // Reset button
         const resetButton = document.createElement('button');
         resetButton.textContent = 'Reset';
-        resetButton.style.padding = '3px 8px';
+        resetButton.style.cssText = `margin-right: 5px; padding: 3px 8px;`;
         resetButton.addEventListener('click', () => {
             this.setPosition(0);
         });
         container.appendChild(resetButton);
+        
+        // Add Keyframe button
+        const keyframeButton = document.createElement('button');
+        keyframeButton.textContent = 'Add Keyframe';
+        keyframeButton.style.cssText = `padding: 3px 8px;`;
+        keyframeButton.addEventListener('click', () => {
+            this.addCameraKeyframe();
+        });
+        container.appendChild(keyframeButton);
         
         // Position control
         const positionControl = document.createElement('div');
