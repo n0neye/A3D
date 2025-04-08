@@ -1,9 +1,7 @@
 import { fal } from "@fal-ai/client";
 import { LoraWeight } from "@fal-ai/client/endpoints";
-import { LoraConfig } from "./lora";
+import { LoraConfig } from "@/app/engine/interfaces/rendering";
 import { blobToBase64 } from "./image-processing";
-import { IRenderLog } from "@/app/engine/managers/ProjectManager";
-import { EditorEngine } from "@/app/engine/EditorEngine";
 
 // Configure fal.ai client to use the proxy
 fal.config({

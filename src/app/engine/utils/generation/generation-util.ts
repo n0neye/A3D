@@ -82,24 +82,6 @@ export async function generateBackground(
 }
 
 /**
- * Helper function to convert a Blob to a base64 data URL
- */
-export function blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            if (typeof reader.result === 'string') {
-                resolve(reader.result);
-            } else {
-                reject(new Error('Failed to convert blob to base64'));
-            }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-}
-
-/**
  * Remove background from an image using the FAL AI API
  */
 export async function removeBackground(

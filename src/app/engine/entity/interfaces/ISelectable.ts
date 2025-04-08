@@ -73,7 +73,7 @@ export function Selectable<TBase extends Constructor<THREE.Object3D>>(Base: TBas
      * Get the Object3D to attach gizmos to
      */
     getGizmoTarget(): THREE.Object3D | null {
-      return null;
+      return this;
     }
 
     setGizmoVisible(visible: boolean): void {
