@@ -198,7 +198,7 @@ export class RenderService {
             selectedLoras: params.selectedLoras,
         };
         // Add render log to project manager
-        EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog);
+        EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog, true);
     }
 
     /**

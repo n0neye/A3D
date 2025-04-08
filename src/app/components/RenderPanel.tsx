@@ -25,7 +25,7 @@ interface RenderPanelProps {
 const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
   // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
   const { engine } = useEditorEngine();
-  const { renderSettings, renderLogs } = useEditorEngine();
+  const { renderSettings } = useEditorEngine();
 
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -93,13 +93,6 @@ const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [prompt, promptStrength, noiseStrength, selectedAPI, selectedLoras]); // Re-create handler when these dependencies change
-
-  useEffect(() => {
-    console.log("renderLogs changed", renderLogs);
-    if (renderLogs.length > 0) {
-      setImageUrl(renderLogs[renderLogs.length - 1].imageUrl);
-    }
-  }, [renderLogs])
 
 
   // Style panel handlers
@@ -221,6 +214,7 @@ const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
   };
 
   const handleSuccessfulRender = (result: any, currentSeed: number) => {
+    setImageUrl(result.imageUrl);
     if (result && result.imageUrl) {
       // If openOnRendered is true and window.openGallery exists, open gallery
       if (renderSettings.openOnRendered && window.openGallery) {
@@ -303,6 +297,21 @@ const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
     if (!result) throw new Error("Failed to generate depth map");
     setImageUrl(result);
   };
+
+  
+  useEffect(() => {
+    // Subscribe to latestRenderChanged event, and update the imageUrl when it changes
+    const unsubscribe = engine.getProjectManager().observers.subscribe(
+      'latestRenderChanged', 
+      ({ latestRender }) => {
+        setImageUrl(latestRender?.imageUrl || null);
+      }
+    );
+    
+    // Clean up subscription when component unmounts
+    return () => unsubscribe();
+  }, [engine]);
+
 
   return (
     <>

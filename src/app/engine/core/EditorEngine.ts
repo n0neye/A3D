@@ -95,6 +95,8 @@ export class EditorEngine {
     await createDefaultMaterials(scene);
 
     EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default_minimal.json');
+    setTimeout(() => {
+    }, 50);
 
     return EditorEngine.instance;
   }

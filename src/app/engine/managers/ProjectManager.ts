@@ -242,6 +242,9 @@ export class ProjectManager {
         if (data.renderLogs) {
             this.renderLogs = data.renderLogs;
             this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs, isNewRenderLog: false });
+            
+            this.latestRender = data.renderLogs[data.renderLogs.length - 1];
+            this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
         }
     }
 
@@ -251,10 +254,10 @@ export class ProjectManager {
         this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
     }
 
-    addRenderLog(log: IRenderLog): void {
+    addRenderLog(log: IRenderLog, isNew: boolean = false): void {
         this.renderLogs.push(log);
         console.log("ProjectManager: addRenderLog", this.renderLogs);
-        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: true });
+        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: isNew });
         this.latestRender = log;
         this.observers.notify('latestRenderChanged', { latestRender: log });
     }
@@ -265,6 +268,10 @@ export class ProjectManager {
 
     getLatestRender(): IRenderLog | null {
         return this.renderLogs.length > 0 ? this.renderLogs[this.renderLogs.length - 1] : null;
+    }
+
+    getRenderLogs(): IRenderLog[] {
+        return this.renderLogs;
     }
 }
 

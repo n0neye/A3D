@@ -9,79 +9,82 @@ import { useEditorEngine } from '../context/EditorEngineContext';
 import { API_Info, availableAPIs } from '../engine/utils/generation/image-render-api';
 
 const GalleryPanel: React.FC = () => {
-  // State moved into component
+  // State for the component
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [galleryLogs, setGalleryLogs] = useState<IRenderLog[]>([]);
   
-  // Get render logs from context
-  const { renderLogs, engine } = useEditorEngine();
+  // Get engine from context
+  const { engine } = useEditorEngine();
 
-  // Create a ref to track when a new render is added
-  const prevRenderLogsLengthRef = React.useRef(renderLogs.length);
-
-  // Check if render logs changed to auto-open gallery on new render
+  // Subscribe to renderLogsChanged event directly from ProjectManager
   useEffect(() => {
-    // If render logs length increased and we have render settings with openOnRendered=true
-    // Also make sure we have at least one render log
-    if (renderLogs.length > prevRenderLogsLengthRef.current && renderLogs.length > 0) {
-      // Check if we should auto-open
-      const settings = engine.getProjectManager().getRenderSettings();
-      if (settings.openOnRendered) {
-        // Set current index to the latest render and open gallery
-        setCurrentIndex(renderLogs.length - 1);
-        setIsOpen(true);
-      }
-    }
+    // When component mounts, get initial render logs
+    setGalleryLogs(engine.getProjectManager().getRenderLogs() || []);
     
-    // Update ref
-    prevRenderLogsLengthRef.current = renderLogs.length;
-  }, [renderLogs.length, engine]);
+    // Subscribe to renderLogsChanged event
+    const unsubscribe = engine.getProjectManager().observers.subscribe(
+      'renderLogsChanged', 
+      ({ renderLogs, isNewRenderLog }) => {
+        setGalleryLogs(renderLogs);
+        
+        // Only open gallery if this is a new render log and settings say to open
+        if (isNewRenderLog && renderLogs.length > 0) {
+          const settings = engine.getProjectManager().getRenderSettings();
+          if (settings.openOnRendered) {
+            setCurrentIndex(renderLogs.length - 1);
+            setIsOpen(true);
+          }
+        }
+      }
+    );
+    
+    // Clean up subscription when component unmounts
+    return () => unsubscribe();
+  }, [engine]);
 
-  // Custom function to open gallery programmatically (can be triggered from other components)
+  // Custom function to open gallery programmatically
   function openGallery(index?: number) {
-    if (renderLogs.length === 0) return;
+    if (galleryLogs.length === 0) return;
     
     const targetIndex = index !== undefined 
-      ? Math.min(Math.max(0, index), renderLogs.length - 1) 
-      : renderLogs.length - 1;
+      ? Math.min(Math.max(0, index), galleryLogs.length - 1) 
+      : galleryLogs.length - 1;
     
     setCurrentIndex(targetIndex);
     setIsOpen(true);
   }
 
-  // Make this function accessible outside
+  // Make openGallery accessible outside
   React.useEffect(() => {
-    // Expose the function globally for other components to use
     window.openGallery = openGallery;
-    
     return () => {
-      // Clean up when component unmounts
       delete window.openGallery;
     };
-  }, [renderLogs.length]);
+  }, [galleryLogs.length]);
 
   // Close gallery
   const closeGallery = () => setIsOpen(false);
 
   const navigateImages = (direction: number) => {
     let newIndex = currentIndex + direction;
-    if (newIndex < 0) newIndex = renderLogs.length - 1;
-    if (newIndex >= renderLogs.length) newIndex = 0;
+    if (newIndex < 0) newIndex = galleryLogs.length - 1;
+    if (newIndex >= galleryLogs.length) newIndex = 0;
     setCurrentIndex(newIndex);
   };
 
   const handleApplySettings = () => {
-    if (renderLogs.length === 0 || currentIndex >= renderLogs.length) return;
+    if (galleryLogs.length === 0 || currentIndex >= galleryLogs.length) return;
     
     // Apply settings from the selected render log
     engine.getProjectManager().updateRenderSettings({
-      prompt: renderLogs[currentIndex].prompt,
-      seed: renderLogs[currentIndex].seed,
-      promptStrength: renderLogs[currentIndex].promptStrength,
-      depthStrength: renderLogs[currentIndex].depthStrength,
-      selectedLoras: renderLogs[currentIndex].selectedLoras || [],
+      prompt: galleryLogs[currentIndex].prompt,
+      seed: galleryLogs[currentIndex].seed,
+      promptStrength: galleryLogs[currentIndex].promptStrength,
+      depthStrength: galleryLogs[currentIndex].depthStrength,
+      selectedLoras: galleryLogs[currentIndex].selectedLoras || [],
       // Find the API by name
-      selectedAPI: availableAPIs.find((api: API_Info) => api.name === renderLogs[currentIndex].model)?.id
+      selectedAPI: availableAPIs.find((api: API_Info) => api.name === galleryLogs[currentIndex].model)?.id
     });
     
     // Close the gallery panel
@@ -104,11 +107,11 @@ const GalleryPanel: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, currentIndex, renderLogs.length]);
+  }, [isOpen, currentIndex, galleryLogs.length]);
 
-  if (!isOpen || renderLogs.length === 0) return null;
+  if (!isOpen || galleryLogs.length === 0) return null;
 
-  const currentImage = renderLogs[currentIndex];
+  const currentImage = galleryLogs[currentIndex];
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col overflow-hidden">
@@ -231,7 +234,7 @@ const GalleryPanel: React.FC = () => {
       {/* Thumbnail grid */}
       <div className="p-2 bg-black/70">
         <div className="flex overflow-x-auto gap-2 p-2 justify-center items-center">
-          {renderLogs.map((image, idx) => (
+          {galleryLogs.map((image, idx) => (
             <div
               key={idx}
               className={`relative cursor-pointer flex-shrink-0 ${idx === currentIndex ? 'ring-2 ring-primary' : ''}`}
