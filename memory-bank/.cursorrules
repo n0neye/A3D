@@ -1,0 +1,59 @@
+# Cursor Rules for 3D AI Scene Editor
+
+## Design Guidelines
+- UI must follow dark mode only design with rounded shape panels (from design-guide rule)
+- Maintain a clean, modern aesthetic consistent with professional 3D tools
+- Focus on intuitive controls and visual feedback for user actions
+
+## Project Description
+- This is a 3D-to-Image web app SAAS (from project-desc rule)
+- Tech Stack: 
+  - Three.js for 3D rendering (migrated from Babylon.js)
+  - Next.js/TypeScript for frontend
+  - Image Generation via Replicate API
+  - Convex for backend services
+
+## Architectural Patterns
+- Maintain strict separation between engine and UI layers
+- Use Observer pattern for cross-component communication
+- Implement Command pattern for operations that need history
+- EditorEngine should be the single source of truth for editor state
+- UI components should not directly manipulate the 3D scene
+
+## Code Organization
+- Engine code should be independent of React
+- React components access engine through EditorEngineContext
+- Managers handle specific aspects of engine functionality
+- Services coordinate higher-level operations
+- Utilities provide cross-cutting functionality
+
+## Entity System
+- Entities are created through factory methods
+- Entity operations should be wrapped in commands
+- Selection and transformation follow standardized patterns
+- Entity metadata should be accessible through consistent API
+
+## Terminology
+- "Entity" refers to objects in the 3D scene
+- "Manager" refers to specialized engine components
+- "Command" refers to operations with history support
+- "Service" refers to higher-level functionality coordination
+
+## Input Handling
+- Keyboard shortcuts follow industry standards (W, E, R, T for transform)
+- Selection occurs through direct clicking
+- Commands use standard shortcuts (Ctrl+Z, Ctrl+D, etc.)
+- InputManager centralizes all input logic
+
+## Rendering Process
+- Screenshots should hide gizmos and UI elements
+- Depth maps require special processing for AI use
+- Render service handles all output generation
+- Image processing prepares renders for AI services
+
+## Preferred Practices
+- Use TypeScript for all new code
+- Document complex logic with clear comments
+- Follow established module organization
+- Leverage existing managers and services
+- Test UI and engine components separately 
