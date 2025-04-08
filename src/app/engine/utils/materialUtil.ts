@@ -78,7 +78,7 @@ const createPlaceholderPlaneMaterial = () => {
         const time = Date.now() * 0.001; // Convert to seconds
         const intensity = 0.5 + 0.2 * Math.sin(time); // Range from 0.3 to 0.7
 
-        // Update the emissive intensity (not direct color as in Babylon)
+        // Update the emissive intensity 
         material.emissiveIntensity = intensity;
 
         // Request next frame

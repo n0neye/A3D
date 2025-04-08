@@ -1,5 +1,4 @@
 import { fal, Result } from "@fal-ai/client";
-import "@babylonjs/loaders/glTF";
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64 } from "@/app/engine/utils/generation/image-processing";
@@ -256,7 +255,7 @@ export async function generate3DModel_Runpod(
             // Create blob with the proper MIME type
             const blob = new Blob([bytes.buffer], { type: 'model/gltf-binary' });
 
-            // with a .glb extension to help Babylon.js recognize the format
+            // with a .glb extension to help recognize the format
             const fileName = `model_${derivedFromId}.glb`;
             const file = new File([blob], fileName, { type: 'model/gltf-binary' });
             const modelUrl = URL.createObjectURL(file);
