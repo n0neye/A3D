@@ -16,8 +16,8 @@ import {
   IconBulb,
   IconUser,
 } from '@tabler/icons-react';
-import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
-import { EditorEngine } from '../engine/EditorEngine';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/analytics';
+import { EditorEngine } from '@/app/engine/EditorEngine';
 import * as THREE from 'three';
 
 const AddPanel: React.FC = () => {

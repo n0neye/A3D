@@ -10,9 +10,8 @@ import { ShapeEntity } from "../entity/types/ShapeEntity";
 import { LightEntity } from "../entity/types/LightEntity";
 import { SerializedLightEntityData } from "../entity/types/LightEntity";
 import { EntityBase, SerializedEntityData, isEntity } from "../entity/base/EntityBase";
-import { LoraConfig } from "@/app/util/generation/lora";
-import { availableAPIs } from "@/app/util/generation/image-render-api";
 import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
+import { IRenderLog, IRenderSettings } from '@/app/engine/interfaces/rendering';
 // Interface for serialized render settings
 
 interface IProjectData {
@@ -22,29 +21,6 @@ interface IProjectData {
     environment: any;
     renderSettings: IRenderSettings;
     renderLogs: IRenderLog[];
-}
-
-export interface IRenderSettings {
-    prompt: string;
-    promptStrength: number;
-    depthStrength: number;
-    noiseStrength: number;
-    selectedAPI: string; // Store API ID as string
-    seed: number;
-    useRandomSeed: boolean;
-    selectedLoras: LoraConfig[];
-    openOnRendered: boolean;
-}
-
-export interface IRenderLog {
-    imageUrl: string;
-    prompt: string;
-    model: string;
-    timestamp: Date;
-    seed?: number;
-    promptStrength?: number;
-    depthStrength?: number;
-    selectedLoras?: LoraConfig[];
 }
 
 export class ProjectManager {

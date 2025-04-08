@@ -10,6 +10,7 @@ As of the initial setup, we are establishing the Memory Bank to document the pro
 - Documented system architecture and patterns
 - Captured project requirements and technical context
 - Updated technology references to reflect Three.js as the 3D engine (migrated from Babylon.js)
+- Added IGenerationLog and IRenderLog interfaces to track generation history and rendered outputs
 
 ## Active Decisions
 

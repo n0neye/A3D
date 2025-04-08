@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
-import { removeBackground } from '../../util/generation/generation-util';
-import { GenerationResult } from '../../util/generation/realtime-generation-util';
+import { removeBackground } from '@/app/engine/utils/generation/generation-util';
+import { GenerationResult } from '@/app/engine/utils/generation/realtime-generation-util';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
-import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
-import { GenerativeEntity, GenerationStatus, GenerationLog } from '@/app/engine/entity/types/GenerativeEntity';
-
-import { ImageRatio } from "../../util/generation/generation-util";
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/analytics';
+import { GenerativeEntity, GenerationStatus,  } from '@/app/engine/entity/types/GenerativeEntity';
+import { IGenerationLog } from '@/app/engine/interfaces/generation';
+import { ImageRatio } from "@/app/engine/utils/imageUtil";
 
 // TODO: This is a hack to get the previous entity.
 let PREV_ENTITY: GenerativeEntity | null = null;
@@ -28,7 +28,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   // Add a state variable to force re-renders
   const [updateCounter, setUpdateCounter] = useState(0);
 
-  const applyGenerationLogToUI = (genLog: GenerationLog) => {
+  const applyGenerationLogToUI = (genLog: IGenerationLog) => {
     if (genLog.assetType === 'image') {
       setCurrentRatio(genLog.imageParams?.ratio || "3:4");
     }

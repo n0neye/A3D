@@ -12,7 +12,9 @@ Application
 │   │   ├── Entity
 │   │   │   ├── EntityFactory: Manages the creation of entities, including the creation of 3D models, textures, and other assets.
 │   │   │   ├── Interfaces
-│   │   │   │   └── ISelectable: Defines the selection and transform behavior for selectable objects.
+│   │   │   │   ├── ISelectable: Defines the selection and transform behavior for selectable objects.
+│   │   │   │   ├── IGenerationLog: Represents one generation step of a GenerativeEntity, which can be an image or a 3D model. Logs can be derived from another log (eg. image to 3D model), and logs in the same generativeEntity can be applied any time to be displayed.
+│   │   │   │   └── IRenderLog: Represents one final AI-rendered image. A project can have multiple render logs, and each render log can have multiple generation logs. Render logs can be displayed in the GalleryPanel, and can be saved in a project file.
 │   │   │   ├── Base
 │   │   │   │   └── EntityBase: The base class for all entities, which are the main objects in the scene. Implements ISelectable.
 │   │   │   ├── Types: Sub-classes of EntityBase

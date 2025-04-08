@@ -1,21 +1,6 @@
-export interface LoraInfo {
-    id: string;
-    civitaiId?: number;
-    name: string;
-    modelUrl: string;
-    thumbUrl: string;
-    author: string;
-    authorLinkUrl: string;
-    linkUrl?: string;
-    description?: string;
-}
+import { LoraInfo } from "@/app/engine/interfaces/rendering";
 
 
-// Define SelectedLora interface
-export interface LoraConfig {
-    info: LoraInfo;
-    strength: number;
-}
 
 export const fluxDevLoraIds: string[] = [
 

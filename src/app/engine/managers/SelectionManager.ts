@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
+import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
 import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
 import { BoneControl } from '@/app/engine/entity/components/BoneControl';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';

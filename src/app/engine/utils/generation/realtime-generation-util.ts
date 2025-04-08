@@ -1,12 +1,12 @@
 import { fal } from "@fal-ai/client";
-import * as BABYLON from '@babylonjs/core';
 import { getImageSimulationData, } from "../simulation-data";
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { GenerativeEntity, GenerationLog } from '@/app/engine/entity/types/GenerativeEntity';
-import { ProgressCallback, IMAGE_SIZE_MAP, RATIO_MAP, ImageRatio } from "./generation-util";
+import { GenerativeEntity } from '@/app/engine/entity/types/GenerativeEntity';
+import { ProgressCallback,  } from "./generation-util";
+import { ImageRatio, IMAGE_SIZE_MAP, RATIO_MAP } from "@/app/engine/utils/imageUtil";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
 import * as THREE from 'three';
+import { IGenerationLog } from '@/app/engine/interfaces/generation';
 
 // Types for callbacks and results
 export interface Generation2DRealtimResult {
@@ -17,7 +17,7 @@ export interface Generation2DRealtimResult {
 
 export interface GenerationResult {
     success: boolean;
-    generationLog: GenerationLog | null;
+    generationLog: IGenerationLog | null;
 }
 
 // Initialize the connection on module load

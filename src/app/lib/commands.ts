@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { Command } from '../engine/managers/HistoryManager';
+import { Command } from '@/app/engine/managers/HistoryManager';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { EditorEngine } from '../engine/EditorEngine';
-import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
+import { EditorEngine } from '@/app/engine/EditorEngine';
+import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {
@@ -21,7 +21,10 @@ export class TransformCommand implements Command {
     // Handle if we receive an ISelectable directly or an Object3D
     if (isISelectable(target)) {
       this.selectable = target;
-      this.target = target.getGizmoTarget();
+      if(!target.getGizmoTarget()){
+        throw new Error('Target does not have a gizmo target');
+      }
+      this.target = target.getGizmoTarget()!;
     } else {
       this.target = target;
       this.selectable = isISelectable(target) ? target : null;

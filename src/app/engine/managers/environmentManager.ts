@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ImageRatio } from "@/app/util/generation/generation-util";
+import { ImageRatio } from "@/app/engine/utils/imageUtil";
 import { EditorEngine } from "../EditorEngine";
 
 interface SerializedEnvironment {

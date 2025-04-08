@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import { Observer } from '../utils/Observer';
-import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
-import { EditorEngine } from '../EditorEngine';
+import { Observer } from '@/app/engine/utils/Observer';
+import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
+import { EditorEngine } from '@/app/engine/EditorEngine';
 import { TransformCommand } from '@/app/lib/commands';
 
 export enum TransformMode {

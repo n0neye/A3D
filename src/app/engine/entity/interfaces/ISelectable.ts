@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { HistoryManager } from '../engine/managers/HistoryManager';
-import { TransformMode } from '../engine/managers/TransformControlManager';
+import { HistoryManager } from '@/app/engine/managers/HistoryManager';
+import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 
 /**
  * Defines transformation capabilities for a selectable object

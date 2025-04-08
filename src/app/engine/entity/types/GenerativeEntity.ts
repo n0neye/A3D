@@ -1,52 +1,33 @@
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, fromThreeVector3, toThreeVector3, toThreeEuler } from '../base/EntityBase';
-import { ImageRatio, ProgressCallback } from '@/app/util/generation/generation-util';
+import { ProgressCallback } from '@/app/engine/utils/generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
-import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
-import { setupMeshShadows } from '@/app/util/editor/light-util';
-import { createShapeMesh } from '@/app/util/editor/shape-util';
-import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/app/util/generation/3d-generation-util';
-import { doGenerateRealtimeImage, GenerationResult } from '@/app/util/generation/realtime-generation-util';
-import { EditorEngine } from '../../EditorEngine';
+import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/app/engine/utils/materialUtil';
+import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
+import { createShapeMesh } from '@/app/engine/utils/shapeUtil';
+import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/app/engine/utils/generation/3d-generation-util';
+import { doGenerateRealtimeImage, GenerationResult } from '@/app/engine/utils/generation/realtime-generation-util';
 import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { get3DSimulationData } from '@/app/util/simulation-data';
+import { get3DSimulationData } from '@/app/engine/utils/simulation-data';
+import { IGenerationLog, AssetType } from '@/app/engine/interfaces/generation';
+import { ImageRatio } from '@/app/engine/utils/imageUtil';
+
 
 /**
  * Entity that represents AI-generated content
  */
 
 export interface GenerativeEntityProps {
-  generationLogs: GenerationLog[];
+  generationLogs: IGenerationLog[];
   currentGenerationId?: string;
   currentGenerationIdx?: number;
 }
-// Asset types
-export type AssetType = 'image' | 'model';
 
 // Processing states
 export type GenerationStatus = 'idle' | 'generating2D' | 'generating3D' | 'error';
 
 export interface SerializedGenerativeEntityData extends SerializedEntityData {
   props: GenerativeEntityProps;
-}
-
-export interface GenerationLog {
-  id: string;
-  timestamp: number;
-  prompt: string;
-
-  // Asset type and URLs
-  assetType: AssetType;
-  fileUrl?: string;
-
-  // If model is derived from image
-  derivedFromId?: string;
-
-  // Generation parameters
-  imageParams?: {
-    negativePrompt?: string;
-    ratio: ImageRatio;
-  }
 }
 
 export class GenerativeEntity extends EntityBase {
@@ -152,9 +133,9 @@ export class GenerativeEntity extends EntityBase {
     this.placeholderMesh.scale.set(width, height, 1);
   }
 
-  onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): GenerationLog {
+  onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): IGenerationLog {
     console.log("onNewGeneration", assetType, fileUrl, prompt, derivedFromId);
-    const log: GenerationLog = {
+    const log: IGenerationLog = {
       id: uuidv4(),
       timestamp: Date.now(),
       prompt: prompt,
@@ -179,7 +160,7 @@ export class GenerativeEntity extends EntityBase {
     return log;
   }
 
-  async applyGenerationLog(log: GenerationLog, onFinish?: (entity: GenerativeEntity) => void): Promise<boolean> {
+  async applyGenerationLog(log: IGenerationLog, onFinish?: (entity: GenerativeEntity) => void): Promise<boolean> {
     try {
       console.log('applyGenerationLog', log);
       if (log.assetType === 'image' && log.fileUrl) {
@@ -207,7 +188,7 @@ export class GenerativeEntity extends EntityBase {
     }
   }
 
-  getCurrentGenerationLog(): GenerationLog | undefined {
+  getCurrentGenerationLog(): IGenerationLog | undefined {
     // Find current generation
     const { currentGenerationId, generationLogs } = this.props;
     if (!currentGenerationId || !generationLogs?.length) return undefined;
@@ -365,8 +346,8 @@ export class GenerativeEntity extends EntityBase {
     }
   }
 
-  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio): GenerationLog {
-    const log: GenerationLog = {
+  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio): IGenerationLog {
+    const log: IGenerationLog = {
       id: uuidv4(),
       timestamp: Date.now(),
       prompt: prompt,

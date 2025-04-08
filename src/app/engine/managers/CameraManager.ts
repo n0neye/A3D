@@ -18,8 +18,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 // Import MOUSE enum for button configuration
 import { MOUSE } from 'three';
-import { ImageRatio, RATIO_MAP } from '../../util/generation/generation-util';
-import { Observer } from '../utils/Observer';
+import { ImageRatio, RATIO_MAP } from '@/app/engine/utils/imageUtil';
+import { Observer } from '@/app/engine/utils/Observer';
 
 export interface CameraObserverEvents {
   fovChanged: { fov: number };

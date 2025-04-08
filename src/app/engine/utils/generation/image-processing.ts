@@ -202,3 +202,76 @@ export function blobToBase64(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob);
   });
 }
+
+
+
+// Add this function to normalize depth maps based on actual min/max values in the scene
+export const normalizeDepthMap = async (depthImageUrl: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+          // Create a canvas to process the image
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+              reject(new Error('Failed to get canvas context'));
+              return;
+          }
+
+          // Draw the image to the canvas
+          ctx.drawImage(img, 0, 0);
+
+          // Get the image data
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+
+          // Find min and max depth values in the image
+          // Since we're using grayscale, we only need to look at one channel
+          let minDepth = 255;
+          let maxDepth = 0;
+
+          // Skip fully transparent pixels (if any)
+          for (let i = 0; i < data.length; i += 4) {
+              if (data[i + 3] > 0) {  // Only consider non-transparent pixels
+                  minDepth = Math.min(minDepth, data[i]);
+                  maxDepth = Math.max(maxDepth, data[i]);
+              }
+          }
+
+          // Ensure we don't divide by zero
+          const depthRange = maxDepth - minDepth;
+          if (depthRange <= 0) {
+              resolve(depthImageUrl); // No normalization needed or possible
+              return;
+          }
+
+          // Normalize the depth values to full 0-255 range
+          for (let i = 0; i < data.length; i += 4) {
+              if (data[i + 3] > 0) {  // Only process non-transparent pixels
+                  // Normalize to 0-255 range
+                  const normalizedValue = Math.round(((data[i] - minDepth) / depthRange) * 255);
+
+                  // Set all RGB channels to the same value (grayscale)
+                  data[i] = normalizedValue;     // R
+                  data[i + 1] = normalizedValue; // G
+                  data[i + 2] = normalizedValue; // B
+              }
+          }
+
+          // Put the normalized data back to the canvas
+          ctx.putImageData(imageData, 0, 0);
+
+          // Return as data URL
+          resolve(canvas.toDataURL('image/png'));
+      };
+
+      img.onerror = () => {
+          reject(new Error('Failed to load depth image for normalization'));
+      };
+
+      img.src = depthImageUrl;
+  });
+};

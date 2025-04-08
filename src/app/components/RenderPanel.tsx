@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { availableAPIs, API_Info } from '../util/generation/image-render-api';
-import { addNoiseToImage, resizeImage } from '../util/generation/image-processing';
+import { availableAPIs, API_Info } from '@/app/engine/utils/generation/image-render-api';
+import { addNoiseToImage, resizeImage } from '@/app/engine/utils/generation/image-processing';
 import StylePanel from './StylePanel';
-import { LoraConfig, LoraInfo } from '../util/generation/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { downloadImage } from '../engine/utils/helpers';
-import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
+import { downloadImage } from '@/app/engine/utils/helpers';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/analytics';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { useEditorEngine } from '../context/EditorEngineContext';
-import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
+import { IRenderSettings, LoraConfig, LoraInfo } from '@/app/engine/interfaces/rendering';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
@@ -177,7 +176,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
                   onValueChange={(values) => handleUpdateStyleStrength(loraConfig.info.id, values[0])}
                   className="flex-grow max-w-[115px]"
                 />
-                <span className="text-xs w-8 text-right">{loraConfig.strength.toFixed(2)}</span>
+                <span className="text-xs w-8 text-right">{loraConfig.strength?.toFixed(2)}</span>
               </div>
             </div>
           </Card>
@@ -257,7 +256,6 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
         seed: currentSeed,
         selectedLoras: selectedLoras,
         onPreview: (imageUrl: string) => {
-          console.log("RenderPanel: OnPreview:", imageUrl);
           setImageUrl(imageUrl);
         },
       });

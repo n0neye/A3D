@@ -8,8 +8,8 @@ import Guide from './Guide';
 import RenderPanel from './RenderPanel';
 import RatioOverlay from './RatioOverlay';
 import { useEffect, useRef, useState } from 'react';
-import { availableAPIs } from '../util/generation/image-render-api';
-import { IRenderLog } from '@/app/engine/managers/ProjectManager';
+import { availableAPIs } from '@/app/engine/utils/generation/image-render-api';
+import { IRenderLog } from '@/app/engine/interfaces/rendering';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
 

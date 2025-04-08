@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconArrowRight, IconX, IconDownload, IconSettings } from '@tabler/icons-react';
 import { downloadImage } from '../engine/utils/helpers';
-import { IRenderLog } from '../engine/managers/ProjectManager';
+import { IRenderLog } from '@/app/engine/interfaces/rendering';
 // import { useToast } from "@/components/ui/use-toast";
 
 interface GalleryPanelProps {

@@ -42,6 +42,7 @@ Without examining the full codebase, these are educated guesses based on README.
    - Enhanced AI generation capabilities
    - More sophisticated AI scene manipulation
    - Optimization of AI service usage
+   - Generation and render history tracking via IGenerationLog and IRenderLog
 
 2. **User Experience**:
    - Improved onboarding for new users
