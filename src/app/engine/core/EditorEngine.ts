@@ -30,6 +30,7 @@ import { TransformMode, TransformControlManager } from '../managers/TransformCon
 import { ProjectManager } from '../managers/ProjectManager';
 import { EnvironmentManager } from '../managers/environmentManager';
 import { Observer } from '../utils/Observer';
+import { TimelineManager } from '../managers/Timelinemanager';
 import { CreateEntityCommand } from '../../lib/commands';
 
 
@@ -49,6 +50,7 @@ export class EditorEngine {
   private renderService: RenderService;
   private projectManager: ProjectManager;
   private environmentManager: EnvironmentManager;
+  private timelineManager: TimelineManager;
 
   public observer = new Observer<{
   }>();
@@ -65,6 +67,7 @@ export class EditorEngine {
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);
+    this.timelineManager = new TimelineManager(this);
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(
