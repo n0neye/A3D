@@ -14,26 +14,23 @@ export class TransformCommand implements Command {
   private newRotation: THREE.Quaternion; 
   private newScaling: THREE.Vector3;
   
-  private target: THREE.Object3D;
+  private transformTarget: THREE.Object3D;
   private selectable: ISelectable | null;
 
   constructor(target: THREE.Object3D | ISelectable) {
     // Handle if we receive an ISelectable directly or an Object3D
     if (isISelectable(target)) {
       this.selectable = target;
-      if(!target.getGizmoTarget()){
-        throw new Error('Target does not have a gizmo target');
-      }
-      this.target = target.getGizmoTarget()!;
+      this.transformTarget = target.getTransformTarget();
     } else {
-      this.target = target;
+      this.transformTarget = target;
       this.selectable = isISelectable(target) ? target : null;
     }
     
     // Store initial state
-    this.initialPosition = this.target.position.clone();
-    this.initialRotation = this.target.quaternion.clone();
-    this.initialScaling = this.target.scale.clone();
+    this.initialPosition = this.transformTarget.position.clone();
+    this.initialRotation = this.transformTarget.quaternion.clone();
+    this.initialScaling = this.transformTarget.scale.clone();
     
     // The new state will be set later
     this.newPosition = this.initialPosition.clone();
@@ -43,24 +40,24 @@ export class TransformCommand implements Command {
 
   // Call this after the transform is complete to capture the final state
   public updateFinalState() {
-    this.newPosition = this.target.position.clone();
-    this.newRotation = this.target.quaternion.clone();
-    this.newScaling = this.target.scale.clone();
+    this.newPosition = this.transformTarget.position.clone();
+    this.newRotation = this.transformTarget.quaternion.clone();
+    this.newScaling = this.transformTarget.scale.clone();
   }
 
   public execute(): void {
-    this.target.position.copy(this.newPosition);
-    this.target.quaternion.copy(this.newRotation);
-    this.target.scale.copy(this.newScaling);
+    this.transformTarget.position.copy(this.newPosition);
+    this.transformTarget.quaternion.copy(this.newRotation);
+    this.transformTarget.scale.copy(this.newScaling);
     
     // Notify selectable of transform update
     this.selectable?.onTransformUpdate?.();
   }
 
   public undo(): void {
-    this.target.position.copy(this.initialPosition);
-    this.target.quaternion.copy(this.initialRotation);
-    this.target.scale.copy(this.initialScaling);
+    this.transformTarget.position.copy(this.initialPosition);
+    this.transformTarget.quaternion.copy(this.initialRotation);
+    this.transformTarget.scale.copy(this.initialScaling);
     
     // Notify selectable of transform update
     this.selectable?.onTransformUpdate?.();

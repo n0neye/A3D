@@ -72,8 +72,12 @@ export function Selectable<TBase extends Constructor<THREE.Object3D>>(Base: TBas
     /**
      * Get the Object3D to attach gizmos to
      */
-    getGizmoTarget(): THREE.Object3D | null {
+    getTransformTarget(): THREE.Object3D {
       return this;
+    }
+
+    getGizmoTarget(): THREE.Object3D | null {
+      return null;
     }
 
     setGizmoVisible(visible: boolean): void {
@@ -128,6 +132,7 @@ export interface ISelectable {
   onDeselect(): void;
 
   // Utility methods
+  getTransformTarget(): THREE.Object3D;
   getGizmoTarget(): THREE.Object3D | null;
   setGizmoVisible(visible: boolean): void;
   getUUId(): string;

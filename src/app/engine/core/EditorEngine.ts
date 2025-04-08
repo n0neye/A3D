@@ -94,9 +94,7 @@ export class EditorEngine {
     await loadShapeMeshes(scene);
     await createDefaultMaterials(scene);
 
-    EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default_minimal.json');
-    setTimeout(() => {
-    }, 50);
+    await EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default_minimal.json');
 
     return EditorEngine.instance;
   }

@@ -179,7 +179,7 @@ export class TransformControlManager {
             this.setAllowedModes(selectable.selectableConfig.allowedTransformModes);
 
             // Get target object
-            const target = selectable.getGizmoTarget();
+            const target = selectable.getTransformTarget();
             this._currentTarget = target;
 
             // If selectable has a default gizmo mode, set it
