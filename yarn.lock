@@ -1828,6 +1828,11 @@ p-limit@^3.0.1:
   dependencies:
     yocto-queue "^0.1.0"
 
+paper@^0.12.18:
+  version "0.12.18"
+  resolved "https://registry.yarnpkg.com/paper/-/paper-0.12.18.tgz#e024056217a35c36e2b5fda4629310fdc7025c91"
+  integrity sha512-ZSLIEejQTJZuYHhSSqAf4jXOnii0kPhCJGAnYAANtdS72aNwXJ9cP95tZHgq1tnNpvEwgQhggy+4OarviqTCGw==
+
 periscopic@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/periscopic/-/periscopic-3.1.0.tgz#7e9037bf51c5855bd33b48928828db4afa79d97a"
