@@ -204,7 +204,9 @@ export class TransformControlManager {
             }
 
             // Attach to target
-            this.transformControls.attach(target);
+            if (target) {
+                this.transformControls.attach(target);
+            }
         }
     }
 
