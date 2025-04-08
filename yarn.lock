@@ -840,6 +840,27 @@
     postcss "^8.4.41"
     tailwindcss "4.0.13"
 
+"@theatre/core@^0.7.2":
+  version "0.7.2"
+  resolved "https://registry.yarnpkg.com/@theatre/core/-/core-0.7.2.tgz#540a6c3ab80c6ce835b5a284694baf3291222c42"
+  integrity sha512-IDQa/6WY7mIJAtsSd4EgNcM0IUZkl+FrqZ8DdYiCVTFap9ARDNmrngJOeFjJOsnnaHlc5GdEB/jj7fsjbIrAzQ==
+  dependencies:
+    "@theatre/dataverse" "0.7.2"
+
+"@theatre/dataverse@0.7.2":
+  version "0.7.2"
+  resolved "https://registry.yarnpkg.com/@theatre/dataverse/-/dataverse-0.7.2.tgz#25aafe9fe781661939aa991dd46079e0fe4cfd18"
+  integrity sha512-YyfoyX7EyhFUY2OM5fsM0LPrs1SdgLwpiTMkkvTIoZLdOwvQhstjYq4Yz/8ZncJlRoTWvakfmgvCaBN+QuBYxg==
+  dependencies:
+    lodash-es "^4.17.21"
+
+"@theatre/studio@^0.7.2":
+  version "0.7.2"
+  resolved "https://registry.yarnpkg.com/@theatre/studio/-/studio-0.7.2.tgz#287b148c17d7799955199dd6b90c59c876746eaf"
+  integrity sha512-p6LTKzJWVlcHkpGzIlNHh9AkGbB3E+0q9Pjxv+OJoTDe1IK+CMKW695Wp+1//lB4vfC9qShe4z/p+Zaj1q8KtA==
+  dependencies:
+    "@theatre/dataverse" "0.7.2"
+
 "@threejs-kit/instanced-sprite-mesh@^2.4.6":
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/@threejs-kit/instanced-sprite-mesh/-/instanced-sprite-mesh-2.5.0.tgz#24b2718d39da17eada1bde2d5c0c0faeccdb7fb1"
@@ -1665,6 +1686,11 @@ locate-character@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/locate-character/-/locate-character-3.0.0.tgz#0305c5b8744f61028ef5d01f444009e00779f974"
   integrity sha512-SW13ws7BjaeJ6p7Q6CO2nchbYEc3X3J6WrmTTDto7yMPqVSZTUyY5Tjbid+Ab8gLnATtygYtiDIJGQRRn2ZOiA==
+
+lodash-es@^4.17.21:
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.21.tgz#43e626c46e6591b7750beb2b50117390c609e3ee"
+  integrity sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==
 
 lucide-react@^0.483.0:
   version "0.483.0"

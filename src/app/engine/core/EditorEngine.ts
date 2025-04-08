@@ -29,6 +29,7 @@ import { RenderService } from '../services/RenderService';
 import { TransformMode, TransformControlManager } from '../managers/TransformControlManager';
 import { ProjectManager } from '../managers/ProjectManager';
 import { EnvironmentManager } from '../managers/environmentManager';
+import { TimelineManager, AnimatableProperty } from '../managers/TimelineManager';
 import { Observer } from '../utils/Observer';
 import { CreateEntityCommand } from '../../lib/commands';
 
@@ -49,6 +50,7 @@ export class EditorEngine {
   private renderService: RenderService;
   private projectManager: ProjectManager;
   private environmentManager: EnvironmentManager;
+  private timelineManager: TimelineManager;
 
   public observer = new Observer<{
   }>();
@@ -65,6 +67,7 @@ export class EditorEngine {
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);
+    this.timelineManager = new TimelineManager(this);
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(
@@ -93,6 +96,9 @@ export class EditorEngine {
     const scene = EditorEngine.instance.core.getScene();
     await loadShapeMeshes(scene);
     await createDefaultMaterials(scene);
+
+    // Initialize the timeline manager
+    EditorEngine.instance.timelineManager.initialize();
 
     await EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default_minimal.json');
 
@@ -141,7 +147,9 @@ export class EditorEngine {
     return this.environmentManager;
   }
 
-
+  public getTimelineManager(): TimelineManager {
+    return this.timelineManager;
+  }
 
   // Public API methods for React components
   // Entity Management
@@ -191,6 +199,23 @@ export class EditorEngine {
   // Gizmo Mode Management
   public setTransformControlMode(mode: TransformMode): void {
     this.transformControlManager.setTransformControlMode(mode);
+  }
+
+  // Timeline Management
+  public addCameraKeyframe(property: 'position' | 'rotation' | 'fov'): void {
+    this.timelineManager.addCameraKeyframe(property);
+  }
+
+  public addEntityKeyframe(entity: EntityBase, property: 'position' | 'rotation' | 'scale'): void {
+    this.timelineManager.addEntityKeyframe(entity, property);
+  }
+
+  public toggleTimelinePlayback(): void {
+    this.timelineManager.togglePlayback();
+  }
+
+  public scrubTimeline(time: number): void {
+    this.timelineManager.scrubTo(time);
   }
 
   public update(): void {
