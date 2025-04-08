@@ -27,10 +27,12 @@ export class ProjectManager {
     private engine: EditorEngine;
     private settings: IRenderSettings = defaultSettings;
     private renderLogs: IRenderLog[] = [];
+    private latestRender: IRenderLog | null = null;
     public observers = new Observer<{
         projectLoaded: { project: IRenderSettings };
         renderLogsChanged: { renderLogs: IRenderLog[], isNewRenderLog: boolean };
         renderSettingsChanged: { renderSettings: IRenderSettings };
+        latestRenderChanged: { latestRender: IRenderLog | null };
     }>();
 
     constructor(engine: EditorEngine) {
@@ -253,6 +255,16 @@ export class ProjectManager {
         this.renderLogs.push(log);
         console.log("ProjectManager: addRenderLog", this.renderLogs);
         this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: true });
+        this.latestRender = log;
+        this.observers.notify('latestRenderChanged', { latestRender: log });
+    }
+
+    getRenderSettings(): IRenderSettings {
+        return this.settings;
+    }
+
+    getLatestRender(): IRenderLog | null {
+        return this.renderLogs.length > 0 ? this.renderLogs[this.renderLogs.length - 1] : null;
     }
 }
 

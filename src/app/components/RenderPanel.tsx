@@ -20,10 +20,9 @@ import { IRenderSettings, LoraConfig, LoraInfo } from '@/app/engine/interfaces/r
 // Update the props of RenderPanel
 interface RenderPanelProps {
   isDebugMode: boolean;
-  onOpenGallery: () => void;
 }
 
-const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelProps) => {
+const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
   // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
   const { engine } = useEditorEngine();
   const { renderSettings, renderLogs } = useEditorEngine();
@@ -223,11 +222,10 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
 
   const handleSuccessfulRender = (result: any, currentSeed: number) => {
     if (result && result.imageUrl) {
-      // If openOnRendered is true, tell EditorContainer to auto-open when the image is added
-      if (renderSettings.openOnRendered && OpenGallery) {
-        setTimeout(() => {
-          OpenGallery();
-        }, 10);
+      // If openOnRendered is true and window.openGallery exists, open gallery
+      if (renderSettings.openOnRendered && window.openGallery) {
+        // No need for setTimeout anymore
+        window.openGallery();
       }
     }
   };
@@ -338,7 +336,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
                     src={imageUrl}
                     alt="Scene Preview"
                     className="w-full h-full object-contain cursor-pointer"
-                    onClick={OpenGallery}
+                    onClick={() => window.openGallery?.()}
                   />
                   <Button
                     variant="ghost"

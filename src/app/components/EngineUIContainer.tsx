@@ -7,77 +7,32 @@ import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
 import RenderPanel from './RenderPanel';
 import RatioOverlay from './RatioOverlay';
-import { useEffect, useRef, useState } from 'react';
-import { availableAPIs } from '@/app/engine/utils/generation/image-render-api';
-import { IRenderLog } from '@/app/engine/interfaces/rendering';
+import { useState } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
-
 function EngineUIContainer() {
-
-    const { renderSettings, renderLogs, engine } = useEditorEngine();
-    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-    const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
+    const { engine } = useEditorEngine();
     const [isDebugMode, setIsDebugMode] = useState(false);
-    const prevRenderLogsLength = useRef(0);
-
-    const openGallery = () => {
-        console.log('openGallery');
-        setIsGalleryOpen(true);
-    }
-
-    // Track when new images are added to renderLogs
-    useEffect(() => {
-        prevRenderLogsLength.current = renderLogs.length;
-    }, [renderLogs.length]);
-
-    const handleApplyRenderSettings = (renderLog: IRenderLog) => {
-        // Extract settings from the renderLog
-        const settings = {
-            prompt: renderLog.prompt,
-            seed: renderLog.seed,
-            promptStrength: renderLog.promptStrength,
-            depthStrength: renderLog.depthStrength,
-            selectedLoras: renderLog.selectedLoras || [],
-            // Find the API by name
-            selectedAPI: availableAPIs.find(api => api.name === renderLog.model)?.id || availableAPIs[0].id
-        };
-        // Update the project settings
-        engine.getProjectManager().updateRenderSettings(settings);
-    };
-
 
     return (
         <>
-
             <RatioOverlay />
             <AddPanel />
             <EntityPanel />
 
-            {/* Render Panel - no longer needs onImageGenerated */}
-            <RenderPanel
-                isDebugMode={isDebugMode}
-                onOpenGallery={openGallery}
-            />
+            {/* Render Panel - simplified props */}
+            <RenderPanel isDebugMode={isDebugMode} />
 
-
-            <div className='fixed top-2  w-full flex justify-center items-center'>
-                <div className=" panel-shape p-1 flex gap-2">
+            <div className='fixed top-2 w-full flex justify-center items-center'>
+                <div className="panel-shape p-1 flex gap-2">
                     <FileMenu />
                     <CameraPanel />
                     <GizmoModeSelector />
                 </div>
             </div>
 
-
-            <GalleryPanel
-                isOpen={isGalleryOpen}
-                onClose={() => setIsGalleryOpen(false)}
-                images={renderLogs}
-                currentIndex={currentGalleryIndex}
-                onSelectImage={setCurrentGalleryIndex}
-                onApplySettings={handleApplyRenderSettings}
-            />
+            {/* Gallery Panel handles its own state now */}
+            <GalleryPanel />
 
             {/* Add the Guide component */}
             <Guide />

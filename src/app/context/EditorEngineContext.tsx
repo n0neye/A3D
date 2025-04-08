@@ -15,7 +15,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { EditorEngine } from '../engine/core/EditorEngine';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
+import { IRenderSettings, IRenderLog } from '../engine/interfaces/rendering';
 import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
