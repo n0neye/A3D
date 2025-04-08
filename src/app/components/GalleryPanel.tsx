@@ -2,39 +2,96 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { IconArrowLeft, IconArrowRight, IconX, IconDownload, IconSettings } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconX, IconDownload } from '@tabler/icons-react';
 import { downloadImage } from '../engine/utils/helpers';
-import { IRenderLog } from '../engine/managers/ProjectManager';
-// import { useToast } from "@/components/ui/use-toast";
+import { IRenderLog } from '@/app/engine/interfaces/rendering';
+import { useEditorEngine } from '../context/EditorEngineContext';
+import { API_Info, availableAPIs } from '../engine/utils/generation/image-render-api';
 
-interface GalleryPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
-  images: IRenderLog[];
-  currentIndex: number;
-  onSelectImage: (index: number) => void;
-  onApplySettings: (settings: IRenderLog) => void;
-}
-
-const GalleryPanel: React.FC<GalleryPanelProps> = ({
-  isOpen,
-  onClose,
-  images,
-  currentIndex,
-  onSelectImage,
-  onApplySettings,
-}) => {
-  const [localIndex, setLocalIndex] = useState(currentIndex);
-
-  useEffect(() => {
-    setLocalIndex(currentIndex);
-  }, [currentIndex]);
-
+const GalleryPanel: React.FC = () => {
+  // State for the component
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [galleryLogs, setGalleryLogs] = useState<IRenderLog[]>([]);
   
+  // Get engine from context
+  const { engine } = useEditorEngine();
+
+  // Subscribe to renderLogsChanged event directly from ProjectManager
   useEffect(() => {
-    console.log('GalleryPanel useEffect', isOpen);
-  }, [isOpen]);
-  
+    // When component mounts, get initial render logs
+    setGalleryLogs(engine.getProjectManager().getRenderLogs() || []);
+    
+    // Subscribe to renderLogsChanged event
+    const unsubscribe = engine.getProjectManager().observers.subscribe(
+      'renderLogsChanged', 
+      ({ renderLogs, isNewRenderLog }) => {
+        setGalleryLogs(renderLogs);
+        
+        // Only open gallery if this is a new render log and settings say to open
+        if (isNewRenderLog && renderLogs.length > 0) {
+          const settings = engine.getProjectManager().getRenderSettings();
+          if (settings.openOnRendered) {
+            setCurrentIndex(renderLogs.length - 1);
+            setIsOpen(true);
+          }
+        }
+      }
+    );
+    
+    // Clean up subscription when component unmounts
+    return () => unsubscribe();
+  }, [engine]);
+
+  // Custom function to open gallery programmatically
+  function openGallery(index?: number) {
+    if (galleryLogs.length === 0) return;
+    
+    const targetIndex = index !== undefined 
+      ? Math.min(Math.max(0, index), galleryLogs.length - 1) 
+      : galleryLogs.length - 1;
+    
+    setCurrentIndex(targetIndex);
+    setIsOpen(true);
+  }
+
+  // Make openGallery accessible outside
+  React.useEffect(() => {
+    window.openGallery = openGallery;
+    return () => {
+      delete window.openGallery;
+    };
+  }, [galleryLogs.length]);
+
+  // Close gallery
+  const closeGallery = () => setIsOpen(false);
+
+  const navigateImages = (direction: number) => {
+    let newIndex = currentIndex + direction;
+    if (newIndex < 0) newIndex = galleryLogs.length - 1;
+    if (newIndex >= galleryLogs.length) newIndex = 0;
+    setCurrentIndex(newIndex);
+  };
+
+  const handleApplySettings = () => {
+    if (galleryLogs.length === 0 || currentIndex >= galleryLogs.length) return;
+    
+    // Apply settings from the selected render log
+    engine.getProjectManager().updateRenderSettings({
+      prompt: galleryLogs[currentIndex].prompt,
+      seed: galleryLogs[currentIndex].seed,
+      promptStrength: galleryLogs[currentIndex].promptStrength,
+      depthStrength: galleryLogs[currentIndex].depthStrength,
+      selectedLoras: galleryLogs[currentIndex].selectedLoras || [],
+      // Find the API by name
+      selectedAPI: availableAPIs.find((api: API_Info) => api.name === galleryLogs[currentIndex].model)?.id
+    });
+    
+    // Close the gallery panel
+    closeGallery();
+  };
+
+  // Handle keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
 
@@ -44,40 +101,24 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
       } else if (e.key === 'ArrowRight') {
         navigateImages(1);
       } else if (e.key === 'Escape') {
-        onClose();
+        closeGallery();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, localIndex, images.length]);
+  }, [isOpen, currentIndex, galleryLogs.length]);
 
-  const navigateImages = (direction: number) => {
-    let newIndex = localIndex + direction;
-    if (newIndex < 0) newIndex = images.length - 1;
-    if (newIndex >= images.length) newIndex = 0;
+  if (!isOpen || galleryLogs.length === 0) return null;
 
-    setLocalIndex(newIndex);
-    onSelectImage(newIndex);
-  };
-
-  const handleApplySettings = () => {
-    onApplySettings(images[localIndex]);
-    // Close the gallery panel
-    onClose();
-  };
-
-  if (!isOpen || images.length === 0) return null;
-
-  const currentImage = images[localIndex];
+  const currentImage = galleryLogs[currentIndex];
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex justify-between items-center p-4 bg-black/50">
-        {/* <h2 className="text-white text-xl">Generated Images ({localIndex + 1}/{images.length})</h2> */}
         <div></div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="text-white">
+        <Button variant="ghost" size="icon" onClick={closeGallery} className="text-white">
           <IconX size={24} />
         </Button>
       </div>
@@ -193,14 +234,11 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
       {/* Thumbnail grid */}
       <div className="p-2 bg-black/70">
         <div className="flex overflow-x-auto gap-2 p-2 justify-center items-center">
-          {images.map((image, idx) => (
+          {galleryLogs.map((image, idx) => (
             <div
               key={idx}
-              className={`relative cursor-pointer flex-shrink-0 ${idx === localIndex ? 'ring-2 ring-primary' : ''}`}
-              onClick={() => {
-                setLocalIndex(idx);
-                onSelectImage(idx);
-              }}
+              className={`relative cursor-pointer flex-shrink-0 ${idx === currentIndex ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setCurrentIndex(idx)}
             >
               <img
                 src={image.imageUrl}
@@ -214,5 +252,12 @@ const GalleryPanel: React.FC<GalleryPanelProps> = ({
     </div>
   );
 };
+
+// Add type declaration for window
+declare global {
+  interface Window {
+    openGallery?: (index?: number) => void;
+  }
+}
 
 export default GalleryPanel; 

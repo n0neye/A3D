@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Slider } from '@/components/ui/slider';
-import * as BABYLON from '@babylonjs/core';
-import { LightEntity } from '@/app/engine/entity/LightEntity';
+import { LightEntity } from '@/app/engine/entity/types/LightEntity';
 
 function LightEntityPanel(props: { entity: LightEntity }) {
     // State for light settings
@@ -11,58 +10,22 @@ function LightEntityPanel(props: { entity: LightEntity }) {
 
     // Update when selected entity changes
     useEffect(() => {
-        // Set the new entity
         if (props.entity) {
+            // Initialize color state using entity's method
+            setLightColor(props.entity.getColorAsHex());
 
-            // Handle light entity initialization
-            // Find the point light that's a child of this entity
-            const pointLight = props.entity.light;
-            if (pointLight) {
-                // Initialize color state
-                const color = pointLight.diffuse;
-                setLightColor(rgbToHex(color.r, color.g, color.b));
-
-                // Initialize intensity state
-                setLightIntensity(pointLight.intensity);
-            }
+            // Initialize intensity state
+            setLightIntensity(props.entity._light.intensity);
         }
     }, [props.entity]);
-
-
-    // Convert RGB to hex color
-    const rgbToHex = (r: number, g: number, b: number): string => {
-        return "#" + ((1 << 24) + (Math.round(r * 255) << 16) + (Math.round(g * 255) << 8) + Math.round(b * 255)).toString(16).slice(1);
-    };
-
-    // Convert hex color to RGB
-    const hexToRgb = (hex: string): { r: number, g: number, b: number } => {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-            r: parseInt(result[1], 16) / 255,
-            g: parseInt(result[2], 16) / 255,
-            b: parseInt(result[3], 16) / 255
-        } : { r: 1, g: 1, b: 1 };
-    };
 
     // Handle light color change
     const handleLightColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newColor = e.target.value;
         setLightColor(newColor);
 
-        // Update the actual light
-        const pointLight = props.entity.light;
-        const rgb = hexToRgb(newColor);
-        pointLight.diffuse = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
-        pointLight.specular = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
-
-        // Also update the visual representation
-        const lightSphere = props.entity.gizmoMesh;
-        if (lightSphere && lightSphere.material instanceof BABYLON.StandardMaterial) {
-            lightSphere.material.emissiveColor = new BABYLON.Color3(rgb.r, rgb.g, rgb.b);
-        }
-
-        // Update data
-        props.entity.props.color = { r: rgb.r, g: rgb.g, b: rgb.b };
+        // Update the entity using its method
+        props.entity.setColorFromHex(newColor);
     };
 
     // Handle light intensity change
@@ -70,14 +33,9 @@ function LightEntityPanel(props: { entity: LightEntity }) {
         const newIntensity = value[0];
         setLightIntensity(newIntensity);
 
-        // Update the actual light
-        const pointLight = props.entity.light;
-        pointLight.intensity = newIntensity;
-
-        props.entity.props.intensity = newIntensity;
+        // Update the entity
+        props.entity.setIntensity(newIntensity);
     };
-
-
 
     return (
         <>

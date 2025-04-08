@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { renderImage as generateRenderImage, availableAPIs, API_Info } from '../util/generation/image-render-api';
-import { addNoiseToImage, resizeImage } from '../util/generation/image-processing';
+import { availableAPIs, API_Info } from '@/app/engine/utils/generation/image-render-api';
+import { addNoiseToImage, resizeImage } from '@/app/engine/utils/generation/image-processing';
 import StylePanel from './StylePanel';
-import { LoraConfig, LoraInfo } from '../util/generation/lora';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { downloadImage } from '../engine/utils/helpers';
-import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
+import { downloadImage } from '@/app/engine/utils/helpers';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -16,18 +15,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { useEditorEngine } from '../context/EditorEngineContext';
-import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
+import { IRenderSettings, LoraConfig, LoraInfo } from '@/app/engine/interfaces/rendering';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
   isDebugMode: boolean;
-  onOpenGallery: () => void;
 }
 
-const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelProps) => {
+const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
   // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
   const { engine } = useEditorEngine();
-  const { renderSettings, renderLogs } = useEditorEngine();
+  const { renderSettings } = useEditorEngine();
 
   // State variables
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -59,10 +57,6 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
 
   const updateRenderSettings = (newSettings: Partial<IRenderSettings>) => {
     engine.getProjectManager().updateRenderSettings(newSettings);
-  };
-
-  const addRenderLog = (image: IRenderLog) => {
-    engine.getProjectManager().addRenderLog(image);
   };
 
   // Update functions that modify the context
@@ -99,13 +93,6 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [prompt, promptStrength, noiseStrength, selectedAPI, selectedLoras]); // Re-create handler when these dependencies change
-
-  useEffect(() => {
-    console.log("renderLogs changed", renderLogs);
-    if (renderLogs.length > 0) {
-      setImageUrl(renderLogs[renderLogs.length - 1].imageUrl);
-    }
-  }, [renderLogs])
 
 
   // Style panel handlers
@@ -181,7 +168,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
                   onValueChange={(values) => handleUpdateStyleStrength(loraConfig.info.id, values[0])}
                   className="flex-grow max-w-[115px]"
                 />
-                <span className="text-xs w-8 text-right">{loraConfig.strength.toFixed(2)}</span>
+                <span className="text-xs w-8 text-right">{loraConfig.strength?.toFixed(2)}</span>
               </div>
             </div>
           </Card>
@@ -227,114 +214,56 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
   };
 
   const handleSuccessfulRender = (result: any, currentSeed: number) => {
+    setImageUrl(result.imageUrl);
     if (result && result.imageUrl) {
-      // If openOnRendered is true, tell EditorContainer to auto-open when the image is added
-      if (renderSettings.openOnRendered && OpenGallery) {
-        setTimeout(() => {
-          OpenGallery();
-        }, 10);
+      // If openOnRendered is true and window.openGallery exists, open gallery
+      if (renderSettings.openOnRendered && window.openGallery) {
+        // No need for setTimeout anymore
+        window.openGallery();
       }
     }
   };
 
 
   const handleRender = async (isTest: boolean = false) => {
-    setIsLoading(true);
-    setExecutionTime(null);
-    engine.getSelectionManager().select(null);
-
-    // Start measuring time
-    const startTime = Date.now();
-
-    // Track that render started
-    trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_started', {
-      test_mode: isTest,
-      model: selectedAPI.name,
-      prompt_length: prompt.length,
-      use_depth: selectedAPI.useDepthImage,
-    });
-
-    // Hide gizmos before rendering
-    const renderService = engine.getRenderService();
-    renderService.setAllGizmoVisibility(false);
-
     try {
-      // First, take a screenshot of the current scene
-      const screenshot = await renderService.takeFramedScreenshot();
-      if (!screenshot) throw new Error("Failed to take screenshot");
+      setIsLoading(true);
+      setExecutionTime(null);
 
-      // Store the original screenshot
-      setImageUrl(screenshot);
-
-      // Apply noise to the screenshot if noiseStrength > 0
-      let processedImage = screenshot;
-      if (noiseStrength > 0) {
-        processedImage = await renderService.addNoiseToImage(screenshot, noiseStrength);
-      }
-
-      // Resize the image to final dimensions before sending to API
-      const resizedImage = await renderService.resizeImage(processedImage, 1280, 720);
-
-      // Convert the resized image to blob for API
-      const imageBlob = renderService.dataURLtoBlob(resizedImage);
-
-      let depthImage = undefined;
-      if (selectedAPI.useDepthImage) {
-        depthImage = await renderService.enableDepthRender(1) || undefined;
-        if (depthImage) {
-          setImageUrl(depthImage);
-        }
-      }
-
-      // Log pre-processing time
-      const preProcessingTime = Date.now();
-      console.log(`%cPre-processing time: ${(preProcessingTime - startTime) / 1000} seconds`, "color: #4CAF50; font-weight: bold;");
-
-      // Restore gizmos after rendering
-      renderService.setAllGizmoVisibility(true);
-
-      if (isTest) {
-        return;
-      }
-
-
-      // If useRandomSeed is true, generate a new seed for this render
-      const currentSeed = useRandomSeed ? generateNewSeed() : seed;
-
-      // Call the API with the selected model and seed
-      const result = await generateRenderImage({
-        imageUrl: imageBlob,
-        prompt: prompt,
-        promptStrength: promptStrength,
-        modelApiInfo: selectedAPI,
-        seed: currentSeed,
-        width: 1280,
-        height: 720,
-        // Optional
-        loras: selectedLoras,
-        depthImageUrl: depthImage,
-        depthStrength: selectedAPI.useDepthImage ? depthStrength : 0,
+      // Track that render started
+      trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_started', {
+        model: selectedAPI.name,
+        prompt_length: prompt.length,
+        use_depth: selectedAPI.useDepthImage,
       });
 
-      // Calculate execution time
-      const endTime = Date.now();
-      const executionTimeMs = endTime - startTime;
-      setExecutionTime(executionTimeMs);
+      const currentSeed = useRandomSeed ? generateNewSeed() : seed;
+
+      const result = await engine.getRenderService().Render({
+        isTest: isTest,
+        selectedAPI: selectedAPI,
+        prompt: prompt,
+        promptStrength: promptStrength,
+        noiseStrength: noiseStrength,
+        seed: currentSeed,
+        selectedLoras: selectedLoras,
+        onPreview: (imageUrl: string) => {
+          setImageUrl(imageUrl);
+        },
+      });
+
+
+      setExecutionTime(result.executionTimeMs);
 
       // Track successful render
       trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_completed', {
         test_mode: isTest,
         model: selectedAPI.name,
-        seed: currentSeed,
-        execution_time_ms: executionTimeMs,
+        execution_time_ms: result.executionTimeMs,
         prompt_length: prompt.length,
-        success: true,
         use_depth: selectedAPI.useDepthImage,
         depth_strength: selectedAPI.useDepthImage ? depthStrength : 0,
       });
-
-      // Update the preview with the generated image
-      setImageUrl(result.imageUrl);
 
       // If it's not a test, add to gallery using the context function
       if (!isTest) {
@@ -353,12 +282,11 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
       alert("Failed to generate Render. Please try again.");
     } finally {
       // Restore gizmos after rendering
-      renderService.setAllGizmoVisibility(true);
       setIsLoading(false);
     }
   };
 
-  const OnEnableDepthRender = async () => {
+  const enableDepthRender = async () => {
     const depthSnapshot = await engine.getRenderService().enableDepthRender(1);
     if (!depthSnapshot) throw new Error("Failed to generate depth map");
     setImageUrl(depthSnapshot);
@@ -369,6 +297,21 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
     if (!result) throw new Error("Failed to generate depth map");
     setImageUrl(result);
   };
+
+  
+  useEffect(() => {
+    // Subscribe to latestRenderChanged event, and update the imageUrl when it changes
+    const unsubscribe = engine.getProjectManager().observers.subscribe(
+      'latestRenderChanged', 
+      ({ latestRender }) => {
+        setImageUrl(latestRender?.imageUrl || null);
+      }
+    );
+    
+    // Clean up subscription when component unmounts
+    return () => unsubscribe();
+  }, [engine]);
+
 
   return (
     <>
@@ -402,7 +345,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
                     src={imageUrl}
                     alt="Scene Preview"
                     className="w-full h-full object-contain cursor-pointer"
-                    onClick={OpenGallery}
+                    onClick={() => window.openGallery?.()}
                   />
                   <Button
                     variant="ghost"
@@ -549,7 +492,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
             </div>
 
             {/* Debug Tools */}
-            {(isDebugMode &&
+            {(true &&
               <div>
                 <Label className="text-sm mb-2 block">Debug Tools</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -570,7 +513,7 @@ const RenderPanel = ({ isDebugMode, onOpenGallery: OpenGallery }: RenderPanelPro
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={OnEnableDepthRender}
+                    onClick={enableDepthRender}
                   >
                     Show Depth
                   </Button>

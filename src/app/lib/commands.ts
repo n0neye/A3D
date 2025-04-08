@@ -1,28 +1,36 @@
-import * as BABYLON from '@babylonjs/core';
-import { Command } from '../engine/managers/HistoryManager';
-import { Vector3, Quaternion } from '@babylonjs/core';
-import { EntityBase } from '@/app/engine/entity/EntityBase';
-import { usePostHog } from 'posthog-js/react';
-import { GizmoModeManager } from '../engine/managers/GizmoModeManager';
-import { EditorEngine } from '../engine/EditorEngine';
+import * as THREE from 'three';
+import { Command } from '@/app/engine/managers/HistoryManager';
+import { EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { EditorEngine } from '@/app/engine/core/EditorEngine';
+import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {
-  private initialPosition: Vector3;
-  private initialRotation: Quaternion;
-  private initialScaling: Vector3;
+  private initialPosition: THREE.Vector3;
+  private initialRotation: THREE.Quaternion;
+  private initialScaling: THREE.Vector3;
 
-  private newPosition: Vector3;
-  private newRotation: Quaternion; 
-  private newScaling: Vector3;
+  private newPosition: THREE.Vector3;
+  private newRotation: THREE.Quaternion; 
+  private newScaling: THREE.Vector3;
+  
+  private transformTarget: THREE.Object3D;
+  private selectable: ISelectable | null;
 
-  constructor(private node: BABYLON.TransformNode) {
+  constructor(target: THREE.Object3D | ISelectable) {
+    // Handle if we receive an ISelectable directly or an Object3D
+    if (isISelectable(target)) {
+      this.selectable = target;
+      this.transformTarget = target.getTransformTarget();
+    } else {
+      this.transformTarget = target;
+      this.selectable = isISelectable(target) ? target : null;
+    }
+    
     // Store initial state
-    this.initialPosition = node.position.clone();
-    this.initialRotation = node.rotationQuaternion ? 
-                         node.rotationQuaternion.clone() : 
-                         Quaternion.FromEulerAngles(node.rotation.x, node.rotation.y, node.rotation.z);
-    this.initialScaling = node.scaling.clone();
+    this.initialPosition = this.transformTarget.position.clone();
+    this.initialRotation = this.transformTarget.quaternion.clone();
+    this.initialScaling = this.transformTarget.scale.clone();
     
     // The new state will be set later
     this.newPosition = this.initialPosition.clone();
@@ -32,43 +40,41 @@ export class TransformCommand implements Command {
 
   // Call this after the transform is complete to capture the final state
   public updateFinalState() {
-    this.newPosition = this.node.position.clone();
-    this.newRotation = this.node.rotationQuaternion ? 
-                      this.node.rotationQuaternion.clone() : 
-                      Quaternion.FromEulerAngles(this.node.rotation.x, this.node.rotation.y, this.node.rotation.z);
-    this.newScaling = this.node.scaling.clone();
+    this.newPosition = this.transformTarget.position.clone();
+    this.newRotation = this.transformTarget.quaternion.clone();
+    this.newScaling = this.transformTarget.scale.clone();
   }
 
   public execute(): void {
-    this.node.position = this.newPosition.clone();
-    if (this.node.rotationQuaternion) {
-      this.node.rotationQuaternion = this.newRotation.clone();
-    } else {
-      const euler = this.newRotation.toEulerAngles();
-      this.node.rotation = new Vector3(euler.x, euler.y, euler.z);
-    }
-    this.node.scaling = this.newScaling.clone();
+    this.transformTarget.position.copy(this.newPosition);
+    this.transformTarget.quaternion.copy(this.newRotation);
+    this.transformTarget.scale.copy(this.newScaling);
+    
+    // Notify selectable of transform update
+    this.selectable?.onTransformUpdate?.();
   }
 
   public undo(): void {
-    this.node.position = this.initialPosition.clone();
-    if (this.node.rotationQuaternion) {
-      this.node.rotationQuaternion = this.initialRotation.clone();
-    } else {
-      const euler = this.initialRotation.toEulerAngles();
-      this.node.rotation = new Vector3(euler.x, euler.y, euler.z);
-    }
-    this.node.scaling = this.initialScaling.clone();
+    this.transformTarget.position.copy(this.initialPosition);
+    this.transformTarget.quaternion.copy(this.initialRotation);
+    this.transformTarget.scale.copy(this.initialScaling);
+    
+    // Notify selectable of transform update
+    this.selectable?.onTransformUpdate?.();
+  }
+  
+  public redo(): void {
+    this.execute();
   }
 }
 
 // Command for creating new objects
 export class CreateMeshCommand implements Command {
-  private mesh: BABYLON.Mesh;
+  private mesh: THREE.Mesh;
 
   constructor(
-    private meshFactory: () => BABYLON.Mesh,
-    private scene: BABYLON.Scene
+    private meshFactory: () => THREE.Mesh,
+    private scene: THREE.Scene
   ) {
     // Create the mesh but don't add it to the scene yet
     this.mesh = this.meshFactory();
@@ -76,25 +82,24 @@ export class CreateMeshCommand implements Command {
 
   public execute(): void {
     // Add the mesh to the scene if it's not already there
-    if (!this.mesh.isEnabled()) {
-      this.mesh.setEnabled(true);
+    if (!this.mesh.visible) {
+      this.mesh.visible = true;
     }
   }
 
   public undo(): void {
     // Hide the mesh (more efficient than disposing and recreating)
-    this.mesh.setEnabled(false);
+    this.mesh.visible = false;
   }
 
   // Helper to get the created mesh
-  public getMesh(): BABYLON.Mesh {
+  public getMesh(): THREE.Mesh {
     return this.mesh;
   }
 }
 
 // Command for deleting objects
 export class DeleteEntityCommand implements Command {
-
   constructor(private entity: EntityBase) {
   }
 
@@ -128,13 +133,13 @@ export class CreateEntityCommand implements Command {
       }
     } else {
       // Re-add the entity to the scene if it was removed
-      this.entity.setEnabled(true);
+      this.entity.visible = true;
     }
   }
 
   undo(): void {
     if (this.entity) {
-      this.entity.setEnabled(false);
+      this.entity.visible = false;
     }
   }
 
@@ -143,13 +148,12 @@ export class CreateEntityCommand implements Command {
   }
 } 
 
-
 export class CreateEntityAsyncCommand implements Command {
   private entity: EntityBase | null = null;
   private factory: () => Promise<EntityBase>;
-  private scene: BABYLON.Scene;
+  private scene: THREE.Scene;
 
-  constructor(factory: () => Promise<EntityBase>, scene: BABYLON.Scene) {
+  constructor(factory: () => Promise<EntityBase>, scene: THREE.Scene) {
     this.factory = factory;
     this.scene = scene;
   }
@@ -165,13 +169,13 @@ export class CreateEntityAsyncCommand implements Command {
       }
     } else {
       // Re-add the entity to the scene if it was removed
-      this.entity.setEnabled(true);
+      this.entity.visible = true;
     }
   }
 
   undo(): void {
     if (this.entity) {
-      this.entity.setEnabled(false);
+      this.entity.visible = false;
     }
   }
 
@@ -181,94 +185,5 @@ export class CreateEntityAsyncCommand implements Command {
 
   getEntity(): EntityBase | null {
     return this.entity;
-  }
-} 
-
-// Updated BoneRotationCommand to store differences only
-export class BoneRotationCommand implements Command {
-  private initialRotation: BABYLON.Quaternion;
-  private finalRotation: BABYLON.Quaternion;
-  private boneName: string;
-  
-  constructor(
-    private bone: BABYLON.Bone,
-    private controlMesh: BABYLON.Mesh
-  ) {
-    this.boneName = bone.name;
-    
-    // Always store as quaternions for more reliable interpolation
-    this.initialRotation = bone.getRotationQuaternion() 
-      ? bone.getRotationQuaternion()!.clone() 
-      : BABYLON.Quaternion.FromEulerAngles(bone.rotation.x, bone.rotation.y, bone.rotation.z);
-      
-    // Initially, final rotation equals initial (will be updated at end of drag)
-    this.finalRotation = this.initialRotation.clone();
-  }
-
-  // Call this after the rotation is complete
-  public updateFinalState(): void {
-    // Capture the final rotation state after dragging
-    this.finalRotation = this.bone.getRotationQuaternion() 
-      ? this.bone.getRotationQuaternion()!.clone() 
-      : BABYLON.Quaternion.FromEulerAngles(this.bone.rotation.x, this.bone.rotation.y, this.bone.rotation.z);
-  }
-
-  // We don't need to apply changes here - the mesh already has the right rotation
-  public execute(): void {
-    console.log(`Execute rotation for bone: ${this.boneName}`);
-    // The rotation is already applied by the gizmo's natural behavior
-    // We don't need to do anything here
-  }
-
-  // Restore the initial rotation
-  public undo(): void {
-    console.log(`Undo rotation for bone: ${this.boneName}`);
-    // Apply the initial rotation to the bone
-    if (this.bone._linkedTransformNode) {
-      // If the bone has a linked transform node, apply rotation to it
-      if (this.bone._linkedTransformNode.rotationQuaternion) {
-        this.bone._linkedTransformNode.rotationQuaternion = this.initialRotation.clone();
-      } else {
-        const euler = this.initialRotation.toEulerAngles();
-        this.bone._linkedTransformNode.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
-      }
-    } else {
-      // Apply directly to the bone
-      this.bone.setRotationQuaternion(this.initialRotation.clone());
-    }
-    
-    // Also update the control mesh to match
-    if (this.controlMesh.rotationQuaternion) {
-      this.controlMesh.rotationQuaternion = this.initialRotation.clone();
-    } else {
-      const euler = this.initialRotation.toEulerAngles();
-      this.controlMesh.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
-    }
-  }
-  
-  // Reapply the final rotation
-  public redo(): void {
-    console.log(`Redo rotation for bone: ${this.boneName}`);
-    // Apply the final rotation to the bone
-    if (this.bone._linkedTransformNode) {
-      // If the bone has a linked transform node, apply rotation to it
-      if (this.bone._linkedTransformNode.rotationQuaternion) {
-        this.bone._linkedTransformNode.rotationQuaternion = this.finalRotation.clone();
-      } else {
-        const euler = this.finalRotation.toEulerAngles();
-        this.bone._linkedTransformNode.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
-      }
-    } else {
-      // Apply directly to the bone
-      this.bone.setRotationQuaternion(this.finalRotation.clone());
-    }
-    
-    // Also update the control mesh to match
-    if (this.controlMesh.rotationQuaternion) {
-      this.controlMesh.rotationQuaternion = this.finalRotation.clone();
-    } else {
-      const euler = this.finalRotation.toEulerAngles();
-      this.controlMesh.rotation = new BABYLON.Vector3(euler.x, euler.y, euler.z);
-    }
   }
 } 

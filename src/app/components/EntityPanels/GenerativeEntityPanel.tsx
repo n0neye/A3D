@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCornerDownLeft, IconScissors, IconDownload } from '@tabler/icons-react';
 
-import { removeBackground } from '../../util/generation/generation-util';
-import { GenerationResult } from '../../util/generation/realtime-generation-util';
+import { removeBackground } from '@/app/engine/utils/generation/generation-util';
+import { GenerationResult } from '@/app/engine/utils/generation/realtime-generation-util';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
-import { trackEvent, ANALYTICS_EVENTS } from '../../util/analytics';
-import { GenerativeEntity, GenerationStatus } from '@/app/engine/entity/GenerativeEntity';
-
-import { ImageRatio } from "../../util/generation/generation-util";
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
+import { GenerativeEntity, GenerationStatus,  } from '@/app/engine/entity/types/GenerativeEntity';
+import { IGenerationLog } from '@/app/engine/interfaces/generation';
+import { ImageRatio } from "@/app/engine/utils/imageUtil";
 
 // TODO: This is a hack to get the previous entity.
 let PREV_ENTITY: GenerativeEntity | null = null;
@@ -28,17 +28,27 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   // Add a state variable to force re-renders
   const [updateCounter, setUpdateCounter] = useState(0);
 
+  const applyGenerationLogToUI = (genLog: IGenerationLog) => {
+    if (genLog.assetType === 'image') {
+      setCurrentRatio(genLog.imageParams?.ratio || "3:4");
+    }
+    if (genLog.assetType === 'model') {
+      setIsGenerating3D(false);
+    }
+    trySetPrompt('applyGenLogToUI', genLog.prompt);
+  }
+
   // Update when selected entity changes
   useEffect(() => {
     const handleProgress = (param: { entity: GenerativeEntity, state: GenerationStatus, message: string }) => {
-      if (param.entity.id === PREV_ENTITY?.id) {
+      if (param.entity.entityId === PREV_ENTITY?.entityId) {
         setIsGenerating2D(param.state === 'generating2D');
         setIsGenerating3D(param.state === 'generating3D');
         setProgressMessage(param.message);
       }
     }
     const handleGenerationChanged = (param: { entity: GenerativeEntity }) => {
-      if (param.entity.id === PREV_ENTITY?.id) {
+      if (param.entity.entityId === PREV_ENTITY?.entityId) {
         // Force a re-render by incrementing the counter
         setUpdateCounter(prev => prev + 1);
         trySetPrompt('onGenerationChanged', props.entity.temp_prompt);
@@ -47,8 +57,8 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     }
 
     // If selected entity changed
-    if (PREV_ENTITY?.id !== props.entity.id) {
-      console.log("entity changed: ", PREV_ENTITY?.id, "to", props.entity.id);
+    if (PREV_ENTITY?.entityId !== props.entity.entityId) {
+      console.log("entity changed: ", PREV_ENTITY?.entityId, "to", props.entity.entityId);
       // Remove the event handlers
       if (PREV_ENTITY) {
         PREV_ENTITY.onProgress.remove(handleProgress);
@@ -71,7 +81,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     props.entity.onGenerationChanged.add(handleGenerationChanged);
 
     return () => {
-      console.log("unmounting entity:", props.entity.id);
+      console.log("unmounting entity:", props.entity.entityId);
       // Clean up event handlers
       if (PREV_ENTITY) {
         PREV_ENTITY.onProgress.remove(handleProgress);
@@ -131,7 +141,11 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
 
   useEffect(() => {
-    console.log("generation logs changed: ", props.entity.props.generationLogs, props.entity.props.currentGenerationIdx);
+    console.log("GenerativeEntityPanel: generation logs changed: ", props.entity.props.generationLogs, props.entity.props.currentGenerationIdx);
+    const currentGenLog = props.entity.getCurrentGenerationLog();
+    if (currentGenLog) {
+      applyGenerationLogToUI(currentGenLog);
+    }
   }, [props.entity.props.generationLogs, props.entity.props.currentGenerationIdx, props.entity.props.currentGenerationId, updateCounter]);
 
 

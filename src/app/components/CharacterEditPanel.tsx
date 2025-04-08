@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
+import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
 import { IconEye, IconEyeOff, IconRotateClockwise } from '@tabler/icons-react';
 
 interface CharacterEditPanelProps {

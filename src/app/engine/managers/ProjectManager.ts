@@ -1,17 +1,17 @@
-import { EditorEngine } from "../EditorEngine";
+import * as THREE from 'three';
+import { EditorEngine } from "../core/EditorEngine";
 import { Observer } from "@/app/engine/utils/Observer";
-import { SerializedShapeEntityData } from "../entity/ShapeEntity";
-import { SerializedGenerativeEntityData } from "../entity/GenerativeEntity";
-import { CharacterEntity } from "../entity/CharacterEntity";
-import { SerializedCharacterEntityData } from "../entity/CharacterEntity";
-import { GenerativeEntity } from "../entity/GenerativeEntity";
-import { ShapeEntity } from "../entity/ShapeEntity";
-import { LightEntity } from "../entity/LightEntity";
-import { SerializedLightEntityData } from "../entity/LightEntity";
-import { EntityBase, SerializedEntityData, isEntity } from "../entity/EntityBase";
-import { LoraConfig } from "@/app/util/generation/lora";
-import { availableAPIs } from "@/app/util/generation/image-render-api";
+import { SerializedShapeEntityData } from "../entity/types/ShapeEntity";
+import { SerializedGenerativeEntityData } from "../entity/types/GenerativeEntity";
+import { CharacterEntity } from "../entity/types/CharacterEntity";
+import { SerializedCharacterEntityData } from "../entity/types/CharacterEntity";
+import { GenerativeEntity } from "../entity/types/GenerativeEntity";
+import { ShapeEntity } from "../entity/types/ShapeEntity";
+import { LightEntity } from "../entity/types/LightEntity";
+import { SerializedLightEntityData } from "../entity/types/LightEntity";
+import { EntityBase, SerializedEntityData, isEntity } from "../entity/base/EntityBase";
 import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
+import { IRenderLog, IRenderSettings } from '@/app/engine/interfaces/rendering';
 // Interface for serialized render settings
 
 interface IProjectData {
@@ -23,37 +23,16 @@ interface IProjectData {
     renderLogs: IRenderLog[];
 }
 
-export interface IRenderSettings {
-    prompt: string;
-    promptStrength: number;
-    depthStrength: number;
-    noiseStrength: number;
-    selectedAPI: string; // Store API ID as string
-    seed: number;
-    useRandomSeed: boolean;
-    selectedLoras: LoraConfig[];
-    openOnRendered: boolean;
-}
-
-export interface IRenderLog {
-    imageUrl: string;
-    prompt: string;
-    model: string;
-    timestamp: Date;
-    seed?: number;
-    promptStrength?: number;
-    depthStrength?: number;
-    selectedLoras?: LoraConfig[];
-}
-
 export class ProjectManager {
     private engine: EditorEngine;
     private settings: IRenderSettings = defaultSettings;
     private renderLogs: IRenderLog[] = [];
+    private latestRender: IRenderLog | null = null;
     public observers = new Observer<{
         projectLoaded: { project: IRenderSettings };
         renderLogsChanged: { renderLogs: IRenderLog[], isNewRenderLog: boolean };
         renderSettingsChanged: { renderSettings: IRenderSettings };
+        latestRenderChanged: { latestRender: IRenderLog | null };
     }>();
 
     constructor(engine: EditorEngine) {
@@ -165,9 +144,9 @@ export class ProjectManager {
         const entities: EntityBase[] = [];
 
         // Find all entities in the scene
-        scene.rootNodes.forEach(node => {
-            if (isEntity(node) && node.isEnabled()) {
-                entities.push(node);
+        scene.traverse(node => {
+            if (isEntity(node) && node.visible) {
+                entities.push(node as EntityBase);
             }
         });
 
@@ -175,7 +154,7 @@ export class ProjectManager {
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
 
         // Create project data structure
-        const project:IProjectData = {
+        const project: IProjectData = {
             version: "1.0.1",
             timestamp: new Date().toISOString(),
             entities: entities.map(entity => entity.serialize()),
@@ -187,19 +166,36 @@ export class ProjectManager {
         return project;
     }
 
+    clearScene(): void {
+        // Deselect
+        this.engine.getSelectionManager().deselectAll();
 
+        // Dispose all children of the existing entities
+        const scene = this.engine.getScene();
+        const existingEntities: EntityBase[] = [];
+        scene.traverse(node => {
+            if (isEntity(node)) {
+                existingEntities.push(node as EntityBase);
+            }
+        });
+
+        // Dispose entities
+        existingEntities.forEach(entity => {
+            entity.dispose();
+            scene.remove(entity);
+        });
+    }
+    
     deserializeProject(
         data: IProjectData,
     ): void {
-        // Clear existing entities if needed
-        // Dispose all children of the existing entities
+        this.clearScene();
+        
         const scene = this.engine.getScene();
-        const existingEntities = scene.rootNodes.filter(node => isEntity(node));
-        existingEntities.forEach(entity => entity.dispose());
 
         // Apply environment settings if present
         if (data.environment) {
-            this.engine.getEnvironmentManager().deserializeEnvironment(data.environment, this.engine);
+            this.engine.getEnvironmentManager().deserializeEnvironment(data.environment);
         }
 
 
@@ -239,13 +235,16 @@ export class ProjectManager {
 
 
         // Notify observers that the project has been loaded
-        if(data.renderSettings) {
+        if (data.renderSettings) {
             this.settings = data.renderSettings;
             this.observers.notify('projectLoaded', { project: data.renderSettings });
         }
-        if(data.renderLogs) {
+        if (data.renderLogs) {
             this.renderLogs = data.renderLogs;
             this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs, isNewRenderLog: false });
+            
+            this.latestRender = data.renderLogs[data.renderLogs.length - 1];
+            this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
         }
     }
 
@@ -255,10 +254,24 @@ export class ProjectManager {
         this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
     }
 
-    addRenderLog(log: IRenderLog): void { 
+    addRenderLog(log: IRenderLog, isNew: boolean = false): void {
         this.renderLogs.push(log);
         console.log("ProjectManager: addRenderLog", this.renderLogs);
-        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: true });
+        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: isNew });
+        this.latestRender = log;
+        this.observers.notify('latestRenderChanged', { latestRender: log });
+    }
+
+    getRenderSettings(): IRenderSettings {
+        return this.settings;
+    }
+
+    getLatestRender(): IRenderLog | null {
+        return this.renderLogs.length > 0 ? this.renderLogs[this.renderLogs.length - 1] : null;
+    }
+
+    getRenderLogs(): IRenderLog[] {
+        return this.renderLogs;
     }
 }
 

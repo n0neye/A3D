@@ -2,7 +2,7 @@
  * EditorEngineContext.tsx
  * 
  * React context that bridges the React component world with the
- * Babylon.js EditorEngine. This context:
+ * Three.js EditorEngine. This context:
  * - Provides access to the EditorEngine singleton
  * - Converts engine events into React state updates
  * - Makes engine state (like selection) available to all components
@@ -13,20 +13,19 @@
  * between the two systems.
  */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { EditorEngine } from '../engine/EditorEngine';
-import { EntityBase } from '@/app/engine/entity/EntityBase';
-import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
+import { EditorEngine } from '../engine/core/EditorEngine';
+import { EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { IRenderSettings, IRenderLog } from '../engine/interfaces/rendering';
 import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
-import { GizmoMode } from '@/app/engine/managers/GizmoModeManager';
+import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 interface EditorEngineContextType {
   engine: EditorEngine;
   isInitialized: boolean;
   selectedEntity: EntityBase | null;
-  gizmoMode: GizmoMode;
-  gizmoAllowedModes: GizmoMode[];
+  gizmoMode: TransformMode;
+  gizmoAllowedModes: TransformMode[];
   renderSettings: IRenderSettings;
-  renderLogs: IRenderLog[];
 }
 
 const EditorEngineContext = createContext<EditorEngineContextType | null>(null);
@@ -35,8 +34,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const engine = EditorEngine.getInstance();
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
-  const [gizmoMode, setGizmoMode] = useState<GizmoMode>(GizmoMode.Position);
-  const [gizmoAllowedModes, setGizmoAllowedModes] = useState<GizmoMode[]>([GizmoMode.Position, GizmoMode.Rotation, GizmoMode.Scale, GizmoMode.BoundingBox]);
+  const [gizmoMode, setGizmoMode] = useState<TransformMode>(TransformMode.Position);
+  const [gizmoAllowedModes, setGizmoAllowedModes] = useState<TransformMode[]>([TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox]);
   const [renderSettings, setRenderSettings] = useState<IRenderSettings>(defaultSettings);
   const [renderLogs, setRenderLogs] = useState<IRenderLog[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,22 +45,20 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       let unsubAll: (() => void)[] = [];
 
       const initEngine = async () => {
-
         if (!canvasRef.current) return;
         const engine = await EditorEngine.initEngine(canvasRef.current);
         setIsInitialized(true);
 
         // Subscribe to engine events
-        const unsubGizmoMode = engine.getGizmoModeManager().observers.subscribe('gizmoModeChanged', ({ mode }) => setGizmoMode(mode));
-        const unsubGizmoAllowedModes = engine.getGizmoModeManager().observers.subscribe('gizmoAllowedModesChanged', ({ modes }) => setGizmoAllowedModes(modes));
+        const unsubGizmoMode = engine.getTransformControlManager().observers.subscribe('gizmoModeChanged', ({ mode }) => setGizmoMode(mode));
+        const unsubGizmoAllowedModes = engine.getTransformControlManager().observers.subscribe('gizmoAllowedModesChanged', ({ modes }) => setGizmoAllowedModes(modes));
         const unsubEntitySelected = engine.getSelectionManager().selectionObserver.subscribe('entitySelected', ({ entity }) => setSelectedEntity(entity));
 
         // Subscribe to project manager events
-        const unsubRenderLogsChanged = engine.getProjectManager().observers.subscribe('renderLogsChanged', ({ renderLogs }) => setRenderLogs(renderLogs));
         const unsubRenderSettingsChanged = engine.getProjectManager().observers.subscribe('renderSettingsChanged', ({ renderSettings }) => setRenderSettings(renderSettings));
         const unsubProjectLoaded = engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setRenderSettings(project));
 
-        unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubRenderLogsChanged, unsubRenderSettingsChanged, unsubProjectLoaded);
+        unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected,  unsubRenderSettingsChanged, unsubProjectLoaded);
       }
       
       initEngine();
@@ -88,13 +85,11 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         gizmoMode,
         gizmoAllowedModes,
         renderSettings: renderSettings,
-        renderLogs,
       }}
     >
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
       {children}
       {isInitialized && <EngineUIContainer />}
-
     </EditorEngineContext.Provider>
   );
 }

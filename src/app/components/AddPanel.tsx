@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { EntityType, EntityBase } from '@/app/engine/entity/EntityBase';
-import { ShapeType } from '@/app/engine/entity/ShapeEntity';
+import { EntityType, EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { ShapeType } from '@/app/engine/entity/types/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
@@ -16,9 +16,9 @@ import {
   IconBulb,
   IconUser,
 } from '@tabler/icons-react';
-import { trackEvent, ANALYTICS_EVENTS } from '../util/analytics';
-import { EditorEngine } from '../engine/EditorEngine';
-import * as BABYLON from '@babylonjs/core';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
+import { EditorEngine } from '@/app/engine/core/EditorEngine';
+import * as THREE from 'three';
 
 const AddPanel: React.FC = () => {
   const [showShapesMenu, setShowShapesMenu] = useState(false);
@@ -74,7 +74,7 @@ const AddPanel: React.FC = () => {
         url: modelUrl,
         name: modelName + '-' + uuidv4(),
       },
-      scaling: new BABYLON.Vector3(modelScale, modelScale, modelScale),
+      scaling: new THREE.Vector3(modelScale, modelScale, modelScale),
     })
 
     // Track analytics

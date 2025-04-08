@@ -1,11 +1,11 @@
 import React from 'react';
 
 import { useEditorEngine } from '../../context/EditorEngineContext';
-import { LightEntity } from '@/app/engine/entity/LightEntity';
+import { LightEntity } from '@/app/engine/entity/types/LightEntity';
 import GenerativeEntityPanel from './GenerativeEntityPanel';
-import { GenerativeEntity } from '@/app/engine/entity/GenerativeEntity';
+import { GenerativeEntity } from '@/app/engine/entity/types/GenerativeEntity';
 import LightEntityPanel from './LightEntityPanel';
-import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
+import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
 
 
 const EntityPanel: React.FC = () => {
