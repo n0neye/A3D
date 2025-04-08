@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Command } from '../engine/managers/HistoryManager';
-import { EntityBase } from '@/app/engine/entity/EntityBase';
+import { EntityBase } from '@/app/engine/entity/base/EntityBase';
 import { EditorEngine } from '../engine/EditorEngine';
 import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
 

@@ -11,7 +11,7 @@ import { IconVideo } from '@tabler/icons-react';
 import { ImageRatio } from '../util/generation/generation-util';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
-const FramePanel: React.FC = () => {
+const CameraPanel: React.FC = () => {
   const { engine } = useEditorEngine();
   
   // Local state to manage UI
@@ -231,4 +231,4 @@ const FramePanel: React.FC = () => {
   );
 };
 
-export default FramePanel; 
+export default CameraPanel; 

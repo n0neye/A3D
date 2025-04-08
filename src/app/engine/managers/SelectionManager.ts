@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { ISelectable, isISelectable } from '@/app/interfaces/ISelectable';
-import { CharacterEntity } from '@/app/engine/entity/CharacterEntity';
-import { BoneControl } from '@/app/engine/entity/BoneControl';
-import { EntityBase } from '@/app/engine/entity/EntityBase';
+import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
+import { BoneControl } from '@/app/engine/entity/components/BoneControl';
+import { EntityBase } from '@/app/engine/entity/base/EntityBase';
 import { Observer } from "@/app/engine/utils/Observer";
 import { TransformControlManager } from './TransformControlManager';
 /**

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EntityBase, SerializedEntityData, fromThreeVector3, toThreeVector3, toThreeEuler } from './EntityBase';
+import { EntityBase, SerializedEntityData, fromThreeVector3, toThreeVector3, toThreeEuler } from '../base/EntityBase';
 import { ImageRatio, ProgressCallback } from '@/app/util/generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
 import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/app/util/editor/material-util';
@@ -7,7 +7,7 @@ import { setupMeshShadows } from '@/app/util/editor/light-util';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
 import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/app/util/generation/3d-generation-util';
 import { doGenerateRealtimeImage, GenerationResult } from '@/app/util/generation/realtime-generation-util';
-import { EditorEngine } from '../EditorEngine';
+import { EditorEngine } from '../../EditorEngine';
 import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { get3DSimulationData } from '@/app/util/simulation-data';
 

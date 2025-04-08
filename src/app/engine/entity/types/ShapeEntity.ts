@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from './EntityBase';
+import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from '../base/EntityBase';
 import { createShapeMesh } from '@/app/util/editor/shape-util';
 import { defaultShapeMaterial } from '@/app/util/editor/material-util';
 import { setupMeshShadows } from '@/app/util/editor/light-util';

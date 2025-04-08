@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { EntityType, EntityBase } from '@/app/engine/entity/EntityBase';
-import { ShapeType } from '@/app/engine/entity/ShapeEntity';
+import { EntityType, EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { ShapeType } from '@/app/engine/entity/types/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';

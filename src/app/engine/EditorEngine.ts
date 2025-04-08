@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { ThreeCore } from './core/ThreeCore';
 import { CameraManager } from './managers/CameraManager';
 import { SelectionManager } from './managers/SelectionManager';
-import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
+import { EntityBase, EntityType } from '@/app/engine/entity/base/EntityBase';
 import { EntityFactory, CreateEntityOptions } from './entity/EntityFactory';
 import { Command, HistoryManager } from './managers/HistoryManager';
 import { loadShapeMeshes } from '../util/editor/shape-util';

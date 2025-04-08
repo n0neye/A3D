@@ -10,14 +10,18 @@ Application
 │   ├── EditorEngine (Singleton)
 │   │   ├── ThreeCore: The core of the 3D engine, including creation of the scene, manage render loop
 │   │   ├── Entity
-│   │   │   ├── ISelectable: An interface that defines the selection and transform behavior for selectable objects, including all entities, but also others like BoneControl.
-│   │   │   ├── EntityBase: The base class for all entities, which are the main objects in the scene. Implements ISelectable.
 │   │   │   ├── EntityFactory: Manages the creation of entities, including the creation of 3D models, textures, and other assets.
-│   │   │   ├── GenerativeEntity: The fundamental entity that contains 2D and 3D objects. Users generate 2D images, and later convert them into 3D models. 
-│   │   │   ├── ShapeEntity: Extends EntityBase and represents basic 3D shapes like cubes, spheres, and cylinders.
-│   │   │   ├── LightEntity: Extends EntityBase and represents lights in the scene.
-│   │   │   ├── CharacterEntity: Extends EntityBase and represents a rigged skin-meshed 3D model.
-│   │   │   └── BoneControl: Extends ISelectable and represents the control points for bones of a CharacterEntity.
+│   │   │   ├── Interfaces
+│   │   │   │   └── ISelectable: Defines the selection and transform behavior for selectable objects.
+│   │   │   ├── Base
+│   │   │   │   └── EntityBase: The base class for all entities, which are the main objects in the scene. Implements ISelectable.
+│   │   │   ├── Types: Sub-classes of EntityBase
+│   │   │   │   ├── GenerativeEntity: The fundamental entity that contains 2D and 3D objects. Users generate 2D images, and later convert them into 3D models. 
+│   │   │   │   ├── ShapeEntity: Extends EntityBase and represents basic 3D shapes like cubes, spheres, and cylinders.
+│   │   │   │   ├── LightEntity: Extends EntityBase and represents lights in the scene.
+│   │   │   │   ├── CharacterEntity: Extends EntityBase and represents a rigged skin-meshed 3D model.
+│   │   │   └── Components: Other implementations of ISelectable, can be added to the entity
+│   │   │       └── BoneControl: Extends ISelectable and represents the control points for bones of a CharacterEntity.
 │   │   ├── Managers
 │   │   │   ├── CameraManager: Manages camera movement(via orbit controls) and settings(FOV, near/far plane, etc.), and also "Ratio Overlay" which indicates the 2D overlay that displays the aspect ratio of the final render.
 │   │   │   ├── SelectionManager: Manages the selection of entities, and the state of the selection.
@@ -35,10 +39,12 @@ Application
 └── UI Layer (React)
     ├── EditorEngineContext (Bridge to Engine)
     └── Components
-        ├── EditorUIContainer
-        ├── FramePanel
-        ├── RenderPanel
-        ├── EntityPanel
+        ├── EditorUIContainer: A container that holds the UI components.
+        ├── AddPanel: A panel that allows user to add new entities to the scene.
+        ├── CameraPanel: Camera settings, Ratio Overlay, etc.
+        ├── RenderPanel: A panel that allow user to configure the render settings (Prompts, Lora models, render models, etc.), execute the render, and display the final rendered image.
+        ├── EntityPanel: A panel that displays the properties of selected entities. Will load different panels (like GenerativeEntityPanel, LightEntityPanel, etc) depending on the type of entity.
+        ├── GalleryPanel: A panel that displays a gallery of final rendered images.
         └── Other UI components
 ```
 

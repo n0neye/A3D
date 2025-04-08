@@ -1,7 +1,7 @@
 import AddPanel from './AddPanel';
 import EntityPanel from './EntityPanels/EntityPanel';
-import GizmoModeSelector from './GizmoModeSelector';
-import FramePanel from './FramePanel';
+import GizmoModeSelector from './TransformModeSelector';
+import CameraPanel from './CameraPanel';
 import FileMenu from './FileMenu';
 import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
@@ -64,7 +64,7 @@ function EngineUIContainer() {
             <div className='fixed top-2  w-full flex justify-center items-center'>
                 <div className=" panel-shape p-1 flex gap-2">
                     <FileMenu />
-                    <FramePanel />
+                    <CameraPanel />
                     <GizmoModeSelector />
                 </div>
             </div>

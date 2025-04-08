@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
-import { SelectableConfig, SelectableCursorType } from '../../interfaces/ISelectable';
-import { CharacterEntity } from './CharacterEntity';
-import { TransformMode } from '../managers/TransformControlManager';
-import { Selectable } from '../../interfaces/ISelectable';
+import { SelectableConfig, SelectableCursorType } from '../interfaces/ISelectable';
+import { CharacterEntity } from '../types/CharacterEntity';
+import { TransformMode } from '../../managers/TransformControlManager';
+import { Selectable } from '../interfaces/ISelectable';
 
 /**
  * A mesh that represents a bone for manipulation

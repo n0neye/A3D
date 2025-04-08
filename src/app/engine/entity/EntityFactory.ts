@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { EntityBase, EntityType } from '@/app/engine/entity/EntityBase';
-import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/app/engine/entity/GenerativeEntity';
-import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/ShapeEntity';
-import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine/entity/LightEntity';
-import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } from '@/app/engine/entity/CharacterEntity'
+import { EntityBase, EntityType } from '@/app/engine/entity/base/EntityBase';
+import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/app/engine/entity/types/GenerativeEntity';
+import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/types/ShapeEntity';
+import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine/entity/types/LightEntity';
+import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } from '@/app/engine/entity/types/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
 import { CreateEntityAsyncCommand } from '@/app/lib/commands';
 import { EditorEngine } from '../EditorEngine';
