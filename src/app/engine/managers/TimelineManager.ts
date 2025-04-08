@@ -55,6 +55,12 @@ export class TimelineManager {
 
         console.log('TimelineManager: Initializing timeline');
 
+        // Initialize Theatre.js Studio if in development mode
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('TimelineManager: Initializing Theatre.js Studio');
+            studio.initialize();
+        }
+
         // Create the main timeline sheet that will be used for playback
         this.project.ready.then(() => {
             // Create a main sheet for general timeline control
@@ -71,7 +77,31 @@ export class TimelineManager {
             // Set up a change handler to listen for timeline updates
             dummyObj.onValuesChange(values => {
                 console.log('TimelineManager: Timeline control value changed:', values.time);
+                this._cachedTimePosition = values.time;
             });
+
+            // Create default camera animation to ensure it's ready
+            this.createCameraAnimation();
+
+            // Set up a position change listener to keep the UI updated
+            this._positionChangeListener = THEATRE.onChange(
+                mainSheet.sequence.pointer.position,
+                (position) => {
+                    console.log('TimelineManager: Timeline position changed via pointer:', position);
+                    this._cachedTimePosition = position;
+                    this.observers.notify('timelineUpdated', { time: position });
+                }
+            );
+
+            // Ensure the sequence is properly initialized
+            if (mainSheet.sequence) {
+                // Set default duration to 10 seconds
+                mainSheet.sequence.position = 0;
+                
+                // Ensure the UI is in sync with the initial timeline state
+                this._cachedTimePosition = 0;
+                this.observers.notify('timelineUpdated', { time: 0 });
+            }
         });
 
         this.initialized = true;
@@ -95,10 +125,25 @@ export class TimelineManager {
         this.isPlaying = true;
         this.project.ready.then(() => {
             console.log('TimelineManager: Project ready, playing sequence');
-            const sheet = this.project.sheet('Main');
-            console.log('TimelineManager: Using sheet:', sheet.address.sheetId);
+            const mainSheet = this.project.sheet('Main');
+            console.log('TimelineManager: Using sheet:', mainSheet.address.sheetId);
 
-            sheet.sequence.play({ iterationCount: Infinity })
+            // Set up a position change listener to keep the UI updated during playback
+            if (!this._positionChangeListener) {
+                console.log('TimelineManager: Setting up position change listener');
+                this._positionChangeListener = THEATRE.onChange(
+                    mainSheet.sequence.pointer.position,
+                    (position) => {
+                        // Update our cached position and notify observers
+                        console.log('TimelineManager: Timeline position changed via pointer:', position);
+                        this._cachedTimePosition = position;
+                        this.observers.notify('timelineUpdated', { time: position });
+                    }
+                );
+            }
+
+            // Start playback with infinite loop
+            mainSheet.sequence.play({ iterationCount: Infinity })
                 .then((completed) => {
                     console.log('TimelineManager: Playback completed:', completed);
                 })
@@ -106,6 +151,7 @@ export class TimelineManager {
                     console.error('TimelineManager: Error during playback:', err);
                 });
         });
+        
         this.observers.notify('playbackStateChanged', { isPlaying: true });
     }
 
@@ -119,9 +165,15 @@ export class TimelineManager {
         this.isPlaying = false;
         this.project.ready.then(() => {
             console.log('TimelineManager: Project ready, pausing sequence');
-            const sheet = this.project.sheet('Main');
-            sheet.sequence.pause();
+            const mainSheet = this.project.sheet('Main');
+            mainSheet.sequence.pause();
+            
+            // Ensure the UI is updated with the final position
+            const currentPos = mainSheet.sequence.position;
+            this._cachedTimePosition = currentPos;
+            this.observers.notify('timelineUpdated', { time: currentPos });
         });
+        
         this.observers.notify('playbackStateChanged', { isPlaying: false });
     }
 
@@ -143,10 +195,17 @@ export class TimelineManager {
     scrubTo(time: number) {
         console.log('TimelineManager: Scrubbing to time:', time);
         this.project.ready.then(() => {
-            const sheet = this.project.sheet('Main');
-            sheet.sequence.position = time;
+            const mainSheet = this.project.sheet('Main');
+            
+            // Update sequence position
+            mainSheet.sequence.position = time;
             console.log('TimelineManager: Set sequence position to:', time);
+            
+            // Update our cached position
+            this._cachedTimePosition = time;
         });
+        
+        // Notify observers about the time update
         this.observers.notify('timelineUpdated', { time });
     }
 
@@ -337,9 +396,14 @@ export class TimelineManager {
 
         console.log(`TimelineManager: Adding all camera keyframes at ${currentTime}`);
 
+        // Add keyframes for all properties
         this.addCameraPositionKeyframe(camera, currentTime);
         this.addCameraRotationKeyframe(camera, currentTime);
-        this.addCameraFOVKeyframe(camera, currentTime);
+        
+        // For FOV, make sure we have a perspective camera
+        if (camera instanceof THREE.PerspectiveCamera) {
+            this.addCameraFOVKeyframe(camera, currentTime);
+        }
         
         // Notify for each property individually to maintain compatibility
         const properties: AnimatableProperty[] = ['position', 'rotation', 'fov'];
@@ -350,6 +414,72 @@ export class TimelineManager {
                 time: currentTime
             });
         });
+        
+        // Play a short animation to demonstrate the keyframes (if we have more than 1 second of timeline)
+        if (currentTime > 0.5) {
+            // Scrub to beginning, then play animation
+            setTimeout(() => {
+                console.log('TimelineManager: Playing demo animation to show keyframes');
+                this.scrubTo(Math.max(0, currentTime - 0.5));
+                setTimeout(() => {
+                    // Play animation to demonstrate the effect
+                    this.play();
+                    // Stop after a moment
+                    setTimeout(() => {
+                        this.pause();
+                    }, 1000);
+                }, 100);
+            }, 100);
+        } else {
+            // If near start, create a keyframe a bit ahead in time with slightly different values
+            const futureTime = currentTime + 1.0;
+            
+            // Store original values
+            const origPos = camera.position.clone();
+            const origRot = new THREE.Euler().copy(camera.rotation);
+            let origFov = 75;
+            
+            if (camera instanceof THREE.PerspectiveCamera) {
+                origFov = camera.fov;
+            }
+            
+            // Slightly modify camera for future keyframe
+            camera.position.y += 0.2;
+            camera.rotation.y += 0.1;
+            
+            if (camera instanceof THREE.PerspectiveCamera) {
+                camera.fov -= 5;
+            }
+            
+            // Add future keyframe
+            this.addCameraPositionKeyframe(camera, futureTime);
+            this.addCameraRotationKeyframe(camera, futureTime);
+            
+            if (camera instanceof THREE.PerspectiveCamera) {
+                this.addCameraFOVKeyframe(camera, futureTime);
+            }
+            
+            // Reset camera to original values
+            camera.position.copy(origPos);
+            camera.rotation.copy(origRot);
+            
+            if (camera instanceof THREE.PerspectiveCamera) {
+                camera.fov = origFov;
+                camera.updateProjectionMatrix();
+            }
+            
+            // Play a short animation to show the effect
+            setTimeout(() => {
+                console.log('TimelineManager: Playing demo animation to show keyframes');
+                this.scrubTo(currentTime);
+                setTimeout(() => {
+                    this.play();
+                    setTimeout(() => {
+                        this.pause();
+                    }, 1500);
+                }, 100);
+            }, 100);
+        }
     }
 
     /**
@@ -368,6 +498,9 @@ export class TimelineManager {
         // Ensure the property is sequenced in the Studio
         this.ensurePropertyIsSequenced(cameraObj, 'position');
 
+        // Get the sequence to add keyframe
+        const cameraSheet = this.entityMap["camera"].sheet;
+        
         this.project.ready.then(() => {
             console.log('TimelineManager: Setting position values:', {
                 x: camera.position.x,
@@ -375,17 +508,41 @@ export class TimelineManager {
                 z: camera.position.z
             });
 
-            // Make sure the position is updated by setting initialValue
-            cameraObj.initialValue = {
-                position: {
-                    x: camera.position.x,
-                    y: camera.position.y,
-                    z: camera.position.z
+            try {
+                // Get current sequence to add keyframe programmatically
+                if (cameraSheet.sequence) {
+                    // First scrub to the target time
+                    cameraSheet.sequence.position = time;
+                    
+                    // Update object value at current time (this creates a keyframe)
+                    // @ts-ignore - Using internal Theatre.js API
+                    if (studio && studio.transaction) {
+                        // @ts-ignore - Using internal Theatre.js API for keyframing
+                        studio.transaction(({ set }) => {
+                            // Set position values at this point in time
+                            set(cameraObj.props.position.x, camera.position.x)
+                            set(cameraObj.props.position.y, camera.position.y)
+                            set(cameraObj.props.position.z, camera.position.z)
+                        })
+                        console.log('TimelineManager: Added position keyframe at time:', time);
+                    } else {
+                        // Fallback to initialValue if studio not available
+                        cameraObj.initialValue = {
+                            position: {
+                                x: camera.position.x,
+                                y: camera.position.y,
+                                z: camera.position.z
+                            }
+                        };
+                        console.log('TimelineManager: Set initial position values (no keyframing)');
+                    }
+                    
+                    // Force an update to ensure the keyframe takes effect
+                    this.scrubTo(time);
                 }
-            };
-
-            // Apply changes
-            this.scrubTo(time);
+            } catch (error) {
+                console.error('TimelineManager: Error adding position keyframe:', error);
+            }
         });
     }
 
@@ -405,6 +562,9 @@ export class TimelineManager {
         // Ensure the property is sequenced in the Studio
         this.ensurePropertyIsSequenced(cameraObj, 'rotation');
 
+        // Get the sequence to add keyframe
+        const cameraSheet = this.entityMap["camera"].sheet;
+        
         this.project.ready.then(() => {
             console.log('TimelineManager: Setting rotation values:', {
                 x: camera.rotation.x,
@@ -412,16 +572,41 @@ export class TimelineManager {
                 z: camera.rotation.z
             });
 
-            cameraObj.initialValue = {
-                rotation: {
-                    x: camera.rotation.x,
-                    y: camera.rotation.y,
-                    z: camera.rotation.z
+            try {
+                // Get current sequence to add keyframe programmatically
+                if (cameraSheet.sequence) {
+                    // First scrub to the target time
+                    cameraSheet.sequence.position = time;
+                    
+                    // Update object value at current time (this creates a keyframe)
+                    // @ts-ignore - Using internal Theatre.js API
+                    if (studio && studio.transaction) {
+                        // @ts-ignore - Using internal Theatre.js API for keyframing
+                        studio.transaction(({ set }) => {
+                            // Set rotation values at this point in time
+                            set(cameraObj.props.rotation.x, camera.rotation.x)
+                            set(cameraObj.props.rotation.y, camera.rotation.y)
+                            set(cameraObj.props.rotation.z, camera.rotation.z)
+                        })
+                        console.log('TimelineManager: Added rotation keyframe at time:', time);
+                    } else {
+                        // Fallback to initialValue if studio not available
+                        cameraObj.initialValue = {
+                            rotation: {
+                                x: camera.rotation.x,
+                                y: camera.rotation.y,
+                                z: camera.rotation.z
+                            }
+                        };
+                        console.log('TimelineManager: Set initial rotation values (no keyframing)');
+                    }
+                    
+                    // Force an update to ensure the keyframe takes effect
+                    this.scrubTo(time);
                 }
-            };
-
-            // Apply changes
-            this.scrubTo(time);
+            } catch (error) {
+                console.error('TimelineManager: Error adding rotation keyframe:', error);
+            }
         });
     }
 
@@ -441,15 +626,41 @@ export class TimelineManager {
         // Ensure the property is sequenced in the Studio
         this.ensurePropertyIsSequenced(cameraObj, 'fov');
 
+        // Get the sequence to add keyframe
+        const cameraSheet = this.entityMap["camera"].sheet;
+        
         this.project.ready.then(() => {
             console.log('TimelineManager: Setting FOV value:', camera.fov);
 
-            cameraObj.initialValue = {
-                fov: camera.fov
-            };
-
-            // Apply changes
-            this.scrubTo(time);
+            try {
+                // Get current sequence to add keyframe programmatically
+                if (cameraSheet.sequence) {
+                    // First scrub to the target time
+                    cameraSheet.sequence.position = time;
+                    
+                    // Update object value at current time (this creates a keyframe)
+                    // @ts-ignore - Using internal Theatre.js API
+                    if (studio && studio.transaction) {
+                        // @ts-ignore - Using internal Theatre.js API for keyframing
+                        studio.transaction(({ set }) => {
+                            // Set FOV value at this point in time
+                            set(cameraObj.props.fov, camera.fov)
+                        })
+                        console.log('TimelineManager: Added FOV keyframe at time:', time);
+                    } else {
+                        // Fallback to initialValue if studio not available
+                        cameraObj.initialValue = {
+                            fov: camera.fov
+                        };
+                        console.log('TimelineManager: Set initial FOV value (no keyframing)');
+                    }
+                    
+                    // Force an update to ensure the keyframe takes effect
+                    this.scrubTo(time);
+                }
+            } catch (error) {
+                console.error('TimelineManager: Error adding FOV keyframe:', error);
+            }
         });
     }
 
@@ -595,6 +806,9 @@ export class TimelineManager {
 
     // Cache for the current time position
     private _cachedTimePosition: number = 0;
+
+    // Position change listener reference
+    private _positionChangeListener: (() => void) | null = null;
 
     /**
      * Dispose and clean up resources
