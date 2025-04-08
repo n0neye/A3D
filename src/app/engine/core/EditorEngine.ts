@@ -206,6 +206,10 @@ export class EditorEngine {
     this.timelineManager.addCameraKeyframe(property);
   }
 
+  public addCameraAllKeyframes(): void {
+    this.timelineManager.addCameraAllKeyframes();
+  }
+
   public addEntityKeyframe(entity: EntityBase, property: 'position' | 'rotation' | 'scale'): void {
     this.timelineManager.addEntityKeyframe(entity, property);
   }
