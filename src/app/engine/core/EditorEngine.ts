@@ -30,7 +30,7 @@ import { TransformMode, TransformControlManager } from '../managers/TransformCon
 import { ProjectManager } from '../managers/ProjectManager';
 import { EnvironmentManager } from '../managers/environmentManager';
 import { Observer } from '../utils/Observer';
-import { TimelineManager } from '../managers/Timelinemanager';
+import { TimelineManager } from '../managers/timeline/Timelinemanager';
 import { CreateEntityCommand } from '../../lib/commands';
 
 
