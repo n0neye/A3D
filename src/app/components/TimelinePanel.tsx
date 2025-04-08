@@ -24,20 +24,31 @@ export default function TimelinePanel() {
   useEffect(() => {
     if (!engine) return;
 
+    console.log('TimelinePanel: Subscribing to timeline events');
     const timelineManager = engine.getTimelineManager();
     
     const unsubPlaybackChanged = timelineManager.observers.subscribe(
       'playbackStateChanged',
-      ({ isPlaying }) => setIsPlaying(isPlaying)
+      ({ isPlaying }) => {
+        console.log('TimelinePanel: Playback state changed to:', isPlaying);
+        setIsPlaying(isPlaying);
+      }
     );
     
     const unsubTimeUpdated = timelineManager.observers.subscribe(
       'timelineUpdated',
-      ({ time }) => setCurrentTime(time)
+      ({ time }) => {
+        console.log('TimelinePanel: Timeline updated to time:', time);
+        setCurrentTime(time);
+      }
     );
 
+    // Log information about the timeline manager
+    console.log('TimelinePanel: TimelineManager instance:', timelineManager);
+    
     // Cleanup subscriptions
     return () => {
+      console.log('TimelinePanel: Cleaning up timeline subscriptions');
       unsubPlaybackChanged();
       unsubTimeUpdated();
     };
@@ -46,43 +57,51 @@ export default function TimelinePanel() {
   // Handle timeline scrubbing
   const handleScrub = (values: number[]) => {
     const time = values[0];
+    console.log('TimelinePanel: User scrubbed to time:', time);
     setCurrentTime(time);
     engine.scrubTimeline(time);
   };
 
   // Handle playback toggle
   const handlePlayPause = () => {
+    console.log('TimelinePanel: User toggled play/pause, current state:', isPlaying);
     engine.toggleTimelinePlayback();
   };
 
   // Add keyframe to camera
   const addCameraPositionKeyframe = () => {
+    console.log('TimelinePanel: Adding camera position keyframe');
     engine.addCameraKeyframe('position');
   };
 
   const addCameraRotationKeyframe = () => {
+    console.log('TimelinePanel: Adding camera rotation keyframe');
     engine.addCameraKeyframe('rotation');
   };
 
   const addCameraFOVKeyframe = () => {
+    console.log('TimelinePanel: Adding camera FOV keyframe');
     engine.addCameraKeyframe('fov');
   };
 
   // Add keyframe to selected entity
   const addEntityPositionKeyframe = () => {
     if (selectedEntity) {
+      console.log('TimelinePanel: Adding entity position keyframe for:', selectedEntity.name);
       engine.addEntityKeyframe(selectedEntity, 'position');
     }
   };
 
   const addEntityRotationKeyframe = () => {
     if (selectedEntity) {
+      console.log('TimelinePanel: Adding entity rotation keyframe for:', selectedEntity.name);
       engine.addEntityKeyframe(selectedEntity, 'rotation');
     }
   };
 
   const addEntityScaleKeyframe = () => {
     if (selectedEntity) {
+      console.log('TimelinePanel: Adding entity scale keyframe for:', selectedEntity.name);
       engine.addEntityKeyframe(selectedEntity, 'scale');
     }
   };
