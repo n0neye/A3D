@@ -399,7 +399,7 @@ export class CharacterEntity extends EntityBase {
             // Wait for model to load before applying bone rotations
             await entity.waitUntilReady();
 
-            // Give Babylon an extra frame to finalize loading
+            // Give an extra frame to finalize loading
             await new Promise(resolve => setTimeout(resolve, 0));
 
             console.log("Character loaded, applying transforms");

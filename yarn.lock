@@ -15,45 +15,6 @@
     "@jridgewell/gen-mapping" "^0.3.5"
     "@jridgewell/trace-mapping" "^0.3.24"
 
-"@babylonjs/core@^7.52.3":
-  version "7.52.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-7.52.3.tgz#52aa17b4b76f278655726146cbaf2a29e11df04c"
-  integrity sha512-YXZy+tgLoajDr4FslDxeBewvdulhj8N2O4RgSnyntujzagGDHa8srbj1O5ehIyqH4COMX93bCpzQmXfWr36o6g==
-
-"@babylonjs/gui-editor@^7.53.3":
-  version "7.53.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/gui-editor/-/gui-editor-7.53.3.tgz#9d6532c1ff10fa6aff580b46cb9d74ece2afc5c6"
-  integrity sha512-mYsdpRjj6raYx8h7/dlIZlig3alFGtuvN5Cm86ldbGZDjdmIwXL3TRlVuaMPijMm5ClDf6ya0wI/bHwHAU5YIw==
-
-"@babylonjs/gui@^7.53.3":
-  version "7.53.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/gui/-/gui-7.53.3.tgz#9d96fcaea88bdea8c6ae517e27d481c73f41b0d5"
-  integrity sha512-qH/eoX8QI7tvdKctiI5ody8sFgDDrtElYa0lDwAhSx4UqkqRlBTHUwfALz4SBAA39xh0kubaKqWsPbLflCNjGA==
-
-"@babylonjs/inspector@^7.53.3":
-  version "7.53.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/inspector/-/inspector-7.53.3.tgz#437a4a752abc8481ee830098407a43f17e3a2bad"
-  integrity sha512-t1GVHrCKUM4qFhAmYfMRf8ck5eruFpkdSISM3SvO1LKM54UkEpixuTPene02i8yHnz4WF/RYr7WiKqXAmYZsGA==
-  dependencies:
-    "@fortawesome/fontawesome-svg-core" "^6.1.0"
-    "@fortawesome/free-regular-svg-icons" "^6.0.0"
-    "@fortawesome/free-solid-svg-icons" "^6.0.0"
-
-"@babylonjs/loaders@^7.52.3":
-  version "7.52.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-7.52.3.tgz#94dc027a003d6a43f3a172beeddb785971696c0b"
-  integrity sha512-ZSgsqLKKTLjRBpEPX1etflSiiseC7VuzBvODErFTi1BwZh2TiG/iQ4ho0bBYbW4l2djFXDdlM8e9SDPrQFPrOA==
-
-"@babylonjs/materials@^7.54.3":
-  version "7.54.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/materials/-/materials-7.54.3.tgz#dd4a28ca71a8eefd8ba3bea9bb772a78b68cca1c"
-  integrity sha512-WYqvpX6+iR0/h/X0SaoFZH2hD1nDIzu9Qo86/yEK8R+whhShgpkJ9VDdTE1yYNBxf5azFoUrxWcMy3OXNn3Z3w==
-
-"@babylonjs/serializers@^7.53.3":
-  version "7.53.3"
-  resolved "https://registry.yarnpkg.com/@babylonjs/serializers/-/serializers-7.53.3.tgz#f1ae83362e099ed5869eda2bf7c99e3ba6c2e66b"
-  integrity sha512-2fhWfWVlnC93d2jaEMPsSjWBYHfWaVXZ/AhV/o8/8cAAzXFASw+xiPrTIUTHHoJ2XS7Xsm5BrlN/FOOy+gTOdA==
-
 "@emnapi/runtime@^1.2.0":
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/@emnapi/runtime/-/runtime-1.3.1.tgz#0fcaa575afc31f455fd33534c19381cfce6c6f60"
@@ -101,32 +62,6 @@
   version "0.2.9"
   resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.2.9.tgz#50dea3616bc8191fb8e112283b49eaff03e78429"
   integrity sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==
-
-"@fortawesome/fontawesome-common-types@6.7.2":
-  version "6.7.2"
-  resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-common-types/-/fontawesome-common-types-6.7.2.tgz#7123d74b0c1e726794aed1184795dbce12186470"
-  integrity sha512-Zs+YeHUC5fkt7Mg1l6XTniei3k4bwG/yo3iFUtZWd/pMx9g3fdvkSK9E0FOC+++phXOka78uJcYb8JaFkW52Xg==
-
-"@fortawesome/fontawesome-svg-core@^6.1.0":
-  version "6.7.2"
-  resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-svg-core/-/fontawesome-svg-core-6.7.2.tgz#0ac6013724d5cc327c1eb81335b91300a4fce2f2"
-  integrity sha512-yxtOBWDrdi5DD5o1pmVdq3WMCvnobT0LU6R8RyyVXPvFRd2o79/0NCuQoCjNTeZz9EzA9xS3JxNWfv54RIHFEA==
-  dependencies:
-    "@fortawesome/fontawesome-common-types" "6.7.2"
-
-"@fortawesome/free-regular-svg-icons@^6.0.0":
-  version "6.7.2"
-  resolved "https://registry.yarnpkg.com/@fortawesome/free-regular-svg-icons/-/free-regular-svg-icons-6.7.2.tgz#f1651e55e6651a15589b0569516208f9c65f96db"
-  integrity sha512-7Z/ur0gvCMW8G93dXIQOkQqHo2M5HLhYrRVC0//fakJXxcF1VmMPsxnG6Ee8qEylA8b8Q3peQXWMNZ62lYF28g==
-  dependencies:
-    "@fortawesome/fontawesome-common-types" "6.7.2"
-
-"@fortawesome/free-solid-svg-icons@^6.0.0":
-  version "6.7.2"
-  resolved "https://registry.yarnpkg.com/@fortawesome/free-solid-svg-icons/-/free-solid-svg-icons-6.7.2.tgz#fe25883b5eb8464a82918599950d283c465b57f6"
-  integrity sha512-GsBrnOzU8uj0LECDfD5zomZJIjrPhIlWU82AHwa2s40FKH+kcxQaBvBo3Z4TxyZHIyX8XTDxsyA33/Vx9eFuQA==
-  dependencies:
-    "@fortawesome/fontawesome-common-types" "6.7.2"
 
 "@google-cloud/paginator@^5.0.0":
   version "5.0.2"
