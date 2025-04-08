@@ -47,6 +47,12 @@ export class TimelineManager {
                 y: THEATRE.types.number(camera.rotation.y, { range: [-2, 2] }),
                 z: THEATRE.types.number(camera.rotation.z, { range: [-2, 2] }),
             }),
+            position: THEATRE.types.compound({
+                x: THEATRE.types.number(camera.position.x, { range: [-2, 2] }),
+                y: THEATRE.types.number(camera.position.y, { range: [-2, 2] }),
+                z: THEATRE.types.number(camera.position.z, { range: [-2, 2] }),
+            }),
+            fov: THEATRE.types.number(camera.fov, { range: [1, 179] }),
         }) as any;
 
 
@@ -54,12 +60,14 @@ export class TimelineManager {
             // Pause orbit controls
             this.engine.getCameraManager().setOrbitControlsEnabled(false);
             console.log('TimelineManager: Camera values changed', values);
-            const { x, y, z } = values.rotation
-            camera.rotation.set(x * Math.PI, y * Math.PI, z * Math.PI)
-            dummyCube.rotation.set(x * Math.PI, y * Math.PI, z * Math.PI)
 
+            camera.rotation.set(values.rotation.x * Math.PI, values.rotation.y * Math.PI, values.rotation.z * Math.PI)
+            camera.position.set(values.position.x, values.position.y, values.position.z)
+            camera.fov = values.fov
+
+            dummyCube.rotation.set(values.rotation.x * Math.PI, values.rotation.y * Math.PI, values.rotation.z * Math.PI)
             setTimeout(() => {
-                if(!this.isPlaying) {
+                if (!this.isPlaying) {
                     this.engine.getCameraManager().setOrbitControlsEnabled(true);
                 }
             }, 1);
@@ -71,16 +79,16 @@ export class TimelineManager {
             (isPlaying) => {
                 console.log('TimelineManager: Playback state changed:', isPlaying);
                 this.isPlaying = isPlaying;
-                
+
                 // Notify observers about playback state change
                 this.observers.notify('playbackStateChanged', { isPlaying });
-                
+
                 // Re-enable orbit controls when animation is paused
                 if (!isPlaying) {
                     this.engine.getCameraManager().setOrbitControlsEnabled(true);
                     console.log('TimelineManager: Orbit controls re-enabled');
                 }
-                
+
                 // Update debug UI button text if it exists
                 this.updateDebugUIPlaybackState();
             }
@@ -93,12 +101,12 @@ export class TimelineManager {
                 console.log('TimelineManager: PointerChanged:', position);
                 // Notify observers about timeline position change
                 this.observers.notify('timelineUpdated', { time: position });
-                
+
                 // Update position display in debug UI
                 this.updateDebugUIPosition(position);
             }
         );
-        
+
         // Initialize debug UI
         this.createDebugUI();
     }
@@ -108,57 +116,51 @@ export class TimelineManager {
      */
     public addCameraKeyframe(): void {
         const camera = this.engine.getCameraManager().getCamera();
-        const currentPosition = this.getPosition();
-        
+        const timePosition = this.getPosition();
+
         // Get current camera rotation and normalize to the range [-2, 2]
-        const normalizedX = camera.rotation.x / Math.PI;
-        const normalizedY = camera.rotation.y / Math.PI;
-        const normalizedZ = camera.rotation.z / Math.PI;
-        
-        console.log('TimelineManager: Adding keyframe at position', currentPosition, 'with rotation', { 
-            x: normalizedX, y: normalizedY, z: normalizedZ 
-        });
-        
+        const normalizedRotation = { x: camera.rotation.x / Math.PI, y: camera.rotation.y / Math.PI, z: camera.rotation.z / Math.PI }
+
+        console.log('TimelineManager: Adding keyframe at position', timePosition, 'with rotation', normalizedRotation);
+
         // Use Theatre.js transaction API to create a keyframe
         studio.transaction(({ set }) => {
-            set(this.cameraSheetObj.props.rotation, {
-                x: normalizedX,
-                y: normalizedY,
-                z: normalizedZ
-            });
-            
+            set(this.cameraSheetObj.props.rotation, normalizedRotation);
+            set(this.cameraSheetObj.props.position, camera.position);
+            set(this.cameraSheetObj.props.fov, camera.fov);
+
             // Tell Theatre.js to sequence this value (add a keyframe)
-            this.mainSheet.sequence.position = currentPosition;
+            this.mainSheet.sequence.position = timePosition;
         });
-        
+
         // Notify observers that a keyframe was added
-        this.observers.notify('keyframeAdded', { time: currentPosition });
+        this.observers.notify('keyframeAdded', { time: timePosition });
         console.log('TimelineManager: Keyframe added successfully');
     }
-    
+
     /**
      * Update the playback state in the debug UI
      */
     private updateDebugUIPlaybackState(): void {
         if (!this.debugUI) return;
-        
+
         const playButton = this.debugUI.querySelector('#timeline-play-button');
         if (playButton) {
             (playButton as HTMLButtonElement).textContent = this.isPlaying ? 'Pause' : 'Play';
         }
     }
-    
+
     /**
      * Update the position display in the debug UI
      */
     private updateDebugUIPosition(position: number): void {
         if (!this.debugUI) return;
-        
+
         const positionDisplay = this.debugUI.querySelector('#timeline-position');
         if (positionDisplay) {
             positionDisplay.textContent = `Position: ${position.toFixed(2)}s`;
         }
-        
+
         const slider = this.debugUI.querySelector('input[type="range"]');
         if (slider) {
             (slider as HTMLInputElement).value = position.toString();
@@ -172,19 +174,19 @@ export class TimelineManager {
     public play(options?: { iterationCount?: number, range?: [number, number] }): void {
         // Disable orbit controls before starting playback
         this.engine.getCameraManager().setOrbitControlsEnabled(false);
-        
+
         const playOptions = {
             iterationCount: options?.iterationCount || 1,
             range: options?.range,
         };
-        
+
         this.mainSheet.sequence.play(playOptions).then((finished) => {
             if (finished) {
                 console.log('TimelineManager: Playback completed');
             } else {
                 console.log('TimelineManager: Playback interrupted');
             }
-            
+
             // Re-enable orbit controls after playback ends
             if (!this.isPlaying) {
                 this.engine.getCameraManager().setOrbitControlsEnabled(true);
@@ -198,49 +200,49 @@ export class TimelineManager {
     public pause(): void {
         this.mainSheet.sequence.pause();
     }
-    
+
     /**
      * Get the current playback position in seconds
      */
     public getPosition(): number {
         return this.mainSheet.sequence.position;
     }
-    
+
     /**
      * Set the current playback position in seconds
      */
     public setPosition(position: number): void {
         this.mainSheet.sequence.position = position;
     }
-    
+
     /**
      * Check if the animation is currently playing
      */
     public isPlayingAnimation(): boolean {
         return this.isPlaying;
     }
-    
+
     /**
      * Toggle debug UI visibility
      */
     public toggleDebugUI(visible?: boolean): void {
         if (!this.debugUI) return;
-        
+
         if (visible === undefined) {
             visible = this.debugUI.style.display === 'none';
         }
-        
+
         this.debugUI.style.display = visible ? 'block' : 'none';
     }
 
-    
+
     /**
      * Create a debug UI for controlling the timeline
      */
     private createDebugUI(): void {
         // Only create UI in non-production environments
         if (process.env.NODE_ENV === 'production') return;
-        
+
         // Create UI container
         const container = document.createElement('div');
         container.id = 'timeline-debug-ui';
@@ -251,14 +253,14 @@ export class TimelineManager {
         title.textContent = 'Timeline Debug';
         title.style.cssText = `margin-bottom: 5px;`;
         container.appendChild(title);
-        
+
         // Position display
         const positionDisplay = document.createElement('div');
         positionDisplay.id = 'timeline-position';
         positionDisplay.textContent = 'Position: 0.00s';
         positionDisplay.style.cssText = `margin-bottom: 5px;`;
         container.appendChild(positionDisplay);
-        
+
         // Play/Pause button
         const playButton = document.createElement('button');
         playButton.id = 'timeline-play-button';
@@ -272,7 +274,7 @@ export class TimelineManager {
             }
         });
         container.appendChild(playButton);
-        
+
         // Reset button
         const resetButton = document.createElement('button');
         resetButton.textContent = 'Reset';
@@ -281,7 +283,7 @@ export class TimelineManager {
             this.setPosition(0);
         });
         container.appendChild(resetButton);
-        
+
         // Add Keyframe button
         const keyframeButton = document.createElement('button');
         keyframeButton.textContent = 'Add Keyframe';
@@ -290,11 +292,11 @@ export class TimelineManager {
             this.addCameraKeyframe();
         });
         container.appendChild(keyframeButton);
-        
+
         // Position control
         const positionControl = document.createElement('div');
         positionControl.style.marginTop = '5px';
-        
+
         const positionSlider = document.createElement('input');
         positionSlider.type = 'range';
         positionSlider.min = '0';
@@ -307,12 +309,12 @@ export class TimelineManager {
             this.setPosition(newPosition);
         });
         positionControl.appendChild(positionSlider);
-        
+
         container.appendChild(positionControl);
-                
+
         // Add to document
         document.body.appendChild(container);
-        
+
         // Store reference
         this.debugUI = container;
     }
