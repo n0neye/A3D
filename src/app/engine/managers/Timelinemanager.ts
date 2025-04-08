@@ -332,14 +332,21 @@ export class TimelineManager {
     
     /**
      * Update all tracks at the current time
+     * @param time The time to update at
+     * @param restoreControlsAfter Whether to restore orbit controls after update (if not playing)
      */
-    private updateTracksAtTime(time: number): void {
+    private updateTracksAtTime(time: number, restoreControlsAfter: boolean = true): void {
         // First disable orbit controls if we have a camera track
         this.engine.getCameraManager().setOrbitControlsEnabled(false);
         
         // Update all tracks
         for (const track of this.tracks) {
             track.updateTargetAtTime(time);
+        }
+        
+        // Re-enable orbit controls if we're not playing and restoration is requested
+        if (restoreControlsAfter && !this.isPlaying) {
+            this.engine.getCameraManager().setOrbitControlsEnabled(true);
         }
     }
     
@@ -366,8 +373,8 @@ export class TimelineManager {
             this.currentTime = 0;
         }
         
-        // Update all tracks at current time
-        this.updateTracksAtTime(this.currentTime);
+        // Update all tracks at current time but don't restore controls
+        this.updateTracksAtTime(this.currentTime, false);
         
         // Update UI
         this.updateDebugUIPosition(this.currentTime);
@@ -423,7 +430,10 @@ export class TimelineManager {
      */
     public setPosition(time: number): void {
         this.currentTime = Math.max(0, Math.min(time, this.duration));
-        this.updateTracksAtTime(this.currentTime);
+        
+        // Update tracks and restore controls if not playing
+        this.updateTracksAtTime(this.currentTime, true);
+        
         this.updateDebugUIPosition(this.currentTime);
         this.observers.notify('timelineUpdated', { time: this.currentTime });
     }
