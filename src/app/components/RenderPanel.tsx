@@ -300,6 +300,7 @@ const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
 
   
   useEffect(() => {
+    if (!engine) return;
     // Subscribe to latestRenderChanged event, and update the imageUrl when it changes
     const unsubscribe = engine.getProjectManager().observers.subscribe(
       'latestRenderChanged', 
