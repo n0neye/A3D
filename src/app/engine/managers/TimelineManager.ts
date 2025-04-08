@@ -42,9 +42,9 @@ export class TimelineManager {
         this.project = THEATRE.getProject('AI-Editor-Animation');
 
         // Initialize Theatre.js studio in development
-        if (process.env.NODE_ENV !== 'production') {
-            studio.initialize();
-        }
+        // if (process.env.NODE_ENV !== 'production') {
+        //     studio.initialize();
+        // }
     }
 
     /**
@@ -87,7 +87,7 @@ export class TimelineManager {
             this._positionChangeListener = THEATRE.onChange(
                 mainSheet.sequence.pointer.position,
                 (position) => {
-                    console.log('TimelineManager: Timeline position changed via pointer:', position);
+                    console.log('TimelineManager: Project ready: Timeline position changed via pointer:', position);
                     this._cachedTimePosition = position;
                     this.observers.notify('timelineUpdated', { time: position });
                 }
@@ -127,20 +127,6 @@ export class TimelineManager {
             console.log('TimelineManager: Project ready, playing sequence');
             const mainSheet = this.project.sheet('Main');
             console.log('TimelineManager: Using sheet:', mainSheet.address.sheetId);
-
-            // Set up a position change listener to keep the UI updated during playback
-            if (!this._positionChangeListener) {
-                console.log('TimelineManager: Setting up position change listener');
-                this._positionChangeListener = THEATRE.onChange(
-                    mainSheet.sequence.pointer.position,
-                    (position) => {
-                        // Update our cached position and notify observers
-                        console.log('TimelineManager: Timeline position changed via pointer:', position);
-                        this._cachedTimePosition = position;
-                        this.observers.notify('timelineUpdated', { time: position });
-                    }
-                );
-            }
 
             // Start playback with infinite loop
             mainSheet.sequence.play({ iterationCount: Infinity })
@@ -515,9 +501,9 @@ export class TimelineManager {
                     cameraSheet.sequence.position = time;
                     
                     // Update object value at current time (this creates a keyframe)
-                    // @ts-ignore - Using internal Theatre.js API
+                    // Using internal Theatre.js API
                     if (studio && studio.transaction) {
-                        // @ts-ignore - Using internal Theatre.js API for keyframing
+                        // Using internal Theatre.js API for keyframing
                         studio.transaction(({ set }) => {
                             // Set position values at this point in time
                             set(cameraObj.props.position.x, camera.position.x)
@@ -579,9 +565,9 @@ export class TimelineManager {
                     cameraSheet.sequence.position = time;
                     
                     // Update object value at current time (this creates a keyframe)
-                    // @ts-ignore - Using internal Theatre.js API
+                    // Using internal Theatre.js API
                     if (studio && studio.transaction) {
-                        // @ts-ignore - Using internal Theatre.js API for keyframing
+                        // Using internal Theatre.js API for keyframing
                         studio.transaction(({ set }) => {
                             // Set rotation values at this point in time
                             set(cameraObj.props.rotation.x, camera.rotation.x)
@@ -639,9 +625,9 @@ export class TimelineManager {
                     cameraSheet.sequence.position = time;
                     
                     // Update object value at current time (this creates a keyframe)
-                    // @ts-ignore - Using internal Theatre.js API
+                    // Using internal Theatre.js API
                     if (studio && studio.transaction) {
-                        // @ts-ignore - Using internal Theatre.js API for keyframing
+                        // Using internal Theatre.js API for keyframing
                         studio.transaction(({ set }) => {
                             // Set FOV value at this point in time
                             set(cameraObj.props.fov, camera.fov)
@@ -794,7 +780,7 @@ export class TimelineManager {
 
                 // Use onChange to track the position changes
                 THEATRE.onChange(mainSheet.sequence.pointer.position, (position) => {
-                    console.log('TimelineManager: Timeline position changed via pointer:', position);
+                    console.log('TimelineManager: getCurrentTime(): Timeline position changed via pointer:', position);
                     this._cachedTimePosition = position;
                 });
             });
