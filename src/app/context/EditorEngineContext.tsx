@@ -13,7 +13,7 @@
  * between the two systems.
  */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { EditorEngine } from '../engine/EditorEngine';
+import { EditorEngine } from '../engine/core/EditorEngine';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
 import { IRenderSettings, IRenderLog } from '../engine/managers/ProjectManager';
 import { defaultSettings } from '@/app/engine/utils/ProjectUtil';

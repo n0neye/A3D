@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { PostHogProvider } from './components/PostHogProvider'
 import Script from 'next/script'
-import { initAnalytics } from '@/app/engine/utils/analytics'
+import { initAnalytics } from '@/app/engine/utils/external/analytics'
 
 const inter = Inter({ subsets: ['latin'] })
 

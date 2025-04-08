@@ -6,7 +6,7 @@ import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine
 import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } from '@/app/engine/entity/types/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
 import { CreateEntityAsyncCommand } from '@/app/lib/commands';
-import { EditorEngine } from '../EditorEngine';
+import { EditorEngine } from '../core/EditorEngine';
 import { DeleteEntityCommand } from '@/app/lib/commands';
 
 // Base properties common to all entities

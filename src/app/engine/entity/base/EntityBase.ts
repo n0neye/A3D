@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
 import { HistoryManager } from '../../managers/HistoryManager';
 import { ISelectable, Selectable, SelectableConfig, SelectableCursorType } from '../interfaces/ISelectable';
-import { EditorEngine } from '../../EditorEngine';
+import { EditorEngine } from '../../core/EditorEngine';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 /**
  * Base class for all entities in the scene

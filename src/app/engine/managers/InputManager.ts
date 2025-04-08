@@ -18,7 +18,7 @@ import { EntityBase } from '@/app/engine/entity/base/EntityBase';
 import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
 import { BoneControl } from '@/app/engine/entity/components/BoneControl';
 import { GenerativeEntityProps } from '@/app/engine/entity/types/GenerativeEntity';
-import { EditorEngine } from '../EditorEngine';
+import { EditorEngine } from '../core/EditorEngine';
 import { TransformMode } from './TransformControlManager';
 
 export class InputManager {

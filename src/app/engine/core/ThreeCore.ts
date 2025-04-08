@@ -18,7 +18,7 @@
  * completely decoupled from the editor business logic.
  */
 import * as THREE from 'three';
-import { EditorEngine } from '../EditorEngine';
+import { EditorEngine } from './EditorEngine';
 
 /**
  * Core Three.js engine that's completely decoupled from React

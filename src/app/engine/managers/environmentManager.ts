@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ImageRatio } from "@/app/engine/utils/imageUtil";
-import { EditorEngine } from "../EditorEngine";
+import { EditorEngine } from "../core/EditorEngine";
 
 interface SerializedEnvironment {
     sun?: {

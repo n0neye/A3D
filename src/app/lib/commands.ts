@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Command } from '@/app/engine/managers/HistoryManager';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { EditorEngine } from '@/app/engine/EditorEngine';
+import { EditorEngine } from '@/app/engine/core/EditorEngine';
 import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
 
 // Base class for mesh transform operations

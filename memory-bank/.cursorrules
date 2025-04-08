@@ -26,6 +26,11 @@
 - Managers handle specific aspects of engine functionality
 - Services coordinate higher-level operations
 - Utilities provide cross-cutting functionality
+- File structure:
+  - Core interfaces placed in dedicated files (generation.ts, rendering.ts)
+  - Entity types organized under entity/types/
+  - UI components in app/components/
+  - Related utilities grouped in util/generation/
 
 ## Entity System
 - Entities are created through factory methods

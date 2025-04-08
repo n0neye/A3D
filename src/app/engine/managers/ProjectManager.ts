@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EditorEngine } from "../EditorEngine";
+import { EditorEngine } from "../core/EditorEngine";
 import { Observer } from "@/app/engine/utils/Observer";
 import { SerializedShapeEntityData } from "../entity/types/ShapeEntity";
 import { SerializedGenerativeEntityData } from "../entity/types/GenerativeEntity";

@@ -14,7 +14,7 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { normalizeDepthMap } from '@/app/engine/utils/generation/image-processing';
-import { EditorEngine } from '@/app/engine/EditorEngine';
+import { EditorEngine } from '@/app/engine/core/EditorEngine';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
 import { resizeImage, addNoiseToImage, dataURLtoBlob, cropImageToRatioFrame } from '@/app/engine/utils/generation/image-processing';
 import { API_Info, ImageToImageResult, renderImage } from '@/app/engine/utils/generation/image-render-api';

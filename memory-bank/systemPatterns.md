@@ -50,6 +50,61 @@ Application
         └── Other UI components
 ```
 
+## File Structure
+
+The project follows a well-organized file structure that reflects the architectural patterns:
+
+```
+src/
+├── app/
+│   ├── api/                    # API routes and handlers
+│   ├── components/             # React UI components
+│   │   ├── EntityPanels/       # Specialized entity control panels
+│   │   ├── AddPanel.tsx        # Panel for adding new entities
+│   │   ├── CameraPanel.tsx     # Camera controls and settings
+│   │   ├── GalleryPanel.tsx    # Gallery of rendered images
+│   │   ├── RenderPanel.tsx     # Controls for rendering
+│   │   └── ...
+│   ├── context/
+│   │   └── EditorEngineContext.tsx # Bridge between React and Engine
+│   ├── engine/                 # Core 3D engine functionality
+│   │   ├── core/
+│   │   │   ├── EditorEngine.ts # Main singleton engine
+│   │   │   └── ThreeCore.ts    # Three.js wrapper
+│   │   ├── entity/             # Entity system
+│   │   │   ├── base/
+│   │   │   │   └── EntityBase.ts # Base entity class
+│   │   │   ├── components/     # Entity components
+│   │   │   ├── interfaces/     # Shared interfaces
+│   │   │   │   ├── generation.ts # Generation-related interfaces
+│   │   │   │   └── rendering.ts  # Rendering-related interfaces
+│   │   │   ├── types/          # Entity implementations
+│   │   │   └── EntityFactory.ts # Factory for creating entities
+│   │   ├── managers/           # System managers
+│   │   │   ├── CameraManager.ts
+│   │   │   ├── ProjectManager.ts
+│   │   │   └── ...
+│   │   ├── services/           # Higher-level services
+│   │   │   └── RenderService.ts
+│   │   └── utils/              # Utilities
+│   │       └── external/       # External integrations
+│   └── util/                   # General utilities
+│       ├── generation/         # AI generation utilities
+│       │   ├── 3d-generation-util.ts
+│       │   ├── generation-util.ts
+│       │   ├── image-processing.ts
+│       │   ├── image-render-api.ts
+│       │   └── lora.ts
+└── ...
+```
+
+This structure reinforces several key architectural principles:
+
+1. **Separation of Concerns**: Clear boundaries between UI, engine, and utilities
+2. **Hierarchical Organization**: Components grouped by their role in the system
+3. **Interface Segregation**: Shared interfaces collected in dedicated files
+4. **Feature Cohesion**: Related functionality grouped together
+
 ## Key Design Patterns
 
 ### Singleton Pattern

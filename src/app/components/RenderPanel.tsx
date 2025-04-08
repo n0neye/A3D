@@ -4,7 +4,7 @@ import { addNoiseToImage, resizeImage } from '@/app/engine/utils/generation/imag
 import StylePanel from './StylePanel';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { downloadImage } from '@/app/engine/utils/helpers';
-import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/analytics';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";

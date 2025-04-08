@@ -5,7 +5,7 @@ import { removeBackground } from '@/app/engine/utils/generation/generation-util'
 import { GenerationResult } from '@/app/engine/utils/generation/realtime-generation-util';
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
-import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/analytics';
+import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
 import { GenerativeEntity, GenerationStatus,  } from '@/app/engine/entity/types/GenerativeEntity';
 import { IGenerationLog } from '@/app/engine/interfaces/generation';
 import { ImageRatio } from "@/app/engine/utils/imageUtil";

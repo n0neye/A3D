@@ -16,21 +16,21 @@
  * never directly with Three.js or individual managers.
  */
 import * as THREE from 'three';
-import { ThreeCore } from './core/ThreeCore';
-import { CameraManager } from './managers/CameraManager';
-import { SelectionManager } from './managers/SelectionManager';
+import { ThreeCore } from './ThreeCore';
+import { CameraManager } from '../managers/CameraManager';
+import { SelectionManager } from '../managers/SelectionManager';
 import { EntityBase, EntityType } from '@/app/engine/entity/base/EntityBase';
-import { EntityFactory, CreateEntityOptions } from './entity/EntityFactory';
-import { Command, HistoryManager } from './managers/HistoryManager';
-import { loadShapeMeshes } from './utils/shapeUtil';
-import { InputManager } from './managers/InputManager';
-import { createDefaultMaterials } from './utils/materialUtil';
-import { RenderService } from './services/RenderService';
-import { TransformMode, TransformControlManager } from './managers/TransformControlManager';
-import { ProjectManager } from './managers/ProjectManager';
-import { EnvironmentManager } from './managers/environmentManager';
-import { Observer } from './utils/Observer';
-import { CreateEntityCommand } from '../lib/commands';
+import { EntityFactory, CreateEntityOptions } from '../entity/EntityFactory';
+import { Command, HistoryManager } from '../managers/HistoryManager';
+import { loadShapeMeshes } from '../utils/shapeUtil';
+import { InputManager } from '../managers/InputManager';
+import { createDefaultMaterials } from '../utils/materialUtil';
+import { RenderService } from '../services/RenderService';
+import { TransformMode, TransformControlManager } from '../managers/TransformControlManager';
+import { ProjectManager } from '../managers/ProjectManager';
+import { EnvironmentManager } from '../managers/environmentManager';
+import { Observer } from '../utils/Observer';
+import { CreateEntityCommand } from '../../lib/commands';
 
 
 /**

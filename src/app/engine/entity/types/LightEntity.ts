@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from '../base/EntityBase';
-import { EditorEngine } from '../../EditorEngine';
+import { EditorEngine } from '../../core/EditorEngine';
 /**
  * Entity that represents lights in the scene
  */

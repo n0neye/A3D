@@ -4,7 +4,7 @@ import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
 import { blobToBase64 } from "@/app/engine/utils/generation/image-processing";
 import { v4 as uuidv4 } from 'uuid';
-import { get3DModelPersistentUrl, upload3DModelToGCP } from "@/app/engine/utils/storageUtil";
+import { get3DModelPersistentUrl, upload3DModelToGCP } from "@/app/engine/utils/external/storageUtil";
 import { GenerativeEntity } from "@/app/engine/entity/types/GenerativeEntity";
 import { loadModel } from "@/app/engine/entity/types/GenerativeEntity";
 import * as THREE from 'three';
