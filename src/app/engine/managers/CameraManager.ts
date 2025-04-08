@@ -314,7 +314,7 @@ export class CameraManager {
   // as this will be handled by the React component
   public update(): void {
     // Update orbit controls
-    if (this.orbitControls) {
+    if (this.orbitControls && this.orbitControls.enabled) {
       this.orbitControls.update();
     }
   }

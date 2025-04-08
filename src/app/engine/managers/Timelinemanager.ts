@@ -54,16 +54,95 @@ export class TimelineManager {
             const { x, y, z } = values.rotation
             camera.rotation.set(x * Math.PI, y * Math.PI, z * Math.PI)
             dummyCube.rotation.set(x * Math.PI, y * Math.PI, z * Math.PI)
+
+            setTimeout(() => {
+                if(!this.isPlaying) {
+                    this.engine.getCameraManager().setOrbitControlsEnabled(true);
+                }
+            }, 1);
         })
 
+        // Monitor playback state changes
+        THEATRE.onChange(
+            this.mainSheet.sequence.pointer.playing,
+            (isPlaying) => {
+                console.log('TimelineManager: Playback state changed:', isPlaying);
+                this.isPlaying = isPlaying;
+                
+                // Notify observers about playback state change
+                this.observers.notify('playbackStateChanged', { isPlaying });
+                
+                // Re-enable orbit controls when animation is paused
+                if (!isPlaying) {
+                    this.engine.getCameraManager().setOrbitControlsEnabled(true);
+                    console.log('TimelineManager: Orbit controls re-enabled');
+                }
+            }
+        );
+
+        // Monitor timeline position changes
         THEATRE.onChange(
             this.mainSheet.sequence.pointer.position,
             (position) => {
                 console.log('TimelineManager: PointerChanged:', position);
+                // Notify observers about timeline position change
+                this.observers.notify('timelineUpdated', { time: position });
             }
         );
-
-
     }
 
+    /**
+     * Play the animation sequence
+     * @param options Optional playback options
+     */
+    public play(options?: { iterationCount?: number, range?: [number, number] }): void {
+        // Disable orbit controls before starting playback
+        this.engine.getCameraManager().setOrbitControlsEnabled(false);
+        
+        const playOptions = {
+            iterationCount: options?.iterationCount || 1,
+            range: options?.range,
+        };
+        
+        this.mainSheet.sequence.play(playOptions).then((finished) => {
+            if (finished) {
+                console.log('TimelineManager: Playback completed');
+            } else {
+                console.log('TimelineManager: Playback interrupted');
+            }
+            
+            // Re-enable orbit controls after playback ends
+            if (!this.isPlaying) {
+                this.engine.getCameraManager().setOrbitControlsEnabled(true);
+            }
+        });
+    }
+
+    /**
+     * Pause the animation sequence
+     */
+    public pause(): void {
+        this.mainSheet.sequence.pause();
+    }
+    
+    /**
+     * Get the current playback position in seconds
+     */
+    public getPosition(): number {
+        return this.mainSheet.sequence.position;
+    }
+    
+    /**
+     * Set the current playback position in seconds
+     */
+    public setPosition(position: number): void {
+        this.mainSheet.sequence.position = position;
+    }
+    
+    /**
+     * Check if the animation is currently playing
+     */
+    public isPlayingAnimation(): boolean {
+        return this.isPlaying;
+    }
 }
