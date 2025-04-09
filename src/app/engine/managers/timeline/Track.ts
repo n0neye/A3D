@@ -5,7 +5,6 @@ export interface IKeyframe {
     track: Track<any>;
     time: number;
     data: {};
-    paperItem?: paper.Item;
 }
 
 // Camera keyframe

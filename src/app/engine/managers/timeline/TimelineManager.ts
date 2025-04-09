@@ -36,10 +36,10 @@ export class TimelineManager {
     }
 
     async initializeUI(): Promise<void> {
-        if (typeof window !== 'undefined') {
-            const paper = await import('paper/dist/paper-core');
-            this.ui = new TimelineUI(this, paper);
-        }
+        // if (typeof window !== 'undefined') {
+        //     const paper = await import('paper/dist/paper-core');
+        //     this.ui = new TimelineUI(this, paper);
+        // }
     }
 
     /**

@@ -1,0 +1,411 @@
+'use client';
+
+import React, { useEffect, useRef, useState } from 'react';
+import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
+import { Track, IKeyframe } from '../engine/managers/timeline/Track';
+import { useEditorEngine } from '../context/EditorEngineContext';
+
+function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }) {
+    // States
+    const { engine } = useEditorEngine();
+    const [tracks, setTracks] = useState<Track<any>[]>([]);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(5); // Default duration
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [activeTrack, setActiveTrack] = useState<Track<any> | null>(null);
+    const [selectedKeyframe, setSelectedKeyframe] = useState<IKeyframe | null>(null);
+
+    // Refs
+    const timelineRef = useRef<HTMLDivElement>(null);
+    const isDraggingPlayhead = useRef(false);
+    const isDraggingKeyframe = useRef(false);
+    const draggedKeyframeData = useRef<{
+        track: Track<any>;
+        keyframe: IKeyframe;
+        originalTime: number;
+    } | null>(null);
+
+    // Theme
+    const theme = {
+        timelineStart: 150,
+        trackHeight: 30,
+        headerHeight: 15,
+        keyframeRadius: 6,
+        activeTrackColor: 'rgba(0, 0, 0, 0.1)',
+        inactiveTrackColor: 'rgba(0, 0, 0, 0)',
+        activeKeyframeColor: '#ffcc00',
+        inactiveKeyframeColor: '#aaaaaa',
+        activeKeyframeHoverColor: '#ffdd33',
+        inactiveKeyframeHoverColor: '#cccccc',
+        playheadColor: '#ffffff',
+        textColor: '#cccccc',
+        activeTextColor: '#ffffff',
+        timeTickColor: '#666666',
+        buttonWidth: 40,
+        buttonHeight: 20,
+        buttonRadius: 5,
+        buttonColor: '#444444',
+        buttonHoverColor: '#555555',
+        playButtonColor: '#55aa55',
+        pauseButtonColor: '#cc5555',
+        keyframeButtonColor: '#6666aa'
+    };
+
+    // Initialize and set up event listeners
+    useEffect(() => {
+        if(!engine || !timelineManager) return;
+        initializeTimeline();
+    }, [engine, timelineManager]);
+
+    const initializeTimeline = () => {
+        if (!timelineManager) return;
+
+        // Initial state
+        setTracks(timelineManager.getTracks());
+        setCurrentTime(timelineManager.getPosition());
+        setDuration(timelineManager.getDuration());
+        setIsPlaying(timelineManager.isPlaying());
+        setActiveTrack(timelineManager.getActiveTrack());
+
+        // Subscribe to timeline events
+        const unsubscribeTimelineUpdated = timelineManager.observers.subscribe('timelineUpdated',
+            ({ time }) => {
+                setCurrentTime(time);
+            }
+        );
+
+        const unsubscribePlaybackStateChanged = timelineManager.observers.subscribe('playbackStateChanged',
+            ({ isPlaying }) => {
+                setIsPlaying(isPlaying);
+            }
+        );
+
+        const unsubscribeKeyframeAdded = timelineManager.observers.subscribe('keyframeAdded',
+            () => {
+                setTracks([...timelineManager.getTracks()]);
+            }
+        );
+
+        const unsubscribeTrackAdded = timelineManager.observers.subscribe('trackAdded',
+            () => {
+                setTracks([...timelineManager.getTracks()]);
+            }
+        );
+
+        const unsubscribeActiveTrackChanged = timelineManager.observers.subscribe('activeTrackChanged',
+            ({ track }) => {
+                setActiveTrack(track);
+            }
+        );
+
+        const unsubscribeKeyframeRemoved = timelineManager.observers.subscribe('keyframeRemoved',
+            () => {
+                setTracks([...timelineManager.getTracks()]);
+            }
+        );
+
+        // Keyboard event listeners
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === ' ') {
+                if (timelineManager.isPlaying()) {
+                    timelineManager.pause();
+                } else {
+                    timelineManager.play();
+                }
+            }
+
+            if ((event.key === 'Backspace' || event.key === 'Delete') && selectedKeyframe) {
+                timelineManager.removeKeyframe(selectedKeyframe);
+                setSelectedKeyframe(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Cleanup
+        return () => {
+            unsubscribeTimelineUpdated();
+            unsubscribePlaybackStateChanged();
+            unsubscribeKeyframeAdded();
+            unsubscribeTrackAdded();
+            unsubscribeActiveTrackChanged();
+            unsubscribeKeyframeRemoved();
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }
+
+    // Timeline interaction handlers
+    const handleTimelineClick = (e: React.MouseEvent) => {
+        if (!timelineRef.current || !timelineManager) return;
+
+        const rect = timelineRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const timelineWidth = rect.width - theme.timelineStart;
+
+        if (x >= theme.timelineStart) {
+            const timelinePosition = (x - theme.timelineStart) / timelineWidth;
+            const newTime = timelinePosition * duration;
+            timelineManager.setPosition(newTime);
+        }
+    };
+
+    const handleMouseDown = (e: React.MouseEvent, target: 'playhead' | 'timeline' | 'keyframe', keyframeData?: { track: Track<any>, keyframe: IKeyframe }) => {
+        if (target === 'keyframe' && keyframeData) {
+            isDraggingKeyframe.current = true;
+            draggedKeyframeData.current = {
+                track: keyframeData.track,
+                keyframe: keyframeData.keyframe,
+                originalTime: keyframeData.keyframe.time
+            };
+            setSelectedKeyframe(keyframeData.keyframe);
+        } else {
+            isDraggingPlayhead.current = true;
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!timelineRef.current || !timelineManager) return;
+        if (!isDraggingPlayhead.current && !isDraggingKeyframe.current) return;
+
+        const rect = timelineRef.current.getBoundingClientRect();
+        const x = Math.max(theme.timelineStart, Math.min(rect.width, e.clientX - rect.left));
+        const timelineWidth = rect.width - theme.timelineStart;
+        const timelinePosition = (x - theme.timelineStart) / timelineWidth;
+        const newTime = Math.max(0, Math.min(duration, timelinePosition * duration));
+
+        if (isDraggingPlayhead.current) {
+            timelineManager.setPosition(newTime);
+        } else if (isDraggingKeyframe.current && draggedKeyframeData.current) {
+            // Preview keyframe position during drag
+            // We'll update the actual keyframe position on mouse up
+        }
+    };
+
+    const handleMouseUp = (e: React.MouseEvent) => {
+        if (!timelineRef.current || !timelineManager) return;
+
+        if (isDraggingKeyframe.current && draggedKeyframeData.current) {
+            const rect = timelineRef.current.getBoundingClientRect();
+            const x = Math.max(theme.timelineStart, Math.min(rect.width, e.clientX - rect.left));
+            const timelineWidth = rect.width - theme.timelineStart;
+            const timelinePosition = (x - theme.timelineStart) / timelineWidth;
+            const newTime = Math.max(0, Math.min(duration, timelinePosition * duration));
+
+            // Update the keyframe time
+            draggedKeyframeData.current.track.updateKeyframeTime(
+                draggedKeyframeData.current.keyframe,
+                newTime
+            );
+
+            // Update timeline position
+            timelineManager.setPosition(newTime);
+
+            // Reset dragging state
+            draggedKeyframeData.current = null;
+        }
+
+        isDraggingPlayhead.current = false;
+        isDraggingKeyframe.current = false;
+    };
+
+    // Timeline track methods
+    const handleTrackClick = (track: Track<any>) => {
+        if (!timelineManager) return;
+        timelineManager.setActiveTrack(track);
+    };
+
+    const handleAddKeyframe = (track: Track<any>) => {
+        if (!timelineManager) return;
+        timelineManager.setActiveTrack(track);
+        timelineManager.addKeyframe();
+    };
+
+    const goToPreviousKeyframe = (track: Track<any>) => {
+        if (!timelineManager) return;
+
+        const keyframes = track.getKeyframes();
+        const currentTimeValue = currentTime;
+
+        // Find previous keyframe
+        let prevKeyframe = null;
+        for (let i = keyframes.length - 1; i >= 0; i--) {
+            if (keyframes[i].time < currentTimeValue) {
+                prevKeyframe = keyframes[i];
+                break;
+            }
+        }
+
+        // If no previous keyframe, wrap to last
+        if (!prevKeyframe && keyframes.length > 0) {
+            prevKeyframe = keyframes[keyframes.length - 1];
+        }
+
+        if (prevKeyframe) {
+            timelineManager.setPosition(prevKeyframe.time);
+            setSelectedKeyframe(prevKeyframe);
+        }
+    };
+
+    const goToNextKeyframe = (track: Track<any>) => {
+        if (!timelineManager) return;
+
+        const keyframes = track.getKeyframes();
+        const currentTimeValue = currentTime;
+
+        // Find next keyframe
+        let nextKeyframe = null;
+        for (let i = 0; i < keyframes.length; i++) {
+            if (keyframes[i].time > currentTimeValue) {
+                nextKeyframe = keyframes[i];
+                break;
+            }
+        }
+
+        // If no next keyframe, wrap to first
+        if (!nextKeyframe && keyframes.length > 0) {
+            nextKeyframe = keyframes[0];
+        }
+
+        if (nextKeyframe) {
+            timelineManager.setPosition(nextKeyframe.time);
+            setSelectedKeyframe(nextKeyframe);
+        }
+    };
+
+    // Helper to calculate position from time
+    const getPositionFromTime = (time: number) => {
+        if (!timelineRef.current) return 0;
+        const timelineWidth = timelineRef.current.clientWidth - theme.timelineStart;
+        return theme.timelineStart + (time / duration) * timelineWidth;
+    };
+
+    if (!timelineManager) {
+        return <div className="panel-shape">Timeline Manager not available</div>;
+    }
+
+    return (
+        <div className="panel-shape fixed bottom-5 left-[25%] w-[50%] h-56 flex flex-col select-none">
+            {/* Controls Bar */}
+            <div className="flex items-center p-2 border-b border-gray-700">
+                <button
+                    className={`w-8 h-8 mr-3 flex items-center justify-center rounded ${isPlaying ? 'bg-red-700' : 'bg-green-700'
+                        }`}
+                    onClick={() => isPlaying ? timelineManager.pause() : timelineManager.play()}
+                >
+                    {isPlaying ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
+                            <rect x="6" y="4" width="4" height="16" />
+                            <rect x="14" y="4" width="4" height="16" />
+                        </svg>
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
+                            <polygon points="5,3 19,12 5,21" />
+                        </svg>
+                    )}
+                </button>
+
+                <div className="text-white text-sm">
+                    Time: {currentTime.toFixed(2)}s
+                </div>
+            </div>
+
+            {/* Timeline */}
+            <div
+                ref={timelineRef}
+                className="flex-grow relative bg-gray-900"
+                onClick={handleTimelineClick}
+                onMouseDown={(e) => handleMouseDown(e, 'timeline')}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+            >
+                {/* Timeline Header with Time Marks */}
+                <div className="absolute top-0 left-0 right-0 h-6 flex items-end">
+                    {Array.from({ length: Math.floor(duration) + 1 }).map((_, i) => (
+                        <div
+                            key={`time-${i}`}
+                            className="absolute bottom-0 text-xs text-gray-400"
+                            style={{ left: `${getPositionFromTime(i)}px` }}
+                        >
+                            {i}s
+                        </div>
+                    ))}
+                </div>
+
+                {/* Tracks */}
+                <div className="absolute top-6 left-0 right-0 bottom-0">
+                    {tracks.map((track, index) => (
+                        <div
+                            key={`track-${index}-${track.getName()}`}
+                            className={`h-8 flex items-center border-b border-gray-800 ${track === activeTrack ? 'bg-gray-800' : ''
+                                }`}
+                            onClick={() => handleTrackClick(track)}
+                        >
+                            {/* Track Name */}
+                            <div className="w-[150px] px-2 text-sm font-medium text-white truncate">
+                                {track.getName()}
+                            </div>
+
+                            {/* Track Controls */}
+                            <div className="flex items-center space-x-1">
+                                <button
+                                    className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded hover:bg-gray-600"
+                                    onClick={(e) => { e.stopPropagation(); goToPreviousKeyframe(track); }}
+                                >
+                                    &lt;
+                                </button>
+
+                                <button
+                                    className="w-6 h-6 flex items-center justify-center bg-indigo-700 rounded hover:bg-indigo-600"
+                                    onClick={(e) => { e.stopPropagation(); handleAddKeyframe(track); }}
+                                >
+                                    ◆
+                                </button>
+
+                                <button
+                                    className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded hover:bg-gray-600"
+                                    onClick={(e) => { e.stopPropagation(); goToNextKeyframe(track); }}
+                                >
+                                    &gt;
+                                </button>
+                            </div>
+
+                            {/* Keyframes */}
+                            {track.getKeyframes().map((keyframe, kIndex) => (
+                                <div
+                                    key={`keyframe-${index}-${kIndex}`}
+                                    className={`absolute w-3 h-3 transform -translate-x-1/2 -translate-y-1/2 rotate-45 cursor-pointer ${keyframe === selectedKeyframe
+                                            ? 'bg-yellow-500 border-2 border-white'
+                                            : 'bg-gray-400 border border-white'
+                                        }`}
+                                    style={{
+                                        left: `${getPositionFromTime(keyframe.time)}px`,
+                                        top: `${theme.trackHeight * (index + 0.5)}px`,
+                                    }}
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        handleMouseDown(e, 'keyframe', { track, keyframe });
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Playhead */}
+                <div
+                    className="absolute top-0 bottom-0 w-[2px] bg-white"
+                    style={{ left: `${getPositionFromTime(currentTime)}px` }}
+                    onMouseDown={(e) => {
+                        e.stopPropagation();
+                        handleMouseDown(e, 'playhead');
+                    }}
+                >
+                    <div className="absolute -top-2 -left-[7px] w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-transparent border-t-white" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default TimelinePanel;

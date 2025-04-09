@@ -144,6 +144,9 @@ export class EditorEngine {
     return this.environmentManager;
   }
 
+  public getTimelineManager(): TimelineManager {
+    return this.timelineManager;
+  }
 
 
   // Public API methods for React components

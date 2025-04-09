@@ -7,12 +7,21 @@ import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
 import RenderPanel from './RenderPanel';
 import RatioOverlay from './RatioOverlay';
-import { useState } from 'react';
+import TimelinePanel from './TimelinePanel';
+import { useEffect, useState } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
+import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
 
 function EngineUIContainer() {
     const { engine } = useEditorEngine();
+    const [timelineManager, setTimelineManager] = useState<TimelineManager | null>(null);
     const [isDebugMode, setIsDebugMode] = useState(false);
+
+    useEffect(() => {
+        if(!engine) return;
+        const timelineManager = engine.getTimelineManager();
+        setTimelineManager(timelineManager);
+    }, [engine]);
 
     return (
         <>
@@ -36,6 +45,8 @@ function EngineUIContainer() {
 
             {/* Add the Guide component */}
             <Guide />
+
+            {timelineManager && <TimelinePanel timelineManager={timelineManager} />}
         </>
     );
 }
