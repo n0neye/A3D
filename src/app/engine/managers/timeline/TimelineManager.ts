@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { EditorEngine } from '../../core/EditorEngine';
 import { Observer } from '../../utils/Observer';
 import { Track, CameraTrack, ObjectTrack, IKeyframe } from './Track';
-import { TimelineUI } from './TimelineUI';
 
 export class TimelineManager {
     private engine: EditorEngine;
@@ -13,7 +12,6 @@ export class TimelineManager {
     private lastFrameTime: number | null = null;
     private tracks: Track<any>[] = [];
     private activeTrack: Track<any> | null = null;
-    private ui: TimelineUI | null = null;
 
     // Observer for timeline events
     public observers = new Observer<{
@@ -30,16 +28,6 @@ export class TimelineManager {
 
         // Create default camera track
         this.createCameraTrack();
-
-        // Create UI after initializing the manager
-        this.initializeUI();
-    }
-
-    async initializeUI(): Promise<void> {
-        // if (typeof window !== 'undefined') {
-        //     const paper = await import('paper/dist/paper-core');
-        //     this.ui = new TimelineUI(this, paper);
-        // }
     }
 
     /**
@@ -259,14 +247,5 @@ export class TimelineManager {
      */
     public isPlaying(): boolean {
         return this.isPlayingState;
-    }
-
-    /**
-     * Toggle timeline UI visibility
-     */
-    public toggleUI(visible?: boolean): void {
-        if (this.ui) {
-            this.ui.toggleUI(visible);
-        }
     }
 }

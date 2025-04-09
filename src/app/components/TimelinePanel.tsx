@@ -4,6 +4,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
 import { Track, IKeyframe } from '../engine/managers/timeline/Track';
 import { useEditorEngine } from '../context/EditorEngineContext';
+import { Button } from "@/components/ui/button";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Diamond, 
+  PauseIcon,
+  PlayIcon
+} from 'lucide-react';
 
 function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }) {
     // States
@@ -27,7 +35,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
 
     // Theme
     const theme = {
-        timelineStart: 150,
+        timelineStart: 180,
         trackHeight: 30,
         headerHeight: 15,
         keyframeRadius: 6,
@@ -53,7 +61,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
 
     // Initialize and set up event listeners
     useEffect(() => {
-        if(!engine || !timelineManager) return;
+        if (!engine || !timelineManager) return;
         initializeTimeline();
     }, [engine, timelineManager]);
 
@@ -150,6 +158,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
     };
 
     const handleMouseDown = (e: React.MouseEvent, target: 'playhead' | 'timeline' | 'keyframe', keyframeData?: { track: Track<any>, keyframe: IKeyframe }) => {
+        console.log('handleMouseDown', target, keyframeData);
         if (target === 'keyframe' && keyframeData) {
             isDraggingKeyframe.current = true;
             draggedKeyframeData.current = {
@@ -161,6 +170,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
         } else {
             isDraggingPlayhead.current = true;
         }
+        e.stopPropagation();
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
@@ -284,35 +294,31 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
     }
 
     return (
-        <div className="panel-shape fixed bottom-5 left-[25%] w-[50%] h-56 flex flex-col select-none">
+        <div className="panel-shape fixed bottom-5 left-[25%] w-[50%] min-h-[150px] flex flex-col select-none overflow-hidden">
             {/* Controls Bar */}
             <div className="flex items-center p-2 border-b border-gray-700">
-                <button
-                    className={`w-8 h-8 mr-3 flex items-center justify-center rounded ${isPlaying ? 'bg-red-700' : 'bg-green-700'
-                        }`}
+                <Button
+                    size="sm"
+                    variant={isPlaying ? "default" : "secondary"}
+                    className="mr-3"
                     onClick={() => isPlaying ? timelineManager.pause() : timelineManager.play()}
                 >
                     {isPlaying ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
-                            <rect x="6" y="4" width="4" height="16" />
-                            <rect x="14" y="4" width="4" height="16" />
-                        </svg>
+                        <PauseIcon className="h-4 w-4" />
                     ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
-                            <polygon points="5,3 19,12 5,21" />
-                        </svg>
+                        <PlayIcon className="h-4 w-4" />
                     )}
-                </button>
-
+                </Button>
+                
                 <div className="text-white text-sm">
-                    Time: {currentTime.toFixed(2)}s
+                    {currentTime.toFixed(2)}s
                 </div>
             </div>
-
+            
             {/* Timeline */}
             <div
                 ref={timelineRef}
-                className="flex-grow relative bg-gray-900"
+                className="flex-grow relative"
                 onClick={handleTimelineClick}
                 onMouseDown={(e) => handleMouseDown(e, 'timeline')}
                 onMouseMove={handleMouseMove}
@@ -320,63 +326,73 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
                 onMouseLeave={handleMouseUp}
             >
                 {/* Timeline Header with Time Marks */}
-                <div className="absolute top-0 left-0 right-0 h-6 flex items-end">
+                <div className="relative top-0 left-0 right-0 h-6 flex items-end">
                     {Array.from({ length: Math.floor(duration) + 1 }).map((_, i) => (
                         <div
                             key={`time-${i}`}
-                            className="absolute bottom-0 text-xs text-gray-400"
+                            className="absolute bottom-0 text-xs text-gray-400 -translate-x-1/2"
                             style={{ left: `${getPositionFromTime(i)}px` }}
                         >
                             {i}s
                         </div>
                     ))}
                 </div>
-
+                
                 {/* Tracks */}
-                <div className="absolute top-6 left-0 right-0 bottom-0">
+                <div className="relative top-0 left-0 right-0 bottom-0">
                     {tracks.map((track, index) => (
                         <div
                             key={`track-${index}-${track.getName()}`}
-                            className={`h-8 flex items-center border-b border-gray-800 ${track === activeTrack ? 'bg-gray-800' : ''
+                            className={`h-8 flex items-center border-t last:border-b border-gray-800 ${track === activeTrack ? '' : ''
                                 }`}
                             onClick={() => handleTrackClick(track)}
                         >
-                            {/* Track Name */}
-                            <div className="w-[150px] px-2 text-sm font-medium text-white truncate">
-                                {track.getName()}
+                            <div className={`h-full flex items-center justify-between px-2`}
+                                style={{ width: `${theme.timelineStart}px` }}
+                            >
+                                {/* Track Name */}
+                                <div className="text-sm font-medium text-white truncate">
+                                    {track.getName()}
+                                </div>
+                                
+                                {/* Track Controls */}
+                                <div className="flex items-center space-x-1">
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => { e.stopPropagation(); goToPreviousKeyframe(track); }}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <Button
+                                        size="icon"
+                                        variant="secondary"
+                                        className="h-6 w-6 p-0 bg-indigo-700 hover:bg-indigo-600"
+                                        onClick={(e) => { e.stopPropagation(); handleAddKeyframe(track); }}
+                                    >
+                                        <Diamond className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => { e.stopPropagation(); goToNextKeyframe(track); }}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-
-                            {/* Track Controls */}
-                            <div className="flex items-center space-x-1">
-                                <button
-                                    className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded hover:bg-gray-600"
-                                    onClick={(e) => { e.stopPropagation(); goToPreviousKeyframe(track); }}
-                                >
-                                    &lt;
-                                </button>
-
-                                <button
-                                    className="w-6 h-6 flex items-center justify-center bg-indigo-700 rounded hover:bg-indigo-600"
-                                    onClick={(e) => { e.stopPropagation(); handleAddKeyframe(track); }}
-                                >
-                                    ◆
-                                </button>
-
-                                <button
-                                    className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded hover:bg-gray-600"
-                                    onClick={(e) => { e.stopPropagation(); goToNextKeyframe(track); }}
-                                >
-                                    &gt;
-                                </button>
-                            </div>
-
+                            
                             {/* Keyframes */}
                             {track.getKeyframes().map((keyframe, kIndex) => (
                                 <div
                                     key={`keyframe-${index}-${kIndex}`}
                                     className={`absolute w-3 h-3 transform -translate-x-1/2 -translate-y-1/2 rotate-45 cursor-pointer ${keyframe === selectedKeyframe
-                                            ? 'bg-yellow-500 border-2 border-white'
-                                            : 'bg-gray-400 border border-white'
+                                        ? 'bg-yellow-500 border-2 border-white'
+                                        : 'bg-gray-400 border border-white'
                                         }`}
                                     style={{
                                         left: `${getPositionFromTime(keyframe.time)}px`,
@@ -391,7 +407,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
                         </div>
                     ))}
                 </div>
-
+                
                 {/* Playhead */}
                 <div
                     className="absolute top-0 bottom-0 w-[2px] bg-white"
