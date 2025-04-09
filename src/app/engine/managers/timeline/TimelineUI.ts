@@ -2,11 +2,13 @@ import { TimelineManager } from './TimelineManager';
 import { Track, IKeyframe } from './Track';
 
 interface ButtonConfig {
-    text: string;
+    text?: string;
     position: [number, number];
+    size?: [number, number];
     onClick: () => void;
     color?: string;
     hoverColor?: string;
+    pathData?: string; // Optional SVG path data
 }
 
 export class TimelineUI {
@@ -402,28 +404,34 @@ export class TimelineUI {
             // 1. Previous keyframe button
             this.createButton({
                 text: '<',
-                position: [this.theme.timelineStart - 90, y + 5],
+                position: [this.theme.timelineStart - 55, y + 5],
+                size: [12, 20],
                 onClick: () => this.goToPreviousKeyframe(track),
                 color: this.theme.buttonColor,
-                hoverColor: this.theme.buttonHoverColor
+                hoverColor: this.theme.buttonHoverColor,
+                pathData: 'M15 18l-6-6 6-6'  // ChevronLeft path
             });
             
             // 2. Add keyframe button
             this.createButton({
                 text: '◆',
-                position: [this.theme.timelineStart - 60, y + 5],
+                position: [this.theme.timelineStart - 40, y + 5],
+                size: [16, 20],
                 onClick: () => this.addKeyframeToTrack(track),
                 color: this.theme.keyframeButtonColor,
-                hoverColor: this.theme.buttonHoverColor
+                hoverColor: this.theme.buttonHoverColor,
+                pathData: 'M12 2 L22 12 L12 22 L2 12 Z'  // Diamond shape
             });
             
             // 3. Next keyframe button
             this.createButton({
                 text: '>',
-                position: [this.theme.timelineStart - 30, y + 5],
+                position: [this.theme.timelineStart - 21, y + 5],
+                size: [12, 20],
                 onClick: () => this.goToNextKeyframe(track),
                 color: this.theme.buttonColor,
-                hoverColor: this.theme.buttonHoverColor
+                hoverColor: this.theme.buttonHoverColor,
+                pathData: 'M9 18l6-6-6-6'  // ChevronRight path
             });
 
             // Track separator line
@@ -576,49 +584,74 @@ export class TimelineUI {
 
     private createButton(config: ButtonConfig): paper.Group | null {
 
+        if (!config.text && !config.pathData) {
+            console.error("TimelineUI", "createButton", "text or pathData is required");
+            return null;
+        }
+
         const buttonGroup = new this.timelineScope.Group();
-        buttonGroup.name = config.text;
+        buttonGroup.name = config.text || "icon-button";
+        const buttonSize = config.size || [this.theme.buttonWidth, this.theme.buttonHeight];
 
         const buttonBackground = new this.timelineScope.Path.Rectangle({
             point: config.position,
-            size: [this.theme.buttonWidth, this.theme.buttonHeight],
+            size: buttonSize,
             radius: this.theme.buttonRadius,
             fillColor: new this.timelineScope.Color(config.color || this.theme.buttonColor)
         });
 
-        const buttonText = new this.timelineScope.PointText({
-            point: [config.position[0] + this.theme.buttonWidth / 2, config.position[1] + this.theme.buttonHeight / 2],
-            content: config.text,
-            fillColor: 'white',
-            fontSize: 12,
-            justification: 'center'
-        });
+        // If path data is provided, use SVG path, otherwise use text
+        if (config.pathData) {
+            const iconPath = new this.timelineScope.Path(config.pathData);
+            
+            // Center and scale the icon within the button
+            iconPath.position = new this.timelineScope.Point(
+                config.position[0] + buttonSize[0] / 2,
+                config.position[1] + buttonSize[1] / 2
+            );
+            
+            // Scale to fit button
+            const scale = Math.min(
+                buttonSize[0] / iconPath.bounds.width * 0.6,
+                buttonSize[1] / iconPath.bounds.height * 0.6
+            );
+            iconPath.scale(scale);
+            
+            // Set color
+            iconPath.strokeColor = new this.timelineScope.Color('white');
+            iconPath.fillColor = null;
+            iconPath.strokeWidth = 1.5;
+            
+            buttonGroup.addChild(iconPath);
+        } else {
+            const buttonText = new this.timelineScope.PointText({
+                point: [config.position[0] + buttonSize[0] / 2, config.position[1] + buttonSize[1] / 2 + 4],
+                content: config.text,
+                fillColor: 'white',
+                fontSize: 12,
+                justification: 'center'
+            });
+            buttonGroup.addChild(buttonText);
+        }
 
         buttonGroup.addChild(buttonBackground);
-        buttonGroup.addChild(buttonText);
+        buttonBackground.sendToBack();
 
         // Click handler
         buttonGroup.onClick = config.onClick;
 
         // Hover effects
         buttonGroup.onMouseEnter = () => {
-
             buttonBackground.fillColor = new this.timelineScope.Color(config.hoverColor || this.theme.buttonHoverColor);
             (this.timelineScope.view as any).draw();
-
-            // cursor
             document.body.style.cursor = 'pointer';
         };
 
         buttonGroup.onMouseLeave = () => {
-
             buttonBackground.fillColor = new this.timelineScope.Color(config.color || this.theme.buttonColor);
             (this.timelineScope.view as any).draw();
-
-            // cursor
             document.body.style.cursor = 'default';
         };
-
 
         return buttonGroup;
     }
