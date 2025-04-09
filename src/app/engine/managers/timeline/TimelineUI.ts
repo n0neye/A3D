@@ -51,6 +51,7 @@ export class TimelineUI {
     private timeLabels: paper.PointText[] = [];
     private isDraggingPlayhead = false;
     private isDraggingKeyframe = false;
+    private selectedKeyframe: IKeyframe | null = null;
     private draggedKeyframeData: {
         track: Track<any>,
         keyframe: IKeyframe,
@@ -60,7 +61,9 @@ export class TimelineUI {
     private mouseDownInfo: {
         mouseDownTime: number,
         mouseDownPosition: { x: number, y: number },
+        area: 'playhead' | 'keyframe' | 'timeline' | null
     } | null = null;
+
 
     constructor(manager: TimelineManager, paper: any) {
         this.manager = manager;
@@ -97,6 +100,10 @@ export class TimelineUI {
         });
 
         this.manager.observers.subscribe('activeTrackChanged', () => {
+            this.repaintPaperTimeline();
+        });
+
+        this.manager.observers.subscribe('keyframeRemoved', () => {
             this.repaintPaperTimeline();
         });
 
@@ -144,41 +151,38 @@ export class TimelineUI {
      */
     private onPaperMouseDown(event: paper.MouseEvent): void {
 
+        // Set mouse down info
         this.mouseDownInfo = {
             mouseDownTime: Date.now(),
             mouseDownPosition: { x: event.point.x, y: event.point.y },
+            area: null
         };
 
         // Check for keyframe hits FIRST (highest priority)
         const tracks = this.manager.getTracks();
-        let hitKeyframe = false;
-        tracks.forEach(track => {
-            const keyframes = track.getKeyframes();
-
-            keyframes.forEach(keyframe => {
+        const hitKeyframe = tracks.some(track => {
+            return track.getKeyframes().some(keyframe => {
                 if (keyframe.paperItem && keyframe.paperItem.hitTest(event.point)) {
-                    console.log('keyframe hit', keyframe);
-                    this.isDraggingKeyframe = true;
-                    this.isDraggingPlayhead = false; // Ensure playhead dragging is off
                     this.draggedKeyframeData = {
                         track,
                         keyframe: keyframe,
                         item: keyframe.paperItem,
                         originalTime: keyframe.time
                     };
-                    hitKeyframe = true;
-                    return;
+                    this.selectKeyframe(keyframe);
+                    this.mouseDownInfo!.area = 'keyframe';
+                    return true; // Exit both loops
                 }
+                return false;
             });
-            if (hitKeyframe) return;
         });
+        
         if (hitKeyframe) return;
+        this.selectKeyframe(null);
 
         // Then check if clicking on playhead
         if (this.playhead && this.playhead.hitTest(event.point)) {
-            console.log('playhead hit');
-            this.isDraggingPlayhead = true;
-            this.isDraggingKeyframe = false; // Ensure keyframe dragging is off
+            this.mouseDownInfo.area = 'playhead';
             return;
         }
 
@@ -198,10 +202,25 @@ export class TimelineUI {
             this.manager.setPosition(newTime);
 
             // Start dragging playhead
-            console.log('timeline hit');
-            this.isDraggingPlayhead = true;
-            this.isDraggingKeyframe = false; // Ensure keyframe dragging is off
+            this.mouseDownInfo.area = 'timeline';
+            return;
         }
+
+        this.mouseDownInfo.area = null;
+    }
+
+    
+    private selectKeyframe(keyframe: IKeyframe | null): void {
+        if (keyframe) {
+            // Update keyframe stroke 
+            keyframe.paperItem!.strokeWidth = 2;
+        }else{
+            // Deselect last keyframe
+            if (this.selectedKeyframe) {
+                this.selectedKeyframe.paperItem!.strokeWidth = 0.5;
+            }
+        }
+        this.selectedKeyframe = keyframe;
     }
 
     /**
@@ -209,7 +228,9 @@ export class TimelineUI {
      */
     private onPaperMouseDrag(event: paper.MouseEvent): void {
 
-        console.log('onPaperMouseDrag', "isDraggingPlayhead", this.isDraggingPlayhead, "isDraggingKeyframe", this.isDraggingKeyframe);
+        if (!this.mouseDownInfo) return;
+        this.isDraggingPlayhead = this.mouseDownInfo.area === 'playhead' || this.mouseDownInfo.area === 'timeline';
+        this.isDraggingKeyframe = this.mouseDownInfo.area === 'keyframe';
 
         // Handle dragging playhead
         if (this.isDraggingPlayhead) {
@@ -258,14 +279,14 @@ export class TimelineUI {
      */
     private onPaperMouseUp(event: paper.MouseEvent): void {
 
-        console.log('onPaperMouseUp', "isDraggingPlayhead", this.isDraggingPlayhead, "isDraggingKeyframe", this.isDraggingKeyframe, this.mouseDownInfo);
         if (!this.mouseDownInfo) return;
 
-
-        const { mouseDownTime, mouseDownPosition } = this.mouseDownInfo;
-        const { x, y } = event.point;
-        const deltaX = x - mouseDownPosition.x;
-        const clickTime = Date.now() - mouseDownTime;
+        const dragDelta = {
+            x: event.point.x - this.mouseDownInfo!.mouseDownPosition.x,
+            y: event.point.y - this.mouseDownInfo!.mouseDownPosition.y
+        }
+        const clickTime = Date.now() - this.mouseDownInfo!.mouseDownTime;
+        this.mouseDownInfo = null;
 
         // Handle end of playhead drag
         if (this.isDraggingPlayhead) {
@@ -458,7 +479,7 @@ export class TimelineUI {
             radius: 6,
             fillColor: this.theme.inactiveKeyframeColor,
             strokeColor: 'white',
-            strokeWidth: 1,
+            strokeWidth: 0.5,
             rotation: 45
         });
 
@@ -468,14 +489,14 @@ export class TimelineUI {
         keyframeGroup.onMouseEnter = () => {
             document.body.style.cursor = 'pointer';
             keyframeDiamond.scale(1.2); // Slightly enlarge on hover
-            keyframeDiamond.fillColor = new this.timelineScope!.Color(this.theme.activeKeyframeHoverColor);
+            keyframeDiamond.fillColor = new this.timelineScope.Color(this.theme.activeKeyframeHoverColor);
             (this.timelineScope!.view as any).draw();
         };
 
         keyframeGroup.onMouseLeave = () => {
             document.body.style.cursor = 'default';
             keyframeDiamond.scale(1 / 1.2); // Return to normal size
-            keyframeDiamond.fillColor = new this.timelineScope!.Color(this.theme.activeKeyframeColor);
+            keyframeDiamond.fillColor = new this.timelineScope.Color(this.theme.activeKeyframeColor);
             (this.timelineScope!.view as any).draw();
         };
 
@@ -679,6 +700,26 @@ export class TimelineUI {
         canvas.style.height = '100px';
         canvas.style.marginTop = '10px';
         container.appendChild(canvas);
+
+        // Shortcut keys
+        window.addEventListener('keydown', (event) => {
+            console.log("TimelineUI", "keydown", event.key);
+            // play/pause
+            if (event.key === ' ') {
+                if (this.manager.isPlaying()) {
+                    this.manager.pause();
+                } else {
+                    this.manager.play();
+                }
+            }
+
+            // Delete keyframe
+            if (event.key === 'Backspace' || event.key === 'Delete') {
+                if (this.selectedKeyframe) {
+                    this.manager.removeKeyframe(this.selectedKeyframe);
+                }
+            }
+        });
 
         return { container, canvas };
     }

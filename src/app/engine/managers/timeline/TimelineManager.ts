@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { EditorEngine } from '../../core/EditorEngine';
 import { Observer } from '../../utils/Observer';
-import { Track, CameraTrack, ObjectTrack } from './Track';
+import { Track, CameraTrack, ObjectTrack, IKeyframe } from './Track';
 import { TimelineUI } from './TimelineUI';
 
 export class TimelineManager {
@@ -20,6 +20,7 @@ export class TimelineManager {
         timelineUpdated: { time: number };
         playbackStateChanged: { isPlaying: boolean };
         keyframeAdded: { track: Track<any>, time: number };
+        keyframeRemoved: { track: Track<any>, time: number };
         trackAdded: { track: Track<any>, name: string };
         activeTrackChanged: { track: Track<any> };
     }>();
@@ -116,6 +117,17 @@ export class TimelineManager {
 
         // Notify observers that a keyframe was added
         this.observers.notify('keyframeAdded', { track: this.activeTrack, time: this.currentTime });
+    }
+
+    /**
+     * Delete a keyframe from track
+     */
+    public removeKeyframe(keyframe: IKeyframe): void {
+        console.log('removeKeyframe', keyframe);
+        keyframe.track.removeKeyframe(keyframe);
+
+        // Notify observers that a keyframe was removed
+        this.observers.notify('keyframeRemoved', { track: keyframe.track, time: keyframe.time });
     }
 
     /**

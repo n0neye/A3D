@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 // Define base keyframe interface
 export interface IKeyframe {
+    track: Track<any>;
     time: number;
     data: {};
     paperItem?: paper.Item;
@@ -38,7 +39,7 @@ export abstract class Track<T extends IKeyframe> {
     }
     
     // Abstract methods that must be implemented by subclasses
-    abstract addKeyframe(time: number): T;
+    abstract addKeyframe(time: number): IKeyframe;
     abstract updateTargetAtTime(time: number): void;
     
     public getName(): string {
@@ -48,8 +49,16 @@ export abstract class Track<T extends IKeyframe> {
     public getKeyframes(): IKeyframe[] {
         return this.keyframes;
     }
+
     
-    public removeKeyframe(time: number): boolean {
+    public removeKeyframe(keyframe: IKeyframe): void {
+        const index = this.keyframes.findIndex(kf => kf === keyframe);
+        if (index >= 0) {
+            this.keyframes.splice(index, 1);
+        }
+    }
+    
+    public removeKeyframeAt(time: number): boolean {
         const index = this.keyframes.findIndex(kf => Math.abs(kf.time - time) < 0.01);
         if (index >= 0) {
             this.keyframes.splice(index, 1);
@@ -96,6 +105,7 @@ export class CameraTrack extends Track<CameraKeyframe> {
         
         // Create a new keyframe with current camera state
         const keyframe: CameraKeyframe = {
+            track: this,
             time,
             data: {
                 position: camera.position.clone(),
@@ -175,6 +185,7 @@ export class ObjectTrack extends Track<ObjectKeyframe> {
         
         // Create a new keyframe with current object state
         const keyframe: ObjectKeyframe = {
+            track: this,
             time,
             data: {
                 position: object.position.clone(),
