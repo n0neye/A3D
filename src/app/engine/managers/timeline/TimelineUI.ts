@@ -1,8 +1,48 @@
 import { TimelineManager } from './TimelineManager';
+import { Track } from './Track';
+
+interface ButtonConfig {
+    text: string;
+    position: [number, number];
+    onClick: () => void;
+    color?: string;
+    hoverColor?: string;
+}
 
 export class TimelineUI {
     private manager: TimelineManager;
     private debugUI: HTMLElement | null = null;
+
+    // Add UI configuration
+    private theme = {
+        // Layout
+        timelineStart: 150,
+        trackHeight: 30,
+        headerHeight: 30,
+        keyframeRadius: 6,
+
+        // Colors
+        activeTrackColor: '#3B3B3B33',
+        inactiveTrackColor: '#00000000',
+        activeKeyframeColor: '#ffcc00',
+        inactiveKeyframeColor: '#aaaaaa',
+        activeKeyframeHoverColor: '#ffdd33',
+        inactiveKeyframeHoverColor: '#cccccc',
+        playheadColor: '#ffffff',
+        textColor: '#cccccc',
+        activeTextColor: '#ffffff',
+        timeTickColor: '#666666',
+
+        // Buttons
+        buttonWidth: 40,
+        buttonHeight: 20,
+        buttonRadius: 5,
+        buttonColor: '#444444',
+        buttonHoverColor: '#555555',
+        playButtonColor: '#55aa55',
+        pauseButtonColor: '#cc5555',
+        keyframeButtonColor: '#6666aa'
+    };
 
     // Paper.js elements
     private canvas: HTMLCanvasElement | null = null;
@@ -15,8 +55,8 @@ export class TimelineUI {
     private isDraggingPlayhead = false;
     private isDraggingKeyframe = false;
     private draggedKeyframeData: {
-        trackIndex: number,
-        keyframeIndex: number,
+        track: Track<any>,
+        keyframe: Keyframe,
         item: paper.Item,
         originalTime: number
     } | null = null;
@@ -67,8 +107,8 @@ export class TimelineUI {
         if (!this.timelineScope || !this.playhead) return;
 
         // Calculate position based on time
-        const timelineWidth = this.timelineScope.view.size.width - 150; // Adjust for track names
-        const playheadX = 150 + (this.manager.getPosition() / this.manager.getDuration()) * timelineWidth;
+        const timelineWidth = this.timelineScope.view.size.width - this.theme.timelineStart; // Adjust for track names
+        const playheadX = this.theme.timelineStart + (this.manager.getPosition() / this.manager.getDuration()) * timelineWidth;
 
         // Update playhead position
         this.playhead.position.x = playheadX;
@@ -119,22 +159,22 @@ export class TimelineUI {
      */
     private onPaperMouseDown(event: paper.MouseEvent): void {
         if (!this.timelineScope) return;
-        
+
         // Check for keyframe hits FIRST (highest priority)
         const tracks = this.manager.getTracks();
         for (let trackIndex = 0; trackIndex < tracks.length; trackIndex++) {
             const track = tracks[trackIndex];
             const keyframes = track.getKeyframes();
-            
+
             for (let keyframeIndex = 0; keyframeIndex < keyframes.length; keyframeIndex++) {
                 const keyframeGroup = this.findKeyframeItem(trackIndex, keyframeIndex);
-                
+
                 if (keyframeGroup && keyframeGroup.hitTest(event.point)) {
                     this.isDraggingKeyframe = true;
                     this.isDraggingPlayhead = false; // Ensure playhead dragging is off
                     this.draggedKeyframeData = {
-                        trackIndex,
-                        keyframeIndex,
+                        track,
+                        keyframe: keyframes[keyframeIndex],
                         item: keyframeGroup,
                         originalTime: keyframes[keyframeIndex].time
                     };
@@ -142,29 +182,29 @@ export class TimelineUI {
                 }
             }
         }
-        
+
         // Then check if clicking on playhead
         if (this.playhead && this.playhead.hitTest(event.point)) {
             this.isDraggingPlayhead = true;
             this.isDraggingKeyframe = false; // Ensure keyframe dragging is off
             return;
         }
-        
+
         // Finally check if clicking on timeline area (for direct positioning)
-        const timelineStart = 150;
+        const timelineStart = this.theme.timelineStart;
         const timelineWidth = this.timelineScope.view.size.width - timelineStart;
-        
-        if (event.point.x >= timelineStart && 
-            event.point.y >= 30 && 
-            event.point.y <= 30 + (tracks.length * 30)) {
-            
+
+        if (event.point.x >= timelineStart &&
+            event.point.y >= this.theme.headerHeight &&
+            event.point.y <= this.theme.headerHeight + (tracks.length * this.theme.trackHeight)) {
+
             // Calculate time from position
             const timelinePosition = (event.point.x - timelineStart) / timelineWidth;
             const newTime = timelinePosition * this.manager.getDuration();
-            
+
             // Set timeline position
             this.manager.setPosition(newTime);
-            
+
             // Start dragging playhead
             this.isDraggingPlayhead = true;
             this.isDraggingKeyframe = false; // Ensure keyframe dragging is off
@@ -198,45 +238,45 @@ export class TimelineUI {
      */
     private onPaperMouseDrag(event: paper.MouseEvent): void {
         if (!this.timelineScope) return;
-        
+
         // Handle dragging playhead
         if (this.isDraggingPlayhead) {
-            const timelineStart = 150;
+            const timelineStart = this.theme.timelineStart;
             const timelineWidth = this.timelineScope.view.size.width - timelineStart;
-            
+
             // Constrain to timeline bounds
             const x = Math.max(timelineStart, Math.min(timelineStart + timelineWidth, event.point.x));
-            
+
             // Calculate time from position
             const timelinePosition = (x - timelineStart) / timelineWidth;
             const newTime = timelinePosition * this.manager.getDuration();
-            
+
             // Set timeline position
             this.manager.setPosition(newTime);
             return;
         }
-        
+
         // Handle dragging keyframe
         if (this.isDraggingKeyframe && this.draggedKeyframeData) {
-            const timelineStart = 150;
+            const timelineStart = this.theme.timelineStart;
             const timelineWidth = this.timelineScope.view.size.width - timelineStart;
-            
+
             // Constrain to timeline bounds
             const x = Math.max(timelineStart, Math.min(timelineStart + timelineWidth, event.point.x));
-            
+
             // Calculate time from position
             const timelinePosition = (x - timelineStart) / timelineWidth;
             const newTime = Math.max(0, Math.min(this.manager.getDuration(), timelinePosition * this.manager.getDuration()));
-            
+
             // Move the keyframe visually
             this.draggedKeyframeData.item.position.x = x;
-            
+
             // Update time display
             if ((this.timelineScope.project.activeLayer.children as any)['currentTimeText']) {
-                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content = 
+                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content =
                     `Keyframe: ${newTime.toFixed(2)}s`;
             }
-            
+
             (this.timelineScope.view as any).draw();
         }
     }
@@ -245,15 +285,15 @@ export class TimelineUI {
      * Mouse up handler for Paper.js timeline
      */
     private onPaperMouseUp(event: paper.MouseEvent): void {
-        
+
         // Handle end of playhead drag
         if (this.isDraggingPlayhead) {
             this.isDraggingPlayhead = false;
         }
-        
+
         // Handle end of keyframe drag
         if (this.isDraggingKeyframe && this.draggedKeyframeData && this.timelineScope) {
-            const timelineStart = 150;
+            const timelineStart = this.theme.timelineStart;
             const timelineWidth = this.timelineScope.view.size.width - timelineStart;
 
             // Constrain to timeline bounds
@@ -263,27 +303,19 @@ export class TimelineUI {
             const timelinePosition = (x - timelineStart) / timelineWidth;
             const newTime = Math.max(0, Math.min(this.manager.getDuration(), timelinePosition * this.manager.getDuration()));
 
-            // Get the track and keyframe
-            const tracks = this.manager.getTracks();
-            const track = tracks[this.draggedKeyframeData.trackIndex];
-            const keyframes = track.getKeyframes();
-            const oldTime = keyframes[this.draggedKeyframeData.keyframeIndex].time;
-
             // Remove old keyframe and add new one at the updated time
-            // track.removeKeyframe(oldTime);
-            // track.addKeyframe(newTime);
-            track.updateKeyframeTime(keyframes[this.draggedKeyframeData.keyframeIndex], newTime);
+            this.draggedKeyframeData.track.updateKeyframeTime(this.draggedKeyframeData.keyframe, newTime);
 
             // Reset dragging state
             this.isDraggingKeyframe = false;
             this.draggedKeyframeData = null;
-            
+
             // Update the timeline visualization
             this.updatePaperTimeline();
-            
+
             // Update time display
             if ((this.timelineScope.project.activeLayer.children as any)['currentTimeText']) {
-                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content = 
+                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content =
                     `Time: ${this.manager.getPosition().toFixed(2)}s`;
             }
         }
@@ -302,21 +334,14 @@ export class TimelineUI {
 
         const width = this.timelineScope.view.size.width;
         const height = this.timelineScope.view.size.height;
-        const timelineStartX = 150; // Space for track names
+        const timelineStartX = this.theme.timelineStart;
         const tracks = this.manager.getTracks();
         const activeTrackIndex = tracks.indexOf(this.manager.getActiveTrack()!);
 
-        // Background
-        // const background = new this.timelineScope.Path.Rectangle({
-        //     point: [0, 0],
-        //     size: [width, height],
-        //     fillColor: new this.timelineScope.Color(0.2, 0.2, 0.2)
-        // });
-
         // Timeline container
         const timelineBackground = new this.timelineScope.Path.Rectangle({
-            point: [timelineStartX, 30],
-            size: [width - timelineStartX, tracks.length * 30],
+            point: [timelineStartX, this.theme.headerHeight],
+            size: [width - timelineStartX, tracks.length * this.theme.trackHeight],
             fillColor: new this.timelineScope.Color(0.25, 0.25, 0.25)
         });
 
@@ -326,8 +351,8 @@ export class TimelineUI {
 
             // Time tick
             const timeTick = new this.timelineScope.Path.Line({
-                from: [x, 30],
-                to: [x, 30 + tracks.length * 30],
+                from: [x, this.theme.headerHeight],
+                to: [x, this.theme.headerHeight + tracks.length * this.theme.trackHeight],
                 strokeColor: new this.timelineScope.Color(0.4, 0.4, 0.4),
                 strokeWidth: i % 1 === 0 ? 1 : 0.5
             });
@@ -335,7 +360,7 @@ export class TimelineUI {
             // Time label
             if (i % 1 === 0) {
                 const timeLabel = new this.timelineScope.PointText({
-                    point: [x, 25],
+                    point: [x, this.theme.headerHeight - 5],
                     content: i + 's',
                     fillColor: 'white',
                     fontSize: 10,
@@ -347,17 +372,17 @@ export class TimelineUI {
 
         // Track rows
         tracks.forEach((track, index) => {
-            const y = 30 + index * 30;
+            const y = this.theme.headerHeight + index * this.theme.trackHeight;
             const trackGroup = new this.timelineScope!.Group();
 
             // Track row background (highlight active track)
             const isActive = index === activeTrackIndex;
             const trackRow = new this.timelineScope!.Path.Rectangle({
                 point: [0, y],
-                size: [width, 30],
+                size: [width, this.theme.trackHeight],
                 fillColor: isActive
-                    ? new this.timelineScope!.Color(0.3, 0.3, 0.4)
-                    : new this.timelineScope!.Color(0.25, 0.25, 0.25)
+                    ? new this.timelineScope!.Color(this.theme.activeTrackColor)
+                    : new this.timelineScope!.Color(this.theme.inactiveTrackColor)
             });
             trackGroup.addChild(trackRow);
 
@@ -372,8 +397,8 @@ export class TimelineUI {
 
             // Track separator line
             const separator = new this.timelineScope!.Path.Line({
-                from: [0, y + 30],
-                to: [width, y + 30],
+                from: [0, y + this.theme.trackHeight],
+                to: [width, y + this.theme.trackHeight],
                 strokeColor: new this.timelineScope!.Color(0.3, 0.3, 0.3)
             });
             trackGroup.addChild(separator);
@@ -390,7 +415,7 @@ export class TimelineUI {
             keyframes.forEach((keyframe, keyframeIndex) => {
                 const keyframeGroup = new this.timelineScope!.Group();
                 const keyframeX = timelineStartX + (keyframe.time / this.manager.getDuration()) * (width - timelineStartX);
-                
+
                 // Keyframe diamond
                 const keyframeDiamond = new this.timelineScope!.Path.RegularPolygon({
                     center: [keyframeX, y + 15],
@@ -401,16 +426,16 @@ export class TimelineUI {
                     strokeWidth: 1,
                     rotation: 45
                 });
-                
+
                 keyframeGroup.addChild(keyframeDiamond);
-                
+
                 // Store keyframe data for dragging
                 keyframeGroup.data = {
                     isKeyframe: true,
                     trackIndex: index,
                     keyframeIndex: keyframeIndex
                 };
-                
+
                 // Add hover effects and cursor 
                 keyframeGroup.onMouseEnter = () => {
                     document.body.style.cursor = 'pointer';
@@ -418,14 +443,14 @@ export class TimelineUI {
                     keyframeDiamond.fillColor = new this.timelineScope!.Color(isActive ? '#ffdd33' : '#cccccc');
                     (this.timelineScope!.view as any).draw();
                 };
-                
+
                 keyframeGroup.onMouseLeave = () => {
                     document.body.style.cursor = 'default';
-                    keyframeDiamond.scale(1/1.2); // Return to normal size
+                    keyframeDiamond.scale(1 / 1.2); // Return to normal size
                     keyframeDiamond.fillColor = new this.timelineScope!.Color(isActive ? '#ffcc00' : '#aaaaaa');
                     (this.timelineScope!.view as any).draw();
                 };
-                
+
                 // Add to keyframe groups
                 this.keyframeGroups.push(keyframeGroup);
             });
@@ -433,7 +458,7 @@ export class TimelineUI {
 
         // Current time indicator text
         const currentTimeText = new this.timelineScope.PointText({
-            point: [10, 20],
+            point: [10, this.theme.headerHeight - 10],
             content: `Time: ${this.manager.getPosition().toFixed(2)}s`,
             fillColor: 'white',
             fontSize: 12
@@ -447,18 +472,18 @@ export class TimelineUI {
 
         // Playhead line
         const playheadLine = new this.timelineScope.Path.Line({
-            from: [playheadX, 30],
-            to: [playheadX, 30 + tracks.length * 30],
-            strokeColor: 'red',
+            from: [playheadX, this.theme.headerHeight],
+            to: [playheadX, this.theme.headerHeight + tracks.length * this.theme.trackHeight],
+            strokeColor: this.theme.playheadColor,
             strokeWidth: 2
         });
 
         // Playhead handle
         const playheadHandle = new this.timelineScope.Path.RegularPolygon({
-            center: [playheadX, 30],
+            center: [playheadX, this.theme.headerHeight],
             sides: 3,
             radius: 8,
-            fillColor: 'red',
+            fillColor: this.theme.playheadColor,
             rotation: 180
         });
 
@@ -487,15 +512,15 @@ export class TimelineUI {
 
         // Button background
         const buttonBackground = new this.timelineScope.Path.Rectangle({
-            point: [width - 100, 5],
-            size: [40, 20],
-            radius: 5,
-            fillColor: this.manager.isPlaying() ? '#cc5555' : '#55aa55'
+            point: [width - 100, this.theme.headerHeight - 10],
+            size: [this.theme.buttonWidth, this.theme.buttonHeight],
+            radius: this.theme.buttonRadius,
+            fillColor: this.manager.isPlaying() ? this.theme.pauseButtonColor : this.theme.playButtonColor
         });
 
         // Button text
         const buttonText = new this.timelineScope.PointText({
-            point: [width - 80, 20],
+            point: [width - 80, this.theme.headerHeight - 5],
             content: this.manager.isPlaying() ? 'Pause' : 'Play',
             fillColor: 'white',
             fontSize: 12,
@@ -513,6 +538,56 @@ export class TimelineUI {
                 this.manager.play();
             }
         };
+    }
+
+
+    private createButton(config: ButtonConfig): paper.Group | null {
+        if (!this.timelineScope) return null;
+        const buttonGroup = new this.timelineScope.Group();
+        buttonGroup.name = config.text;
+
+        const buttonBackground = new this.timelineScope.Path.Rectangle({
+            point: config.position,
+            size: [this.theme.buttonWidth, this.theme.buttonHeight],
+            radius: this.theme.buttonRadius,
+            fillColor: new this.timelineScope.Color(config.color || this.theme.buttonColor)
+        });
+
+        const buttonText = new this.timelineScope.PointText({
+            point: [config.position[0] + this.theme.buttonWidth / 2, config.position[1] + this.theme.buttonHeight / 2],
+            content: config.text,
+            fillColor: 'white',
+            fontSize: 12,
+            justification: 'center'
+        });
+
+        buttonGroup.addChild(buttonBackground);
+        buttonGroup.addChild(buttonText);
+
+        // Click handler
+        buttonGroup.onClick = config.onClick;
+
+        // Hover effects
+        buttonGroup.onMouseEnter = () => {
+            if (!this.timelineScope) return;
+            buttonBackground.fillColor = new this.timelineScope.Color(config.hoverColor || this.theme.buttonHoverColor);
+            (this.timelineScope.view as any).draw();
+
+            // cursor
+            document.body.style.cursor = 'pointer';
+        };
+
+        buttonGroup.onMouseLeave = () => {
+            if (!this.timelineScope) return;
+            buttonBackground.fillColor = new this.timelineScope.Color(config.color || this.theme.buttonColor);
+            (this.timelineScope.view as any).draw();
+
+            // cursor
+            document.body.style.cursor = 'default';
+        };
+
+
+        return buttonGroup;
     }
 
     /**
@@ -552,15 +627,15 @@ export class TimelineUI {
 
         // Button background
         const buttonBackground = new this.timelineScope.Path.Rectangle({
-            point: [width - 50, 5],
-            size: [40, 20],
-            radius: 5,
+            point: [width - 50, this.theme.headerHeight - 10],
+            size: [this.theme.buttonWidth, this.theme.buttonHeight],
+            radius: this.theme.buttonRadius,
             fillColor: new this.timelineScope.Color(0.4, 0.4, 0.6)
         });
 
         // Button text
         const buttonText = new this.timelineScope.PointText({
-            point: [width - 30, 20],
+            point: [width - 30, this.theme.headerHeight - 5],
             content: 'Key',
             fillColor: 'white',
             fontSize: 12,

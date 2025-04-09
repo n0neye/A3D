@@ -3,20 +3,25 @@ import * as THREE from 'three';
 // Define base keyframe interface
 export interface Keyframe {
     time: number;
+    data: {};
 }
 
 // Camera keyframe
 export interface CameraKeyframe extends Keyframe {
-    position: THREE.Vector3;
-    quaternion: THREE.Quaternion;
-    fov: number;
+    data: {
+        position: THREE.Vector3;
+        quaternion: THREE.Quaternion;
+        fov: number;
+    }
 }
 
 // Object keyframe
 export interface ObjectKeyframe extends Keyframe {
-    position: THREE.Vector3;
-    quaternion: THREE.Quaternion;
-    scale: THREE.Vector3;
+    data: {
+        position: THREE.Vector3;
+        quaternion: THREE.Quaternion;
+        scale: THREE.Vector3;
+    }
 }
 
 // Define base track class
@@ -90,9 +95,11 @@ export class CameraTrack extends Track<CameraKeyframe> {
         // Create a new keyframe with current camera state
         const keyframe: CameraKeyframe = {
             time,
-            position: camera.position.clone(),
-            quaternion: camera.quaternion.clone(),
-            fov: camera.fov
+            data: {
+                position: camera.position.clone(),
+                quaternion: camera.quaternion.clone(),
+                fov: camera.fov
+            }
         };
         
         // Check if a keyframe already exists at this time
@@ -122,18 +129,18 @@ export class CameraTrack extends Track<CameraKeyframe> {
         
         if (before && !after) {
             // Only have keyframes before current time, use last keyframe
-            camera.position.copy(before.position);
-            camera.quaternion.copy(before.quaternion);
-            camera.fov = before.fov;
+            camera.position.copy(before.data.position);
+            camera.quaternion.copy(before.data.quaternion);
+            camera.fov = before.data.fov;
             camera.updateProjectionMatrix();
             return;
         }
         
         if (!before && after) {
             // Only have keyframes after current time, use first keyframe
-            camera.position.copy(after.position);
-            camera.quaternion.copy(after.quaternion);
-            camera.fov = after.fov;
+            camera.position.copy(after.data.position);
+            camera.quaternion.copy(after.data.quaternion);
+            camera.fov = after.data.fov;
             camera.updateProjectionMatrix();
             return;
         }
@@ -142,13 +149,13 @@ export class CameraTrack extends Track<CameraKeyframe> {
         const t = (time - before!.time) / (after!.time - before!.time);
         
         // Interpolate position
-        camera.position.lerpVectors(before!.position, after!.position, t);
+        camera.position.lerpVectors(before!.data.position, after!.data.position, t);
         
         // Interpolate rotation (using quaternion slerp for smooth rotation)
-        camera.quaternion.slerpQuaternions(before!.quaternion, after!.quaternion, t);
+        camera.quaternion.slerpQuaternions(before!.data.quaternion, after!.data.quaternion, t);
         
         // Interpolate FOV
-        camera.fov = THREE.MathUtils.lerp(before!.fov, after!.fov, t);
+        camera.fov = THREE.MathUtils.lerp(before!.data.fov, after!.data.fov, t);
         camera.updateProjectionMatrix();
     }
 }
@@ -167,9 +174,11 @@ export class ObjectTrack extends Track<ObjectKeyframe> {
         // Create a new keyframe with current object state
         const keyframe: ObjectKeyframe = {
             time,
-            position: object.position.clone(),
-            quaternion: object.quaternion.clone(),
-            scale: object.scale.clone()
+            data: {
+                position: object.position.clone(),
+                quaternion: object.quaternion.clone(),
+                scale: object.scale.clone()
+            }
         };
         
         // Check if a keyframe already exists at this time
@@ -199,17 +208,17 @@ export class ObjectTrack extends Track<ObjectKeyframe> {
         
         if (before && !after) {
             // Only have keyframes before current time, use last keyframe
-            object.position.copy(before.position);
-            object.quaternion.copy(before.quaternion);
-            object.scale.copy(before.scale);
+            object.position.copy(before.data.position);
+            object.quaternion.copy(before.data.quaternion);
+            object.scale.copy(before.data.scale);
             return;
         }
         
         if (!before && after) {
             // Only have keyframes after current time, use first keyframe
-            object.position.copy(after.position);
-            object.quaternion.copy(after.quaternion);
-            object.scale.copy(after.scale);
+            object.position.copy(after.data.position);
+            object.quaternion.copy(after.data.quaternion);
+            object.scale.copy(after.data.scale);
             return;
         }
         
@@ -217,12 +226,12 @@ export class ObjectTrack extends Track<ObjectKeyframe> {
         const t = (time - before!.time) / (after!.time - before!.time);
         
         // Interpolate position
-        object.position.lerpVectors(before!.position, after!.position, t);
+        object.position.lerpVectors(before!.data.position, after!.data.position, t);
         
         // Interpolate rotation (using quaternion slerp for smooth rotation)
-        object.quaternion.slerpQuaternions(before!.quaternion, after!.quaternion, t);
+        object.quaternion.slerpQuaternions(before!.data.quaternion, after!.data.quaternion, t);
         
         // Interpolate scale
-        object.scale.lerpVectors(before!.scale, after!.scale, t);
+        object.scale.lerpVectors(before!.data.scale, after!.data.scale, t);
     }
 }
