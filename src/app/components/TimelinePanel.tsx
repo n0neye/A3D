@@ -407,7 +407,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
                                         className="h-6 w-4 p-0 bg-indigo-700 hover:bg-indigo-600"
                                         onClick={(e) => { e.stopPropagation(); handleAddKeyframe(track); }}
                                     >
-                                        <Diamond className="h-3 w-3" size={12} />
+                                        <Diamond className="h-3 w-3 scale-75" size={12} />
                                     </Button>
 
                                     <Button

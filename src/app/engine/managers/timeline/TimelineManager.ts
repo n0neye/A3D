@@ -6,6 +6,25 @@ import { CharacterPoseTrack } from './CharacterPoseTrack';
 import { EntityBase } from '../../entity/base/EntityBase';
 import { CharacterEntity } from '../../entity/types/CharacterEntity';
 
+// Define interfaces for serialization
+export interface SerializedKeyframeData {
+    time: number;
+    data: any;
+}
+
+export interface SerializedTrackData {
+    name: string;
+    type: string;
+    targetId: string;
+    keyframes: SerializedKeyframeData[];
+}
+
+export interface SerializedTimelineData {
+    duration: number;
+    currentTime: number;
+    tracks: SerializedTrackData[];
+}
+
 export class TimelineManager {
     private engine: EditorEngine;
     private isPlayingState: boolean = false;
@@ -263,5 +282,135 @@ export class TimelineManager {
      */
     public isPlaying(): boolean {
         return this.isPlayingState;
+    }
+
+    /**
+     * Serialize the timeline state for saving
+     */
+    public serialize(): SerializedTimelineData {
+        return {
+            duration: this.duration,
+            currentTime: this.currentTime,
+            tracks: this.tracks.map(track => {
+                // Determine track type
+                let trackType = 'unknown';
+                if (track instanceof CameraTrack) {
+                    trackType = 'camera';
+                } else if (track instanceof EntityTransformTrack) {
+                    trackType = 'entity';
+                } else if (track instanceof CharacterPoseTrack) {
+                    trackType = 'characterPose';
+                }
+
+                // Get target ID (if available)
+                let targetId = '';
+                const target = track.getTarget();
+                if (target && 'uuid' in target) {
+                    targetId = target.uuid;
+                } else if (target && 'id' in target) {
+                    targetId = target.id;
+                } else if (target && 'entityId' in target) {
+                    targetId = target.entityId;
+                }
+
+                // Serialize keyframes
+                const keyframes = track.getKeyframes().map(keyframe => {
+                    return {
+                        time: keyframe.time,
+                        data: keyframe.data
+                    };
+                });
+
+                return {
+                    name: track.getName(),
+                    type: trackType,
+                    targetId: targetId,
+                    keyframes: keyframes
+                };
+            })
+        };
+    }
+
+    /**
+     * Deserialize timeline state from saved data
+     */
+    public deserialize(data: SerializedTimelineData, engine: EditorEngine): void {
+        // Clear current tracks
+        this.tracks = [];
+        this.activeTrack = null;
+
+        // Set timeline properties
+        this.duration = data.duration;
+        this.currentTime = data.currentTime;
+
+        // Track lookup map to restore references
+        const entityMap = new Map<string, EntityBase>();
+        const scene = engine.getScene();
+
+        // Create a map of all entities in the scene by ID
+        scene.traverse(object => {
+            if (object instanceof EntityBase) {
+                entityMap.set(object.entityId, object);
+                // Also map by uuid for compatibility
+                entityMap.set(object.uuid, object);
+            }
+        });
+
+        // Get camera
+        const camera = engine.getCameraManager().getCamera();
+
+        // Recreate tracks
+        data.tracks.forEach(trackData => {
+            console.log('deserialize track', trackData);
+            let track: Track<any> | null = null;
+
+            // Find the target object
+            let target: any = null;
+            
+            if (trackData.type === 'camera') {
+                // Camera track
+                track = new CameraTrack(trackData.name, camera);
+            } else {
+                // Entity tracks - find the target entity
+                const entity = entityMap.get(trackData.targetId);
+                if (!entity) {
+                    console.warn(`Could not find entity with ID ${trackData.targetId} for track ${trackData.name}`);
+                    return;
+                }
+
+                if (trackData.type === 'characterPose' && entity instanceof CharacterEntity) {
+                    track = new CharacterPoseTrack(trackData.name, entity);
+                } else {
+                    track = new EntityTransformTrack(trackData.name, entity);
+                }
+            }
+
+            if (!track) return;
+
+            // Add keyframes
+            trackData.keyframes.forEach(keyframeData => {
+                const keyframe = {
+                    track: track,
+                    time: keyframeData.time,
+                    data: keyframeData.data
+                } as IKeyframe;
+
+                track.getKeyframes().push(keyframe as any);
+            });
+
+            // Sort keyframes by time
+            track.getKeyframes().sort((a, b) => a.time - b.time);
+
+            // Add track to manager
+            this.tracks.push(track);
+        });
+
+        // Set first track as active if available
+        if (this.tracks.length > 0) {
+            this.setActiveTrack(this.tracks[0]);
+        }
+
+        // Notify observers of timeline update
+        this.observers.notify('timelineUpdated', { time: this.currentTime });
     }
 }
