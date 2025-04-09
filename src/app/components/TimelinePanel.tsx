@@ -66,11 +66,30 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
     useEffect(() => {
         if (!engine || !timelineManager) return;
         initializeTimeline();
+
+        // Subscribe to project loading events to reinitialize timeline
+        const projectManager = engine.getProjectManager();
+        const unsubscribeProjectLoaded = projectManager.observers.subscribe('projectLoaded', 
+            () => {
+                console.log("TimelinePanel: Project loaded - reinitializing timeline");
+                // Use setTimeout to ensure timeline manager has been deserialized
+                setTimeout(() => initializeTimeline(), 0);
+            }
+        );
+
+        return () => {
+            unsubscribeProjectLoaded();
+        };
     }, [engine, timelineManager]);
 
     const initializeTimeline = () => {
         if (!timelineManager) return;
 
+        console.log("TimelinePanel: Initializing timeline", timelineManager.getTracks());
+
+        // Reset selected keyframe
+        setSelectedKeyframe(null);
+        
         // Initial state
         setTracks(timelineManager.getTracks());
         setCurrentTime(timelineManager.getPosition());
@@ -144,6 +163,23 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
             window.removeEventListener('keydown', handleKeyDown);
         };
     }
+
+    // Add a method specifically for timeline deserialization events
+    useEffect(() => {
+        if (!timelineManager) return;
+
+        // Subscribe to a new timeline deserialized event
+        const unsubscribeTimelineDeserialized = timelineManager.observers.subscribe('timelineDeserialized',
+            () => {
+                console.log("TimelinePanel: Timeline deserialized - reinitializing panel");
+                initializeTimeline();
+            }
+        );
+
+        return () => {
+            unsubscribeTimelineDeserialized();
+        };
+    }, [timelineManager]);
 
     // Timeline interaction handlers
     const handleTimelineClick = (e: React.MouseEvent) => {

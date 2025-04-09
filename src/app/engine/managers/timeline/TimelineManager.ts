@@ -39,10 +39,11 @@ export class TimelineManager {
     public observers = new Observer<{
         timelineUpdated: { time: number };
         playbackStateChanged: { isPlaying: boolean };
-        keyframeAdded: { track: Track<any>, time: number };
-        keyframeRemoved: { track: Track<any>, time: number };
+        keyframeAdded: { keyframe: IKeyframe };
+        keyframeRemoved: { keyframe: IKeyframe };
         trackAdded: { track: Track<any>, name: string };
-        activeTrackChanged: { track: Track<any> };
+        activeTrackChanged: { track: Track<any> | null };
+        timelineDeserialized: {};
     }>();
 
     constructor(engine: EditorEngine) {
@@ -139,7 +140,7 @@ export class TimelineManager {
         const keyframe = this.activeTrack.addKeyframe(this.currentTime);
 
         // Notify observers that a keyframe was added
-        this.observers.notify('keyframeAdded', { track: this.activeTrack, time: this.currentTime });
+        this.observers.notify('keyframeAdded', { keyframe });
     }
 
     /**
@@ -150,7 +151,7 @@ export class TimelineManager {
         keyframe.track.removeKeyframe(keyframe);
 
         // Notify observers that a keyframe was removed
-        this.observers.notify('keyframeRemoved', { track: keyframe.track, time: keyframe.time });
+        this.observers.notify('keyframeRemoved', { keyframe });
     }
 
     /**
@@ -410,6 +411,9 @@ export class TimelineManager {
             this.setActiveTrack(this.tracks[0]);
         }
 
+        // After everything is set up, notify observers that the timeline has been deserialized
+        this.observers.notify('timelineDeserialized', {});
+        
         // Notify observers of timeline update
         this.observers.notify('timelineUpdated', { time: this.currentTime });
     }
