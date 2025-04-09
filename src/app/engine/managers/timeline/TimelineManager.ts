@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { EditorEngine } from '../../core/EditorEngine';
 import { Observer } from '../../utils/Observer';
-import { Track, CameraTrack, ObjectTrack, IKeyframe } from './Track';
+import { Track, CameraTrack, EntityTransformTrack, IKeyframe } from './Track';
+import { EntityBase } from '../../entity/base/EntityBase';
 
 export class TimelineManager {
     private engine: EditorEngine;
@@ -49,8 +50,8 @@ export class TimelineManager {
     /**
      * Create an object track
      */
-    public createObjectTrack(name: string, object: THREE.Object3D): ObjectTrack {
-        const track = new ObjectTrack(name, object);
+    public createEntityTrack(name: string, object: EntityBase): EntityTransformTrack {
+        const track = new EntityTransformTrack(name, object);
 
         this.tracks.push(track);
         const trackIndex = this.tracks.length - 1;

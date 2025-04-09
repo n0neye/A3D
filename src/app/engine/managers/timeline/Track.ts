@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { EntityBase } from '../../entity/base/EntityBase';
 
 // Define base keyframe interface
 export interface IKeyframe {
@@ -17,7 +18,7 @@ export interface CameraKeyframe extends IKeyframe {
 }
 
 // Object keyframe
-export interface ObjectKeyframe extends IKeyframe {
+export interface EntityTransform extends IKeyframe {
     data: {
         position: THREE.Vector3;
         quaternion: THREE.Quaternion;
@@ -43,6 +44,10 @@ export abstract class Track<T extends IKeyframe> {
     
     public getName(): string {
         return this.name;
+    }
+
+    public getTarget(): any {
+        return this.target;
     }
     
     public getKeyframes(): IKeyframe[] {
@@ -174,16 +179,18 @@ export class CameraTrack extends Track<CameraKeyframe> {
 
 
 // Object track implementation
-export class ObjectTrack extends Track<ObjectKeyframe> {
-    constructor(name: string, object: THREE.Object3D) {
+export class EntityTransformTrack extends Track<EntityTransform> {
+    protected target: EntityBase;
+    constructor(name: string, object: EntityBase) {
         super(name, object);
+        this.target = object;
     }
     
-    public addKeyframe(time: number): ObjectKeyframe {
+    public addKeyframe(time: number): EntityTransform {
         const object = this.target as THREE.Object3D;
         
         // Create a new keyframe with current object state
-        const keyframe: ObjectKeyframe = {
+        const keyframe: EntityTransform = {
             track: this,
             time,
             data: {
