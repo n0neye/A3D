@@ -296,7 +296,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
     return (
         <div className="panel-shape fixed bottom-5 left-[25%] w-[50%] min-h-[150px] flex flex-col select-none overflow-hidden">
             {/* Controls Bar */}
-            <div className="flex items-center p-2 border-b border-gray-700">
+            <div className="flex items-center p-2 ">
                 <Button
                     size="sm"
                     variant={isPlaying ? "default" : "secondary"}
@@ -325,8 +325,20 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
             >
+                {/* Vertical time markers */}
+                <div className="absolute inset-0 pointer-events-none">
+                    {Array.from({ length: Math.floor(duration) + 1 }).map((_, i) => (
+                        <div
+                            key={`timemark-${i}`}
+                            className="absolute top-4 bottom-0 w-px bg-gray-700 opacity-40"
+                            style={{ left: `${getPositionFromTime(i)}px` }}
+                        />
+                    ))}
+                </div>
+                
                 {/* Timeline Header with Time Marks */}
-                <div className="relative top-0 left-0 right-0 h-6 flex items-end">
+                <div className="relative top-0 left-0 right-0 h-4 flex items-end">
+                    <div className='text-xs text-gray-400 pl-2'>Track</div>
                     {Array.from({ length: Math.floor(duration) + 1 }).map((_, i) => (
                         <div
                             key={`time-${i}`}
@@ -343,7 +355,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
                     {tracks.map((track, index) => (
                         <div
                             key={`track-${index}-${track.getName()}`}
-                            className={`h-8 flex items-center border-t last:border-b border-gray-800 ${track === activeTrack ? '' : ''
+                            className={`h-8 flex items-center border-t  border-gray-800 ${track === activeTrack ? '' : ''
                                 }`}
                             onClick={() => handleTrackClick(track)}
                         >
