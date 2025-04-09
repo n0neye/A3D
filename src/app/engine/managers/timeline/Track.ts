@@ -50,6 +50,13 @@ export abstract class Track<T extends Keyframe> {
         }
         return false;
     }
+
+    public updateKeyframeTime(keyframe: T, newTime: number): void {
+        const index = this.keyframes.findIndex(kf => kf === keyframe);
+        if (index >= 0) {
+            this.keyframes[index].time = newTime;
+        }
+    }
     
     protected getSurroundingKeyframes(time: number): { before: T | null, after: T | null } {
         if (this.keyframes.length === 0) return { before: null, after: null };

@@ -119,52 +119,55 @@ export class TimelineUI {
      */
     private onPaperMouseDown(event: paper.MouseEvent): void {
         if (!this.timelineScope) return;
-
-        // Check if clicking on playhead
-        if (this.playhead && this.playhead.hitTest(event.point)) {
-            this.isDraggingPlayhead = true;
-            return;
-        }
-
-        // Check if clicking on timeline area (for direct positioning)
-        const timelineStart = 150;
-        const timelineWidth = this.timelineScope.view.size.width - timelineStart;
+        
+        // Check for keyframe hits FIRST (highest priority)
         const tracks = this.manager.getTracks();
-
-        if (event.point.x >= timelineStart &&
-            event.point.y >= 30 &&
-            event.point.y <= 30 + (tracks.length * 30)) {
-
-            // Calculate time from position
-            const timelinePosition = (event.point.x - timelineStart) / timelineWidth;
-            const newTime = timelinePosition * this.manager.getDuration();
-
-            // Set timeline position
-            this.manager.setPosition(newTime);
-
-            // Start dragging playhead
-            this.isDraggingPlayhead = true;
-        }
-
-        // Check if clicking on a keyframe
         for (let trackIndex = 0; trackIndex < tracks.length; trackIndex++) {
             const track = tracks[trackIndex];
             const keyframes = track.getKeyframes();
-
+            
             for (let keyframeIndex = 0; keyframeIndex < keyframes.length; keyframeIndex++) {
                 const keyframeGroup = this.findKeyframeItem(trackIndex, keyframeIndex);
-
+                
                 if (keyframeGroup && keyframeGroup.hitTest(event.point)) {
                     this.isDraggingKeyframe = true;
+                    this.isDraggingPlayhead = false; // Ensure playhead dragging is off
                     this.draggedKeyframeData = {
                         trackIndex,
                         keyframeIndex,
                         item: keyframeGroup,
                         originalTime: keyframes[keyframeIndex].time
                     };
-                    return;
+                    return; // Exit immediately once we find a hit
                 }
             }
+        }
+        
+        // Then check if clicking on playhead
+        if (this.playhead && this.playhead.hitTest(event.point)) {
+            this.isDraggingPlayhead = true;
+            this.isDraggingKeyframe = false; // Ensure keyframe dragging is off
+            return;
+        }
+        
+        // Finally check if clicking on timeline area (for direct positioning)
+        const timelineStart = 150;
+        const timelineWidth = this.timelineScope.view.size.width - timelineStart;
+        
+        if (event.point.x >= timelineStart && 
+            event.point.y >= 30 && 
+            event.point.y <= 30 + (tracks.length * 30)) {
+            
+            // Calculate time from position
+            const timelinePosition = (event.point.x - timelineStart) / timelineWidth;
+            const newTime = timelinePosition * this.manager.getDuration();
+            
+            // Set timeline position
+            this.manager.setPosition(newTime);
+            
+            // Start dragging playhead
+            this.isDraggingPlayhead = true;
+            this.isDraggingKeyframe = false; // Ensure keyframe dragging is off
         }
     }
 
@@ -195,45 +198,45 @@ export class TimelineUI {
      */
     private onPaperMouseDrag(event: paper.MouseEvent): void {
         if (!this.timelineScope) return;
-
+        
         // Handle dragging playhead
         if (this.isDraggingPlayhead) {
             const timelineStart = 150;
             const timelineWidth = this.timelineScope.view.size.width - timelineStart;
-
+            
             // Constrain to timeline bounds
             const x = Math.max(timelineStart, Math.min(timelineStart + timelineWidth, event.point.x));
-
+            
             // Calculate time from position
             const timelinePosition = (x - timelineStart) / timelineWidth;
             const newTime = timelinePosition * this.manager.getDuration();
-
+            
             // Set timeline position
             this.manager.setPosition(newTime);
             return;
         }
-
+        
         // Handle dragging keyframe
         if (this.isDraggingKeyframe && this.draggedKeyframeData) {
             const timelineStart = 150;
             const timelineWidth = this.timelineScope.view.size.width - timelineStart;
-
+            
             // Constrain to timeline bounds
             const x = Math.max(timelineStart, Math.min(timelineStart + timelineWidth, event.point.x));
-
+            
             // Calculate time from position
             const timelinePosition = (x - timelineStart) / timelineWidth;
             const newTime = Math.max(0, Math.min(this.manager.getDuration(), timelinePosition * this.manager.getDuration()));
-
+            
             // Move the keyframe visually
             this.draggedKeyframeData.item.position.x = x;
-
+            
             // Update time display
             if ((this.timelineScope.project.activeLayer.children as any)['currentTimeText']) {
-                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content =
+                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content = 
                     `Keyframe: ${newTime.toFixed(2)}s`;
             }
-
+            
             (this.timelineScope.view as any).draw();
         }
     }
@@ -242,11 +245,12 @@ export class TimelineUI {
      * Mouse up handler for Paper.js timeline
      */
     private onPaperMouseUp(event: paper.MouseEvent): void {
+        
         // Handle end of playhead drag
         if (this.isDraggingPlayhead) {
             this.isDraggingPlayhead = false;
         }
-
+        
         // Handle end of keyframe drag
         if (this.isDraggingKeyframe && this.draggedKeyframeData && this.timelineScope) {
             const timelineStart = 150;
@@ -266,19 +270,20 @@ export class TimelineUI {
             const oldTime = keyframes[this.draggedKeyframeData.keyframeIndex].time;
 
             // Remove old keyframe and add new one at the updated time
-            track.removeKeyframe(oldTime);
-            track.addKeyframe(newTime);
+            // track.removeKeyframe(oldTime);
+            // track.addKeyframe(newTime);
+            track.updateKeyframeTime(keyframes[this.draggedKeyframeData.keyframeIndex], newTime);
 
             // Reset dragging state
             this.isDraggingKeyframe = false;
             this.draggedKeyframeData = null;
-
+            
             // Update the timeline visualization
             this.updatePaperTimeline();
-
+            
             // Update time display
             if ((this.timelineScope.project.activeLayer.children as any)['currentTimeText']) {
-                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content =
+                (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content = 
                     `Time: ${this.manager.getPosition().toFixed(2)}s`;
             }
         }
@@ -385,7 +390,7 @@ export class TimelineUI {
             keyframes.forEach((keyframe, keyframeIndex) => {
                 const keyframeGroup = new this.timelineScope!.Group();
                 const keyframeX = timelineStartX + (keyframe.time / this.manager.getDuration()) * (width - timelineStartX);
-
+                
                 // Keyframe diamond
                 const keyframeDiamond = new this.timelineScope!.Path.RegularPolygon({
                     center: [keyframeX, y + 15],
@@ -396,16 +401,31 @@ export class TimelineUI {
                     strokeWidth: 1,
                     rotation: 45
                 });
-
+                
                 keyframeGroup.addChild(keyframeDiamond);
-
+                
                 // Store keyframe data for dragging
                 keyframeGroup.data = {
                     isKeyframe: true,
                     trackIndex: index,
                     keyframeIndex: keyframeIndex
                 };
-
+                
+                // Add hover effects and cursor 
+                keyframeGroup.onMouseEnter = () => {
+                    document.body.style.cursor = 'pointer';
+                    keyframeDiamond.scale(1.2); // Slightly enlarge on hover
+                    keyframeDiamond.fillColor = new this.timelineScope!.Color(isActive ? '#ffdd33' : '#cccccc');
+                    (this.timelineScope!.view as any).draw();
+                };
+                
+                keyframeGroup.onMouseLeave = () => {
+                    document.body.style.cursor = 'default';
+                    keyframeDiamond.scale(1/1.2); // Return to normal size
+                    keyframeDiamond.fillColor = new this.timelineScope!.Color(isActive ? '#ffcc00' : '#aaaaaa');
+                    (this.timelineScope!.view as any).draw();
+                };
+                
                 // Add to keyframe groups
                 this.keyframeGroups.push(keyframeGroup);
             });
