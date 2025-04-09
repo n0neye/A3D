@@ -20,11 +20,11 @@ export class TimelineUI {
         // Layout
         timelineStart: 150,
         trackHeight: 30,
-        headerHeight: 30,
+        headerHeight: 15,
         keyframeRadius: 6,
 
         // Colors
-        activeTrackColor: '#3B3B3B33',
+        activeTrackColor: '#00000011',
         inactiveTrackColor: '#00000000',
         activeKeyframeColor: '#ffcc00',
         inactiveKeyframeColor: '#aaaaaa',
@@ -138,12 +138,6 @@ export class TimelineUI {
 
         // Update playhead position
         this.playhead.position.x = playheadX;
-
-        // Update current time text
-        if ((this.timelineScope.project.activeLayer.children as any)['currentTimeText']) {
-            (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content =
-                `Time: ${this.manager.getPosition().toFixed(2)}s`;
-        }
 
         (this.timelineScope.view as any).draw();
     }
@@ -385,9 +379,10 @@ export class TimelineUI {
             const trackRow = new this.timelineScope!.Path.Rectangle({
                 point: [0, y],
                 size: [width, this.theme.trackHeight],
-                fillColor: isActive
-                    ? new this.timelineScope!.Color(this.theme.activeTrackColor)
-                    : new this.timelineScope!.Color(this.theme.inactiveTrackColor)
+                fillColor: new this.timelineScope!.Color(0,0,0,0.1),
+                // fillColor: isActive
+                //     ? new this.timelineScope!.Color(this.theme.activeTrackColor)
+                //     : new this.timelineScope!.Color(this.theme.inactiveTrackColor)
             });
             trackGroup.addChild(trackRow);
 
@@ -456,15 +451,6 @@ export class TimelineUI {
             });
         });
 
-        // Current time indicator text
-        const currentTimeText = new this.timelineScope.PointText({
-            point: [10, this.theme.headerHeight - 10],
-            content: `Time: ${this.manager.getPosition().toFixed(2)}s`,
-            fillColor: 'white',
-            fontSize: 12
-        });
-        currentTimeText.name = 'currentTimeText';
-
         // Playhead
         this.playhead = new this.timelineScope.Group();
 
@@ -489,12 +475,6 @@ export class TimelineUI {
 
         this.playhead.addChild(playheadLine);
         this.playhead.addChild(playheadHandle);
-
-        // Create play/pause button
-        this.createPaperPlayButton();
-
-        // Create add keyframe button
-        this.createPaperAddKeyframeButton();
 
         // Draw the view
         (this.timelineScope.view as any).draw();
@@ -540,47 +520,6 @@ export class TimelineUI {
 
         return keyframeGroup;
     }
-
-    /**
-     * Create play/pause button in Paper.js
-     */
-    private createPaperPlayButton(): void {
-
-
-        const width = this.timelineScope.view.size.width;
-        const buttonGroup = new this.timelineScope.Group();
-        buttonGroup.name = 'playPauseButton';
-
-        // Button background
-        const buttonBackground = new this.timelineScope.Path.Rectangle({
-            point: [width - 100, this.theme.headerHeight - 10],
-            size: [this.theme.buttonWidth, this.theme.buttonHeight],
-            radius: this.theme.buttonRadius,
-            fillColor: this.manager.isPlaying() ? this.theme.pauseButtonColor : this.theme.playButtonColor
-        });
-
-        // Button text
-        const buttonText = new this.timelineScope.PointText({
-            point: [width - 80, this.theme.headerHeight - 5],
-            content: this.manager.isPlaying() ? 'Pause' : 'Play',
-            fillColor: 'white',
-            fontSize: 12,
-            justification: 'center'
-        });
-
-        buttonGroup.addChild(buttonBackground);
-        buttonGroup.addChild(buttonText);
-
-        // Make button clickable
-        buttonGroup.onClick = () => {
-            if (this.manager.isPlaying()) {
-                this.manager.pause();
-            } else {
-                this.manager.play();
-            }
-        };
-    }
-
 
     private createButton(config: ButtonConfig): paper.Group | null {
 
@@ -682,42 +621,6 @@ export class TimelineUI {
     }
 
     /**
-     * Create add keyframe button in Paper.js
-     */
-    private createPaperAddKeyframeButton(): void {
-
-
-        const width = this.timelineScope.view.size.width;
-        const buttonGroup = new this.timelineScope.Group();
-        buttonGroup.name = 'addKeyframeButton';
-
-        // Button background
-        const buttonBackground = new this.timelineScope.Path.Rectangle({
-            point: [width - 50, this.theme.headerHeight - 10],
-            size: [this.theme.buttonWidth, this.theme.buttonHeight],
-            radius: this.theme.buttonRadius,
-            fillColor: new this.timelineScope.Color(0.4, 0.4, 0.6)
-        });
-
-        // Button text
-        const buttonText = new this.timelineScope.PointText({
-            point: [width - 30, this.theme.headerHeight - 5],
-            content: 'Key',
-            fillColor: 'white',
-            fontSize: 12,
-            justification: 'center'
-        });
-
-        buttonGroup.addChild(buttonBackground);
-        buttonGroup.addChild(buttonText);
-
-        // Make button clickable
-        buttonGroup.onClick = () => {
-            this.manager.addKeyframe();
-        };
-    }
-
-    /**
      * Create a debug UI for controlling the timeline
      */
     private createConatiner() {
@@ -736,15 +639,75 @@ export class TimelineUI {
             font-size: 12px;`;
 
         // Title
-        const title = document.createElement('div');
-        title.textContent = 'Timeline';
-        title.style.cssText = `margin-bottom: 5px; font-weight: bold; font-size: 14px;`;
-        container.appendChild(title);
+        // const title = document.createElement('div');
+        // title.textContent = 'Timeline';
+        // title.style.cssText = `margin-bottom: 5px; font-weight: bold; font-size: 14px;`;
+        // container.appendChild(title);
+
 
         // Legacy UI elements for compatibility and direct control
         const controlsContainer = document.createElement('div');
         controlsContainer.style.cssText = `display: flex; align-items: center; margin-top: 5px;`;
+        
+        // Add play/pause button with SVG icons
+        const playPauseButton = document.createElement('button');
+        playPauseButton.id = 'timeline-play-button';
+        playPauseButton.style.cssText = `
+            padding: 5px;
+            margin-right: 10px;
+            background-color: ${this.theme.playButtonColor};
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+        `;
+        
+        // Initial SVG - Play icon
+        playPauseButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
 
+        const playPauseButtonSVG = playPauseButton.querySelector('svg');
+        
+        playPauseButton.addEventListener('click', () => {
+            if (this.manager.isPlaying()) {
+                this.manager.pause();
+            } else {
+                this.manager.play();
+            }
+        });
+        
+        // Update button appearance when playback state changes
+        this.manager.observers.subscribe('playbackStateChanged', ({ isPlaying }) => {
+            // Change SVG based on state
+            if(!playPauseButtonSVG) return;
+            if (isPlaying) {
+                playPauseButtonSVG.innerHTML = `<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`;
+                playPauseButton.style.backgroundColor = this.theme.pauseButtonColor;
+            } else {
+                playPauseButtonSVG.innerHTML = `<polygon points="5,3 19,12 5,21"/>`;
+                playPauseButton.style.backgroundColor = this.theme.playButtonColor;
+            }
+        });
+
+        
+        // Current time display
+        const timeDisplay = document.createElement('div');
+        timeDisplay.id = 'timeline-time-display';
+        timeDisplay.textContent = `Time: ${this.manager.getPosition().toFixed(2)}s`;
+        timeDisplay.style.cssText = `font-size: 12px;`;
+        
+        // Update time display when timeline position changes
+        this.manager.observers.subscribe('timelineUpdated', ({ time }) => {
+            timeDisplay.textContent = `Time: ${this.manager.getPosition().toFixed(2)}s`;
+        });
+        
+        controlsContainer.appendChild(playPauseButton);
+        controlsContainer.appendChild(timeDisplay);
         container.appendChild(controlsContainer);
 
         // Add to document
@@ -759,7 +722,7 @@ export class TimelineUI {
         canvas.height = 100;
         canvas.style.width = '100%';
         canvas.style.height = '100px';
-        canvas.style.marginTop = '10px';
+        canvas.style.marginTop = '5px';
         container.appendChild(canvas);
 
         // Shortcut keys
