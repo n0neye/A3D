@@ -300,6 +300,9 @@ export class TimelineUI {
                 (this.timelineScope.project.activeLayer.children as any)['currentTimeText'].content =
                     `Time: ${this.manager.getPosition().toFixed(2)}s`;
             }
+
+            // Update the timeline position
+            this.manager.setPosition(newTime);
         }
     }
 
