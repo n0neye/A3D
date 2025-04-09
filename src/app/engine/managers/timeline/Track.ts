@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 
 // Define base keyframe interface
-export interface Keyframe {
+export interface IKeyframe {
     time: number;
     data: {};
+    paperItem?: paper.Item;
 }
 
 // Camera keyframe
-export interface CameraKeyframe extends Keyframe {
+export interface CameraKeyframe extends IKeyframe {
     data: {
         position: THREE.Vector3;
         quaternion: THREE.Quaternion;
@@ -16,7 +17,7 @@ export interface CameraKeyframe extends Keyframe {
 }
 
 // Object keyframe
-export interface ObjectKeyframe extends Keyframe {
+export interface ObjectKeyframe extends IKeyframe {
     data: {
         position: THREE.Vector3;
         quaternion: THREE.Quaternion;
@@ -25,11 +26,12 @@ export interface ObjectKeyframe extends Keyframe {
 }
 
 // Define base track class
-export abstract class Track<T extends Keyframe> {
+export abstract class Track<T extends IKeyframe> {
     protected keyframes: T[] = [];
     protected target: any;
     protected name: string;
-    
+    public isActive: boolean = false;
+
     constructor(name: string, target: any) {
         this.name = name;
         this.target = target;
@@ -43,7 +45,7 @@ export abstract class Track<T extends Keyframe> {
         return this.name;
     }
     
-    public getKeyframes(): T[] {
+    public getKeyframes(): IKeyframe[] {
         return this.keyframes;
     }
     
