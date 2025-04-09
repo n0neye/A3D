@@ -13,7 +13,7 @@ export class TimelineManager {
     private lastFrameTime: number | null = null;
     private tracks: Track<any>[] = [];
     private activeTrackIndex: number = 0;
-    private ui: TimelineUI;
+    private ui: TimelineUI | null = null;
 
     // Observer for timeline events
     public observers = new Observer<{
@@ -31,7 +31,14 @@ export class TimelineManager {
         this.createCameraTrack();
         
         // Create UI after initializing the manager
-        this.ui = new TimelineUI(this);
+        this.initializeUI();
+    }
+
+    async initializeUI(): Promise<void> {
+        if (typeof window !== 'undefined') {
+            const paper = await import('paper/dist/paper-core');
+            this.ui = new TimelineUI(this, paper);
+        }
     }
     
     /**
@@ -245,6 +252,8 @@ export class TimelineManager {
      * Toggle timeline UI visibility
      */
     public toggleUI(visible?: boolean): void {
-        this.ui.toggleUI(visible);
+        if (this.ui) {
+            this.ui.toggleUI(visible);
+        }
     }
 }

@@ -11,7 +11,7 @@ interface ButtonConfig {
 
 export class TimelineUI {
     private manager: TimelineManager;
-    private debugUI: HTMLElement | null = null;
+    private uiContainer: HTMLElement | null = null;
 
     // Add UI configuration
     private theme = {
@@ -45,9 +45,7 @@ export class TimelineUI {
     };
 
     // Paper.js elements
-    private canvas: HTMLCanvasElement | null = null;
-    private timelineScope: paper.PaperScope | null = null;
-    private timelinePath: paper.Path | null = null;
+    private timelineScope: paper.PaperScope;
     private playhead: paper.Group | null = null;
     private keyframeGroups: paper.Group[] = [];
     private trackGroups: paper.Group[] = [];
@@ -61,9 +59,22 @@ export class TimelineUI {
         originalTime: number
     } | null = null;
 
-    constructor(manager: TimelineManager) {
+    constructor(manager: TimelineManager, paper: any) {
         this.manager = manager;
-        this.createDebugUI();
+
+        // Create container
+        const {container, canvas} = this.createConatiner();
+        this.uiContainer = container;
+
+        // Initialize Paper.js
+        this.timelineScope = new paper.PaperScope();
+        
+        this.timelineScope.setup(canvas);
+
+        // Set up event handlers
+        this.timelineScope.view.onMouseDown = this.onPaperMouseDown.bind(this);
+        this.timelineScope.view.onMouseDrag = this.onPaperMouseDrag.bind(this);
+        this.timelineScope.view.onMouseUp = this.onPaperMouseUp.bind(this);
 
         // Subscribe to manager events
         this.manager.observers.subscribe('timelineUpdated', ({ time }) => {
@@ -85,19 +96,22 @@ export class TimelineUI {
         this.manager.observers.subscribe('activeTrackChanged', () => {
             this.updatePaperTimeline();
         });
+        
+        // Draw initial timeline
+        this.updatePaperTimeline();
     }
 
     /**
      * Toggle debug UI visibility
      */
     public toggleUI(visible?: boolean): void {
-        if (!this.debugUI) return;
+        if (!this.uiContainer) return;
 
         if (visible === undefined) {
-            visible = this.debugUI.style.display === 'none';
+            visible = this.uiContainer.style.display === 'none';
         }
 
-        this.debugUI.style.display = visible ? 'block' : 'none';
+        this.uiContainer.style.display = visible ? 'block' : 'none';
     }
 
     /**
@@ -123,42 +137,10 @@ export class TimelineUI {
     }
 
     /**
-     * Initialize Paper.js timeline
-     */
-    private async initializePaperTimeline(container: HTMLElement): Promise<void> {
-        if (typeof window !== 'undefined') {
-            // Only import paper.js on the client side
-            const paper = await import('paper/dist/paper-core');
-
-            // Create canvas
-            this.canvas = document.createElement('canvas');
-            this.canvas.id = 'timeline-canvas';
-            this.canvas.width = 800;
-            this.canvas.height = 100;
-            this.canvas.style.width = '100%';
-            this.canvas.style.height = '100px';
-            this.canvas.style.marginTop = '10px';
-            container.appendChild(this.canvas);
-
-            // Initialize Paper.js
-            this.timelineScope = new paper.PaperScope();
-            this.timelineScope.setup(this.canvas);
-
-            // Set up event handlers
-            this.timelineScope.view.onMouseDown = this.onPaperMouseDown.bind(this);
-            this.timelineScope.view.onMouseDrag = this.onPaperMouseDrag.bind(this);
-            this.timelineScope.view.onMouseUp = this.onPaperMouseUp.bind(this);
-
-            // Draw initial timeline
-            this.updatePaperTimeline();
-        }
-    }
-
-    /**
      * Mouse down handler for Paper.js timeline
      */
     private onPaperMouseDown(event: paper.MouseEvent): void {
-        if (!this.timelineScope) return;
+        
 
         // Check for keyframe hits FIRST (highest priority)
         const tracks = this.manager.getTracks();
@@ -215,7 +197,7 @@ export class TimelineUI {
      * Find a keyframe item by track and keyframe indices
      */
     private findKeyframeItem(trackIndex: number, keyframeIndex: number): paper.Item | null {
-        if (!this.timelineScope) return null;
+        
 
         // Search through all items in the active layer
         for (let i = 0; i < this.timelineScope.project.activeLayer.children.length; i++) {
@@ -237,7 +219,7 @@ export class TimelineUI {
      * Mouse drag handler for Paper.js timeline
      */
     private onPaperMouseDrag(event: paper.MouseEvent): void {
-        if (!this.timelineScope) return;
+        
 
         // Handle dragging playhead
         if (this.isDraggingPlayhead) {
@@ -325,7 +307,7 @@ export class TimelineUI {
      * Update the Paper.js timeline visualization 
      */
     private updatePaperTimeline(): void {
-        if (!this.timelineScope) return;
+        
 
         // Clear existing elements
         this.timelineScope.project.activeLayer.removeChildren();
@@ -504,7 +486,7 @@ export class TimelineUI {
      * Create play/pause button in Paper.js
      */
     private createPaperPlayButton(): void {
-        if (!this.timelineScope) return;
+        
 
         const width = this.timelineScope.view.size.width;
         const buttonGroup = new this.timelineScope.Group();
@@ -542,7 +524,7 @@ export class TimelineUI {
 
 
     private createButton(config: ButtonConfig): paper.Group | null {
-        if (!this.timelineScope) return null;
+        
         const buttonGroup = new this.timelineScope.Group();
         buttonGroup.name = config.text;
 
@@ -569,7 +551,7 @@ export class TimelineUI {
 
         // Hover effects
         buttonGroup.onMouseEnter = () => {
-            if (!this.timelineScope) return;
+            
             buttonBackground.fillColor = new this.timelineScope.Color(config.hoverColor || this.theme.buttonHoverColor);
             (this.timelineScope.view as any).draw();
 
@@ -578,7 +560,7 @@ export class TimelineUI {
         };
 
         buttonGroup.onMouseLeave = () => {
-            if (!this.timelineScope) return;
+            
             buttonBackground.fillColor = new this.timelineScope.Color(config.color || this.theme.buttonColor);
             (this.timelineScope.view as any).draw();
 
@@ -594,7 +576,7 @@ export class TimelineUI {
      * Update play/pause button state
      */
     private updatePaperPlayButton(): void {
-        if (!this.timelineScope) return;
+        
 
         const buttonGroup = (this.timelineScope.project.activeLayer.children as any)['playPauseButton'];
         if (buttonGroup) {
@@ -619,7 +601,7 @@ export class TimelineUI {
      * Create add keyframe button in Paper.js
      */
     private createPaperAddKeyframeButton(): void {
-        if (!this.timelineScope) return;
+        
 
         const width = this.timelineScope.view.size.width;
         const buttonGroup = new this.timelineScope.Group();
@@ -654,9 +636,7 @@ export class TimelineUI {
     /**
      * Create a debug UI for controlling the timeline
      */
-    private createDebugUI(): void {
-        // Only create UI in non-production environments
-        if (process.env.NODE_ENV === 'production') return;
+    private createConatiner() {
 
         // Create UI container
         const container = document.createElement('div');
@@ -677,28 +657,27 @@ export class TimelineUI {
         title.style.cssText = `margin-bottom: 5px; font-weight: bold; font-size: 14px;`;
         container.appendChild(title);
 
-        // Initialize Paper.js timeline
-        this.initializePaperTimeline(container);
-
         // Legacy UI elements for compatibility and direct control
         const controlsContainer = document.createElement('div');
         controlsContainer.style.cssText = `display: flex; align-items: center; margin-top: 5px;`;
-
-        // Reset button
-        // const resetButton = document.createElement('button');
-        // resetButton.textContent = 'Reset';
-        // resetButton.style.cssText = `margin-right: 5px; padding: 3px 8px;`;
-        // resetButton.addEventListener('click', () => {
-        //     this.manager.setPosition(0);
-        // });
-        // controlsContainer.appendChild(resetButton);
 
         container.appendChild(controlsContainer);
 
         // Add to document
         document.body.appendChild(container);
 
-        // Store reference
-        this.debugUI = container;
+        
+
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.id = 'timeline-canvas';
+        canvas.width = 800;
+        canvas.height = 100;
+        canvas.style.width = '100%';
+        canvas.style.height = '100px';
+        canvas.style.marginTop = '10px';
+        container.appendChild(canvas);
+
+        return {container, canvas};
     }
 } 
