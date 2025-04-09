@@ -116,7 +116,9 @@ export class BoneControl extends Selectable(THREE.Mesh) {
     // sync the bone's rotation with the control mesh
     console.log(`BoneControl.onTransformUpdate: Syncing bone ${this.bone.name} rotation with control mesh`);
     if (this.quaternion) {
-      this.bone.quaternion.copy(this.quaternion);
+        this.bone.quaternion.copy(this.quaternion);
+        // Critical: Update the matrix after changing quaternion
+        this.bone.updateMatrix();
     }
   }
 } 

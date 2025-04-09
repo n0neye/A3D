@@ -318,13 +318,29 @@ export class CharacterEntity extends EntityBase {
         console.log("CharacterEntity: updateBoneVisualization", this.name);
 
         // Sync the position and rotation of the bone control to the bone
-        this._boneMap.forEach(({ control,bone, lineConfigs }) => {
+        this._boneMap.forEach(({ control, bone, lineConfigs }) => {
             control.position.copy(bone.position);
             control.quaternion.copy(bone.quaternion);
-            lineConfigs.forEach(({ line }) => {
-                // ?
-            });
+            
+            // Update line positions if they exist
+            // lineConfigs.forEach(({ line, targetBone }) => {
+            //     if (line.geometry instanceof THREE.BufferGeometry) {
+            //         const points = [
+            //             new THREE.Vector3(0, 0, 0), // Local origin
+            //             targetBone.position.clone() // Target bone position in local space
+            //         ];
+            //         line.geometry.setFromPoints(points);
+            //         line.geometry.attributes.position.needsUpdate = true;
+            //     }
+            // });
         });
+        
+        // Force a redraw
+        // this.traverse(object => {
+        //     if (object instanceof THREE.SkinnedMesh) {
+        //         object.skeleton.update();
+        //     }
+        // });
     }
 
     /**

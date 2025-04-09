@@ -120,6 +120,17 @@ export class CharacterPoseTrack extends Track<CharacterPoseKeyframe> {
 
         console.log(`CharacterPoseTrack: Applied Keyframe at position ${keyframe.time}`, keyframe);
         
+        // Critical: Update the entire skeleton after all bones have been modified
+        if (character.skeleton) {
+            character.skeleton.bones.forEach(bone => {
+                // Force update the bone's world matrix
+                bone.updateMatrixWorld(true);
+            });
+            
+            // Update the skeleton to reflect bone changes
+            character.skeleton.update();
+        }
+        
         // Update character's bone visualization
         character.updateBoneVisualization();
     }
@@ -180,22 +191,32 @@ export class CharacterPoseTrack extends Track<CharacterPoseKeyframe> {
 
         console.log(`CharacterPoseTrack: Interpolated Keyframes at position ${start.time} and ${end.time}`, start, end);
         
+        // At the end, add these critical updates:
+        if (character.skeleton) {
+            character.skeleton.bones.forEach(bone => {
+                bone.updateMatrixWorld(true);
+            });
+            character.skeleton.update();
+        }
+        
+        // Update character's bone visualization
+        character.updateBoneVisualization();
     }
 
-    applyTransform(boneControl: BoneControl, transform: { position?: THREE.Vector3, quaternion?: THREE.Quaternion }): void {
+    private applyTransform(boneControl: BoneControl, transform: { position?: THREE.Vector3, quaternion?: THREE.Quaternion }): void {
         console.log(`CharacterPoseTrack: applyTransform ${boneControl.bone.name}`, transform.quaternion);
 
         if (transform.position) {
             boneControl.position.copy(transform.position);
+            boneControl.bone.position.copy(transform.position);
         }
 
         if (transform.quaternion) {
             boneControl.quaternion.copy(transform.quaternion);
+            boneControl.bone.quaternion.copy(transform.quaternion);
         }
 
-        boneControl.onTransformUpdate();
-
-        // Update character's bone visualization
-        this.target.updateBoneVisualization();
+        // Critical: Update the bone's matrix
+        boneControl.bone.updateMatrix();
     }
 }
