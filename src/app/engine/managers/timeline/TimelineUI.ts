@@ -393,10 +393,38 @@ export class TimelineUI {
             const trackName = new this.timelineScope!.PointText({
                 point: [10, y + 20],
                 content: track.getName(),
-                fillColor: isActive ? '#ffcc00' : 'white',
+                fillColor: isActive ? '#ffffff' : '#cccccc',
                 fontSize: 12
             });
             trackGroup.addChild(trackName);
+            
+            // Add track control buttons
+            // 1. Previous keyframe button
+            this.createButton({
+                text: '<',
+                position: [this.theme.timelineStart - 90, y + 5],
+                onClick: () => this.goToPreviousKeyframe(track),
+                color: this.theme.buttonColor,
+                hoverColor: this.theme.buttonHoverColor
+            });
+            
+            // 2. Add keyframe button
+            this.createButton({
+                text: '◆',
+                position: [this.theme.timelineStart - 60, y + 5],
+                onClick: () => this.addKeyframeToTrack(track),
+                color: this.theme.keyframeButtonColor,
+                hoverColor: this.theme.buttonHoverColor
+            });
+            
+            // 3. Next keyframe button
+            this.createButton({
+                text: '>',
+                position: [this.theme.timelineStart - 30, y + 5],
+                onClick: () => this.goToNextKeyframe(track),
+                color: this.theme.buttonColor,
+                hoverColor: this.theme.buttonHoverColor
+            });
 
             // Track separator line
             const separator = new this.timelineScope!.Path.Line({
@@ -722,5 +750,60 @@ export class TimelineUI {
         });
 
         return { container, canvas };
+    }
+
+    // Add these new methods for the button functionality
+    private goToPreviousKeyframe(track: Track<any>): void {
+        const keyframes = track.getKeyframes();
+        const currentTime = this.manager.getPosition();
+        
+        // Find the previous keyframe (closest keyframe with time less than current time)
+        let prevKeyframe = null;
+        for (let i = keyframes.length - 1; i >= 0; i--) {
+            if (keyframes[i].time < currentTime) {
+                prevKeyframe = keyframes[i];
+                break;
+            }
+        }
+        
+        // If no previous keyframe found, wrap around to the last keyframe
+        if (!prevKeyframe && keyframes.length > 0) {
+            prevKeyframe = keyframes[keyframes.length - 1];
+        }
+        
+        if (prevKeyframe) {
+            this.manager.setPosition(prevKeyframe.time);
+            this.selectKeyframe(prevKeyframe);
+        }
+    }
+    
+    private addKeyframeToTrack(track: Track<any>): void {
+        const currentTime = this.manager.getPosition();
+        this.manager.setActiveTrack(track);
+        this.manager.addKeyframe();
+    }
+    
+    private goToNextKeyframe(track: Track<any>): void {
+        const keyframes = track.getKeyframes();
+        const currentTime = this.manager.getPosition();
+        
+        // Find the next keyframe (closest keyframe with time greater than current time)
+        let nextKeyframe = null;
+        for (let i = 0; i < keyframes.length; i++) {
+            if (keyframes[i].time > currentTime) {
+                nextKeyframe = keyframes[i];
+                break;
+            }
+        }
+        
+        // If no next keyframe found, wrap around to the first keyframe
+        if (!nextKeyframe && keyframes.length > 0) {
+            nextKeyframe = keyframes[0];
+        }
+        
+        if (nextKeyframe) {
+            this.manager.setPosition(nextKeyframe.time);
+            this.selectKeyframe(nextKeyframe);
+        }
     }
 } 
