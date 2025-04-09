@@ -42,7 +42,7 @@ export class BoneControl extends Selectable(THREE.Mesh) {
     super(geometry, material);
     
     // Set properties
-    this.name = `boneControl_${bone.name}`;
+    this.name = `${bone.name}`;
     this.entityId = options.entityId || uuidv4();
     this.character = character;
     this.bone = bone;

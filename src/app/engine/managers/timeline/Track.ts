@@ -26,6 +26,7 @@ export interface EntityTransform extends IKeyframe {
     }
 }
 
+
 // Define base track class
 export abstract class Track<T extends IKeyframe> {
     protected keyframes: T[] = [];
@@ -175,8 +176,6 @@ export class CameraTrack extends Track<CameraKeyframe> {
         camera.updateProjectionMatrix();
     }
 }
-
-
 
 // Object track implementation
 export class EntityTransformTrack extends Track<EntityTransform> {

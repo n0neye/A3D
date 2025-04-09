@@ -202,6 +202,10 @@ export class CharacterEntity extends EntityBase {
         return this.skeleton?.bones || [];
     }
 
+    public getBoneControls(): BoneControl[] {
+        return Array.from(this._boneMap.values()).map(({ control }) => control);
+    }
+
     /**
      * Reset all bones to their initial rotations
      */

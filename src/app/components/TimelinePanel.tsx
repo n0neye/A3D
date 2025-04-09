@@ -14,6 +14,7 @@ import {
     PlusIcon
 } from 'lucide-react';
 import { EntityBase } from '../engine/entity/base/EntityBase';
+import { CharacterEntity } from '../engine/entity/types/CharacterEntity';
 
 function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }) {
     // States
@@ -295,6 +296,15 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
         return timelineManager.getTracks().find(track => track.getTarget() === entity);
     }
 
+    // Add a new helper function to create appropriate track types
+    const createTrackForEntity = (entity: EntityBase) => {
+        if (entity instanceof CharacterEntity) {
+            return timelineManager.createCharacterPoseTrack(`${entity.name} Pose`, entity);
+        } else {
+            return timelineManager.createEntityTrack(entity.name, entity);
+        }
+    }
+
     if (!timelineManager) {
         return <div className="panel-shape">Timeline Manager not available</div>;
     }
@@ -433,8 +443,8 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
                     ))}
 
                     {selectedEntity && !getEntityTrack(selectedEntity) &&
-                        <Button size="xs" variant="secondary" className='text-xs w-40' onClick={() => timelineManager.createEntityTrack(selectedEntity.name, selectedEntity)}>
-                             New Track
+                        <Button size="xs" variant="secondary" className='text-xs w-40' onClick={() => createTrackForEntity(selectedEntity)}>
+                            New Track
                             <PlusIcon className="h-4 w-4" />
                         </Button>
                     }

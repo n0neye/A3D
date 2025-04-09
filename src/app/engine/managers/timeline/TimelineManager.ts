@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { EditorEngine } from '../../core/EditorEngine';
 import { Observer } from '../../utils/Observer';
 import { Track, CameraTrack, EntityTransformTrack, IKeyframe } from './Track';
+import { CharacterPoseTrack } from './CharacterPoseTrack';
 import { EntityBase } from '../../entity/base/EntityBase';
+import { CharacterEntity } from '../../entity/types/CharacterEntity';
 
 export class TimelineManager {
     private engine: EditorEngine;
@@ -58,6 +60,19 @@ export class TimelineManager {
 
         this.observers.notify('trackAdded', { track, name: track.getName() });
 
+        return track;
+    }
+
+    /**
+     * Create a character pose track for animating character bones
+     */
+    public createCharacterPoseTrack(name: string, character: CharacterEntity): CharacterPoseTrack {
+        const track = new CharacterPoseTrack(name, character);
+
+        this.tracks.push(track);
+        
+        this.observers.notify('trackAdded', { track, name: track.getName() });
+        
         return track;
     }
 
