@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEditorEngine } from '@/app/context/EditorEngineContext';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronDown, ChevronRight, RefreshCw, Box } from 'lucide-react';
+import { ChevronDown, ChevronRight, RefreshCw, Box, Activity } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { 
   Card,
@@ -11,6 +11,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
 import * as THREE from 'three';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
 
@@ -79,8 +80,169 @@ const ThreeObjectNode: React.FC<ThreeObjectNodeProps> = ({
   );
 };
 
-const ThreeObjectDetails: React.FC<{ object: THREE.Object3D | null }> = ({ object }) => {
-  if (!object) {
+// Types for tracking property changes
+interface PropertyState {
+  value: string;
+  isChanging: boolean;
+}
+
+interface ObjectProperties {
+  position: {
+    x: PropertyState;
+    y: PropertyState;
+    z: PropertyState;
+  };
+  rotation: {
+    x: PropertyState;
+    y: PropertyState;
+    z: PropertyState;
+  };
+  scale: {
+    x: PropertyState;
+    y: PropertyState;
+    z: PropertyState;
+  };
+  visible: PropertyState;
+}
+
+const ThreeObjectDetails: React.FC<{ 
+  object: THREE.Object3D | null;
+  liveMonitoring: boolean;
+}> = ({ object, liveMonitoring }) => {
+  const [properties, setProperties] = useState<ObjectProperties | null>(null);
+  const prevPropsRef = useRef<{
+    position?: THREE.Vector3;
+    rotation?: THREE.Euler;
+    scale?: THREE.Vector3;
+    visible?: boolean;
+  }>({});
+  const frameCountRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Initialize or update properties when object changes
+  useEffect(() => {
+    if (!object) {
+      setProperties(null);
+      return;
+    }
+
+    const initialProps = createInitialProperties(object);
+    setProperties(initialProps);
+    prevPropsRef.current = {
+      position: object.position.clone(),
+      rotation: object.rotation.clone(),
+      scale: object.scale.clone(),
+      visible: object.visible
+    };
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [object]);
+
+  // Handle live monitoring with animation frame
+  useEffect(() => {
+    if (!object || !liveMonitoring) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    const updatePropertiesLoop = () => {
+      // Only update every 5 frames for performance (about 12 updates per second at 60fps)
+      frameCountRef.current = (frameCountRef.current + 1) % 5;
+      if (frameCountRef.current === 0 && object) {
+        updateProperties(object);
+      }
+      
+      animationFrameRef.current = requestAnimationFrame(updatePropertiesLoop);
+    };
+
+    updatePropertiesLoop();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [object, liveMonitoring]);
+
+  // Create initial properties object
+  const createInitialProperties = (obj: THREE.Object3D): ObjectProperties => {
+    return {
+      position: {
+        x: { value: Number(obj.position.x).toFixed(2), isChanging: false },
+        y: { value: Number(obj.position.y).toFixed(2), isChanging: false },
+        z: { value: Number(obj.position.z).toFixed(2), isChanging: false }
+      },
+      rotation: {
+        x: { value: (Number(obj.rotation.x) * (180/Math.PI)).toFixed(1), isChanging: false },
+        y: { value: (Number(obj.rotation.y) * (180/Math.PI)).toFixed(1), isChanging: false },
+        z: { value: (Number(obj.rotation.z) * (180/Math.PI)).toFixed(1), isChanging: false }
+      },
+      scale: {
+        x: { value: Number(obj.scale.x).toFixed(2), isChanging: false },
+        y: { value: Number(obj.scale.y).toFixed(2), isChanging: false },
+        z: { value: Number(obj.scale.z).toFixed(2), isChanging: false }
+      },
+      visible: { value: obj.visible ? 'Yes' : 'No', isChanging: false }
+    };
+  };
+
+  // Update properties and detect changes
+  const updateProperties = (obj: THREE.Object3D) => {
+    if (!properties) return;
+
+    const prev = prevPropsRef.current;
+    const newProperties = { ...properties };
+    
+    // Check for position changes
+    ['x', 'y', 'z'].forEach((axis) => {
+      const propValue = Number(obj.position[axis as keyof THREE.Vector3]);
+      const value = propValue.toFixed(2);
+      newProperties.position[axis as keyof typeof newProperties.position].value = value;
+      newProperties.position[axis as keyof typeof newProperties.position].isChanging = 
+        prev.position![axis as keyof THREE.Vector3] !== obj.position[axis as keyof THREE.Vector3];
+    });
+    
+    // Check for rotation changes (convert to degrees)
+    ['x', 'y', 'z'].forEach((axis) => {
+      const propValue = Number(obj.rotation[axis as keyof THREE.Euler]);
+      const value = (propValue * (180/Math.PI)).toFixed(1);
+      newProperties.rotation[axis as keyof typeof newProperties.rotation].value = value;
+      newProperties.rotation[axis as keyof typeof newProperties.rotation].isChanging = 
+        prev.rotation![axis as keyof THREE.Euler] !== obj.rotation[axis as keyof THREE.Euler];
+    });
+    
+    // Check for scale changes
+    ['x', 'y', 'z'].forEach((axis) => {
+      const propValue = Number(obj.scale[axis as keyof THREE.Vector3]);
+      const value = propValue.toFixed(2);
+      newProperties.scale[axis as keyof typeof newProperties.scale].value = value;
+      newProperties.scale[axis as keyof typeof newProperties.scale].isChanging = 
+        prev.scale![axis as keyof THREE.Vector3] !== obj.scale[axis as keyof THREE.Vector3];
+    });
+    
+    // Check visibility change
+    newProperties.visible.value = obj.visible ? 'Yes' : 'No';
+    newProperties.visible.isChanging = prev.visible !== obj.visible;
+    
+    // Update prev values reference
+    prevPropsRef.current = {
+      position: obj.position.clone(),
+      rotation: obj.rotation.clone(),
+      scale: obj.scale.clone(),
+      visible: obj.visible
+    };
+    
+    setProperties(newProperties);
+  };
+
+  if (!object || !properties) {
     return (
       <Card className="w-full">
         <CardHeader>
@@ -158,6 +320,15 @@ const ThreeObjectDetails: React.FC<{ object: THREE.Object3D | null }> = ({ objec
     );
   }
 
+  // Helper function to render property with highlighting if changing
+  const renderProperty = (prop: PropertyState, label?: string) => {
+    return (
+      <span className={prop.isChanging ? 'bg-yellow-100 dark:bg-yellow-900/20 px-1 rounded transition-colors' : ''}>
+        {prop.value}{label}
+      </span>
+    );
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-2">
@@ -173,19 +344,25 @@ const ThreeObjectDetails: React.FC<{ object: THREE.Object3D | null }> = ({ objec
           <span className="text-xs break-all opacity-70">{object.uuid}</span>
         </div>
         <div>
-          <span className="font-medium">Visible:</span> {object.visible ? 'Yes' : 'No'}
+          <span className="font-medium">Visible:</span> {renderProperty(properties.visible)}
         </div>
         <div>
           <span className="font-medium">Position:</span> 
-          x: {position.x}, y: {position.y}, z: {position.z}
+          x: {renderProperty(properties.position.x)}, 
+          y: {renderProperty(properties.position.y)}, 
+          z: {renderProperty(properties.position.z)}
         </div>
         <div>
           <span className="font-medium">Rotation:</span> 
-          x: {rotation.x}°, y: {rotation.y}°, z: {rotation.z}°
+          x: {renderProperty(properties.rotation.x, '°')}, 
+          y: {renderProperty(properties.rotation.y, '°')}, 
+          z: {renderProperty(properties.rotation.z, '°')}
         </div>
         <div>
           <span className="font-medium">Scale:</span> 
-          x: {scale.x}, y: {scale.y}, z: {scale.z}
+          x: {renderProperty(properties.scale.x)}, 
+          y: {renderProperty(properties.scale.y)}, 
+          z: {renderProperty(properties.scale.z)}
         </div>
         <div>
           <span className="font-medium">Children:</span> {object.children.length}
@@ -202,6 +379,7 @@ const ThreeJsDebugView: React.FC = () => {
   const [sceneRoot, setSceneRoot] = useState<THREE.Scene | null>(null);
   const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [liveMonitoring, setLiveMonitoring] = useState(false);
 
   // Initial load of scene
   useEffect(() => {
@@ -224,6 +402,7 @@ const ThreeJsDebugView: React.FC = () => {
 
   const handleSelectObject = (object: THREE.Object3D) => {
     setSelectedObject(object);
+    engine.getTransformControlManager().attachToNode(object);
   };
 
   if (!sceneRoot) {
@@ -233,26 +412,39 @@ const ThreeJsDebugView: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex items-center justify-between mb-2">
-        <div className="font-medium">Three.js Scene Graph</div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleRefresh}
-                className="h-7 w-7"
-              >
-                <RefreshCw 
-                  className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} 
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p className="text-xs">Refresh scene graph</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="font-medium">Scene Graph</div>
+        <div className="flex items-center">
+          <div className="flex items-center mr-2">
+            <label htmlFor="live-monitoring" className="text-xs flex items-center mr-1">
+              Live
+            </label>
+            <Switch
+              id="live-monitoring"
+              checked={liveMonitoring}
+              onCheckedChange={setLiveMonitoring}
+              className="mr-2"
+            />
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleRefresh}
+                  className="h-7 w-7"
+                >
+                  <RefreshCw 
+                    className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p className="text-xs">Refresh scene graph</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
       
       <div className="flex flex-col h-[calc(100%-2rem)]">
@@ -268,7 +460,10 @@ const ThreeJsDebugView: React.FC = () => {
         </div>
         
         <div className="mt-4 pt-2 border-t border-gray-200 dark:border-gray-800">
-          <ThreeObjectDetails object={selectedObject} />
+          <ThreeObjectDetails 
+            object={selectedObject} 
+            liveMonitoring={liveMonitoring}
+          />
         </div>
       </div>
     </div>

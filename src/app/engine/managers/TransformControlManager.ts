@@ -218,7 +218,6 @@ export class TransformControlManager {
 
         if (node) {
             this._currentTarget = node;
-            this.transformControls.attach(node);
         }
     }
 
