@@ -1,4 +1,3 @@
-
 // Utility function to download an image from a URL
 export async function downloadImage(imageUrl: string, filename?: string): Promise<void> {
   if (!imageUrl) return;
@@ -32,4 +31,18 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
   } catch (error) {
     console.error("Error downloading image:", error);
   }
+}
+
+// Add this function if it doesn't exist already
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  
+  // Clean up
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 100);
 }

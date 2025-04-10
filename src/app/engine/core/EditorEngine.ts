@@ -33,6 +33,7 @@ import { Observer } from '../utils/Observer';
 import { TimelineManager } from '../managers/timeline/TimelineManager';
 import { CreateEntityCommand } from '../../lib/commands';
 import { ObjectManager } from '../managers/ObjectManager';
+import { RenderVideoService } from '../services/RenderVideoService';
 
 
 /**
@@ -53,6 +54,7 @@ export class EditorEngine {
   private environmentManager: EnvironmentManager;
   private timelineManager: TimelineManager;
   private objectManager: ObjectManager;
+  private renderVideoService: RenderVideoService;
 
   public observer = new Observer<{
   }>();
@@ -84,6 +86,9 @@ export class EditorEngine {
 
     // Create the render service
     this.renderService = new RenderService(scene, this, threeRenderer);
+
+    // Create the render video service
+    this.renderVideoService = new RenderVideoService(this, this.renderService);
 
     // Register the update method to be called by the core
     this.core.setEngineUpdate(this.update);
@@ -153,6 +158,10 @@ export class EditorEngine {
 
   public getObjectManager(): ObjectManager {
     return this.objectManager;
+  }
+
+  public getRenderVideoService(): RenderVideoService {
+    return this.renderVideoService;
   }
 
 
