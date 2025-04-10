@@ -317,23 +317,12 @@ export class TimelineManager {
 
                 // Serialize keyframes with THREE.js object property conversion
                 const keyframes = track.getKeyframes().map(keyframe => {
-                    const data = { ...keyframe.data };
-                    
-                    // Convert THREE.Vector3 and THREE.Quaternion to arrays
-                    for (const key in data) {
-                        // Convert Vector3 to array
-                        if (data[key] instanceof THREE.Vector3) {
-                            data[key] = (data[key] as THREE.Vector3).toArray();
-                        }
-                        // Convert Quaternion to array
-                        else if (data[key] instanceof THREE.Quaternion) {
-                            data[key] = (data[key] as THREE.Quaternion).toArray();
-                        }
-                    }
+                    // Deep clone and convert the data to ensure we don't modify the original
+                    const serializedData = this.deepSerializeThreeObjects(keyframe.data);
                     
                     return {
                         time: keyframe.time,
-                        data: data
+                        data: serializedData
                     };
                 });
 
@@ -345,6 +334,35 @@ export class TimelineManager {
                 };
             })
         };
+    }
+
+    /**
+     * Helper method to recursively serialize THREE.js objects
+     */
+    private deepSerializeThreeObjects(data: any): any {
+        if (!data) return data;
+        
+        if (data instanceof THREE.Vector3 || data instanceof THREE.Quaternion) {
+            // Convert Vector3 and Quaternion directly to arrays
+            return (data as any).toArray();
+        }
+        
+        if (Array.isArray(data)) {
+            // Process array elements
+            return data.map(item => this.deepSerializeThreeObjects(item));
+        }
+        
+        if (typeof data === 'object') {
+            // Process object properties
+            const result: any = {};
+            for (const key in data) {
+                result[key] = this.deepSerializeThreeObjects(data[key]);
+            }
+            return result;
+        }
+        
+        // Return primitives unchanged
+        return data;
     }
 
     /**
