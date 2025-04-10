@@ -1,31 +1,26 @@
 import * as THREE from 'three';
 import { EntityBase } from '../../entity/base/EntityBase';
 
-// Define base keyframe interface
-export interface IKeyframe {
+// Define base keyframe interface with generic type parameter
+export interface IKeyframe<T = any> {
     track: Track<any>;
     time: number;
-    data: {};
+    data: T;
 }
 
-// Camera keyframe
-export interface CameraKeyframe extends IKeyframe {
-    data: {
-        position: THREE.Vector3;
-        quaternion: THREE.Quaternion;
-        fov: number;
-    }
-}
+// Camera keyframe with specific data type
+export interface CameraKeyframe extends IKeyframe<{
+    position: THREE.Vector3;
+    quaternion: THREE.Quaternion;
+    fov: number;
+}> {}
 
-// Object keyframe
-export interface EntityTransform extends IKeyframe {
-    data: {
-        position: THREE.Vector3;
-        quaternion: THREE.Quaternion;
-        scale: THREE.Vector3;
-    }
-}
-
+// Object keyframe with specific data type
+export interface EntityTransform extends IKeyframe<{
+    position: THREE.Vector3;
+    quaternion: THREE.Quaternion;
+    scale: THREE.Vector3;
+}> {}
 
 // Define base track class
 export abstract class Track<T extends IKeyframe> {
@@ -40,8 +35,11 @@ export abstract class Track<T extends IKeyframe> {
     }
 
     // Abstract methods that must be implemented by subclasses
-    abstract addKeyframe(time: number): IKeyframe;
+    abstract addKeyframe(time: number): T;
     abstract updateTargetAtTime(time: number): void;
+    
+    // New method to support serialization
+    abstract deserializeKeyframe(time: number, serializedData: any): T;
 
     public getName(): string {
         return this.name;
@@ -51,10 +49,9 @@ export abstract class Track<T extends IKeyframe> {
         return this.target;
     }
 
-    public getKeyframes(): IKeyframe[] {
+    public getKeyframes(): T[] {
         return this.keyframes;
     }
-
 
     public removeKeyframe(keyframe: IKeyframe): void {
         const index = this.keyframes.findIndex(kf => kf === keyframe);
@@ -133,6 +130,18 @@ export class CameraTrack extends Track<CameraKeyframe> {
         }
 
         return keyframe;
+    }
+
+    public deserializeKeyframe(time: number, serializedData: any): CameraKeyframe {
+        return {
+            track: this,
+            time,
+            data: {
+                position: new THREE.Vector3().fromArray(serializedData.position),
+                quaternion: new THREE.Quaternion().fromArray(serializedData.quaternion),
+                fov: serializedData.fov
+            }
+        };
     }
 
     public updateTargetAtTime(time: number): void {
@@ -215,6 +224,18 @@ export class EntityTransformTrack extends Track<EntityTransform> {
         return keyframe;
     }
 
+    public deserializeKeyframe(time: number, serializedData: any): EntityTransform {
+        return {
+            track: this,
+            time,
+            data: {
+                position: new THREE.Vector3().fromArray(serializedData.position),
+                quaternion: new THREE.Quaternion().fromArray(serializedData.quaternion),
+                scale: new THREE.Vector3().fromArray(serializedData.scale)
+            }
+        };
+    }
+
     public updateTargetAtTime(time: number): void {
         const object = this.target;
         const { before, after } = this.getSurroundingKeyframes(time);
@@ -235,13 +256,13 @@ export class EntityTransformTrack extends Track<EntityTransform> {
             result.position = before.data.position;
             result.quaternion = before.data.quaternion;
             result.scale = before.data.scale;
-            result.log = `Only have keyframes before current time, using last keyframe`;
+            result.log = `Only before`;
         } else if (!before && after) {
             // Only have keyframes after current time, use first keyframe
             result.position = after.data.position;
             result.quaternion = after.data.quaternion;
             result.scale = after.data.scale;
-            result.log = `Only have keyframes after current time, using first keyframe`;
+            result.log = `Only after`;
         } else {
 
             // Have keyframes before and after, interpolate
@@ -258,6 +279,6 @@ export class EntityTransformTrack extends Track<EntityTransform> {
 
         object.updateMatrixWorld();
 
-        console.log(`EntityTransformTrack: Updated object ${this.target.name} at time:`, time, object.position, result.log);
+        console.log(`EntityTransformTrack: Updated object ${this.target.name} at time:`, time, object.position, object.quaternion, object.scale, result.log);
     }
 }

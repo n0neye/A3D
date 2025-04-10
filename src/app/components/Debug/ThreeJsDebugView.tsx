@@ -403,6 +403,7 @@ const ThreeJsDebugView: React.FC = () => {
   const handleSelectObject = (object: THREE.Object3D) => {
     setSelectedObject(object);
     engine.getTransformControlManager().attachToNode(object);
+    console.log(`ThreeJsDebugView SelectNode: ${object.name}`, object);
   };
 
   if (!sceneRoot) {

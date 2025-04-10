@@ -118,6 +118,11 @@ export class TimelineManager {
      */
     public setActiveTrack(track: Track<any>): void {
         console.log('setActiveTrack', track);
+        // Reset active state on previous active track
+        if (this.activeTrack) {
+            this.activeTrack.isActive = false;
+        }
+        
         this.activeTrack = track;
         this.activeTrack.isActive = true;
         this.observers.notify('activeTrackChanged', { track });
@@ -310,11 +315,25 @@ export class TimelineManager {
                     targetUUID = target.uuid;
                 } 
 
-                // Serialize keyframes
+                // Serialize keyframes with THREE.js object property conversion
                 const keyframes = track.getKeyframes().map(keyframe => {
+                    const data = { ...keyframe.data };
+                    
+                    // Convert THREE.Vector3 and THREE.Quaternion to arrays
+                    for (const key in data) {
+                        // Convert Vector3 to array
+                        if (data[key] instanceof THREE.Vector3) {
+                            data[key] = (data[key] as THREE.Vector3).toArray();
+                        }
+                        // Convert Quaternion to array
+                        else if (data[key] instanceof THREE.Quaternion) {
+                            data[key] = (data[key] as THREE.Quaternion).toArray();
+                        }
+                    }
+                    
                     return {
                         time: keyframe.time,
-                        data: keyframe.data
+                        data: data
                     };
                 });
 
@@ -368,15 +387,10 @@ export class TimelineManager {
 
             if (!track) return;
 
-            // Add keyframes
+            // Add keyframes using the track's deserializeKeyframe method
             trackData.keyframes.forEach(keyframeData => {
-                const keyframe = {
-                    track: track,
-                    time: keyframeData.time,
-                    data: keyframeData.data
-                } as IKeyframe;
-
-                track.getKeyframes().push(keyframe as any);
+                const keyframe = track!.deserializeKeyframe(keyframeData.time, keyframeData.data);
+                track!.getKeyframes().push(keyframe);
             });
 
             // Sort keyframes by time
