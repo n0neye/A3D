@@ -72,7 +72,7 @@ export class ShapeEntity extends EntityBase {
     const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
 
     return new ShapeEntity(data.name, scene, {
-      uuid: data.entityId,
+      uuid: data.uuid,
       position,
       rotation,
       scaling,

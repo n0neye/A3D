@@ -72,7 +72,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
    */
   serialize(): SerializedEntityData {
     return {
-      entityId: this.uuid,
+      uuid: this.uuid,
       name: this.name,
       entityType: this.entityType,
       position: fromThreeVector3(this.position),
@@ -149,7 +149,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
 
 
 export interface SerializedEntityData {
-  entityId: string;
+  uuid: string;
   name: string;
   entityType: EntityType;
   position: Vector3Data;

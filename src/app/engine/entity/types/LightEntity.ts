@@ -182,7 +182,7 @@ export class LightEntity extends EntityBase {
     const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
 
     return new LightEntity(data.name, scene, {
-      uuid: data.entityId,
+      uuid: data.uuid,
       position,
       props: data.props
     });

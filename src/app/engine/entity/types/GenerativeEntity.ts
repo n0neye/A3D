@@ -372,7 +372,7 @@ export class GenerativeEntity extends EntityBase {
     const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
 
     return new GenerativeEntity(data.name, scene, {
-      uuid: data.entityId,
+      uuid: data.uuid,
       position,
       rotation,
       scaling,

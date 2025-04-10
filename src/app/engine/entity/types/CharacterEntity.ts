@@ -413,8 +413,8 @@ export class CharacterEntity extends EntityBase {
         data: SerializedCharacterEntityData,
     ): Promise<CharacterEntity> {
         try {
-            console.log("Deserializing character:", data.name, data.entityId);
-            const entity = new CharacterEntity(scene, data.name, data.entityId, data.characterProps);
+            console.log("Deserializing character:", data.name, data.uuid);
+            const entity = new CharacterEntity(scene, data.name, data.uuid, data.characterProps);
 
             // Wait for model to load before applying bone rotations
             await entity.waitUntilReady();
@@ -467,7 +467,7 @@ export class CharacterEntity extends EntityBase {
         } catch (error) {
             console.error("Error during character deserialization:", error);
             // Create a fallback entity without the bone rotations
-            const fallbackEntity = new CharacterEntity(scene, data.name, data.entityId, data.characterProps);
+            const fallbackEntity = new CharacterEntity(scene, data.name, data.uuid, data.characterProps);
             await fallbackEntity.waitUntilReady();
             return fallbackEntity;
         }

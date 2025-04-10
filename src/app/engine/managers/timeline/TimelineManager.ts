@@ -308,11 +308,7 @@ export class TimelineManager {
                 const target = track.getTarget();
                 if (target && 'uuid' in target) {
                     targetId = target.uuid;
-                } else if (target && 'id' in target) {
-                    targetId = target.id;
-                } else if (target && 'entityId' in target) {
-                    targetId = target.entityId;
-                }
+                } 
 
                 // Serialize keyframes
                 const keyframes = track.getKeyframes().map(keyframe => {
@@ -351,8 +347,6 @@ export class TimelineManager {
         // Create a map of all entities in the scene by ID
         scene.traverse(object => {
             if (object instanceof EntityBase) {
-                entityMap.set(object.uuid, object);
-                // Also map by uuid for compatibility
                 entityMap.set(object.uuid, object);
             }
         });
