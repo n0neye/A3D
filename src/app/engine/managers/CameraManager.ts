@@ -328,4 +328,96 @@ export class CameraManager {
       this.orbitControls.enabled = enabled;
     }
   }
+
+  /**
+   * Focus the camera on a specific object
+   * @param target The object to focus on
+   * @param offset Optional offset distance from the object (default: 1.5x object size)
+   * @param duration Animation duration in milliseconds (0 for instant)
+   */
+  public focusOnObject(target: THREE.Object3D, offset?: number, duration: number = 300): void {
+    if (!target) return;
+    
+    // Calculate the bounding box of the target
+    const boundingBox = new THREE.Box3().setFromObject(target);
+    const center = new THREE.Vector3();
+    boundingBox.getCenter(center);
+    
+    // Calculate size of the object to determine camera distance
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+    const maxDimension = Math.max(size.x, size.y, size.z);
+    
+    // Determine camera distance (adjust multiplier as needed)
+    const distance = offset || (maxDimension * 5);
+    
+    // Get the current camera direction normalized
+    const direction = new THREE.Vector3();
+    this.mainCamera.getWorldDirection(direction);
+    
+    // Calculate new camera position
+    const newPosition = center.clone().add(
+      direction.multiplyScalar(-distance)
+    );
+    
+    if (duration > 0) {
+      // Animate the transition
+      this._animateCameraToPosition(newPosition, center, duration);
+    } else {
+      // Instant transition
+      this.mainCamera.position.copy(newPosition);
+      this.orbitControls.target.copy(center);
+      this.orbitControls.update();
+    }
+  }
+  
+  /**
+   * Animate the camera movement to a new position
+   * @private
+   */
+  private _animateCameraToPosition(
+    targetPosition: THREE.Vector3, 
+    targetLookAt: THREE.Vector3,
+    duration: number
+  ): void {
+    const startPosition = this.mainCamera.position.clone();
+    const startLookAt = this.orbitControls.target.clone();
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease in-out function for smooth animation
+      const easeProgress = progress < 0.5
+        ? 2 * progress * progress
+        : -1 + (4 - 2 * progress) * progress;
+      
+      // Interpolate position and lookAt
+      const newPosition = new THREE.Vector3().lerpVectors(
+        startPosition, 
+        targetPosition, 
+        easeProgress
+      );
+      
+      const newLookAt = new THREE.Vector3().lerpVectors(
+        startLookAt,
+        targetLookAt,
+        easeProgress
+      );
+      
+      // Update camera and controls
+      this.mainCamera.position.copy(newPosition);
+      this.orbitControls.target.copy(newLookAt);
+      this.orbitControls.update();
+      
+      // Continue animation if not complete
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    animate();
+  }
 } 

@@ -30,7 +30,7 @@ export interface EntityTransform extends IKeyframe {
 // Define base track class
 export abstract class Track<T extends IKeyframe> {
     protected keyframes: T[] = [];
-    protected target: any;
+    protected target: EntityBase | THREE.Camera;
     protected name: string;
     public isActive: boolean = false;
 
@@ -47,7 +47,7 @@ export abstract class Track<T extends IKeyframe> {
         return this.name;
     }
 
-    public getTarget(): any {
+    public getTarget(): EntityBase | THREE.Camera {
         return this.target;
     }
     
