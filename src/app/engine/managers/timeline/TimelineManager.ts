@@ -351,7 +351,7 @@ export class TimelineManager {
         // Create a map of all entities in the scene by ID
         scene.traverse(object => {
             if (object instanceof EntityBase) {
-                entityMap.set(object.entityId, object);
+                entityMap.set(object.uuid, object);
                 // Also map by uuid for compatibility
                 entityMap.set(object.uuid, object);
             }

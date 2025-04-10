@@ -35,7 +35,7 @@ export class ShapeEntity extends EntityBase {
     }
   ) {
     super(name, scene, 'shape', {
-      entityId: options.uuid,
+      uuid: options.uuid,
       position: options.position,
       rotation: options.rotation,
       scaling: options.scaling,

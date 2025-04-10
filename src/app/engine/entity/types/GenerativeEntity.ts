@@ -61,7 +61,7 @@ export class GenerativeEntity extends EntityBase {
     }
   ) {
     super(name, scene, 'generative', {
-      entityId: options.uuid,
+      uuid: options.uuid,
       position: options.position,
       rotation: options.rotation,
       scaling: options.scaling

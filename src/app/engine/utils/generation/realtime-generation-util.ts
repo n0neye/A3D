@@ -52,7 +52,7 @@ export async function doGenerateRealtimeImage(
 
     // update the entity name with first word of prompt
     entity.name = positivePrompt.split(' ')[0] + "_" + entity.name;
-    entity.entityId = positivePrompt.split(' ')[0] + "_" + entity.entityId;
+    entity.uuid = positivePrompt.split(' ')[0] + "_" + entity.uuid;
 
     // Determine dimensions
     const ratioMultipliers = RATIO_MAP[ratio];

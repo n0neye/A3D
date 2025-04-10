@@ -43,7 +43,7 @@ export class LightEntity extends EntityBase {
     } = {}
   ) {
     super(name, scene, 'light', {
-      entityId: options.uuid,
+      uuid: options.uuid,
       position: options.position,
     });
 

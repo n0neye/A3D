@@ -54,7 +54,7 @@ export class CharacterEntity extends EntityBase {
             onLoaded?: (entity: EntityBase) => void
         }) {
         super(name, scene, 'character', {
-            entityId: id,
+            uuid: id,
             position: new THREE.Vector3(0, 0, 0),
             scaling: options?.scaling || new THREE.Vector3(1, 1, 1)
         });

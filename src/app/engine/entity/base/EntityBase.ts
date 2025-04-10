@@ -10,9 +10,10 @@ import { TransformMode } from '@/app/engine/managers/TransformControlManager';
  */
 // Entity types
 export type EntityType = 'generative' | 'shape' | 'light' | 'character';
+
+
 export class EntityBase extends Selectable(THREE.Object3D) {
   // Core properties all entities share
-  entityId: string;
   entityType: EntityType;
   created: Date;
   engine: EditorEngine;
@@ -30,7 +31,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
     scene: THREE.Scene,
     entityType: EntityType,
     options: {
-      entityId?: string;
+      uuid?: string;
       position?: THREE.Vector3;
       rotation?: THREE.Euler;
       scaling?: THREE.Vector3;
@@ -41,7 +42,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
 
     // Initialize core properties
     this.engine = EditorEngine.getInstance();
-    this.entityId = options.entityId || uuidv4();
+    this.uuid = options.uuid || this.uuid;
     this.entityType = entityType;
     this.created = new Date();
 
@@ -71,7 +72,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
    */
   serialize(): SerializedEntityData {
     return {
-      entityId: this.entityId,
+      entityId: this.uuid,
       name: this.name,
       entityType: this.entityType,
       position: fromThreeVector3(this.position),
@@ -119,7 +120,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
   }
 
   getUUId(): string {
-    return this.entityId;
+    return this.uuid;
   }
 
 
