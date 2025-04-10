@@ -8,6 +8,8 @@ export interface ObjectManagerEvents {
   entityAdded: { entity: EntityBase };
   entityRemoved: { entity: EntityBase };
   entityUpdated: { entity: EntityBase };
+  entityVisibilityChanged: { entity: EntityBase, visible: boolean };
+  entityDeletedStateChanged: { entity: EntityBase, isDeleted: boolean };
   hierarchyChanged: {};
 }
 
@@ -27,6 +29,7 @@ export class ObjectManager {
   // Collections
   private entities: Map<string, EntityBase> = new Map();
   private entitiesByType: Map<EntityType, Set<string>> = new Map();
+  private deletedEntities: Set<string> = new Set();
   
   // Observable pattern for UI updates
   public observer = new Observer<ObjectManagerEvents>();
@@ -55,6 +58,7 @@ export class ObjectManager {
    */
   public scanScene(): void {
     this.entities.clear();
+    this.deletedEntities.clear();
     
     // Reset type collections
     this.entitiesByType.forEach(set => set.clear());
@@ -63,6 +67,11 @@ export class ObjectManager {
     this.scene.traverse(node => {
       if (isEntity(node)) {
         this.registerEntity(node);
+        
+        // Track deleted state
+        if (node.isDeleted) {
+          this.deletedEntities.add(node.uuid);
+        }
       }
     });
     
@@ -87,6 +96,11 @@ export class ObjectManager {
       typeSet.add(entity.uuid);
     }
     
+    // Track deleted state if needed
+    if (entity.isDeleted) {
+      this.deletedEntities.add(entity.uuid);
+    }
+    
     // Notify observers
     this.observer.notify('entityAdded', { entity });
   }
@@ -108,6 +122,11 @@ export class ObjectManager {
       typeSet.delete(entity.uuid);
     }
     
+    // Remove from deleted collection if needed
+    if (this.deletedEntities.has(entity.uuid)) {
+      this.deletedEntities.delete(entity.uuid);
+    }
+    
     // Notify observers
     this.observer.notify('entityRemoved', { entity });
   }
@@ -125,10 +144,79 @@ export class ObjectManager {
   }
 
   /**
+   * Update an entity's visibility state
+   */
+  public updateEntityVisibility(entity: EntityBase, visible: boolean): void {
+    // Notify observers
+    this.observer.notify('entityVisibilityChanged', { entity, visible });
+  }
+
+  /**
+   * Update an entity's deleted state
+   */
+  public updateEntityDeletedState(entity: EntityBase, isDeleted: boolean): void {
+    if (isDeleted) {
+      this.deletedEntities.add(entity.uuid);
+    } else {
+      this.deletedEntities.delete(entity.uuid);
+    }
+    
+    // Notify observers
+    this.observer.notify('entityDeletedStateChanged', { entity, isDeleted });
+    this.observer.notify('hierarchyChanged', {});
+  }
+
+  /**
+   * Check if an entity is marked as deleted
+   */
+  public isEntityDeleted(entity: EntityBase): boolean {
+    return this.deletedEntities.has(entity.uuid);
+  }
+
+  /**
    * Get all entities in the scene
    */
   public getAllEntities(): EntityBase[] {
     return Array.from(this.entities.values());
+  }
+
+  /**
+   * Get all visible and non-deleted entities
+   */
+  public getAllVisibleEntities(): EntityBase[] {
+    return Array.from(this.entities.values())
+      .filter(entity => entity.visible && !entity.isDeleted);
+  }
+
+  /**
+   * Get all deleted entities
+   */
+  public getDeletedEntities(): EntityBase[] {
+    return Array.from(this.deletedEntities)
+      .map(uuid => this.entities.get(uuid))
+      .filter(Boolean) as EntityBase[];
+  }
+
+  /**
+   * Get non-deleted root entities
+   */
+  public getRootEntities(): EntityBase[] {
+    return Array.from(this.entities.values())
+      .filter(entity => 
+        (!entity.parent || entity.parent === this.scene) && 
+        !this.deletedEntities.has(entity.uuid)
+      );
+  }
+
+  /**
+   * Get deleted root entities
+   */
+  public getDeletedRootEntities(): EntityBase[] {
+    return Array.from(this.entities.values())
+      .filter(entity => 
+        (!entity.parent || entity.parent === this.scene) && 
+        this.deletedEntities.has(entity.uuid)
+      );
   }
 
   /**
@@ -158,15 +246,6 @@ export class ObjectManager {
       } else {
         return entity.name.includes(name);
       }
-    });
-  }
-
-  /**
-   * Get all root-level entities (no parent or parent is scene)
-   */
-  public getRootEntities(): EntityBase[] {
-    return Array.from(this.entities.values()).filter(entity => {
-      return !entity.parent || entity.parent === this.scene;
     });
   }
 

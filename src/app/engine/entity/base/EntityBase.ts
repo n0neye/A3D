@@ -15,6 +15,8 @@ export type EntityType = 'generative' | 'shape' | 'light' | 'character';
 export class EntityBase extends Selectable(THREE.Object3D) {
   // Core properties all entities share
   entityType: EntityType;
+  isDeleted: boolean = false;
+
   created: Date;
   engine: EditorEngine;
 
@@ -55,6 +57,9 @@ export class EntityBase extends Selectable(THREE.Object3D) {
 
     // Add to scene
     scene.add(this);
+
+    // Notify object manager about the new entity
+    this.engine.getObjectManager().registerEntity(this);
   }
 
   // Common methods all entities share
@@ -134,16 +139,24 @@ export class EntityBase extends Selectable(THREE.Object3D) {
       }
     });
     this.visible = false;
+    this.isDeleted = true;
+    
+    // Notify object manager about deletion state change
+    this.engine.getObjectManager().updateEntityDeletedState(this, true);
   }
 
   undoDelete(): void {
     console.log(`EntityBase.undoDelete: Undoing delete for entity: ${this.name}`);
     this.visible = true;
+    this.isDeleted = false;
     this.children.forEach((child) => {
       if (child instanceof THREE.Mesh) {
         child.visible = true;
       }
     });
+    
+    // Notify object manager about deletion state change
+    this.engine.getObjectManager().updateEntityDeletedState(this, false);
   }
 }
 

@@ -141,7 +141,7 @@ export class ProjectManager {
     }
 
     serializeProject(): IProjectData {
-        const entities: EntityBase[] = this.engine.getObjectManager().getAllEntities();
+        const entities: EntityBase[] = this.engine.getObjectManager().getAllVisibleEntities();
         
         // Serialize environment settings
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
