@@ -59,7 +59,7 @@ export class ShapeEntity extends EntityBase {
     }
 
     // Return the created mesh
-    console.log(`ShapeEntity: constructor done`, options.onLoaded);
+    console.log(`ShapeEntity: constructor done`, this.name, this.uuid);
     options.onLoaded?.(this);
   }
 
