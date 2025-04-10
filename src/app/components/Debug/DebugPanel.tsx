@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useEditorEngine } from '@/app/context/EditorEngineContext';
 import SceneOutliner from './SceneOutliner';
 import EntityDetails from './EntityDetails';
-import { Bug, X } from 'lucide-react';
+import { Bug, X, Keyboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DebugPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,14 +16,23 @@ const DebugPanel: React.FC = () => {
     <>
       {/* Debug Toggle Button */}
       {!isOpen && (
-        <Button 
-          variant="outline" 
-          size="icon"
-          className="fixed bottom-4 left-4 z-50 bg-background shadow-md"
-          onClick={() => setIsOpen(true)}
-        >
-          <Bug className="h-4 w-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="fixed bottom-4 left-4 z-50 bg-background shadow-md"
+                onClick={() => setIsOpen(true)}
+              >
+                <Bug className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Open Debug Panel</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
 
       {/* Debug Panel */}
@@ -33,9 +43,28 @@ const DebugPanel: React.FC = () => {
               <Bug className="h-4 w-4 mr-2" />
               Debug Panel
             </h3>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="mr-1">
+                      <Keyboard className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs space-y-1">
+                      <div><span className="font-bold">F</span> - Focus on selected entity</div>
+                      <div><span className="font-bold">Delete</span> - Delete selected entity</div>
+                      <div><span className="font-bold">W/E/R/T</span> - Change transform mode</div>
+                      <div><span className="font-bold">Ctrl+D</span> - Duplicate entity</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           
           <div className="flex-1 p-4 overflow-hidden">
