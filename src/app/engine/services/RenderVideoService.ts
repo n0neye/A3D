@@ -103,32 +103,12 @@ export class RenderVideoService {
         // Wait for the scene to update
         await new Promise(resolve => setTimeout(resolve, 1));
 
-        // Capture regular screenshot
-        // const screenshot = await this.renderService.takeFramedScreenshot();
-
-
         // Render the scene
         this.renderer.render(this.engine.getScene(), camera);
 
         // Get the canvas data as base64 image
         const screenshot = this.renderer.domElement.toDataURL('image/jpeg', 0.9);
         frames.push(screenshot);
-        // options.onPreviewFrame(screenshot);
-
-        // Crop the screenshot by ratio
-        // const croppedScreenshot = await this.renderService.cropByRatio(screenshot);
-
-        // if (croppedScreenshot) {
-        //   // Resize the screenshot if needed
-        //   // const resizedFrame = await resizeImage(croppedScreenshot, options.width, options.height);
-        //   // frames.push(resizedFrame);
-
-        //   // // Provide preview of current frame
-        //   // options.onPreviewFrame(resizedFrame);
-
-        //   frames.push(croppedScreenshot);
-        //   options.onPreviewFrame(croppedScreenshot);
-        // }
 
         // Update progress
         options.onProgress((frameIndex + 1) / frameCount);

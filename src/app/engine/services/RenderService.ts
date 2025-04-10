@@ -141,7 +141,7 @@ export class RenderService {
 
         let depthImage: string | undefined = undefined;
         if (params.selectedAPI.useDepthImage) {
-            depthImage = await this.enableDepthRender(1) || undefined;
+            depthImage = await this.showDepthRenderSeconds(1) || undefined;
             if (depthImage) {
                 depthImage = await this.cropByRatio(depthImage);
                 params.onPreview(depthImage);
@@ -204,7 +204,7 @@ export class RenderService {
     /**
      * Show the depth map of current camera, apply to post processing, return the image, and restore original state after given seconds
      */
-    public async enableDepthRender(seconds: number = 1): Promise<string | null> {
+    public async showDepthRenderSeconds(seconds: number = 1, onGetDepthMap?: (imageUrl: string) => void): Promise<string | null> {
         try {
             const camera = this.engine.getCameraManager().getCamera();
             const renderer = this.renderer;
@@ -213,42 +213,7 @@ export class RenderService {
             // Hide all gizmos
             this.setAllGizmoVisibility(false);
 
-            // Calculate optimal far value by finding the farthest visible vertex
-            let maxDistance = 0;
-            const cameraPosition = camera.position.clone();
-            const cameraDirection = new THREE.Vector3();
-            camera.getWorldDirection(cameraDirection);
-
-            // Traverse all visible meshes to find maximum distance
-            const selectableObjects = this.engine.getInputManager().getSelectableObjects();
-            selectableObjects.forEach((selectableObject) => {
-                // get all meshes from the selectable object
-                const meshes = selectableObject.children.filter((child) => child instanceof THREE.Mesh);
-                meshes.forEach((mesh) => {
-                    if (mesh.geometry.boundingSphere === null) {
-                        mesh.geometry.computeBoundingSphere();
-                    }
-
-                    if (mesh.geometry.boundingSphere) {
-                        // Get world position of the bounding sphere center
-                        const center = mesh.geometry.boundingSphere.center.clone();
-                        const radius = mesh.geometry.boundingSphere.radius;
-                        mesh.localToWorld(center);
-
-                        // Calculate distance from camera to the farthest point of the bounding sphere
-                        const direction = center.clone().sub(cameraPosition);
-                        const distance = direction.length() + radius;
-
-                        // Check if this object is in front of the camera (dot product with camera direction > 0)
-                        if (direction.normalize().dot(cameraDirection) > 0 && distance > maxDistance) {
-                            maxDistance = distance;
-                        }
-                    }
-                });
-            });
-
-            // Add a small margin to ensure we capture everything
-            const optimalFar = Math.max(maxDistance * 1.1, camera.near * 100);
+            const optimalFar = this.calculateOptimalFar(camera);
             console.log(`Original camera far: ${camera.far}, Calculated optimal far: ${optimalFar}`);
 
             // Create a render target with depth texture
@@ -299,10 +264,7 @@ export class RenderService {
             });
 
             const postScene = new THREE.Scene();
-            const postQuad = new THREE.Mesh(
-                new THREE.PlaneGeometry(2, 2),
-                postMaterial
-            );
+            const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
             postScene.add(postQuad);
 
             // Save original render target and camera far value
@@ -313,54 +275,19 @@ export class RenderService {
             camera.far = optimalFar;
             camera.updateProjectionMatrix();
 
-            // Variable to store our depth snapshot
-            let depthSnapshot: string | null = null;
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(scene, camera);
 
-            // Storage for our render loop function
-            let renderLoopId: number | null = null;
-            let frameCount = 0;
+            // Process depth texture
+            postMaterial.uniforms.tDepth.value = renderTarget.depthTexture;
 
-            // Create a promise that will resolve when we have the snapshot
-            const snapshotPromise = new Promise<string | null>((resolve) => {
-                // Function to render depth effect
-                const renderDepthEffect = () => {
-                    // Render scene to target with depth texture
-                    renderer.setRenderTarget(renderTarget);
-                    renderer.render(scene, camera);
+            // Render depth visualization to canvas
+            renderer.setRenderTarget(null);
+            renderer.render(postScene, postCamera);
 
-                    // Process depth texture
-                    postMaterial.uniforms.tDepth.value = renderTarget.depthTexture;
-
-                    // Render depth visualization to canvas
-                    renderer.setRenderTarget(null);
-                    renderer.render(postScene, postCamera);
-
-                    // Increment frame counter
-                    frameCount++;
-
-                    // Capture on the 3rd frame to ensure it's fully rendered
-                    if (frameCount === 3 && depthSnapshot === null) {
-                        // Capture the visualization from the canvas
-                        depthSnapshot = renderer.domElement.toDataURL('image/png');
-                        resolve(depthSnapshot);
-                    }
-
-                    // Continue rendering loop
-                    renderLoopId = requestAnimationFrame(renderDepthEffect);
-                };
-
-                // Start render loop
-                renderDepthEffect();
-            });
-
-            // Wait for the depth snapshot
-            depthSnapshot = await snapshotPromise;
+            const depthSnapshot = renderer.domElement.toDataURL('image/png');
 
             setTimeout(() => {
-                // Clean up rendering loop in a timeout, to avoid blocking the main thread
-                if (renderLoopId !== null) {
-                    cancelAnimationFrame(renderLoopId);
-                }
 
                 // Restore original state
                 renderer.setRenderTarget(originalRenderTarget);
@@ -390,11 +317,51 @@ export class RenderService {
         }
     }
 
+
+    calculateOptimalFar(camera: THREE.PerspectiveCamera): number {
+        // Calculate optimal far value by finding the farthest visible vertex
+        let maxDistance = 0;
+        const cameraPosition = camera.position.clone();
+        const cameraDirection = new THREE.Vector3();
+        camera.getWorldDirection(cameraDirection);
+
+        // Traverse all visible meshes to find maximum distance
+        const selectableObjects = this.engine.getInputManager().getSelectableObjects();
+        selectableObjects.forEach((selectableObject) => {
+            // get all meshes from the selectable object
+            const meshes = selectableObject.children.filter((child) => child instanceof THREE.Mesh);
+            meshes.forEach((mesh) => {
+                if (mesh.geometry.boundingSphere === null) {
+                    mesh.geometry.computeBoundingSphere();
+                }
+                if (mesh.geometry.boundingSphere) {
+                    // Get world position of the bounding sphere center
+                    const center = mesh.geometry.boundingSphere.center.clone();
+                    const radius = mesh.geometry.boundingSphere.radius;
+                    mesh.localToWorld(center);
+
+                    // Calculate distance from camera to the farthest point of the bounding sphere
+                    const direction = center.clone().sub(cameraPosition);
+                    const distance = direction.length() + radius;
+
+                    // Check if this object is in front of the camera (dot product with camera direction > 0)
+                    if (direction.normalize().dot(cameraDirection) > 0 && distance > maxDistance) {
+                        maxDistance = distance;
+                    }
+                }
+            });
+        });
+
+        // Add a small margin to ensure we capture everything
+        const optimalFar = Math.max(maxDistance * 1.1, camera.near * 100);
+        return optimalFar;
+    }
+
     /**
      * Gets a depth map from the scene
      */
     public async getDepthMap(): Promise<{ imageUrl: string }> {
-        const dataURL = await this.enableDepthRender(1);
+        const dataURL = await this.showDepthRenderSeconds(1);
         if (!dataURL) throw new Error("Failed to generate depth map");
         return { imageUrl: dataURL };
     }
