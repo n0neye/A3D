@@ -12,6 +12,7 @@ import DebugPanel from './Debug/DebugPanel';
 import { useEffect, useState } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
+import RenderPanels from './RenderPanels';
 
 function EngineUIContainer() {
     const { engine } = useEditorEngine();
@@ -31,7 +32,7 @@ function EngineUIContainer() {
             <EntityPanel />
 
             {/* Render Panel - simplified props */}
-            <RenderPanel isDebugMode={isDebugMode} />
+            <RenderPanels />
 
             <div className='fixed top-2 w-full flex justify-center items-center'>
                 <div className="panel-shape p-1 flex gap-2">
