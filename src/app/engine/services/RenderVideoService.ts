@@ -61,23 +61,28 @@ export class RenderVideoService {
     this.isRendering = true;
     this.shouldCancelRender = false;
 
+    let stopDepthRenderFunction: (() => void) | null = null;
+    if (options.includeDepth) {
+      const { stopDepthRender } = this.renderService.startDepthRender();
+      stopDepthRenderFunction = stopDepthRender;
+    }
+
     try {
       // Get timeline duration
       // const timelineDuration = this.timelineManager.getDuration();
-      const timelineDuration = 2; //for testing
+      const timelineDuration = 1; //for testing
 
       // Calculate number of frames to capture
       const frameCount = Math.ceil(timelineDuration * options.fps);
 
       // Prepare array to store frame data
       const frames: string[] = [];
-      const depthFrames: string[] = [];
 
       // Pause any current playback
       this.timelineManager.pause();
 
       // Store original timeline position
-      const originalPosition = this.timelineManager.getPosition();
+      const originalPosition = this.timelineManager.getCurrentTime();
 
       // Hide gizmos and helpers during rendering
       this.renderService.setAllGizmoVisibility(false);
@@ -98,7 +103,7 @@ export class RenderVideoService {
         const frameTime = (frameIndex / frameCount) * timelineDuration;
 
         // Set timeline to this position
-        this.timelineManager.setPosition(frameTime);
+        this.timelineManager.setCurrentTime(frameTime);
 
         // Wait for the scene to update
         await new Promise(resolve => setTimeout(resolve, 1));
@@ -114,14 +119,18 @@ export class RenderVideoService {
         options.onProgress((frameIndex + 1) / frameCount);
       }
 
+      if (options.includeDepth && stopDepthRenderFunction) {
+        stopDepthRenderFunction();
+      }
+
       // Generate the video from frames
       const videoUrl = await this.generateVideoFromFrames(
-        options.includeDepth ? depthFrames : frames,
+        frames,
         options.fps
       );
 
       // Restore original state
-      this.timelineManager.setPosition(originalPosition);
+      this.timelineManager.setCurrentTime(originalPosition);
       this.renderService.setAllGizmoVisibility(true);
 
       // Return result
@@ -148,11 +157,94 @@ export class RenderVideoService {
    * Generate a depth video by rendering the scene with depth visualization
    */
   public async renderDepthVideo(options: VideoRenderOptions): Promise<VideoRenderResult | null> {
-    // Set the includeDepth option to true
-    return this.renderVideo({
-      ...options,
-      includeDepth: true
-    });
+
+    const startTime = Date.now();
+    this.isRendering = true;
+    this.shouldCancelRender = false;
+    
+    // Store original timeline position
+    const originalPosition = this.timelineManager.getCurrentTime();
+
+    try {
+      // Get timeline duration
+      // const timelineDuration = this.timelineManager.getDuration();
+      const timelineDuration = 1; //for testing
+
+      // Calculate number of frames to capture
+      const frameCount = Math.ceil(timelineDuration * options.fps);
+
+      // Prepare array to store frame data
+      const frames: string[] = [];
+
+      // Pause any current playback
+      this.timelineManager.pause();
+
+
+      // Hide gizmos and helpers during rendering
+      this.renderService.setAllGizmoVisibility(false);
+
+      // Get camera
+      const cameraManager = this.engine.getCameraManager();
+      const camera = cameraManager.getCamera();
+
+      const { stopDepthRender, renderer, postScene, postCamera } = this.renderService.startDepthRender();
+
+
+      // Process each frame
+      for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+        // Check if rendering was canceled
+        if (this.shouldCancelRender) {
+          throw new Error('Rendering was canceled');
+        }
+
+        // Set timeline time
+        const frameTime = (frameIndex / frameCount) * timelineDuration;
+        this.timelineManager.setCurrentTime(frameTime);
+
+        // Wait for the scene to update
+        await new Promise(resolve => setTimeout(resolve, 1));
+
+        // Render the scene
+        renderer.render(postScene, postCamera);
+
+        // Get the canvas data as base64 image
+        const screenshot = this.renderer.domElement.toDataURL('image/jpeg', 0.9);
+        frames.push(screenshot);
+
+        // Update progress
+        options.onProgress((frameIndex + 1) / frameCount);
+      }
+
+      stopDepthRender();
+
+      // Generate the video from frames
+      const videoUrl = await this.generateVideoFromFrames(
+        frames,
+        options.fps
+      );
+
+      // Restore original state
+      this.timelineManager.setCurrentTime(originalPosition);
+      this.renderService.setAllGizmoVisibility(true);
+
+      // Return result
+      return {
+        videoUrl,
+        duration: timelineDuration,
+        frameCount,
+        executionTimeMs: Date.now() - startTime
+      };
+
+    } catch (error) {
+      console.error('Error rendering video:', error);
+
+      // Restore original visibility state
+      this.renderService.setAllGizmoVisibility(true);
+
+      return null;
+    } finally {
+      this.isRendering = false;
+    }
   }
 
   /**

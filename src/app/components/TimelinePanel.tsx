@@ -92,7 +92,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
         
         // Initial state
         setTracks(timelineManager.getTracks());
-        setCurrentTime(timelineManager.getPosition());
+        setCurrentTime(timelineManager.getCurrentTime());
         setDuration(timelineManager.getDuration());
         setIsPlaying(timelineManager.isPlaying());
         setActiveTrack(timelineManager.getActiveTrack());
@@ -192,7 +192,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
         if (x >= theme.timelineStart) {
             const timelinePosition = (x - theme.timelineStart) / timelineWidth;
             const newTime = timelinePosition * duration;
-            timelineManager.setPosition(newTime);
+            timelineManager.setCurrentTime(newTime);
         }
     };
 
@@ -223,7 +223,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
         const newTime = Math.max(0, Math.min(duration, timelinePosition * duration));
 
         if (isDraggingPlayhead.current) {
-            timelineManager.setPosition(newTime);
+            timelineManager.setCurrentTime(newTime);
         } else if (isDraggingKeyframe.current && draggedKeyframeData.current) {
             // Preview keyframe position during drag
             // We'll update the actual keyframe position on mouse up
@@ -247,7 +247,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
             );
 
             // Update timeline position
-            timelineManager.setPosition(newTime);
+            timelineManager.setCurrentTime(newTime);
 
             // Reset dragging state
             draggedKeyframeData.current = null;
@@ -290,7 +290,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
         }
 
         if (prevKeyframe) {
-            timelineManager.setPosition(prevKeyframe.time);
+            timelineManager.setCurrentTime(prevKeyframe.time);
             setSelectedKeyframe(prevKeyframe);
         }
     };
@@ -316,7 +316,7 @@ function TimelinePanel({ timelineManager }: { timelineManager: TimelineManager }
         }
 
         if (nextKeyframe) {
-            timelineManager.setPosition(nextKeyframe.time);
+            timelineManager.setCurrentTime(nextKeyframe.time);
             setSelectedKeyframe(nextKeyframe);
         }
     };

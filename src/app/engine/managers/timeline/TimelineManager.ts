@@ -252,7 +252,7 @@ export class TimelineManager {
     /**
      * Set the current timeline position
      */
-    public setPosition(time: number): void {
+    public setCurrentTime(time: number): void {
         this.currentTime = Math.max(0, Math.min(time, this.duration));
 
         // Update tracks and restore controls if not playing
@@ -264,7 +264,7 @@ export class TimelineManager {
     /**
      * Get the current timeline position
      */
-    public getPosition(): number {
+    public getCurrentTime(): number {
         return this.currentTime;
     }
 

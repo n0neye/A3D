@@ -210,41 +210,56 @@ export class RenderService {
     public async showDepthRenderSeconds(duration: number = 1, onGetDepthMap?: (imageUrl: string) => void): Promise<void> {
         return new Promise((resolve) => {
             try {
-                const camera = this.engine.getCameraManager().getCamera();
-                const renderer = this.renderer;
-                const scene = this.scene;
-                const width = renderer.domElement.width;
-                const height = renderer.domElement.height;
+                const { stopDepthRender } = this.startDepthRender(onGetDepthMap);
 
-                // Hide all gizmos
-                this.setAllGizmoVisibility(false);
+                // Stop the animation loop and clean up resources after the duration
+                setTimeout(() => {
+                    stopDepthRender();
+                }, duration * 1000);
 
-                // Save original values to restore later
-                const originalFar = camera.far;
-                const originalRenderTarget = renderer.getRenderTarget();
+            } catch (error) {
+                console.error("Error generating depth map:", error);
+                this.setAllGizmoVisibility(true);
+            }
+        });
+    }
 
-                // Set up depth rendering target
-                const target = new THREE.WebGLRenderTarget(width, height);
-                target.texture.minFilter = THREE.NearestFilter;
-                target.texture.magFilter = THREE.NearestFilter;
-                target.texture.generateMipmaps = false;
-                target.depthTexture = new THREE.DepthTexture(width, height);
-                target.depthTexture.format = THREE.DepthFormat;
-                target.depthTexture.type = THREE.UnsignedShortType;
+    startDepthRender(onGetDepthMap?: (imageUrl: string) => void) {
+        const camera = this.engine.getCameraManager().getCamera();
+        const renderer = this.renderer;
+        const scene = this.scene;
+        const width = renderer.domElement.width;
+        const height = renderer.domElement.height;
 
-                // Set up post-processing for depth visualization
-                const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-                const postScene = new THREE.Scene();
+        // Hide all gizmos
+        this.setAllGizmoVisibility(false);
 
-                const postMaterial = new THREE.ShaderMaterial({
-                    vertexShader: `
+        // Save original values to restore later
+        const originalFar = camera.far;
+        const originalRenderTarget = renderer.getRenderTarget();
+
+        // Set up depth rendering target
+        const target = new THREE.WebGLRenderTarget(width, height);
+        target.texture.minFilter = THREE.NearestFilter;
+        target.texture.magFilter = THREE.NearestFilter;
+        target.texture.generateMipmaps = false;
+        target.depthTexture = new THREE.DepthTexture(width, height);
+        target.depthTexture.format = THREE.DepthFormat;
+        target.depthTexture.type = THREE.UnsignedShortType;
+
+        // Set up post-processing for depth visualization
+        const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const postScene = new THREE.Scene();
+
+        const postMaterial = new THREE.ShaderMaterial({
+            vertexShader: `
                         varying vec2 vUv;
                         void main() {
                             vUv = uv;
                             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                         }
                     `,
-                    fragmentShader: `
+            fragmentShader: `
                         #include <packing>
                         varying vec2 vUv;
                         uniform sampler2D tDiffuse;
@@ -264,87 +279,66 @@ export class RenderService {
                             gl_FragColor.a = 1.0;
                         }
                     `,
-                    uniforms: {
-                        cameraNear: { value: camera.near },
-                        cameraFar: { value: camera.far },
-                        tDiffuse: { value: null },
-                        tDepth: { value: null }
-                    }
-                });
-
-                const postPlane = new THREE.PlaneGeometry(2, 2);
-                const postQuad = new THREE.Mesh(postPlane, postMaterial);
-                postScene.add(postQuad);
-
-                // Save the original animation loop
-                // const originalAnimationLoop = renderer.getAnimationLoop();
-
-                // Store captured result
-                let capturedDepthImage: string | null = null;
-
-                // Create our own animation loop for depth rendering
-                let frameCount = 0;
-                const maxFrames = Math.ceil(60 * duration); // Approx 60 fps * seconds
-
-                const renderDepth = () => {
-                    // 1. Render scene into target
-                    renderer.setRenderTarget(target);
-                    renderer.render(scene, camera);
-
-                    // 2. Render post-processing with depth visualization  
-                    postMaterial.uniforms.tDiffuse.value = target.texture;
-                    postMaterial.uniforms.tDepth.value = target.depthTexture;
-                    renderer.setRenderTarget(null);
-                    renderer.render(postScene, postCamera);
-
-                    frameCount++;
-
-                    // After a few frames, capture the depth image
-                    if (frameCount === 5) {
-                        const depthSnapshot = renderer.domElement.toDataURL('image/png');
-                        capturedDepthImage = depthSnapshot;
-
-                        if (onGetDepthMap) {
-                            onGetDepthMap(depthSnapshot);
-                        }
-                    }
-                };
-
-                // Start our animation loop
-                renderer.setAnimationLoop(renderDepth);
-
-                // Stop the animation loop and clean up resources after the duration
-                setTimeout(() => {
-                    // Stop the animation loop
-                    renderer.setAnimationLoop(null);
-
-                    // Restore original render target and camera
-                    renderer.setRenderTarget(originalRenderTarget);
-                    camera.far = originalFar;
-                    camera.updateProjectionMatrix();
-
-                    // Restore original scene
-                    renderer.render(scene, camera);
-
-                    // Show gizmos again
-                    this.setAllGizmoVisibility(true);
-
-                    // Clean up resources
-                    target.dispose();
-                    if (target.depthTexture) {
-                        target.depthTexture.dispose();
-                    }
-                    postMaterial.dispose();
-                    postPlane.dispose();
-
-                }, duration * 1000);
-
-            } catch (error) {
-                console.error("Error generating depth map:", error);
-                this.setAllGizmoVisibility(true);
+            uniforms: {
+                cameraNear: { value: camera.near },
+                cameraFar: { value: camera.far },
+                tDiffuse: { value: null },
+                tDepth: { value: null }
             }
         });
+
+        const postPlane = new THREE.PlaneGeometry(2, 2);
+        const postQuad = new THREE.Mesh(postPlane, postMaterial);
+        postScene.add(postQuad);
+
+
+        const renderDepth = () => {
+            // 1. Render scene into target
+            renderer.setRenderTarget(target);
+            renderer.render(scene, camera);
+
+            // 2. Render post-processing with depth visualization  
+            postMaterial.uniforms.tDiffuse.value = target.texture;
+            postMaterial.uniforms.tDepth.value = target.depthTexture;
+            renderer.setRenderTarget(null);
+            renderer.render(postScene, postCamera);
+
+            if (onGetDepthMap) {
+                const depthSnapshot = renderer.domElement.toDataURL('image/png');
+                onGetDepthMap(depthSnapshot);
+            }
+        };
+
+        // Start our animation loop
+        renderer.setAnimationLoop(renderDepth);
+
+        const stopDepthRender = () => {
+
+            renderer.setAnimationLoop(null);
+
+            // Restore original render target and camera
+            renderer.setRenderTarget(originalRenderTarget);
+            camera.far = originalFar;
+            camera.updateProjectionMatrix();
+
+            // Restore original scene
+            renderer.render(scene, camera);
+
+            // Show gizmos again
+            this.setAllGizmoVisibility(true);
+
+            // Clean up resources
+            target.dispose();
+            if (target.depthTexture) {
+                target.depthTexture.dispose();
+            }
+            postMaterial.dispose();
+            postPlane.dispose();
+        }
+
+        return { stopDepthRender, renderer, postScene, postCamera };
     }
+
 
     /**
      * Gets a depth map from the scene
