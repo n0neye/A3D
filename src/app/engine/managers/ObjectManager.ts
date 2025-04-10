@@ -144,7 +144,7 @@ export class ObjectManager {
   /**
    * Find an entity by UUID
    */
-  public getEntityById(uuid: string): EntityBase | undefined {
+  public getEntityByUUID(uuid: string): EntityBase | undefined {
     return this.entities.get(uuid);
   }
 

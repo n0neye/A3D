@@ -15,7 +15,7 @@ export interface SerializedKeyframeData {
 export interface SerializedTrackData {
     name: string;
     type: string;
-    targetId: string;
+    targetUUID: string;
     keyframes: SerializedKeyframeData[];
 }
 
@@ -304,10 +304,10 @@ export class TimelineManager {
                 }
 
                 // Get target ID (if available)
-                let targetId = '';
+                let targetUUID = '';
                 const target = track.getTarget();
                 if (target && 'uuid' in target) {
-                    targetId = target.uuid;
+                    targetUUID = target.uuid;
                 } 
 
                 // Serialize keyframes
@@ -321,7 +321,7 @@ export class TimelineManager {
                 return {
                     name: track.getName(),
                     type: trackType,
-                    targetId: targetId,
+                    targetUUID: targetUUID,
                     keyframes: keyframes
                 };
             })
@@ -340,17 +340,6 @@ export class TimelineManager {
         this.duration = data.duration;
         this.currentTime = data.currentTime;
 
-        // Track lookup map to restore references
-        const entityMap = new Map<string, EntityBase>();
-        const scene = engine.getScene();
-
-        // Create a map of all entities in the scene by ID
-        scene.traverse(object => {
-            if (object instanceof EntityBase) {
-                entityMap.set(object.uuid, object);
-            }
-        });
-
         // Get camera
         const camera = engine.getCameraManager().getCamera();
 
@@ -359,17 +348,14 @@ export class TimelineManager {
             console.log('deserialize track', trackData);
             let track: Track<any> | null = null;
 
-            // Find the target object
-            let target: any = null;
-            
             if (trackData.type === 'camera') {
                 // Camera track
                 track = new CameraTrack(trackData.name, camera);
             } else {
-                // Entity tracks - find the target entity
-                const entity = entityMap.get(trackData.targetId);
+                // Entity tracks - find the target entity using ObjectManager
+                const entity = engine.getObjectManager().getEntityByUUID(trackData.targetUUID);
                 if (!entity) {
-                    console.warn(`Could not find entity with ID ${trackData.targetId} for track ${trackData.name}`);
+                    console.warn(`Could not find entity with ID ${trackData.targetUUID} for track ${trackData.name}`);
                     return;
                 }
 
