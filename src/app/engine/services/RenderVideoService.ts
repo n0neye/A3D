@@ -216,7 +216,7 @@ export class RenderVideoService {
           const stream = canvas.captureStream(fps);
           const mediaRecorder = new MediaRecorder(stream, {
             mimeType: 'video/webm;codecs=vp9',
-            videoBitsPerSecond: 5000000 // 5 Mbps
+            videoBitsPerSecond: 20000000 // 20 Mbps
           });
 
           const chunks: Blob[] = [];
