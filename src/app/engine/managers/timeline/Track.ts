@@ -38,11 +38,11 @@ export abstract class Track<T extends IKeyframe> {
         this.name = name;
         this.target = target;
     }
-    
+
     // Abstract methods that must be implemented by subclasses
     abstract addKeyframe(time: number): IKeyframe;
     abstract updateTargetAtTime(time: number): void;
-    
+
     public getName(): string {
         return this.name;
     }
@@ -50,19 +50,19 @@ export abstract class Track<T extends IKeyframe> {
     public getTarget(): EntityBase | THREE.Camera {
         return this.target;
     }
-    
+
     public getKeyframes(): IKeyframe[] {
         return this.keyframes;
     }
 
-    
+
     public removeKeyframe(keyframe: IKeyframe): void {
         const index = this.keyframes.findIndex(kf => kf === keyframe);
         if (index >= 0) {
             this.keyframes.splice(index, 1);
         }
     }
-    
+
     public removeKeyframeAt(time: number): boolean {
         const index = this.keyframes.findIndex(kf => Math.abs(kf.time - time) < 0.01);
         if (index >= 0) {
@@ -78,10 +78,10 @@ export abstract class Track<T extends IKeyframe> {
             this.keyframes[index].time = newTime;
         }
     }
-    
+
     protected getSurroundingKeyframes(time: number): { before: T | null, after: T | null } {
         if (this.keyframes.length === 0) return { before: null, after: null };
-        
+
         // Find keyframes before and after current time
         let beforeIndex = -1;
         for (let i = 0; i < this.keyframes.length; i++) {
@@ -91,10 +91,10 @@ export abstract class Track<T extends IKeyframe> {
                 break;
             }
         }
-        
+
         const before = beforeIndex >= 0 ? this.keyframes[beforeIndex] : null;
         const after = beforeIndex < this.keyframes.length - 1 ? this.keyframes[beforeIndex + 1] : null;
-        
+
         return { before, after };
     }
 }
@@ -104,10 +104,10 @@ export class CameraTrack extends Track<CameraKeyframe> {
     constructor(name: string, camera: THREE.PerspectiveCamera) {
         super(name, camera);
     }
-    
+
     public addKeyframe(time: number): CameraKeyframe {
         const camera = this.target as THREE.PerspectiveCamera;
-        
+
         // Create a new keyframe with current camera state
         const keyframe: CameraKeyframe = {
             track: this,
@@ -118,7 +118,7 @@ export class CameraTrack extends Track<CameraKeyframe> {
                 fov: camera.fov
             }
         };
-        
+
         // Check if a keyframe already exists at this time
         const existingIndex = this.keyframes.findIndex(kf => Math.abs(kf.time - time) < 0.01);
         if (existingIndex >= 0) {
@@ -131,19 +131,19 @@ export class CameraTrack extends Track<CameraKeyframe> {
             this.keyframes.sort((a, b) => a.time - b.time);
             console.log(`CameraTrack: Added keyframe at position ${time}`);
         }
-        
+
         return keyframe;
     }
-    
+
     public updateTargetAtTime(time: number): void {
         const camera = this.target as THREE.PerspectiveCamera;
         const { before, after } = this.getSurroundingKeyframes(time);
-        
+
         if (!before && !after) {
             // No keyframes, nothing to do
             return;
         }
-        
+
         if (before && !after) {
             // Only have keyframes before current time, use last keyframe
             camera.position.copy(before.data.position);
@@ -152,7 +152,7 @@ export class CameraTrack extends Track<CameraKeyframe> {
             camera.updateProjectionMatrix();
             return;
         }
-        
+
         if (!before && after) {
             // Only have keyframes after current time, use first keyframe
             camera.position.copy(after.data.position);
@@ -161,16 +161,16 @@ export class CameraTrack extends Track<CameraKeyframe> {
             camera.updateProjectionMatrix();
             return;
         }
-        
+
         // Have keyframes before and after, interpolate
         const t = (time - before!.time) / (after!.time - before!.time);
-        
+
         // Interpolate position
         camera.position.lerpVectors(before!.data.position, after!.data.position, t);
-        
+
         // Interpolate rotation (using quaternion slerp for smooth rotation)
         camera.quaternion.slerpQuaternions(before!.data.quaternion, after!.data.quaternion, t);
-        
+
         // Interpolate FOV
         camera.fov = THREE.MathUtils.lerp(before!.data.fov, after!.data.fov, t);
         camera.updateProjectionMatrix();
@@ -184,10 +184,10 @@ export class EntityTransformTrack extends Track<EntityTransform> {
         super(name, object);
         this.target = object;
     }
-    
+
     public addKeyframe(time: number): EntityTransform {
         const object = this.target as THREE.Object3D;
-        
+
         // Create a new keyframe with current object state
         const keyframe: EntityTransform = {
             track: this,
@@ -198,7 +198,7 @@ export class EntityTransformTrack extends Track<EntityTransform> {
                 scale: object.scale.clone()
             }
         };
-        
+
         // Check if a keyframe already exists at this time
         const existingIndex = this.keyframes.findIndex(kf => Math.abs(kf.time - time) < 0.01);
         if (existingIndex >= 0) {
@@ -211,45 +211,53 @@ export class EntityTransformTrack extends Track<EntityTransform> {
             this.keyframes.sort((a, b) => a.time - b.time);
             console.log(`ObjectTrack: Added keyframe at position ${time}`);
         }
-        
+
         return keyframe;
     }
-    
+
     public updateTargetAtTime(time: number): void {
-        const object = this.target as THREE.Object3D;
+        const object = this.target;
         const { before, after } = this.getSurroundingKeyframes(time);
-        
+
         if (!before && !after) {
             // No keyframes, nothing to do
             return;
         }
-        
+
+        const result = {
+            position: new THREE.Vector3(),
+            quaternion: new THREE.Quaternion(),
+            scale: new THREE.Vector3(),
+            log: ""
+        }
         if (before && !after) {
             // Only have keyframes before current time, use last keyframe
-            object.position.copy(before.data.position);
-            object.quaternion.copy(before.data.quaternion);
-            object.scale.copy(before.data.scale);
-            return;
-        }
-        
-        if (!before && after) {
+            result.position = before.data.position;
+            result.quaternion = before.data.quaternion;
+            result.scale = before.data.scale;
+            result.log = `Only have keyframes before current time, using last keyframe`;
+        } else if (!before && after) {
             // Only have keyframes after current time, use first keyframe
-            object.position.copy(after.data.position);
-            object.quaternion.copy(after.data.quaternion);
-            object.scale.copy(after.data.scale);
-            return;
+            result.position = after.data.position;
+            result.quaternion = after.data.quaternion;
+            result.scale = after.data.scale;
+            result.log = `Only have keyframes after current time, using first keyframe`;
+        } else {
+
+            // Have keyframes before and after, interpolate
+            const t = (time - before!.time) / (after!.time - before!.time);
+            result.position.lerpVectors(before!.data.position, after!.data.position, t);
+            result.quaternion.slerpQuaternions(before!.data.quaternion, after!.data.quaternion, t);
+            result.scale.lerpVectors(before!.data.scale, after!.data.scale, t);
+            result.log = `Interpolated`;
         }
-        
-        // Have keyframes before and after, interpolate
-        const t = (time - before!.time) / (after!.time - before!.time);
-        
-        // Interpolate position
-        object.position.lerpVectors(before!.data.position, after!.data.position, t);
-        
-        // Interpolate rotation (using quaternion slerp for smooth rotation)
-        object.quaternion.slerpQuaternions(before!.data.quaternion, after!.data.quaternion, t);
-        
-        // Interpolate scale
-        object.scale.lerpVectors(before!.data.scale, after!.data.scale, t);
+
+        object.position.copy(result.position);
+        object.quaternion.copy(result.quaternion);
+        object.scale.copy(result.scale);
+
+        object.updateMatrixWorld();
+
+        console.log(`EntityTransformTrack: Updated object ${this.target.name} at time:`, time, object.position, result.log);
     }
 }

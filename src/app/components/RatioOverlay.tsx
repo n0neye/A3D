@@ -76,7 +76,7 @@ export default function RatioOverlay() {
 
   const borderStyle = {
     position: 'absolute' as 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   };
 
   return (
