@@ -389,7 +389,7 @@ export class TimelineManager {
 
             // Add keyframes using the track's deserializeKeyframe method
             trackData.keyframes.forEach(keyframeData => {
-                const keyframe = track!.deserializeKeyframe(keyframeData.time, keyframeData.data);
+                const keyframe = track.deserializeKeyframe(keyframeData.time, keyframeData.data);
                 track!.getKeyframes().push(keyframe);
             });
 

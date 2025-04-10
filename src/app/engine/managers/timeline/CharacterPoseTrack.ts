@@ -3,17 +3,16 @@ import { EntityBase } from '../../entity/base/EntityBase';
 import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
 import { Track, IKeyframe } from './Track';
 import { BoneControl } from '@/app/engine/entity/components/BoneControl';
+
 // Character Pose keyframe - storing only modified bones for efficiency
-export interface CharacterPoseKeyframe extends IKeyframe {
-    data: {
-        bones: {
-            [boneName: string]: {
-                position?: THREE.Vector3;
-                quaternion?: THREE.Quaternion;
-            }
+export interface CharacterPoseKeyframe extends IKeyframe<{
+    bones: {
+        [boneName: string]: {
+            position?: THREE.Vector3;
+            quaternion?: THREE.Quaternion;
         }
     }
-}
+}> {}
 
 // Add a new CharacterPoseTrack class implementation
 export class CharacterPoseTrack extends Track<CharacterPoseKeyframe> {
@@ -76,6 +75,39 @@ export class CharacterPoseTrack extends Track<CharacterPoseKeyframe> {
         console.log(`CharacterPoseTrack: Added Keyframe at position ${time}`, keyframe);
         
         return keyframe;
+    }
+    
+    public deserializeKeyframe(time: number, serializedData: any): CharacterPoseKeyframe {
+        // Create a new keyframe with deserialized data
+        const bones: {[boneName: string]: {
+            position?: THREE.Vector3,
+            quaternion?: THREE.Quaternion
+        }} = {};
+        
+        // Deserialize each bone transform
+        if (serializedData.bones) {
+            Object.entries(serializedData.bones).forEach(([boneName, boneData]: [string, any]) => {
+                bones[boneName] = {};
+                
+                // Convert position array to Vector3 if it exists
+                if (boneData.position) {
+                    bones[boneName].position = new THREE.Vector3().fromArray(boneData.position);
+                }
+                
+                // Convert quaternion array to Quaternion if it exists
+                if (boneData.quaternion) {
+                    bones[boneName].quaternion = new THREE.Quaternion().fromArray(boneData.quaternion);
+                }
+            });
+        }
+        
+        return {
+            track: this,
+            time,
+            data: {
+                bones: bones
+            }
+        };
     }
     
     public updateTargetAtTime(time: number): void {
@@ -218,74 +250,5 @@ export class CharacterPoseTrack extends Track<CharacterPoseKeyframe> {
 
         // Critical: Update the bone's matrix
         boneControl.bone.updateMatrix();
-    }
-
-    // Add a helper function to properly clone the data for serialization
-    private static cloneKeyframeData(data: any): any {
-        if (!data) return data;
-        
-        // Handle bones data specifically for CharacterPoseKeyframe
-        if (data.bones) {
-            const clonedBones: any = {};
-            
-            Object.entries(data.bones).forEach(([boneName, boneData]: [string, any]) => {
-                clonedBones[boneName] = {};
-                
-                if (boneData.position) {
-                    clonedBones[boneName].position = {
-                        x: boneData.position.x,
-                        y: boneData.position.y,
-                        z: boneData.position.z
-                    };
-                }
-                
-                if (boneData.quaternion) {
-                    clonedBones[boneName].quaternion = {
-                        x: boneData.quaternion.x,
-                        y: boneData.quaternion.y,
-                        z: boneData.quaternion.z,
-                        w: boneData.quaternion.w
-                    };
-                }
-            });
-            
-            return { bones: clonedBones };
-        }
-        
-        return data;
-    }
-
-    // Method to restore Vector3 and Quaternion objects from serialized data
-    private static restoreKeyframeData(data: any): any {
-        if (!data) return data;
-        
-        if (data.bones) {
-            const restoredBones: any = {};
-            
-            Object.entries(data.bones).forEach(([boneName, boneData]: [string, any]) => {
-                restoredBones[boneName] = {};
-                
-                if (boneData.position) {
-                    restoredBones[boneName].position = new THREE.Vector3(
-                        boneData.position.x,
-                        boneData.position.y,
-                        boneData.position.z
-                    );
-                }
-                
-                if (boneData.quaternion) {
-                    restoredBones[boneName].quaternion = new THREE.Quaternion(
-                        boneData.quaternion.x,
-                        boneData.quaternion.y,
-                        boneData.quaternion.z,
-                        boneData.quaternion.w
-                    );
-                }
-            });
-            
-            return { bones: restoredBones };
-        }
-        
-        return data;
     }
 }
