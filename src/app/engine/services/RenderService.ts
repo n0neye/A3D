@@ -39,8 +39,6 @@ export class RenderService {
     private scene: THREE.Scene;
     private engine: EditorEngine;
     private renderer: THREE.WebGLRenderer;
-    private composer: EffectComposer | null = null;
-    private originalRenderTarget: THREE.WebGLRenderTarget | null = null;
 
     constructor(scene: THREE.Scene, engine: EditorEngine, renderer: THREE.WebGLRenderer) {
         this.scene = scene;
@@ -204,7 +202,7 @@ export class RenderService {
     }
 
     /**
-     * Show the depth map of current camera using EffectComposer
+     * Show the depth map of current camera using standard depth rendering techniques
      * Returns the depth image and restores original state after given seconds
      */
     public async showDepthRenderSeconds(seconds: number = 1, onGetDepthMap?: (imageUrl: string) => void): Promise<string | null> {
@@ -212,6 +210,8 @@ export class RenderService {
             const camera = this.engine.getCameraManager().getCamera();
             const renderer = this.renderer;
             const scene = this.scene;
+            const width = renderer.domElement.width;
+            const height = renderer.domElement.height;
 
             // Hide all gizmos
             this.setAllGizmoVisibility(false);
@@ -222,43 +222,35 @@ export class RenderService {
 
             // Save original values to restore later
             const originalFar = camera.far;
-            const originalComposer = this.composer;
             const originalRenderTarget = renderer.getRenderTarget();
 
             // Temporarily set the camera's far plane to our optimal value
             camera.far = optimalFar;
             camera.updateProjectionMatrix();
 
-            // Create a render target for the depth effect
-            const renderTarget = new THREE.WebGLRenderTarget(
-                renderer.domElement.width,
-                renderer.domElement.height,
-                {
-                    minFilter: THREE.NearestFilter,
-                    magFilter: THREE.NearestFilter,
-                    format: THREE.RGBAFormat,
-                    generateMipmaps: false
-                }
-            );
-            renderTarget.depthTexture = new THREE.DepthTexture(renderer.domElement.width, renderer.domElement.height);
+            // Create a render target with depth texture
+            const renderTarget = new THREE.WebGLRenderTarget(width, height, {
+                minFilter: THREE.NearestFilter,
+                magFilter: THREE.NearestFilter,
+                format: THREE.RGBAFormat,
+                generateMipmaps: false
+            });
+            renderTarget.depthTexture = new THREE.DepthTexture(width, height);
             renderTarget.depthTexture.format = THREE.DepthFormat;
             renderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-            // Create an EffectComposer for post-processing
-            const composer = new EffectComposer(renderer, renderTarget);
+            // Render scene to the render target to capture depth
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(scene, camera);
 
-            // Add a render pass to render the scene
-            const renderPass = new RenderPass(scene, camera);
-            composer.addPass(renderPass);
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Create a custom shader pass for depth visualization
-            const depthShader = {
-                uniforms: {
-                    tDiffuse: { value: null },
-                    tDepth: { value: null },
-                    cameraNear: { value: camera.near },
-                    cameraFar: { value: optimalFar }
-                },
+            // Create a full-screen quad to display the depth
+            const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const postScene = new THREE.Scene();
+
+            // Create material with depth visualization shader
+            const postMaterial = new THREE.ShaderMaterial({
                 vertexShader: `
                     varying vec2 vUv;
                     void main() {
@@ -269,7 +261,6 @@ export class RenderService {
                 fragmentShader: `
                     #include <packing>
                     varying vec2 vUv;
-                    uniform sampler2D tDiffuse;
                     uniform sampler2D tDepth;
                     uniform float cameraNear;
                     uniform float cameraFar;
@@ -282,23 +273,26 @@ export class RenderService {
 
                     void main() {
                         float depth = readDepth(tDepth, vUv);
-                        gl_FragColor.rgb = 1.0 - vec3(depth);
-                        gl_FragColor.a = 1.0;
+                        gl_FragColor = vec4(vec3(1.0 - depth), 1.0);
                     }
-                `
-            };
+                `,
+                uniforms: {
+                    tDepth: { value: renderTarget.depthTexture },
+                    cameraNear: { value: camera.near },
+                    cameraFar: { value: optimalFar }
+                }
+            });
 
-            // Create ShaderPass with our depth shader
-            const depthPass = new ShaderPass(depthShader);
-            depthPass.uniforms.tDepth.value = renderTarget.depthTexture;
-            depthPass.renderToScreen = true;
-            composer.addPass(depthPass);
+            // Create a full-screen quad with the depth shader
+            const postQuad = new THREE.Mesh(
+                new THREE.PlaneGeometry(2, 2),
+                postMaterial
+            );
+            postScene.add(postQuad);
 
-            // Store the composer
-            this.composer = composer;
-
-            // Render with the composer
-            composer.render();
+            // Render the depth visualization to the screen
+            renderer.setRenderTarget(null);
+            renderer.render(postScene, postCamera);
 
             // Capture the depth visualization
             const depthSnapshot = renderer.domElement.toDataURL('image/png');
@@ -308,10 +302,6 @@ export class RenderService {
 
             // Set a timeout to restore original state
             setTimeout(() => {
-                const depthSnapshot = renderer.domElement.toDataURL('image/png');
-                if (onGetDepthMap) {
-                    onGetDepthMap(depthSnapshot);
-                }
 
                 // Restore original render target
                 renderer.setRenderTarget(originalRenderTarget);
@@ -320,21 +310,19 @@ export class RenderService {
                 camera.far = originalFar;
                 camera.updateProjectionMatrix();
 
-                // Restore original composer
-                this.composer = originalComposer;
-
-                // Render the scene again with original settings
-                if (this.composer) {
-                    this.composer.render();
-                } else {
-                    renderer.render(scene, camera);
-                }
+                // Render with original settings
+                renderer.render(scene, camera);
 
                 // Show gizmos again
                 this.setAllGizmoVisibility(true);
 
-                // Cleanup
+                // Cleanup resources
                 renderTarget.dispose();
+                if (renderTarget.depthTexture) {
+                    renderTarget.depthTexture.dispose();
+                }
+                postMaterial.dispose();
+                postQuad.geometry.dispose();
             }, seconds * 1000);
 
             // Normalize the depth map if we got one
@@ -345,6 +333,7 @@ export class RenderService {
             return null;
         } catch (error) {
             console.error("Error generating depth map:", error);
+            this.setAllGizmoVisibility(true);
             return null;
         }
     }
