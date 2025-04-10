@@ -63,7 +63,8 @@ export class RenderVideoService {
 
     try {
       // Get timeline duration
-      const timelineDuration = this.timelineManager.getDuration();
+      // const timelineDuration = this.timelineManager.getDuration();
+      const timelineDuration = 2; //for testing
 
       // Calculate number of frames to capture
       const frameCount = Math.ceil(timelineDuration * options.fps);
@@ -72,19 +73,19 @@ export class RenderVideoService {
       const frames: string[] = [];
       const depthFrames: string[] = [];
 
-      // Store original playback state
-      const wasPlaying = this.timelineManager.isPlaying();
-
       // Pause any current playback
-      if (wasPlaying) {
-        this.timelineManager.pause();
-      }
+      this.timelineManager.pause();
 
       // Store original timeline position
       const originalPosition = this.timelineManager.getPosition();
 
       // Hide gizmos and helpers during rendering
       this.renderService.setAllGizmoVisibility(false);
+
+      // Get camera
+      const cameraManager = this.engine.getCameraManager();
+      const camera = cameraManager.getCamera();
+
 
       // Process each frame
       for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
@@ -100,44 +101,34 @@ export class RenderVideoService {
         this.timelineManager.setPosition(frameTime);
 
         // Wait for the scene to update
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 1));
 
         // Capture regular screenshot
         // const screenshot = await this.renderService.takeFramedScreenshot();
 
-        // Get camera
-        const cameraManager = this.engine.getCameraManager();
-        const camera = cameraManager.getCamera();
 
         // Render the scene
         this.renderer.render(this.engine.getScene(), camera);
 
         // Get the canvas data as base64 image
-        const screenshot = this.renderer.domElement.toDataURL('image/png');
+        const screenshot = this.renderer.domElement.toDataURL('image/jpeg', 0.9);
+        frames.push(screenshot);
+        // options.onPreviewFrame(screenshot);
 
         // Crop the screenshot by ratio
-        const croppedScreenshot = await this.renderService.cropByRatio(screenshot);
+        // const croppedScreenshot = await this.renderService.cropByRatio(screenshot);
 
-        if (croppedScreenshot) {
-          // Resize the screenshot if needed
-          // const resizedFrame = await resizeImage(croppedScreenshot, options.width, options.height);
-          // frames.push(resizedFrame);
+        // if (croppedScreenshot) {
+        //   // Resize the screenshot if needed
+        //   // const resizedFrame = await resizeImage(croppedScreenshot, options.width, options.height);
+        //   // frames.push(resizedFrame);
 
-          // // Provide preview of current frame
-          // options.onPreviewFrame(resizedFrame);
+        //   // // Provide preview of current frame
+        //   // options.onPreviewFrame(resizedFrame);
 
-          frames.push(croppedScreenshot);
-          options.onPreviewFrame(croppedScreenshot);
-
-          // Capture depth map if requested
-          // if (options.includeDepth) {
-          //   const depthMap = await this.renderService.enableDepthRender(0.1);
-          //   if (depthMap) {
-          //     const resizedDepthFrame = await resizeImage(depthMap, options.width, options.height);
-          //     depthFrames.push(resizedDepthFrame);
-          //   }
-          // }
-        }
+        //   frames.push(croppedScreenshot);
+        //   options.onPreviewFrame(croppedScreenshot);
+        // }
 
         // Update progress
         options.onProgress((frameIndex + 1) / frameCount);
@@ -151,9 +142,6 @@ export class RenderVideoService {
 
       // Restore original state
       this.timelineManager.setPosition(originalPosition);
-      if (wasPlaying) {
-        this.timelineManager.play();
-      }
       this.renderService.setAllGizmoVisibility(true);
 
       // Return result
