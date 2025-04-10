@@ -287,8 +287,7 @@ const RenderPanel = () => {
   };
 
   const enableDepthRender = async () => {
-    const depthSnapshot = await engine.getRenderService().showDepthRenderSeconds(3, setImageUrl);
-    if (!depthSnapshot) throw new Error("Failed to generate depth map");
+    await engine.getRenderService().showDepthRenderSeconds(3, setImageUrl);
   }
 
 
