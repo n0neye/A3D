@@ -287,16 +287,10 @@ const RenderPanel = () => {
   };
 
   const enableDepthRender = async () => {
-    const depthSnapshot = await engine.getRenderService().showDepthRenderSeconds(1);
+    const depthSnapshot = await engine.getRenderService().showDepthRenderSeconds(1, setImageUrl);
     if (!depthSnapshot) throw new Error("Failed to generate depth map");
-    setImageUrl(depthSnapshot);
   }
 
-  const onGetDepthMap = async () => {
-    const result = await engine.getRenderService().showDepthRenderSeconds(1);
-    if (!result) throw new Error("Failed to generate depth map");
-    setImageUrl(result);
-  };
 
 
   useEffect(() => {
@@ -496,13 +490,6 @@ const RenderPanel = () => {
                 onClick={generateDebugImage}
               >
                 Scene Image
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onGetDepthMap}
-              >
-                Get Depth
               </Button>
               <Button
                 variant="outline"
