@@ -32,6 +32,7 @@ import { EnvironmentManager } from '../managers/environmentManager';
 import { Observer } from '../utils/Observer';
 import { TimelineManager } from '../managers/timeline/TimelineManager';
 import { CreateEntityCommand } from '../../lib/commands';
+import { ObjectManager } from '../managers/ObjectManager';
 
 
 /**
@@ -51,6 +52,7 @@ export class EditorEngine {
   private projectManager: ProjectManager;
   private environmentManager: EnvironmentManager;
   private timelineManager: TimelineManager;
+  private objectManager: ObjectManager;
 
   public observer = new Observer<{
   }>();
@@ -68,6 +70,7 @@ export class EditorEngine {
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);
     this.timelineManager = new TimelineManager(this);
+    this.objectManager = new ObjectManager(this);
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(
@@ -146,6 +149,10 @@ export class EditorEngine {
 
   public getTimelineManager(): TimelineManager {
     return this.timelineManager;
+  }
+
+  public getObjectManager(): ObjectManager {
+    return this.objectManager;
   }
 
 

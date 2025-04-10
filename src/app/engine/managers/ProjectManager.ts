@@ -141,16 +141,8 @@ export class ProjectManager {
     }
 
     serializeProject(): IProjectData {
-        const scene = this.engine.getScene();
-        const entities: EntityBase[] = [];
-
-        // Find all entities in the scene
-        scene.traverse(node => {
-            if (isEntity(node) && node.visible) {
-                entities.push(node as EntityBase);
-            }
-        });
-
+        const entities: EntityBase[] = this.engine.getObjectManager().getAllEntities();
+        
         // Serialize environment settings
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
 
@@ -175,20 +167,16 @@ export class ProjectManager {
     clearScene(): void {
         // Deselect
         this.engine.getSelectionManager().deselectAll();
-
-        // Dispose all children of the existing entities
+        
+        // Get all entities from object manager
+        const existingEntities = this.engine.getObjectManager().getAllEntities();
         const scene = this.engine.getScene();
-        const existingEntities: EntityBase[] = [];
-        scene.traverse(node => {
-            if (isEntity(node)) {
-                existingEntities.push(node as EntityBase);
-            }
-        });
 
         // Dispose entities
         existingEntities.forEach(entity => {
             entity.dispose();
             scene.remove(entity);
+            this.engine.getObjectManager().unregisterEntity(entity);
         });
     }
     
@@ -256,6 +244,9 @@ export class ProjectManager {
             this.latestRender = data.renderLogs[data.renderLogs.length - 1];
             this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
         }
+
+        // After creating all entities, scan the scene to ensure all are registered
+        this.engine.getObjectManager().scanScene();
     }
 
     updateRenderSettings(newSettings: Partial<IRenderSettings>): void {
