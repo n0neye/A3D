@@ -39,11 +39,13 @@ export class RenderVideoService {
   private timelineManager: TimelineManager;
   private isRendering: boolean = false;
   private shouldCancelRender: boolean = false;
+  private renderer: THREE.WebGLRenderer;
 
-  constructor(engine: EditorEngine, renderService: RenderService) {
+  constructor(engine: EditorEngine, renderService: RenderService, renderer: THREE.WebGLRenderer) {
     this.engine = engine;
     this.renderService = renderService;
     this.timelineManager = engine.getTimelineManager();
+    this.renderer = renderer;
   }
 
   /**
@@ -58,86 +60,102 @@ export class RenderVideoService {
     const startTime = Date.now();
     this.isRendering = true;
     this.shouldCancelRender = false;
-    
+
     try {
       // Get timeline duration
       const timelineDuration = this.timelineManager.getDuration();
-      
+
       // Calculate number of frames to capture
       const frameCount = Math.ceil(timelineDuration * options.fps);
-      
+
       // Prepare array to store frame data
       const frames: string[] = [];
       const depthFrames: string[] = [];
-      
+
       // Store original playback state
       const wasPlaying = this.timelineManager.isPlaying();
-      
+
       // Pause any current playback
       if (wasPlaying) {
         this.timelineManager.pause();
       }
-      
+
       // Store original timeline position
       const originalPosition = this.timelineManager.getPosition();
-      
+
       // Hide gizmos and helpers during rendering
       this.renderService.setAllGizmoVisibility(false);
-      
+
       // Process each frame
       for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
         // Check if rendering was canceled
         if (this.shouldCancelRender) {
           throw new Error('Rendering was canceled');
         }
-        
+
         // Calculate time for this frame
         const frameTime = (frameIndex / frameCount) * timelineDuration;
-        
+
         // Set timeline to this position
         this.timelineManager.setPosition(frameTime);
-        
+
         // Wait for the scene to update
         await new Promise(resolve => setTimeout(resolve, 10));
-        
+
         // Capture regular screenshot
-        const screenshot = await this.renderService.takeFramedScreenshot();
-        
-        if (screenshot) {
+        // const screenshot = await this.renderService.takeFramedScreenshot();
+
+        // Get camera
+        const cameraManager = this.engine.getCameraManager();
+        const camera = cameraManager.getCamera();
+
+        // Render the scene
+        this.renderer.render(this.engine.getScene(), camera);
+
+        // Get the canvas data as base64 image
+        const screenshot = this.renderer.domElement.toDataURL('image/png');
+
+        // Crop the screenshot by ratio
+        const croppedScreenshot = await this.renderService.cropByRatio(screenshot);
+
+        if (croppedScreenshot) {
           // Resize the screenshot if needed
-          const resizedFrame = await resizeImage(screenshot, options.width, options.height);
-          frames.push(resizedFrame);
-          
-          // Provide preview of current frame
-          options.onPreviewFrame(resizedFrame);
-          
+          // const resizedFrame = await resizeImage(croppedScreenshot, options.width, options.height);
+          // frames.push(resizedFrame);
+
+          // // Provide preview of current frame
+          // options.onPreviewFrame(resizedFrame);
+
+          frames.push(croppedScreenshot);
+          options.onPreviewFrame(croppedScreenshot);
+
           // Capture depth map if requested
-          if (options.includeDepth) {
-            const depthMap = await this.renderService.enableDepthRender(0.1);
-            if (depthMap) {
-              const resizedDepthFrame = await resizeImage(depthMap, options.width, options.height);
-              depthFrames.push(resizedDepthFrame);
-            }
-          }
+          // if (options.includeDepth) {
+          //   const depthMap = await this.renderService.enableDepthRender(0.1);
+          //   if (depthMap) {
+          //     const resizedDepthFrame = await resizeImage(depthMap, options.width, options.height);
+          //     depthFrames.push(resizedDepthFrame);
+          //   }
+          // }
         }
-        
+
         // Update progress
         options.onProgress((frameIndex + 1) / frameCount);
       }
-      
+
       // Generate the video from frames
       const videoUrl = await this.generateVideoFromFrames(
-        options.includeDepth ? depthFrames : frames, 
+        options.includeDepth ? depthFrames : frames,
         options.fps
       );
-      
+
       // Restore original state
       this.timelineManager.setPosition(originalPosition);
       if (wasPlaying) {
         this.timelineManager.play();
       }
       this.renderService.setAllGizmoVisibility(true);
-      
+
       // Return result
       return {
         videoUrl,
@@ -145,13 +163,13 @@ export class RenderVideoService {
         frameCount,
         executionTimeMs: Date.now() - startTime
       };
-      
+
     } catch (error) {
       console.error('Error rendering video:', error);
-      
+
       // Restore original visibility state
       this.renderService.setAllGizmoVisibility(true);
-      
+
       return null;
     } finally {
       this.isRendering = false;
@@ -195,41 +213,41 @@ export class RenderVideoService {
         // Create a canvas to draw frames on
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         if (!ctx) {
           throw new Error('Could not get canvas context');
         }
-        
+
         // Set canvas size based on first frame
         const firstImage = new Image();
         firstImage.onload = () => {
           canvas.width = firstImage.width;
           canvas.height = firstImage.height;
-          
+
           // Create MediaRecorder
           const stream = canvas.captureStream(fps);
           const mediaRecorder = new MediaRecorder(stream, {
             mimeType: 'video/webm;codecs=vp9',
             videoBitsPerSecond: 5000000 // 5 Mbps
           });
-          
+
           const chunks: Blob[] = [];
-          
+
           mediaRecorder.ondataavailable = (e) => {
             if (e.data.size > 0) {
               chunks.push(e.data);
             }
           };
-          
+
           mediaRecorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             const videoUrl = URL.createObjectURL(blob);
             resolve(videoUrl);
           };
-          
+
           // Start recording
           mediaRecorder.start();
-          
+
           // Function to draw each frame
           let frameIndex = 0;
           const drawNextFrame = () => {
@@ -238,7 +256,7 @@ export class RenderVideoService {
               img.onload = () => {
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 frameIndex++;
-                
+
                 // Schedule next frame
                 setTimeout(drawNextFrame, 1000 / fps);
               };
@@ -248,14 +266,14 @@ export class RenderVideoService {
               mediaRecorder.stop();
             }
           };
-          
+
           // Start drawing frames
           drawNextFrame();
         };
-        
+
         // Load first image to initialize canvas size
         firstImage.src = frames[0];
-        
+
       } catch (error) {
         reject(error);
       }

@@ -88,7 +88,7 @@ export class EditorEngine {
     this.renderService = new RenderService(scene, this, threeRenderer);
 
     // Create the render video service
-    this.renderVideoService = new RenderVideoService(this, this.renderService);
+    this.renderVideoService = new RenderVideoService(this, this.renderService, threeRenderer);
 
     // Register the update method to be called by the core
     this.core.setEngineUpdate(this.update);

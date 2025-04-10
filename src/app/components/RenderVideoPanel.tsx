@@ -16,21 +16,12 @@ function RenderVideoPanel() {
     const [executionTime, setExecutionTime] = useState<number | null>(null);
     const [progress, setProgress] = useState<number>(0);
     const [renderType, setRenderType] = useState<'regular' | 'depth'>('regular');
-    const [fps, setFps] = useState<number>(24);
+    const [fps, setFps] = useState<number>(30);
     const [previewFrame, setPreviewFrame] = useState<string | null>(null);
     
     const { engine } = useEditorEngine();
-    const [renderVideoService, setRenderVideoService] = useState<RenderVideoService | null>(null);
-    
-    // Initialize the render service
-    useEffect(() => {
-        if (engine) {
-            const renderService = engine.getRenderService();
-            if (renderService) {
-                setRenderVideoService(new RenderVideoService(engine, renderService));
-            }
-        }
-    }, [engine]);
+
+    const renderVideoService = engine?.getRenderVideoService();
     
     const handleRender = async () => {
         if (!renderVideoService) return;
