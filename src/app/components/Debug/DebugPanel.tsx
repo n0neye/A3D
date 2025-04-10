@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useEditorEngine } from '@/app/context/EditorEngineContext';
 import SceneOutliner from './SceneOutliner';
 import EntityDetails from './EntityDetails';
-import { Bug, X, Keyboard } from 'lucide-react';
+import ThreeJsDebugView from './ThreeJsDebugView';
+import { Bug, X, Keyboard, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const DebugPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("entities");
   const { engine } = useEditorEngine();
 
   if (!engine) return null;
@@ -67,13 +70,34 @@ const DebugPanel: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex-1 p-4 overflow-hidden">
-            <SceneOutliner />
-          </div>
-          
-          <div className="p-4 border-t">
-            <EntityDetails />
-          </div>
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="flex-1 flex flex-col overflow-hidden"
+          >
+            <TabsList className="grid grid-cols-2 mx-4 mt-2">
+              <TabsTrigger value="entities" className="text-xs">
+                Entities
+              </TabsTrigger>
+              <TabsTrigger value="threejs" className="text-xs">
+                Three.js
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="entities" className="flex-1 overflow-hidden flex flex-col p-4 pt-2">
+              <div className="flex-1 overflow-hidden">
+                <SceneOutliner />
+              </div>
+              
+              <div className="mt-4 pt-2 border-t border-gray-200 dark:border-gray-800">
+                <EntityDetails />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="threejs" className="flex-1 overflow-hidden flex flex-col p-4 pt-2">
+              <ThreeJsDebugView />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </>
