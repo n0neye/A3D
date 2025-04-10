@@ -8,6 +8,7 @@ import Guide from './Guide';
 import RenderPanel from './RenderPanel';
 import RatioOverlay from './RatioOverlay';
 import TimelinePanel from './TimelinePanel';
+import DebugPanel from './Debug/DebugPanel';
 import { useEffect, useState } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
@@ -47,6 +48,9 @@ function EngineUIContainer() {
             <Guide />
 
             {timelineManager && <TimelinePanel timelineManager={timelineManager} />}
+            
+            {/* Add the Debug Panel */}
+            <DebugPanel />
         </>
     );
 }
