@@ -10,12 +10,12 @@ import RatioOverlay from './RatioOverlay';
 import TimelinePanel from './TimelinePanel';
 import DebugPanel from './Debug/DebugPanel';
 import { useEffect, useState } from 'react';
-import { useEditorEngine } from '../context/EditorEngineContext';
+import { UiLayoutMode, useEditorEngine } from '../context/EditorEngineContext';
 import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
 import RenderPanels from './RenderPanels';
 
 function EngineUIContainer() {
-    const { engine } = useEditorEngine();
+    const { engine, uiLayoutMode } = useEditorEngine();
     const [timelineManager, setTimelineManager] = useState<TimelineManager | null>(null);
     const [isDebugMode, setIsDebugMode] = useState(false);
 
@@ -48,7 +48,7 @@ function EngineUIContainer() {
             {/* Add the Guide component */}
             <Guide />
 
-            {timelineManager && <TimelinePanel timelineManager={timelineManager} />}
+            {timelineManager && uiLayoutMode === UiLayoutMode.Video && <TimelinePanel timelineManager={timelineManager} />}
             
             {/* Add the Debug Panel */}
             <DebugPanel />
