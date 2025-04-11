@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { UiLayoutMode, useEditorEngine } from '../context/EditorEngineContext';
 import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
 import RenderPanels from './RenderPanels';
+import { IconMinusVertical } from '@tabler/icons-react';
 
 function EngineUIContainer() {
     const { engine, uiLayoutMode } = useEditorEngine();
@@ -34,11 +35,13 @@ function EngineUIContainer() {
             {/* Render Panel - simplified props */}
             <RenderPanels />
 
-            <div className='fixed top-2 w-full flex justify-center items-center'>
-                <div className="panel-shape p-1 flex gap-2">
+            <div className='fixed top-2 w-full flex justify-center items-center select-none'>
+                <div className="panel-shape p-1 flex gap-2 items-center">
                     <FileMenu />
-                    <CameraPanel />
+                    <IconMinusVertical width={10} height={20} className='opacity-20' />
                     <GizmoModeSelector />
+                    <IconMinusVertical width={10} height={20} className='opacity-20' />
+                    <CameraPanel />
                 </div>
             </div>
 

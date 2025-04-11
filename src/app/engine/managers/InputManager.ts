@@ -376,6 +376,10 @@ export class InputManager {
       case 't':
         this.engine.setTransformControlMode(TransformMode.BoundingBox);
         break;
+      case 'q':
+        // Toggle between world and local space
+        this.engine.getTransformControlManager().toggleTransformControlSpace();
+        break;
     }
 
     // Focus on selected entity (F key)

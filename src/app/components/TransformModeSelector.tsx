@@ -5,17 +5,47 @@ import {
   IconArrowsMove, // Position
   IconRotate, // Rotation
   IconArrowsMaximize, // Scale
-  IconSquare // Bounding Box
+  IconCube3dSphere, // Bounding Box
+  IconWorld, // World space
+  IconAxisY // Local space
 } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { TransformMode } from '../engine/managers/TransformControlManager';
 
 const GizmoModeSelector: React.FC = () => {
-  const { gizmoMode, gizmoAllowedModes, engine } = useEditorEngine();
+  const { gizmoMode, gizmoAllowedModes, gizmoSpace, engine } = useEditorEngine();
+
+  const toggleTransformSpace = () => {
+    if (engine) {
+      engine.getTransformControlManager().toggleTransformControlSpace();
+    }
+  };
 
   return (
     <>
       <TooltipProvider>
+
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleTransformSpace}
+              aria-label="transform space toggle"
+            >
+              {gizmoSpace === 'world' ? (
+                <IconWorld className="h-4 w-4" />
+              ) : (
+                <IconCube3dSphere className="h-4 w-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{gizmoSpace === 'world' ? 'World Space (Q)' : 'Local Space (Q)'}</p>
+          </TooltipContent>
+        </Tooltip>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -66,7 +96,6 @@ const GizmoModeSelector: React.FC = () => {
             <p>Rotate (R)</p>
           </TooltipContent>
         </Tooltip>
-
 
         {/* <Tooltip>
           <TooltipTrigger asChild>

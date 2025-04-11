@@ -30,6 +30,7 @@ interface EditorEngineContextType {
   renderSettings: IRenderSettings;
   uiLayoutMode: UiLayoutMode;
   setUiLayoutMode: (mode: UiLayoutMode) => void;
+  gizmoSpace: 'world' | 'local';
 }
 
 export enum UiLayoutMode {
@@ -50,6 +51,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const [renderLogs, setRenderLogs] = useState<IRenderLog[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [uiLayoutMode, setUiLayoutMode] = useState<UiLayoutMode>(UiLayoutMode.Image);
+  const [gizmoSpace, setGizmoSpace] = useState<'world' | 'local'>('world');
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -70,7 +72,14 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         const unsubRenderSettingsChanged = engine.getProjectManager().observers.subscribe('renderSettingsChanged', ({ renderSettings }) => setRenderSettings(renderSettings));
         const unsubProjectLoaded = engine.getProjectManager().observers.subscribe('projectLoaded', ({ project }) => setRenderSettings(project));
 
-        unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubSelectableSelected, unsubRenderSettingsChanged, unsubProjectLoaded);
+        const unsubGizmoSpace = engine.getTransformControlManager().observers.subscribe(
+          'gizmoSpaceChanged',
+          ({ space }) => {
+            setGizmoSpace(space);
+          }
+        );
+
+        unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubSelectableSelected, unsubRenderSettingsChanged, unsubProjectLoaded, unsubGizmoSpace);
       }
 
       initEngine();
@@ -100,6 +109,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         renderSettings: renderSettings,
         uiLayoutMode,
         setUiLayoutMode,
+        gizmoSpace,
       }}
     >
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
