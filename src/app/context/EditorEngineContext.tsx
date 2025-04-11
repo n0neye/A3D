@@ -29,6 +29,7 @@ interface EditorEngineContextType {
   gizmoAllowedModes: TransformMode[];
   renderSettings: IRenderSettings;
   uiLayoutMode: UiLayoutMode;
+  setUiLayoutMode: (mode: UiLayoutMode) => void;
 }
 
 export enum UiLayoutMode {
@@ -98,6 +99,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         gizmoAllowedModes,
         renderSettings: renderSettings,
         uiLayoutMode,
+        setUiLayoutMode,
       }}
     >
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>

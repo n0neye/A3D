@@ -3,6 +3,7 @@ import { EntityBase, EntityType, isEntity } from '../entity/base/EntityBase';
 import { Observer } from '../utils/Observer';
 import { ISelectable, isISelectable } from '../entity/interfaces/ISelectable';
 import { EditorEngine } from '../core/EditorEngine';
+import { BoneControl } from '../entity/components/BoneControl';
 
 export interface ObjectManagerEvents {
   entityAdded: { entity: EntityBase };
@@ -281,5 +282,12 @@ export class ObjectManager {
    */
   public notifyHierarchyChanged(): void {
     this.observer.notify('hierarchyChanged', {});
+  }
+
+  public LinkEntityToBone(entity: EntityBase, bone: BoneControl): void {
+    entity.parent = bone;
+    bone.children.push(entity);
+    entity.position.set(0, 0, 0);
+    entity.updateWorldMatrix(true, true);
   }
 } 

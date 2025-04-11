@@ -4,9 +4,10 @@ import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import RenderVideoPanel from "./RenderVideoPanel";
 import RenderPanel from "./RenderPanel";
+import { UiLayoutMode, useEditorEngine } from "../context/EditorEngineContext";
 
 function RenderPanels() {
-    const [videoMode, setVideoMode] = useState(false);
+    const { uiLayoutMode, setUiLayoutMode } = useEditorEngine();
     return (
 
         <div className={`fixed right-4 h-full flex justify-center items-center`}>
@@ -15,12 +16,14 @@ function RenderPanels() {
                     <div className="text-lg font-medium">Render</div>
                     <div className="flex items-center gap-2">
                         <Label>Video</Label>
-                        <Switch checked={videoMode} onCheckedChange={setVideoMode} />
+                        <Switch checked={uiLayoutMode === UiLayoutMode.Video} onCheckedChange={() => {
+                            setUiLayoutMode(uiLayoutMode === UiLayoutMode.Video ? UiLayoutMode.Image : UiLayoutMode.Video);
+                        }} />
                     </div>
                 </CardHeader>
 
-                {videoMode && <RenderVideoPanel />}
-                {!videoMode && <RenderPanel />}
+                {uiLayoutMode === UiLayoutMode.Video && <RenderVideoPanel />}
+                {uiLayoutMode === UiLayoutMode.Image && <RenderPanel />}
 
             </Card>
         </div>
