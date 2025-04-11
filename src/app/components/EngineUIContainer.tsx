@@ -7,12 +7,23 @@ import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
 import RenderPanel from './RenderPanel';
 import RatioOverlay from './RatioOverlay';
-import { useState } from 'react';
+import TimelinePanel from './TimelinePanel';
+import DebugPanel from './Debug/DebugPanel';
+import { useEffect, useState } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
+import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
+import RenderPanels from './RenderPanels';
 
 function EngineUIContainer() {
     const { engine } = useEditorEngine();
+    const [timelineManager, setTimelineManager] = useState<TimelineManager | null>(null);
     const [isDebugMode, setIsDebugMode] = useState(false);
+
+    useEffect(() => {
+        if(!engine) return;
+        const timelineManager = engine.getTimelineManager();
+        setTimelineManager(timelineManager);
+    }, [engine]);
 
     return (
         <>
@@ -21,7 +32,7 @@ function EngineUIContainer() {
             <EntityPanel />
 
             {/* Render Panel - simplified props */}
-            <RenderPanel isDebugMode={isDebugMode} />
+            <RenderPanels />
 
             <div className='fixed top-2 w-full flex justify-center items-center'>
                 <div className="panel-shape p-1 flex gap-2">
@@ -36,6 +47,11 @@ function EngineUIContainer() {
 
             {/* Add the Guide component */}
             <Guide />
+
+            {timelineManager && <TimelinePanel timelineManager={timelineManager} />}
+            
+            {/* Add the Debug Panel */}
+            <DebugPanel />
         </>
     );
 }

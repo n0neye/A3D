@@ -54,7 +54,7 @@ export class CharacterEntity extends EntityBase {
             onLoaded?: (entity: EntityBase) => void
         }) {
         super(name, scene, 'character', {
-            entityId: id,
+            uuid: id,
             position: new THREE.Vector3(0, 0, 0),
             scaling: options?.scaling || new THREE.Vector3(1, 1, 1)
         });
@@ -202,6 +202,10 @@ export class CharacterEntity extends EntityBase {
         return this.skeleton?.bones || [];
     }
 
+    public getBoneControls(): BoneControl[] {
+        return Array.from(this._boneMap.values()).map(({ control }) => control);
+    }
+
     /**
      * Reset all bones to their initial rotations
      */
@@ -314,13 +318,29 @@ export class CharacterEntity extends EntityBase {
         console.log("CharacterEntity: updateBoneVisualization", this.name);
 
         // Sync the position and rotation of the bone control to the bone
-        this._boneMap.forEach(({ control,bone, lineConfigs }) => {
+        this._boneMap.forEach(({ control, bone, lineConfigs }) => {
             control.position.copy(bone.position);
             control.quaternion.copy(bone.quaternion);
-            lineConfigs.forEach(({ line }) => {
-                // ?
-            });
+            
+            // Update line positions if they exist
+            // lineConfigs.forEach(({ line, targetBone }) => {
+            //     if (line.geometry instanceof THREE.BufferGeometry) {
+            //         const points = [
+            //             new THREE.Vector3(0, 0, 0), // Local origin
+            //             targetBone.position.clone() // Target bone position in local space
+            //         ];
+            //         line.geometry.setFromPoints(points);
+            //         line.geometry.attributes.position.needsUpdate = true;
+            //     }
+            // });
         });
+        
+        // Force a redraw
+        // this.traverse(object => {
+        //     if (object instanceof THREE.SkinnedMesh) {
+        //         object.skeleton.update();
+        //     }
+        // });
     }
 
     /**
@@ -393,8 +413,8 @@ export class CharacterEntity extends EntityBase {
         data: SerializedCharacterEntityData,
     ): Promise<CharacterEntity> {
         try {
-            console.log("Deserializing character:", data.name, data.entityId);
-            const entity = new CharacterEntity(scene, data.name, data.entityId, data.characterProps);
+            console.log("Deserializing character:", data.name, data.uuid);
+            const entity = new CharacterEntity(scene, data.name, data.uuid, data.characterProps);
 
             // Wait for model to load before applying bone rotations
             await entity.waitUntilReady();
@@ -447,7 +467,7 @@ export class CharacterEntity extends EntityBase {
         } catch (error) {
             console.error("Error during character deserialization:", error);
             // Create a fallback entity without the bone rotations
-            const fallbackEntity = new CharacterEntity(scene, data.name, data.entityId, data.characterProps);
+            const fallbackEntity = new CharacterEntity(scene, data.name, data.uuid, data.characterProps);
             await fallbackEntity.waitUntilReady();
             return fallbackEntity;
         }

@@ -72,7 +72,7 @@ const AddPanel: React.FC = () => {
       type: 'character',
       characterProps: {
         url: modelUrl,
-        name: modelName + '-' + uuidv4(),
+        name: modelName,
       },
       scaling: new THREE.Vector3(modelScale, modelScale, modelScale),
     })

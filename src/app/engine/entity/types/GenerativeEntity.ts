@@ -61,7 +61,7 @@ export class GenerativeEntity extends EntityBase {
     }
   ) {
     super(name, scene, 'generative', {
-      entityId: options.uuid,
+      uuid: options.uuid,
       position: options.position,
       rotation: options.rotation,
       scaling: options.scaling
@@ -372,7 +372,7 @@ export class GenerativeEntity extends EntityBase {
     const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
 
     return new GenerativeEntity(data.name, scene, {
-      uuid: data.entityId,
+      uuid: data.uuid,
       position,
       rotation,
       scaling,

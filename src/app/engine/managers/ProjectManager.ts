@@ -12,6 +12,7 @@ import { SerializedLightEntityData } from "../entity/types/LightEntity";
 import { EntityBase, SerializedEntityData, isEntity } from "../entity/base/EntityBase";
 import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
 import { IRenderLog, IRenderSettings } from '@/app/engine/interfaces/rendering';
+import { SerializedTimelineData } from '../managers/timeline/TimelineManager';
 // Interface for serialized render settings
 
 interface IProjectData {
@@ -21,6 +22,7 @@ interface IProjectData {
     environment: any;
     renderSettings: IRenderSettings;
     renderLogs: IRenderLog[];
+    timeline?: SerializedTimelineData;
 }
 
 export class ProjectManager {
@@ -138,20 +140,15 @@ export class ProjectManager {
         }
     }
 
-    serializeProject(
-    ): IProjectData {
-        const scene = this.engine.getScene();
-        const entities: EntityBase[] = [];
-
-        // Find all entities in the scene
-        scene.traverse(node => {
-            if (isEntity(node) && node.visible) {
-                entities.push(node as EntityBase);
-            }
-        });
-
+    serializeProject(): IProjectData {
+        const entities: EntityBase[] = this.engine.getObjectManager().getAllVisibleEntities();
+        
         // Serialize environment settings
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
+
+        // Serialize timeline data
+        const timelineManager = this.engine.getTimelineManager();
+        const timeline = timelineManager ? timelineManager.serialize() : undefined;
 
         // Create project data structure
         const project: IProjectData = {
@@ -160,7 +157,8 @@ export class ProjectManager {
             entities: entities.map(entity => entity.serialize()),
             environment: environment,
             renderSettings: this.settings,
-            renderLogs: this.renderLogs
+            renderLogs: this.renderLogs,
+            timeline: timeline
         };
 
         return project;
@@ -169,20 +167,16 @@ export class ProjectManager {
     clearScene(): void {
         // Deselect
         this.engine.getSelectionManager().deselectAll();
-
-        // Dispose all children of the existing entities
+        
+        // Get all entities from object manager
+        const existingEntities = this.engine.getObjectManager().getAllEntities();
         const scene = this.engine.getScene();
-        const existingEntities: EntityBase[] = [];
-        scene.traverse(node => {
-            if (isEntity(node)) {
-                existingEntities.push(node as EntityBase);
-            }
-        });
 
         // Dispose entities
         existingEntities.forEach(entity => {
             entity.dispose();
             scene.remove(entity);
+            this.engine.getObjectManager().unregisterEntity(entity);
         });
     }
     
@@ -233,6 +227,10 @@ export class ProjectManager {
             });
         }
 
+        // Deserialize timeline data if present
+        if (data.timeline && this.engine.getTimelineManager()) {
+            this.engine.getTimelineManager().deserialize(data.timeline, this.engine);
+        }
 
         // Notify observers that the project has been loaded
         if (data.renderSettings) {
@@ -246,6 +244,9 @@ export class ProjectManager {
             this.latestRender = data.renderLogs[data.renderLogs.length - 1];
             this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
         }
+
+        // After creating all entities, scan the scene to ensure all are registered
+        this.engine.getObjectManager().scanScene();
     }
 
     updateRenderSettings(newSettings: Partial<IRenderSettings>): void {

@@ -9,7 +9,6 @@ import { Selectable } from '../interfaces/ISelectable';
  * A mesh that represents a bone for manipulation
  */
 export class BoneControl extends Selectable(THREE.Mesh) {
-  public entityId: string;
   public character: CharacterEntity;
   public bone: THREE.Bone;
 
@@ -30,7 +29,7 @@ export class BoneControl extends Selectable(THREE.Mesh) {
     bone: THREE.Bone,
     character: CharacterEntity,
     options: {
-      entityId?: string;
+      uuid?: string;
       diameter?: number;
     } = {}
   ) {
@@ -42,8 +41,8 @@ export class BoneControl extends Selectable(THREE.Mesh) {
     super(geometry, material);
     
     // Set properties
-    this.name = `boneControl_${bone.name}`;
-    this.entityId = options.entityId || uuidv4();
+    this.name = `${bone.name}`;
+    this.uuid = options.uuid || this.uuid;
     this.character = character;
     this.bone = bone;
 
@@ -116,7 +115,9 @@ export class BoneControl extends Selectable(THREE.Mesh) {
     // sync the bone's rotation with the control mesh
     console.log(`BoneControl.onTransformUpdate: Syncing bone ${this.bone.name} rotation with control mesh`);
     if (this.quaternion) {
-      this.bone.quaternion.copy(this.quaternion);
+        this.bone.quaternion.copy(this.quaternion);
+        // Critical: Update the matrix after changing quaternion
+        this.bone.updateMatrix();
     }
   }
 } 

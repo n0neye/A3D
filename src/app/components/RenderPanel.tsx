@@ -22,7 +22,7 @@ interface RenderPanelProps {
   isDebugMode: boolean;
 }
 
-const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
+const RenderPanel = () => {
   // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
   const { engine } = useEditorEngine();
   const { renderSettings } = useEditorEngine();
@@ -287,27 +287,20 @@ const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
   };
 
   const enableDepthRender = async () => {
-    const depthSnapshot = await engine.getRenderService().enableDepthRender(1);
-    if (!depthSnapshot) throw new Error("Failed to generate depth map");
-    setImageUrl(depthSnapshot);
+    await engine.getRenderService().showDepthRenderSeconds(3, setImageUrl);
   }
 
-  const onGetDepthMap = async () => {
-    const result = await engine.getRenderService().enableDepthRender(1);
-    if (!result) throw new Error("Failed to generate depth map");
-    setImageUrl(result);
-  };
 
-  
+
   useEffect(() => {
     // Subscribe to latestRenderChanged event, and update the imageUrl when it changes
     const unsubscribe = engine.getProjectManager().observers.subscribe(
-      'latestRenderChanged', 
+      'latestRenderChanged',
       ({ latestRender }) => {
         setImageUrl(latestRender?.imageUrl || null);
       }
     );
-    
+
     // Clean up subscription when component unmounts
     return () => unsubscribe();
   }, [engine]);
@@ -324,231 +317,217 @@ const RenderPanel = ({ isDebugMode }: RenderPanelProps) => {
         selectedLoraIds={selectedLoras ? selectedLoras.map((lora: LoraConfig) => lora.info.id) : []}
       />
 
-      <div className={`fixed right-4 h-full flex justify-center items-center ${isDebugMode ? 'right-80' : ''}`}>
-        <Card className={`panel-shape z-40   w-64 border-border max-h-[90vh] overflow-y-auto gap-2 `}>
-          <CardHeader className="">
-            <CardTitle className="text-lg font-medium">Render</CardTitle>
-          </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Preview image or placeholder */}
+        <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden group relative">
+          {isLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="animate-spin rounded-full w-12 h-12 border-t-2 border-b-2 border-primary mb-3"></div>
+              <p className="text-muted-foreground">Rendering...</p>
+            </div>
+          )}
+          {imageUrl ? (
+            <>
+              <img
+                src={imageUrl}
+                alt="Scene Preview"
+                className="w-full h-full object-contain cursor-pointer"
+                onClick={() => window.openGallery?.()}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                onClick={() => {
+                  if (!imageUrl) return;
+                  downloadImage(imageUrl);
+                }}
+              >
+                <IconDownload size={16} />
+              </Button>
 
-          <CardContent className="space-y-4">
-            {/* Preview image or placeholder */}
-            <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden group relative">
-              {isLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="animate-spin rounded-full w-12 h-12 border-t-2 border-b-2 border-primary mb-3"></div>
-                  <p className="text-muted-foreground">Rendering...</p>
+              {/* Execution time */}
+              {executionTime && (
+                <div className="w-full mb-1 absolute bottom-0 left-0 bg-black/50 py-1">
+                  <div className="flex justify-center items-center">
+                    <span className="text-xs text-white/80">{(executionTime / 1000).toFixed(2)} s</span>
+                  </div>
                 </div>
               )}
-              {imageUrl ? (
-                <>
-                  <img
-                    src={imageUrl}
-                    alt="Scene Preview"
-                    className="w-full h-full object-contain cursor-pointer"
-                    onClick={() => window.openGallery?.()}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    onClick={() => {
-                      if (!imageUrl) return;
-                      downloadImage(imageUrl);
-                    }}
-                  >
-                    <IconDownload size={16} />
-                  </Button>
-
-                  {/* Execution time */}
-                  {executionTime && (
-                    <div className="w-full mb-1 absolute bottom-0 left-0 bg-black/50 py-1">
-                      <div className="flex justify-center items-center">
-                        <span className="text-xs text-white/80">{(executionTime / 1000).toFixed(2)} s</span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-muted-foreground flex flex-col items-center">
-                  <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p>No preview available</p>
-                </div>
-              )}
+            </>
+          ) : (
+            <div className="text-muted-foreground flex flex-col items-center">
+              <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p>No preview available</p>
             </div>
+          )}
+        </div>
 
-            {/* Styles section */}
-            <div>
-              <Label className="text-sm mb-2 block">Style</Label>
-              {renderSelectedStyles()}
+        {/* Styles section */}
+        <div>
+          <Label className="text-sm mb-2 block">Style</Label>
+          {renderSelectedStyles()}
+        </div>
+
+        {/* Prompt Strength slider */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <Label className="text-sm">Creativity</Label>
+            <span className="text-xs">{promptStrength.toFixed(2)}</span>
+          </div>
+          <Slider
+            defaultValue={[promptStrength]}
+            min={0.1}
+            max={1}
+            step={0.05}
+            value={[promptStrength]}
+            onValueChange={(values) => setPromptStrength(values[0])}
+          />
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>Source</span>
+            <span>Creative</span>
+          </div>
+        </div>
+
+        {/* Depth Strength slider */}
+        {selectedAPI.useDepthImage && (
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <Label className="text-sm">Depth Strength</Label>
+              <span className="text-xs">{depthStrength.toFixed(2)}</span>
             </div>
-
-            {/* Prompt Strength slider */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label className="text-sm">Creativity</Label>
-                <span className="text-xs">{promptStrength.toFixed(2)}</span>
-              </div>
-              <Slider
-                defaultValue={[promptStrength]}
-                min={0.1}
-                max={1}
-                step={0.05}
-                value={[promptStrength]}
-                onValueChange={(values) => setPromptStrength(values[0])}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>Source</span>
-                <span>Creative</span>
-              </div>
+            <Slider
+              defaultValue={[depthStrength]}
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={[depthStrength]}
+              onValueChange={(values) => setDepthStrength(values[0])}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <span>Source</span>
+              <span>Creative</span>
             </div>
+          </div>
+        )}
 
-            {/* Depth Strength slider */}
-            {selectedAPI.useDepthImage && (
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <Label className="text-sm">Depth Strength</Label>
-                  <span className="text-xs">{depthStrength.toFixed(2)}</span>
-                </div>
-                <Slider
-                  defaultValue={[depthStrength]}
-                  min={0.1}
-                  max={1}
-                  step={0.05}
-                  value={[depthStrength]}
-                  onValueChange={(values) => setDepthStrength(values[0])}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>Source</span>
-                  <span>Creative</span>
-                </div>
-              </div>
-            )}
+        {/* Prompt input */}
+        <div>
+          <Label className="text-sm mb-2 block">Render Prompt</Label>
+          <Textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="resize-none"
+            rows={3}
+            placeholder="Describe how you want the scene to look..."
+          />
+        </div>
 
-            {/* Prompt input */}
-            <div>
-              <Label className="text-sm mb-2 block">Render Prompt</Label>
-              <Textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="resize-none"
-                rows={3}
-                placeholder="Describe how you want the scene to look..."
-              />
-            </div>
-
-            {/* Seed input */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label className="text-sm">Seed</Label>
-              </div>
-              <div className="flex items-center">
-                <Input
-                  type="number"
-                  value={seed}
-                  onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
-                  disabled={useRandomSeed}
-                  className="rounded-r-none"
-                />
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={generateNewSeed}
-                  disabled={useRandomSeed}
-                  className="rounded-l-none rounded-r-none h-10 w-10"
-                  title="Generate new seed"
-                >
-                  <IconRefresh size={16} />
-                </Button>
-                <Button
-                  variant={useRandomSeed ? "default" : "secondary"}
-                  size="icon"
-                  onClick={() => setUseRandomSeed(!useRandomSeed)}
-                  className="rounded-l-none h-10 w-10"
-                  title={useRandomSeed ? "Using random seed" : "Using fixed seed"}
-                >
-                  <IconDice size={16} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Model selection */}
-            <div>
-              <Label className="text-sm mb-2 block">Model</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {availableAPIs.map((aiModel) => (
-                  <Button
-                    key={aiModel.id}
-                    variant={selectedAPI.id === aiModel.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleAPIChange(aiModel)}
-                    className="w-full overflow-ellipsis text-xs"
-                  >
-                    {aiModel.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Debug Tools */}
-            {(true &&
-              <div>
-                <Label className="text-sm mb-2 block">Debug Tools</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={generateDebugImage}
-                  >
-                    Scene Image
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onGetDepthMap}
-                  >
-                    Get Depth
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={enableDepthRender}
-                  >
-                    Show Depth
-                  </Button>
-                  <Button
-                    variant={isTest ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setIsTest(!isTest)}
-                  >
-                    Test
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className='flex justify-between items-center text-xs gap-2'>
-              <span>Open on Rendered</span>
-              <Switch
-                checked={openOnRendered}
-                onCheckedChange={setOpenOnRendered}
-              />
-            </div>
-
-            {/* Action buttons */}
+        {/* Seed input */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <Label className="text-sm">Seed</Label>
+          </div>
+          <div className="flex items-center">
+            <Input
+              type="number"
+              value={seed}
+              onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
+              disabled={useRandomSeed}
+              className="rounded-r-none"
+            />
             <Button
-              variant="default"
-              size="lg"
-              onClick={() => handleRender(isTest)}
-              disabled={isLoading}
-              className="w-full"
+              variant="secondary"
+              size="icon"
+              onClick={generateNewSeed}
+              disabled={useRandomSeed}
+              className="rounded-l-none rounded-r-none h-10 w-10"
+              title="Generate new seed"
             >
-              {isLoading ? 'Rendering...' : 'Render'}
-              <span className="ml-2 text-xs opacity-70">Ctrl+⏎</span>
+              <IconRefresh size={16} />
             </Button>
-          </CardContent>
-        </Card></div>
+            <Button
+              variant={useRandomSeed ? "default" : "secondary"}
+              size="icon"
+              onClick={() => setUseRandomSeed(!useRandomSeed)}
+              className="rounded-l-none h-10 w-10"
+              title={useRandomSeed ? "Using random seed" : "Using fixed seed"}
+            >
+              <IconDice size={16} />
+            </Button>
+          </div>
+        </div>
+
+        {/* Model selection */}
+        <div>
+          <Label className="text-sm mb-2 block">Model</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {availableAPIs.map((aiModel) => (
+              <Button
+                key={aiModel.id}
+                variant={selectedAPI.id === aiModel.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleAPIChange(aiModel)}
+                className="w-full overflow-ellipsis text-xs"
+              >
+                {aiModel.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Debug Tools */}
+        {(true &&
+          <div>
+            <Label className="text-sm mb-2 block">Debug Tools</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generateDebugImage}
+              >
+                Scene Image
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={enableDepthRender}
+              >
+                Show Depth
+              </Button>
+              <Button
+                variant={isTest ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsTest(!isTest)}
+              >
+                Test
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className='flex justify-between items-center text-xs gap-2'>
+          <span>Open on Rendered</span>
+          <Switch
+            checked={openOnRendered}
+            onCheckedChange={setOpenOnRendered}
+          />
+        </div>
+
+        {/* Action buttons */}
+        <Button
+          variant="default"
+          size="lg"
+          onClick={() => handleRender(isTest)}
+          disabled={isLoading}
+          className="w-full"
+        >
+          {isLoading ? 'Rendering...' : 'Render'}
+          <span className="ml-2 text-xs opacity-70">Ctrl+⏎</span>
+        </Button>
+      </CardContent>
     </>
   );
 };

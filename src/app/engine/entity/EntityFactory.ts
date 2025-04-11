@@ -34,7 +34,7 @@ export class EntityFactory {
    * Create an entity based on type
    */
   static createEntityDefault(scene: THREE.Scene, type: EntityType, onLoaded?: (entity: EntityBase) => void): EntityBase {
-    const name = `entity-${Date.now()}`;
+    const name = `${type}`;
     const id = uuidv4();
 
     switch (type) {
@@ -66,13 +66,13 @@ export class EntityFactory {
   }
 
   static createEntity(scene: THREE.Scene, options: CreateEntityOptions): EntityBase {
-    const name = options.name || `entity-${Date.now()}`;
+    const name = options.name || options.type;
     switch (options.type) {
       case 'generative':
-        return new GenerativeEntity(name, scene, options);
+        return new GenerativeEntity(options.name || options.type, scene, options);
       case 'shape':
         console.log(`Creating shape entity`, options.shapeProps);
-        return new ShapeEntity(name, scene, {
+        return new ShapeEntity(options.name || options.shapeProps.shapeType, scene, {
           uuid: options.id,
           position: options.position,
           rotation: options.rotation,
@@ -80,11 +80,11 @@ export class EntityFactory {
           onLoaded: options.onLoaded
         });
       case 'light':
-        return new LightEntity(name, scene, options);
+        return new LightEntity(options.name || options.type, scene, options);
       case 'character':
         return new CharacterEntity(
           scene, 
-          name,
+          options.name || options.characterProps.name || options.type,
           options.id || uuidv4(),
           options.characterProps,
           {

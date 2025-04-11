@@ -30,7 +30,10 @@ import { TransformMode, TransformControlManager } from '../managers/TransformCon
 import { ProjectManager } from '../managers/ProjectManager';
 import { EnvironmentManager } from '../managers/environmentManager';
 import { Observer } from '../utils/Observer';
+import { TimelineManager } from '../managers/timeline/TimelineManager';
 import { CreateEntityCommand } from '../../lib/commands';
+import { ObjectManager } from '../managers/ObjectManager';
+import { RenderVideoService } from '../services/RenderVideoService';
 
 
 /**
@@ -49,6 +52,9 @@ export class EditorEngine {
   private renderService: RenderService;
   private projectManager: ProjectManager;
   private environmentManager: EnvironmentManager;
+  private timelineManager: TimelineManager;
+  private objectManager: ObjectManager;
+  private renderVideoService: RenderVideoService;
 
   public observer = new Observer<{
   }>();
@@ -65,6 +71,8 @@ export class EditorEngine {
     this.historyManager = new HistoryManager();
     this.projectManager = new ProjectManager(this);
     this.environmentManager = new EnvironmentManager(this);
+    this.timelineManager = new TimelineManager(this);
+    this.objectManager = new ObjectManager(this);
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(
@@ -78,6 +86,9 @@ export class EditorEngine {
 
     // Create the render service
     this.renderService = new RenderService(scene, this, threeRenderer);
+
+    // Create the render video service
+    this.renderVideoService = new RenderVideoService(this, this.renderService, threeRenderer);
 
     // Register the update method to be called by the core
     this.core.setEngineUpdate(this.update);
@@ -94,7 +105,7 @@ export class EditorEngine {
     await loadShapeMeshes(scene);
     await createDefaultMaterials(scene);
 
-    await EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/default_minimal.json');
+    await EditorEngine.instance.projectManager.loadProjectFromUrl('/demoAssets/demo_xbot.json');
 
     return EditorEngine.instance;
   }
@@ -141,6 +152,17 @@ export class EditorEngine {
     return this.environmentManager;
   }
 
+  public getTimelineManager(): TimelineManager {
+    return this.timelineManager;
+  }
+
+  public getObjectManager(): ObjectManager {
+    return this.objectManager;
+  }
+
+  public getRenderVideoService(): RenderVideoService {
+    return this.renderVideoService;
+  }
 
 
   // Public API methods for React components

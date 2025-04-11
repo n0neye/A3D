@@ -35,7 +35,7 @@ export class ShapeEntity extends EntityBase {
     }
   ) {
     super(name, scene, 'shape', {
-      entityId: options.uuid,
+      uuid: options.uuid,
       position: options.position,
       rotation: options.rotation,
       scaling: options.scaling,
@@ -59,7 +59,7 @@ export class ShapeEntity extends EntityBase {
     }
 
     // Return the created mesh
-    console.log(`ShapeEntity: constructor done`, options.onLoaded);
+    console.log(`ShapeEntity: constructor done`, this.name, this.uuid);
     options.onLoaded?.(this);
   }
 
@@ -72,7 +72,7 @@ export class ShapeEntity extends EntityBase {
     const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
 
     return new ShapeEntity(data.name, scene, {
-      uuid: data.entityId,
+      uuid: data.uuid,
       position,
       rotation,
       scaling,

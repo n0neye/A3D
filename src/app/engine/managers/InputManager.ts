@@ -377,6 +377,15 @@ export class InputManager {
         this.engine.setTransformControlMode(TransformMode.BoundingBox);
         break;
     }
+
+    // Focus on selected entity (F key)
+    if (event.key.toLowerCase() === 'f') {
+      const currentEntity = this.selectionManager.getCurrentEntity();
+      if (currentEntity) {
+        // Focus camera on the selected entity
+        this.engine.getCameraManager().focusOnObject(currentEntity);
+      }
+    }
   }
 
   public dispose(): void {

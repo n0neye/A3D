@@ -41,14 +41,14 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   // Update when selected entity changes
   useEffect(() => {
     const handleProgress = (param: { entity: GenerativeEntity, state: GenerationStatus, message: string }) => {
-      if (param.entity.entityId === PREV_ENTITY?.entityId) {
+      if (param.entity.uuid === PREV_ENTITY?.uuid) {
         setIsGenerating2D(param.state === 'generating2D');
         setIsGenerating3D(param.state === 'generating3D');
         setProgressMessage(param.message);
       }
     }
     const handleGenerationChanged = (param: { entity: GenerativeEntity }) => {
-      if (param.entity.entityId === PREV_ENTITY?.entityId) {
+      if (param.entity.uuid === PREV_ENTITY?.uuid) {
         // Force a re-render by incrementing the counter
         setUpdateCounter(prev => prev + 1);
         trySetPrompt('onGenerationChanged', props.entity.temp_prompt);
@@ -57,8 +57,8 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     }
 
     // If selected entity changed
-    if (PREV_ENTITY?.entityId !== props.entity.entityId) {
-      console.log("entity changed: ", PREV_ENTITY?.entityId, "to", props.entity.entityId);
+    if (PREV_ENTITY?.uuid !== props.entity.uuid) {
+      console.log("entity changed: ", PREV_ENTITY?.uuid, "to", props.entity.uuid);
       // Remove the event handlers
       if (PREV_ENTITY) {
         PREV_ENTITY.onProgress.remove(handleProgress);
@@ -81,7 +81,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     props.entity.onGenerationChanged.add(handleGenerationChanged);
 
     return () => {
-      console.log("unmounting entity:", props.entity.entityId);
+      console.log("unmounting entity:", props.entity.uuid);
       // Clean up event handlers
       if (PREV_ENTITY) {
         PREV_ENTITY.onProgress.remove(handleProgress);
