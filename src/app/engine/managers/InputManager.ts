@@ -362,8 +362,15 @@ export class InputManager {
       event.preventDefault(); // Prevent browser's default redo
     }
 
-    // Handle gizmo mode changes
+    // Single key shortcuts
     switch (event.key.toLowerCase()) {
+      // Toggle gizmo visibility
+      case 'x':
+        // TODO
+        // this.engine.getTransformControlManager().toggleGizmo();
+        break;
+
+      // Transform control mode
       case 'w':
         this.engine.setTransformControlMode(TransformMode.Position);
         break;
@@ -380,16 +387,16 @@ export class InputManager {
         // Toggle between world and local space
         this.engine.getTransformControlManager().toggleTransformControlSpace();
         break;
+
+      // Focus on selected entity
+      case 'f':
+        const currentEntity = this.selectionManager.getCurrentEntity();
+        if (currentEntity) {
+          // Focus camera on the selected entity
+          this.engine.getCameraManager().focusOnObject(currentEntity);
+        }
     }
 
-    // Focus on selected entity (F key)
-    if (event.key.toLowerCase() === 'f') {
-      const currentEntity = this.selectionManager.getCurrentEntity();
-      if (currentEntity) {
-        // Focus camera on the selected entity
-        this.engine.getCameraManager().focusOnObject(currentEntity);
-      }
-    }
   }
 
   public dispose(): void {
