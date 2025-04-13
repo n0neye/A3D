@@ -51,9 +51,8 @@ export class EntityBase extends Selectable(THREE.Object3D) {
     // Set transform properties
     if (options.position) this.position.copy(options.position);
     if (options.rotation) this.rotation.copy(options.rotation);
-    if (options.scaling && this.scale) {
-      this.scale.copy(options.scaling);
-    }
+    if (options.scaling) this.scale.copy(options.scaling);
+
 
     // Add to scene
     scene.add(this);
@@ -101,14 +100,14 @@ export class EntityBase extends Selectable(THREE.Object3D) {
   dispose(): void {
     // Remove from parent
     this.parent?.remove(this);
-    
+
     // Dispose geometries and materials recursively
     this.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         if (object.geometry) {
           object.geometry.dispose();
         }
-        
+
         if (object.material) {
           if (Array.isArray(object.material)) {
             object.material.forEach(material => material.dispose());
@@ -140,7 +139,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
     });
     this.visible = false;
     this.isDeleted = true;
-    
+
     // Notify object manager about deletion state change
     this.engine.getObjectManager().updateEntityDeletedState(this, true);
   }
@@ -154,7 +153,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
         child.visible = true;
       }
     });
-    
+
     // Notify object manager about deletion state change
     this.engine.getObjectManager().updateEntityDeletedState(this, false);
   }

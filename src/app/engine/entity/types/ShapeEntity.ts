@@ -53,11 +53,6 @@ export class ShapeEntity extends EntityBase {
     newMesh.material = defaultShapeMaterial;
     setupMeshShadows(newMesh);
 
-    // scale
-    if (options?.scaling) {
-      newMesh.scale.copy(options.scaling);
-    }
-
     // Return the created mesh
     console.log(`ShapeEntity: constructor done`, this.name, this.uuid);
     options.onLoaded?.(this);
