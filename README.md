@@ -135,3 +135,11 @@ To add new functionality:
 5. Update the UI components to use the new functionality
 
 This architecture ensures clean separation of concerns and makes the codebase more maintainable.
+
+
+## Desktop App
+
+The desktop app is built with Tauri and uses the same React UI as the web app.
+To run the desktop dev server, run `yarn tauri dev`.
+To build the desktop app, run `yarn tauri build`.
+
