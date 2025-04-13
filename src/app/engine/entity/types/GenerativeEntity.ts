@@ -92,13 +92,7 @@ export class GenerativeEntity extends EntityBase {
     const currentLog = this.getCurrentGenerationLog();
     if (currentLog) {
       console.log("Constructor: applyGenerationLog", currentLog);
-      this.applyGenerationLog(currentLog, (entity) => {
-        // Temp solution: update the mesh scaling
-        if (entity.gltfModel && options.scaling) {
-          console.log("Constructor: applyGenerationLog: onFinish. Apply scaling", options.scaling);
-          entity.gltfModel.scale.copy(options.scaling);
-        }
-      });
+      this.applyGenerationLog(currentLog);
     }
 
     options.onLoaded?.(this);

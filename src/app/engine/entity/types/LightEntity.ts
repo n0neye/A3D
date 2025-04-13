@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from '../base/EntityBase';
 import { EditorEngine } from '../../core/EditorEngine';
+import { TransformMode } from '../../managers/TransformControlManager';
+import { SelectableConfig } from '../interfaces/ISelectable';
 /**
  * Entity that represents lights in the scene
  */
@@ -30,6 +32,11 @@ export class LightEntity extends EntityBase {
   _material: THREE.MeshStandardMaterial;
   
   props: LightProps;
+  
+  selectableConfig: SelectableConfig = {
+    allowedTransformModes: [TransformMode.Position],
+    controlSize: 1
+  };
 
 
   constructor(
@@ -107,7 +114,7 @@ export class LightEntity extends EntityBase {
    */
   private createLightGizmo(): { lightSphere: THREE.Mesh, material: THREE.MeshStandardMaterial } {
     // Create a visual representation for the light (a glowing sphere)
-    const geometry = new THREE.SphereGeometry(0.2);
+    const geometry = new THREE.SphereGeometry(0.05);
     const material = new THREE.MeshStandardMaterial({
       color: new THREE.Color(this.props.color.r, this.props.color.g, this.props.color.b),
       emissive: new THREE.Color(this.props.color.r, this.props.color.g, this.props.color.b),

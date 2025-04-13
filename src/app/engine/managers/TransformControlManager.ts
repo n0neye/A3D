@@ -12,12 +12,15 @@ export enum TransformMode {
     BoundingBox = 3
 }
 
+export type TransformSpace = 'world' | 'local';
+
 export class TransformControlManager {
     private scene: THREE.Scene;
     private transformControls: TransformControls;
     private _lastMode: TransformMode = TransformMode.Position;
-    private _lastSpace: 'world' | 'local' = 'world';
+    private _lastSpace: TransformSpace = 'world';
     private _currentMode: TransformMode = TransformMode.Position;
+    private _currentSpace: TransformSpace = 'world';
     private _allowedModes: TransformMode[] = [TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox];
     private _currentTarget: THREE.Object3D | null = null;
     private _isDragging: boolean = false;
@@ -27,6 +30,7 @@ export class TransformControlManager {
 
     public observers = new Observer<{
         gizmoModeChanged: { mode: TransformMode };
+        gizmoSpaceChanged: { space: TransformSpace };
         gizmoAllowedModesChanged: { modes: TransformMode[] };
         transformStarted: { target: THREE.Object3D };
         transformEnded: { target: THREE.Object3D };
@@ -157,8 +161,25 @@ export class TransformControlManager {
         return mode;
     }
 
-    public setTransformControlSpace(space: 'world' | 'local'): void {
+    public setTransformControlSpace(space: TransformSpace): void {
+        this._currentSpace = space;
         this.transformControls.setSpace(space);
+        this._lastSpace = space;
+        
+        // Notify observers of the space change
+        this.observers.notify('gizmoSpaceChanged', { space });
+        
+        console.log(`TransformControlManager.setTransformControlSpace: Set space to: ${space}`);
+    }
+    
+    public toggleTransformControlSpace(): TransformSpace {
+        const newSpace = this._currentSpace === 'world' ? 'local' : 'world';
+        this.setTransformControlSpace(newSpace);
+        return newSpace;
+    }
+    
+    public getCurrentSpace(): TransformSpace {
+        return this._currentSpace;
     }
 
     public setAllowedModes(modes: TransformMode[]): void {

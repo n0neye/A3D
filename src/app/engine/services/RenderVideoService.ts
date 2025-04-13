@@ -90,6 +90,21 @@ export class RenderVideoService {
       // Get camera
       const cameraManager = this.engine.getCameraManager();
       const camera = cameraManager.getCamera();
+      
+
+      // Get the frame dimensions
+      const ratioDimensions = cameraManager.getRatioOverlayDimensions();
+      if (!ratioDimensions) {
+          throw new Error("No ratio dimensions found");
+      }
+      // Multiply the frame dimensions with pixel ratio to account for high-DPI displays
+      const pixelRatio = this.renderer.pixelRatio || window.devicePixelRatio;
+      const frame = {
+          left: ratioDimensions.frame.left * pixelRatio,
+          top: ratioDimensions.frame.top * pixelRatio,
+          width: ratioDimensions.frame.width * pixelRatio,
+          height: ratioDimensions.frame.height * pixelRatio
+      };
 
 
       // Process each frame
@@ -126,7 +141,8 @@ export class RenderVideoService {
       // Generate the video from frames
       const videoUrl = await this.generateVideoFromFrames(
         frames,
-        options.fps
+        options.fps,
+        frame
       );
 
       // Restore original state
@@ -161,14 +177,14 @@ export class RenderVideoService {
     const startTime = Date.now();
     this.isRendering = true;
     this.shouldCancelRender = false;
-    
+
     // Store original timeline position
     const originalPosition = this.timelineManager.getCurrentTime();
 
     try {
       // Get timeline duration
       // const timelineDuration = this.timelineManager.getDuration();
-      const timelineDuration = 1; //for testing
+      const timelineDuration = 2; //for testing
 
       // Calculate number of frames to capture
       const frameCount = Math.ceil(timelineDuration * options.fps);
@@ -188,6 +204,21 @@ export class RenderVideoService {
       const camera = cameraManager.getCamera();
 
       const { stopDepthRender, renderer, postScene, postCamera } = this.renderService.startDepthRender();
+
+
+      // Get the frame dimensions
+      const ratioDimensions = cameraManager.getRatioOverlayDimensions();
+      if (!ratioDimensions) {
+          throw new Error("No ratio dimensions found");
+      }
+      // Multiply the frame dimensions with pixel ratio to account for high-DPI displays
+      const pixelRatio = this.renderer.pixelRatio || window.devicePixelRatio;
+      const frame = {
+          left: ratioDimensions.frame.left * pixelRatio,
+          top: ratioDimensions.frame.top * pixelRatio,
+          width: ratioDimensions.frame.width * pixelRatio,
+          height: ratioDimensions.frame.height * pixelRatio
+      };
 
 
       // Process each frame
@@ -220,7 +251,8 @@ export class RenderVideoService {
       // Generate the video from frames
       const videoUrl = await this.generateVideoFromFrames(
         frames,
-        options.fps
+        options.fps,
+        frame
       );
 
       // Restore original state
@@ -267,7 +299,13 @@ export class RenderVideoService {
    * Generate a video from a sequence of frames
    * Uses MediaRecorder API to create a video from frame sequence
    */
-  private async generateVideoFromFrames(frames: string[], fps: number): Promise<string> {
+  private async generateVideoFromFrames(frames: string[], fps: number,
+    cropDimensions: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    }): Promise<string> {
     return new Promise(async (resolve, reject) => {
       try {
         // Create a canvas to draw frames on
@@ -281,8 +319,8 @@ export class RenderVideoService {
         // Set canvas size based on first frame
         const firstImage = new Image();
         firstImage.onload = () => {
-          canvas.width = firstImage.width;
-          canvas.height = firstImage.height;
+          canvas.width = cropDimensions.width;
+          canvas.height = cropDimensions.height;
 
           // Create MediaRecorder
           const stream = canvas.captureStream(fps);
@@ -314,7 +352,11 @@ export class RenderVideoService {
             if (frameIndex < frames.length) {
               const img = new Image();
               img.onload = () => {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(
+                  img,
+                  cropDimensions.left, cropDimensions.top, cropDimensions.width, cropDimensions.height,
+                  0, 0, cropDimensions.width, cropDimensions.height
+                );
                 frameIndex++;
 
                 // Schedule next frame
