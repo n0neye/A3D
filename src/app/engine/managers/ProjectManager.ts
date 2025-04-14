@@ -212,18 +212,27 @@ export class ProjectManager {
             this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
         }
 
+        console.log("ProjectManager: deserializeProject: entities", data.entities.length);
+
         // Create entities from the saved data
         if (data.entities && Array.isArray(data.entities)) {
-            // Create entities from serialized data using entity class deserializers
-            data.entities.forEach((entityData: SerializedEntityData) => {
-                try {
-                    EntityFactory.deserializeEntity(scene, entityData);
-                } catch (error) {
-                    console.error(`Error creating entity from saved data:`, error, entityData);
-                }
+            // Create entities from serialized data using entity class deserializers in parallel
+            const entityPromises = data.entities.map((entityData: SerializedEntityData) => {
+                return new Promise<void>(async (resolve) => {
+                    try {
+                        await EntityFactory.deserializeEntity(scene, entityData);
+                        resolve();
+                    } catch (error) {
+                        console.error(`Error creating entity from saved data:`, error, entityData);
+                        resolve(); // Still resolve to not block other entities
+                    }
+                });
             });
+
+            await Promise.all(entityPromises);
         }
 
+        console.log("ProjectManager: deserializeProject: all entities created");
 
         // After creating all entities, scan the scene to ensure all are registered
         this.engine.getObjectManager().scanScene();

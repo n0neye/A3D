@@ -13,8 +13,10 @@ export interface CharacterEntityProps {
 export interface SerializedCharacterEntityData extends SerializedEntityData {
     entityType: 'character';
     characterProps: CharacterEntityProps;
-    boneRotations?: Record<string, { x: number, y: number, z: number, w: number }>;
+    boneRotations?: boneRotations;
 }
+
+type boneRotations = Record<string, { x: number, y: number, z: number, w: number }>;
 
 export class CharacterEntity extends EntityBase {
     public skeleton: THREE.Skeleton | null = null;
@@ -60,7 +62,9 @@ export class CharacterEntity extends EntityBase {
         });
 
         this._loadingPromise = this._loadCharacter((entity) => {
-            this._applyBoneRotationsFromData(data);
+            if (data.boneRotations) {
+                this._applyBoneRotationsFromData(data.boneRotations);
+            }
             onLoaded?.(entity);
         });
 
@@ -68,38 +72,33 @@ export class CharacterEntity extends EntityBase {
         this._createMaterials(scene);
     }
 
-    private async _applyBoneRotationsFromData(data: SerializedCharacterEntityData): Promise<void> {
-        if (!data.boneRotations) return;
+    private  _applyBoneRotationsFromData(boneRotations: boneRotations) {
         try {
-            // Wait for model to load before applying bone rotations
-            console.log("ApplyBoneRotationsFromData character:", data.name, data.uuid);
-
             // Apply saved bone rotations if available
-            if (data.boneRotations && this.skeleton) {
-                console.log("Applying bone rotations");
-
-                // First ensure all bones have their initial transforms updated
-                this.skeleton.bones.forEach(bone => bone.updateMatrixWorld(true));
-                this.skeleton.update();
-
-                // Apply rotations in a try/catch to prevent errors from breaking deserialization
-                try {
-                    Object.entries(data.boneRotations).forEach(([boneName, rotation]) => {
-                        const bone = this.skeleton!.bones.find(b => b.name === boneName);
-                        if (bone) {
-                            bone.quaternion.set(
-                                rotation.x,
-                                rotation.y,
-                                rotation.z,
-                                rotation.w
-                            );
-                        }
-                    });
-                } catch (rotErr) {
-                    console.error("Error applying bone rotations:", rotErr);
-                }
+            if (!this.skeleton) {
+                throw new Error("Skeleton not found");
             }
 
+            // First ensure all bones have their initial transforms updated
+            this.skeleton.bones.forEach(bone => bone.updateMatrixWorld(true));
+            this.skeleton.update();
+
+            // Apply rotations in a try/catch to prevent errors from breaking deserialization
+            try {
+                Object.entries(boneRotations).forEach(([boneName, rotation]) => {
+                    const bone = this.skeleton!.bones.find(b => b.name === boneName);
+                    if (bone) {
+                        bone.quaternion.set(
+                            rotation.x,
+                            rotation.y,
+                            rotation.z,
+                            rotation.w
+                        );
+                    }
+                });
+            } catch (rotErr) {
+                console.error("Error applying bone rotations:", rotErr);
+            }
         } catch (error) {
             console.error("Error during character deserialization:", error);
         }
