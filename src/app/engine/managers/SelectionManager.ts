@@ -40,14 +40,14 @@ export class SelectionManager {
       const isChildOfCurrentEntity = this._isChildOfEntity(newSelectable, this._currentEntity);
       if (!isChildOfCurrentEntity) {
         // deselect the current selection properly
-        console.log("Deselecting previous entity:", this._currentEntity.getName());
+        console.log("SelectionManager: Deselecting previous entity:", this._currentEntity.getName());
         this._currentEntity.onDeselect();
         this._currentEntity = null;
       } 
       // else keep the current entity
     } else if (this._currentEntity && !newSelectable) {
       // Deselect current entity if selecting nothing
-      console.log("Deselecting previous entity:", this._currentEntity.getName());
+      console.log("SelectionManager: Deselecting previous entity:", this._currentEntity.getName());
       this._currentEntity.onDeselect();
       this._currentEntity = null;
     }
@@ -56,13 +56,14 @@ export class SelectionManager {
     if (this._currentSelection && !(this._currentSelection instanceof EntityBase) && 
         (!newSelectable || newSelectable !== this._currentSelection)) {
       // deselect the current selection properly
-      console.log("Deselecting previous selection:", this._currentSelection.getName());
+      console.log("SelectionManager: Deselecting previous selection:", this._currentSelection.getName());
       this._currentSelection.onDeselect();
       this._currentSelection = null;
     }
 
     // On select new entity
     if (newSelectable && newSelectable instanceof EntityBase) {
+      console.log("SelectionManager: Selecting new entity:", newSelectable.getName());
       this._currentEntity = newSelectable;
       this.selectionObserver.notify('entitySelected', { entity: newSelectable });
     }
@@ -72,7 +73,7 @@ export class SelectionManager {
 
     // Configure for new selection
     if (newSelectable) {
-      console.log("Setting up transform controls for new selection:", newSelectable.getName());
+      console.log("SelectionManager: Setting up transform controls for new selection:", newSelectable.getName());
       
       // Configure transform controls based on capabilities
       this._transformControlManager.attachToSelectable(newSelectable);
@@ -83,6 +84,7 @@ export class SelectionManager {
       // Notify observers
       this.selectionObserver.notify('selectableSelected', { selectable: newSelectable });
     } else {
+      console.log("SelectionManager: Detaching transform controls");
       // Detach transform controls
       this._transformControlManager.attachToSelectable(null);
       

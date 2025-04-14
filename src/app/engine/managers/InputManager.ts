@@ -171,6 +171,7 @@ export class InputManager {
   }
 
   private findSelectableFromIntersection(object: THREE.Object3D): Selectable | null {
+    console.log("InputManager: findSelectableFromIntersection", object.name);
     // Skip objects explicitly marked as not selectable
     if (object.userData?.notSelectable === true) {
         return null;

@@ -11,10 +11,12 @@ import CharacterEditPanel from '../CharacterEditPanel';
 const EntityPanel: React.FC = () => {
   const { selectedEntity } = useEditorEngine();
 
+  console.log(`EntityPanel: selectedEntity:`, selectedEntity?.name);
+
   // Show panel for both generative objects and lights
   if (!selectedEntity) return null;
 
-  if (selectedEntity.type == 'light' || selectedEntity.type == 'generative' || selectedEntity.type == 'character') {
+  if (selectedEntity.entityType == 'light' || selectedEntity.entityType == 'generative' || selectedEntity.entityType == 'character') {
     return (
       <div
         id="entity-panel" className="fixed z-10 panel left-1/2 -translate-x-1/2 bottom-4 min-w-[150px]">
