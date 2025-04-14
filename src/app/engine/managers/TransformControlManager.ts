@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { Observer } from '@/app/engine/utils/Observer';
-import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
+import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
 import { EditorEngine } from '@/app/engine/core/EditorEngine';
 import { TransformCommand } from '@/app/lib/commands';
 
@@ -12,12 +12,15 @@ export enum TransformMode {
     BoundingBox = 3
 }
 
+export type TransformSpace = 'world' | 'local';
+
 export class TransformControlManager {
     private scene: THREE.Scene;
     private transformControls: TransformControls;
     private _lastMode: TransformMode = TransformMode.Position;
-    private _lastSpace: 'world' | 'local' = 'world';
+    private _lastSpace: TransformSpace = 'world';
     private _currentMode: TransformMode = TransformMode.Position;
+    private _currentSpace: TransformSpace = 'world';
     private _allowedModes: TransformMode[] = [TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox];
     private _currentTarget: THREE.Object3D | null = null;
     private _isDragging: boolean = false;
@@ -27,6 +30,7 @@ export class TransformControlManager {
 
     public observers = new Observer<{
         gizmoModeChanged: { mode: TransformMode };
+        gizmoSpaceChanged: { space: TransformSpace };
         gizmoAllowedModesChanged: { modes: TransformMode[] };
         transformStarted: { target: THREE.Object3D };
         transformEnded: { target: THREE.Object3D };
@@ -63,8 +67,8 @@ export class TransformControlManager {
                     this.observers.notify('transformEnded', { target: this._currentTarget });
                 }
 
-                if (isISelectable(this._currentTarget)) {
-                    const selectable = this._currentTarget as ISelectable;
+                if (isSelectable(this._currentTarget)) {
+                    const selectable = this._currentTarget as Selectable;
                     if (this._isDragging) {
                         selectable.onTransformStart?.();
                     } else {
@@ -81,9 +85,9 @@ export class TransformControlManager {
 
         // objectChange
         this.transformControls.addEventListener('objectChange', (event) => {
-            console.log(`TransformControlManager.objectChange: `, isISelectable(this._currentTarget));
-            if (isISelectable(this._currentTarget)) {
-                const selectable = this._currentTarget as ISelectable;
+            console.log(`TransformControlManager.objectChange: `, isSelectable(this._currentTarget));
+            if (isSelectable(this._currentTarget)) {
+                const selectable = this._currentTarget as Selectable;
                 selectable.onTransformUpdate?.();
             }
         });
@@ -157,8 +161,25 @@ export class TransformControlManager {
         return mode;
     }
 
-    public setTransformControlSpace(space: 'world' | 'local'): void {
+    public setTransformControlSpace(space: TransformSpace): void {
+        this._currentSpace = space;
         this.transformControls.setSpace(space);
+        this._lastSpace = space;
+        
+        // Notify observers of the space change
+        this.observers.notify('gizmoSpaceChanged', { space });
+        
+        console.log(`TransformControlManager.setTransformControlSpace: Set space to: ${space}`);
+    }
+    
+    public toggleTransformControlSpace(): TransformSpace {
+        const newSpace = this._currentSpace === 'world' ? 'local' : 'world';
+        this.setTransformControlSpace(newSpace);
+        return newSpace;
+    }
+    
+    public getCurrentSpace(): TransformSpace {
+        return this._currentSpace;
     }
 
     public setAllowedModes(modes: TransformMode[]): void {
@@ -166,7 +187,7 @@ export class TransformControlManager {
         this.observers.notify('gizmoAllowedModesChanged', { modes });
     }
 
-    public attachToSelectable(selectable: ISelectable | null): void {
+    public attachToSelectable(selectable: Selectable | null): void {
 
         console.log(`TransformControlManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.selectableConfig);
 

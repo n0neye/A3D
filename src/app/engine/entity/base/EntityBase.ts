@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { v4 as uuidv4 } from 'uuid';
 import { HistoryManager } from '../../managers/HistoryManager';
-import { ISelectable, Selectable, SelectableConfig, SelectableCursorType } from '../interfaces/ISelectable';
+import { Selectable, SelectableConfig, SelectableCursorType } from './Selectable';
 import { EditorEngine } from '../../core/EditorEngine';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
+import { BoneControl } from '../components/BoneControl';
 /**
  * Base class for all entities in the scene
  * Extends Object3D with common functionality
@@ -12,7 +12,7 @@ import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 export type EntityType = 'generative' | 'shape' | 'light' | 'character';
 
 
-export class EntityBase extends Selectable(THREE.Object3D) {
+export class EntityBase extends Selectable {
   // Core properties all entities share
   entityType: EntityType;
   isDeleted: boolean = false;
@@ -32,31 +32,38 @@ export class EntityBase extends Selectable(THREE.Object3D) {
     name: string,
     scene: THREE.Scene,
     entityType: EntityType,
-    options: {
-      uuid?: string;
-      position?: THREE.Vector3;
-      rotation?: THREE.Euler;
-      scaling?: THREE.Vector3;
-    } = {}
+    data: SerializedEntityData
   ) {
     super();
     this.name = name;
 
+    console.log(`EntityBase.constructor:`, name, entityType, data);
+
     // Initialize core properties
     this.engine = EditorEngine.getInstance();
-    this.uuid = options.uuid || this.uuid;
+    this.uuid = data.uuid || this.uuid;
     this.entityType = entityType;
     this.created = new Date();
 
     // Set transform properties
-    if (options.position) this.position.copy(options.position);
-    if (options.rotation) this.rotation.copy(options.rotation);
-    if (options.scaling && this.scale) {
-      this.scale.copy(options.scaling);
-    }
+    if (data.position) this.position.set(data.position.x, data.position.y, data.position.z);
+    if (data.rotation) this.rotation.copy(toThreeEuler(data.rotation));
+    if (data.scaling) this.scale.set(data.scaling.x, data.scaling.y, data.scaling.z);
 
     // Add to scene
-    scene.add(this);
+    if (data.parentUUID) {
+      console.log(`EntityBase.constructor: parentUUID`, data.parentUUID);
+      const parent = scene.getObjectByProperty('uuid', data.parentUUID);
+      if (parent) {
+        console.log(`EntityBase.constructor: adding to parent`, parent.name);
+        parent.add(this);
+      } else {
+        console.error(`EntityBase.constructor: parent not found`, data.parentUUID);
+        scene.add(this);
+      }
+    } else {
+      scene.add(this);
+    }
 
     // Notify object manager about the new entity
     this.engine.getObjectManager().registerEntity(this);
@@ -76,7 +83,8 @@ export class EntityBase extends Selectable(THREE.Object3D) {
    * Can be extended by derived classes
    */
   serialize(): SerializedEntityData {
-    return {
+
+    const data: SerializedEntityData = {
       uuid: this.uuid,
       name: this.name,
       entityType: this.entityType,
@@ -85,13 +93,23 @@ export class EntityBase extends Selectable(THREE.Object3D) {
       scaling: fromThreeVector3(this.scale),
       created: this.created.toISOString(),
     };
-  }
 
-  /**
-   * Base deserialization method (to be implemented in derived classes)
-   */
-  static async deserialize(scene: THREE.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
-    throw new Error(`EntityBase.deserialize: Not implemented`);
+    // Serialize parent relationship
+    if (this.parent && this.parent !== this.engine.getScene()) {
+      if (this.parent instanceof BoneControl) {
+        
+        console.log(`EntityBase.serialize: parent is a bone`, this.parent.name);
+        data.parentBone = {
+          boneName: this.parent.bone.name,
+          characterUUID: this.parent.character.uuid,
+        };
+
+      } else if (this.parent instanceof EntityBase) {
+        data.parentUUID = this.parent.uuid;
+      }
+    }
+
+    return data;
   }
 
   /**
@@ -101,14 +119,14 @@ export class EntityBase extends Selectable(THREE.Object3D) {
   dispose(): void {
     // Remove from parent
     this.parent?.remove(this);
-    
+
     // Dispose geometries and materials recursively
     this.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         if (object.geometry) {
           object.geometry.dispose();
         }
-        
+
         if (object.material) {
           if (Array.isArray(object.material)) {
             object.material.forEach(material => material.dispose());
@@ -140,7 +158,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
     });
     this.visible = false;
     this.isDeleted = true;
-    
+
     // Notify object manager about deletion state change
     this.engine.getObjectManager().updateEntityDeletedState(this, true);
   }
@@ -154,7 +172,7 @@ export class EntityBase extends Selectable(THREE.Object3D) {
         child.visible = true;
       }
     });
-    
+
     // Notify object manager about deletion state change
     this.engine.getObjectManager().updateEntityDeletedState(this, false);
   }
@@ -165,10 +183,15 @@ export interface SerializedEntityData {
   uuid: string;
   name: string;
   entityType: EntityType;
-  position: Vector3Data;
-  rotation: EulerData;
-  scaling: Vector3Data;
-  created: string;
+  position?: Vector3Data;
+  rotation?: EulerData;
+  scaling?: Vector3Data;
+  created?: string;
+  parentUUID?: string;
+  parentBone?: {
+    boneName: string;
+    characterUUID: string;
+  };
 }
 
 type Vector3Data = {

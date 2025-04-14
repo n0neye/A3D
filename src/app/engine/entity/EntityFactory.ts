@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EntityBase, EntityType } from '@/app/engine/entity/base/EntityBase';
+import { EntityBase, EntityType, SerializedEntityData } from '@/app/engine/entity/base/EntityBase';
 import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/app/engine/entity/types/GenerativeEntity';
 import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/types/ShapeEntity';
 import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine/entity/types/LightEntity';
@@ -35,30 +35,54 @@ export class EntityFactory {
    */
   static createEntityDefault(scene: THREE.Scene, type: EntityType, onLoaded?: (entity: EntityBase) => void): EntityBase {
     const name = `${type}`;
-    const id = uuidv4();
+    const newUuid = uuidv4();
 
     switch (type) {
       case 'generative':
-        return new GenerativeEntity(name, scene, { uuid: id, onLoaded });
+        return new GenerativeEntity(name, scene, {
+          uuid: newUuid,
+          entityType: 'generative',
+          created: new Date().toISOString(),
+          name: name,
+          props: {
+            generationLogs: [],
+            currentGenerationId: undefined,
+            currentGenerationIdx: undefined,
+          }
+        }, onLoaded);
       case 'shape':
         return new ShapeEntity(name, scene, {
-          uuid: id,
+          uuid: newUuid,
+          entityType: 'shape',
+          created: new Date().toISOString(),
+          name: name,
+
           props: { shapeType: 'cube' },
+        },
           onLoaded
-        });
+        );
       case 'light':
-        return new LightEntity(name, scene, { uuid: id, onLoaded });
+        return new LightEntity(name, scene, {
+          uuid: newUuid,
+          entityType: 'light',
+          created: new Date().toISOString(),
+          name: name,
+          props: { color: { r: 1, g: 1, b: 1 }, intensity: 1, shadowEnabled: false },
+        }, onLoaded);
       case 'character':
         return new CharacterEntity(
-          scene, 
-          name, 
-          id, 
+          scene,
+          name,
           {
-            url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb',
-          }, 
-          {
-            onLoaded
-          }
+            uuid: newUuid,
+            entityType: 'character',
+            created: new Date().toISOString(),
+            name: name,
+            characterProps: {
+              url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb',
+            },
+          },
+          onLoaded
         );
       default:
         throw new Error(`Unknown entity type`);
@@ -66,31 +90,55 @@ export class EntityFactory {
   }
 
   static createEntity(scene: THREE.Scene, options: CreateEntityOptions): EntityBase {
+    const newUuid = uuidv4();
     const name = options.name || options.type;
     switch (options.type) {
       case 'generative':
-        return new GenerativeEntity(options.name || options.type, scene, options);
+        return new GenerativeEntity(
+          options.name || options.type,
+          scene,
+          {
+            uuid: newUuid,
+            entityType: 'generative',
+            name: name,
+            props: options.generativeProps,
+          },
+          options.onLoaded
+        );
       case 'shape':
         console.log(`Creating shape entity`, options.shapeProps);
-        return new ShapeEntity(options.name || options.shapeProps.shapeType, scene, {
-          uuid: options.id,
-          position: options.position,
-          rotation: options.rotation,
-          props: options.shapeProps,
-          onLoaded: options.onLoaded
-        });
+        return new ShapeEntity(
+          options.name || options.shapeProps.shapeType,
+          scene,
+          {
+            uuid: newUuid,
+            entityType: 'shape',
+            name: options.name || options.shapeProps.shapeType,
+            props: options.shapeProps,
+          },
+          options.onLoaded
+        );
       case 'light':
-        return new LightEntity(options.name || options.type, scene, options);
+        return new LightEntity(options.name || options.type, scene, {
+          uuid: newUuid,
+          entityType: 'light',
+          name: options.name || "light",
+          props: options.lightProps,
+        },
+          options.onLoaded
+        );
       case 'character':
         return new CharacterEntity(
-          scene, 
+          scene,
           options.name || options.characterProps.name || options.type,
-          options.id || uuidv4(),
-          options.characterProps,
           {
+            uuid: newUuid,
+            entityType: 'character',
+            name: options.name || options.characterProps.name || options.type,
+            characterProps: options.characterProps,
             scaling: options.scaling,
-            onLoaded: options.onLoaded
-          }
+          },
+          options.onLoaded
         );
       default:
         // This ensures exhaustive type checking
@@ -105,33 +153,22 @@ export class EntityFactory {
 
     const duplicateCommand = new CreateEntityAsyncCommand(
       async () => {
-        console.log("Creating duplicate entity", entity.getEntityType(), entity.userData?.aiData?.aiObjectType);
-        // const duplicate = await duplicateEntity(entity, scene);
-
+        // TODO: Quick and dirty duplicate: serialize and deserialize
         const serializedEntityData = entity.serialize();
+        const newEntity = await this.deserializeEntity(scene, serializedEntityData);
 
-        let newEntity: EntityBase | null = null;
-        if (serializedEntityData.entityType === 'generative') {
-          newEntity = await GenerativeEntity.deserialize(scene, serializedEntityData as SerializedGenerativeEntityData);
-        } else if (serializedEntityData.entityType === 'shape') {
-          newEntity = await ShapeEntity.deserialize(scene, serializedEntityData as SerializedShapeEntityData);
-        } else if (serializedEntityData.entityType === 'light') {
-          newEntity = await LightEntity.deserialize(scene, serializedEntityData as SerializedLightEntityData);
-        } else if (serializedEntityData.entityType === 'character') {
-          newEntity = await CharacterEntity.deserialize(scene, serializedEntityData as SerializedCharacterEntityData);
+        if (newEntity) {
+          newEntity.position.x += 0.2;
+          engine.selectEntity(newEntity);
         } else {
-          throw new Error(`Unknown entity type: ${serializedEntityData.entityType}`);
+          throw new Error(`Failed to deserialize entity`);
         }
-
-        newEntity.position.x += 0.2;
-        engine.selectEntity(newEntity);
         return newEntity;
       },
       scene
     );
     historyManager.executeCommand(duplicateCommand);
     const newEntity = duplicateCommand.getEntity();
-    console.log("New entity", newEntity);
     return newEntity;
   }
 
@@ -140,14 +177,40 @@ export class EntityFactory {
     engine.getHistoryManager().executeCommand(deleteCommand);
   }
 
-  /**
-   * Deserialize an entity from serialized data
-   */
-  static deserializeEntity(
-    scene: THREE.Scene,
-    data: any
-  ): Promise<EntityBase> {
-    // Implementation for deserialization
-    return Promise.resolve(new EntityBase('temp', scene, 'shape'));
+  static async deserializeEntity(scene: THREE.Scene, entityData: SerializedEntityData): Promise<EntityBase | null> {
+    const entityType = entityData.entityType;
+    let entity: EntityBase | null = null;
+    
+    try {
+      return new Promise<EntityBase>((resolve, reject) => {
+        const onLoaded = (entity: EntityBase) => {
+          resolve(entity);
+        };
+        
+        switch (entityType) {
+          case 'light':
+            entity = new LightEntity(entityData.name, scene, entityData as SerializedLightEntityData, onLoaded);
+            break;
+
+          case 'shape':
+            entity = new ShapeEntity(entityData.name, scene, entityData as SerializedShapeEntityData, onLoaded);
+            break;
+
+          case 'generative':
+            entity = new GenerativeEntity(entityData.name, scene, entityData as SerializedGenerativeEntityData, onLoaded);
+            break;
+
+          case 'character':
+            entity = new CharacterEntity(scene, entityData.name, entityData as SerializedCharacterEntityData, onLoaded);
+            break;
+
+          default:
+            reject(new Error(`Unknown entity type: ${entityType}`));
+            break;
+        }
+      });
+    } catch (error) {
+      throw new Error(`Error deserializing entity: ${error}`);
+    }
   }
 } 

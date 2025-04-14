@@ -1,16 +1,17 @@
 import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
-import { SelectableConfig, SelectableCursorType } from '../interfaces/ISelectable';
+import { SelectableConfig, SelectableCursorType } from '../base/Selectable';
 import { CharacterEntity } from '../types/CharacterEntity';
 import { TransformMode } from '../../managers/TransformControlManager';
-import { Selectable } from '../interfaces/ISelectable';
+import { Selectable } from '../base/Selectable';
 
 /**
  * A mesh that represents a bone for manipulation
  */
-export class BoneControl extends Selectable(THREE.Mesh) {
+export class BoneControl extends Selectable {
   public character: CharacterEntity;
   public bone: THREE.Bone;
+  public mesh: THREE.Mesh;
 
   // ISelectable implementation - bones only support rotation
   selectableConfig: SelectableConfig = {
@@ -33,12 +34,17 @@ export class BoneControl extends Selectable(THREE.Mesh) {
       diameter?: number;
     } = {}
   ) {
+    super();
+
     // Create sphere geometry for the bone control
     const geometry = new THREE.SphereGeometry(options.diameter || 0.025, 16, 16);
     const material = CharacterEntity.DefaultBoneMaterial;
-    
-    // Call THREE.Mesh constructor
-    super(geometry, material);
+    this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh.userData = {
+      isBoneControlMesh: true,
+      rootSelectable: this
+    }
+    this.add(this.mesh);
     
     // Set properties
     this.name = `${bone.name}`;
@@ -60,27 +66,27 @@ export class BoneControl extends Selectable(THREE.Mesh) {
     this.rotation.copy(this.bone.rotation);
 
     // Set material to selected material
-    this.material = CharacterEntity.HighlightBoneMaterial;
+    this.mesh.material = CharacterEntity.HighlightBoneMaterial;
   }
 
   onDeselect(): void {
     super.onDeselect();
-    this.material = CharacterEntity.DefaultBoneMaterial;
+    this.mesh.material = CharacterEntity.DefaultBoneMaterial;
   }
 
   // Clean up resources
   public dispose(): void {
     
     // Dispose geometry and material
-    if (this.geometry) {
-      this.geometry.dispose();
+    if (this.mesh.geometry) {
+      this.mesh.geometry.dispose();
     }
     
-    if (this.material) {
-      if (Array.isArray(this.material)) {
-        this.material.forEach(m => m.dispose());
+    if (this.mesh.material) {
+      if (Array.isArray(this.mesh.material)) {
+        this.mesh.material.forEach(m => m.dispose());
       } else {
-        this.material.dispose();
+        this.mesh.material.dispose();
       }
     }
     

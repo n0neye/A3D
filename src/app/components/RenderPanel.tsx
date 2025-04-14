@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { availableAPIs, API_Info } from '@/app/engine/utils/generation/image-render-api';
 import { addNoiseToImage, resizeImage } from '@/app/engine/utils/generation/image-processing';
-import StylePanel from './StylePanel';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { downloadImage } from '@/app/engine/utils/helpers';
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
@@ -19,10 +18,11 @@ import { IRenderSettings, LoraConfig, LoraInfo } from '@/app/engine/interfaces/r
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
-  isDebugMode: boolean;
+  // isDebugMode: boolean;
+  onOpenStylePanel?: (selectedLoraIds: string[], onSelectStyle: (lora: any) => void) => void;
 }
 
-const RenderPanel = () => {
+const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
   // const { scene, engine, selectedEntity, setSelectedEntity, gizmoManager, setAllGizmoVisibility } = useOldEditorContext();
   const { engine } = useEditorEngine();
   const { renderSettings } = useEditorEngine();
@@ -51,9 +51,6 @@ const RenderPanel = () => {
     const api = availableAPIs.find(api => api.id === renderSettings.selectedAPI);
     return api || availableAPIs[0];
   });
-
-  // Style panel state
-  const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
 
   const updateRenderSettings = (newSettings: Partial<IRenderSettings>) => {
     engine.getProjectManager().updateRenderSettings(newSettings);
@@ -122,7 +119,7 @@ const RenderPanel = () => {
         <Button
           variant="outline"
           className="w-full h-16 border-dashed"
-          onClick={() => setIsStylePanelOpen(true)}
+          onClick={() => onOpenStylePanel && onOpenStylePanel([], handleSelectStyle)}
         >
           <span className="text-muted-foreground">Click to add a style</span>
         </Button>
@@ -178,7 +175,10 @@ const RenderPanel = () => {
           variant="secondary"
           size="sm"
           className="w-full"
-          onClick={() => setIsStylePanelOpen(true)}
+          onClick={() => onOpenStylePanel && onOpenStylePanel(
+            selectedLoras.map((lora: LoraConfig) => lora.info.id),
+            handleSelectStyle
+          )}
         >
           Add
         </Button>
@@ -291,6 +291,13 @@ const RenderPanel = () => {
   }
 
 
+  const handleCancelRender = () => {
+    // if (engine.getRenderService()) {
+    //     engine.getRenderService().cancelRender();
+    // }
+    setIsLoading(false);
+};
+
 
   useEffect(() => {
     // Subscribe to latestRenderChanged event, and update the imageUrl when it changes
@@ -308,15 +315,6 @@ const RenderPanel = () => {
 
   return (
     <>
-
-      {/* Overlay Style Panel */}
-      <StylePanel
-        isOpen={isStylePanelOpen}
-        onClose={() => setIsStylePanelOpen(false)}
-        onSelectStyle={handleSelectStyle}
-        selectedLoraIds={selectedLoras ? selectedLoras.map((lora: LoraConfig) => lora.info.id) : []}
-      />
-
       <CardContent className="space-y-4">
         {/* Preview image or placeholder */}
         <div className="w-full aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden group relative">
@@ -324,6 +322,13 @@ const RenderPanel = () => {
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="animate-spin rounded-full w-12 h-12 border-t-2 border-b-2 border-primary mb-3"></div>
               <p className="text-muted-foreground">Rendering...</p>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={handleCancelRender}
+              >
+                Cancel
+              </Button>
             </div>
           )}
           {imageUrl ? (

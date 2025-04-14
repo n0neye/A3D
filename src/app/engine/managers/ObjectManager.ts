@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { EntityBase, EntityType, isEntity } from '../entity/base/EntityBase';
 import { Observer } from '../utils/Observer';
-import { ISelectable, isISelectable } from '../entity/interfaces/ISelectable';
 import { EditorEngine } from '../core/EditorEngine';
+import { BoneControl } from '../entity/components/BoneControl';
+import { Selectable } from '../entity/base/Selectable';
 
 export interface ObjectManagerEvents {
   entityAdded: { entity: EntityBase };
@@ -25,22 +26,22 @@ export interface ObjectManagerEvents {
 export class ObjectManager {
   private engine: EditorEngine;
   private scene: THREE.Scene;
-  
+
   // Collections
   private entities: Map<string, EntityBase> = new Map();
   private entitiesByType: Map<EntityType, Set<string>> = new Map();
   private deletedEntities: Set<string> = new Set();
-  
+
   // Observable pattern for UI updates
   public observer = new Observer<ObjectManagerEvents>();
 
   constructor(engine: EditorEngine) {
     this.engine = engine;
     this.scene = engine.getScene();
-    
+
     // Initialize entity type collections
     this.initEntityTypeCollections();
-    
+
     // Scan the scene for existing entities
     this.scanScene();
   }
@@ -59,22 +60,22 @@ export class ObjectManager {
   public scanScene(): void {
     this.entities.clear();
     this.deletedEntities.clear();
-    
+
     // Reset type collections
     this.entitiesByType.forEach(set => set.clear());
-    
+
     // Traverse scene and register all entities
     this.scene.traverse(node => {
       if (isEntity(node)) {
         this.registerEntity(node);
-        
+
         // Track deleted state
         if (node.isDeleted) {
           this.deletedEntities.add(node.uuid);
         }
       }
     });
-    
+
     // Notify that hierarchy might have changed after scan
     this.observer.notify('hierarchyChanged', {});
   }
@@ -86,21 +87,21 @@ export class ObjectManager {
     if (this.entities.has(entity.uuid)) {
       return; // Already registered
     }
-    
+
     // Add to main collection
     this.entities.set(entity.uuid, entity);
-    
+
     // Add to type-specific collection
     const typeSet = this.entitiesByType.get(entity.entityType);
     if (typeSet) {
       typeSet.add(entity.uuid);
     }
-    
+
     // Track deleted state if needed
     if (entity.isDeleted) {
       this.deletedEntities.add(entity.uuid);
     }
-    
+
     // Notify observers
     this.observer.notify('entityAdded', { entity });
   }
@@ -112,21 +113,21 @@ export class ObjectManager {
     if (!this.entities.has(entity.uuid)) {
       return; // Not registered
     }
-    
+
     // Remove from main collection
     this.entities.delete(entity.uuid);
-    
+
     // Remove from type-specific collection
     const typeSet = this.entitiesByType.get(entity.entityType);
     if (typeSet) {
       typeSet.delete(entity.uuid);
     }
-    
+
     // Remove from deleted collection if needed
     if (this.deletedEntities.has(entity.uuid)) {
       this.deletedEntities.delete(entity.uuid);
     }
-    
+
     // Notify observers
     this.observer.notify('entityRemoved', { entity });
   }
@@ -138,7 +139,7 @@ export class ObjectManager {
     // Re-register the entity to update collections
     this.unregisterEntity(entity);
     this.registerEntity(entity);
-    
+
     // Notify observers
     this.observer.notify('entityUpdated', { entity });
   }
@@ -160,7 +161,7 @@ export class ObjectManager {
     } else {
       this.deletedEntities.delete(entity.uuid);
     }
-    
+
     // Notify observers
     this.observer.notify('entityDeletedStateChanged', { entity, isDeleted });
     this.observer.notify('hierarchyChanged', {});
@@ -202,8 +203,8 @@ export class ObjectManager {
    */
   public getRootEntities(): EntityBase[] {
     return Array.from(this.entities.values())
-      .filter(entity => 
-        (!entity.parent || entity.parent === this.scene) && 
+      .filter(entity =>
+        (!entity.parent || entity.parent === this.scene) &&
         !this.deletedEntities.has(entity.uuid)
       );
   }
@@ -213,8 +214,8 @@ export class ObjectManager {
    */
   public getDeletedRootEntities(): EntityBase[] {
     return Array.from(this.entities.values())
-      .filter(entity => 
-        (!entity.parent || entity.parent === this.scene) && 
+      .filter(entity =>
+        (!entity.parent || entity.parent === this.scene) &&
         this.deletedEntities.has(entity.uuid)
       );
   }
@@ -225,7 +226,7 @@ export class ObjectManager {
   public getEntitiesByType(type: EntityType): EntityBase[] {
     const typeSet = this.entitiesByType.get(type);
     if (!typeSet) return [];
-    
+
     return Array.from(typeSet).map(uuid => this.entities.get(uuid)!);
   }
 
@@ -254,13 +255,13 @@ export class ObjectManager {
    */
   public getChildEntities(parentEntity: EntityBase): EntityBase[] {
     const children: EntityBase[] = [];
-    
+
     parentEntity.children.forEach(child => {
       if (isEntity(child)) {
         children.push(child);
       }
     });
-    
+
     return children;
   }
 
@@ -281,5 +282,24 @@ export class ObjectManager {
    */
   public notifyHierarchyChanged(): void {
     this.observer.notify('hierarchyChanged', {});
+  }
+
+  public AddToParent(child: Selectable, parent: Selectable, resetTransform: boolean = true): void {
+    parent.add(child);
+
+    if (resetTransform) {
+      child.rotation.set(0, 0, 0);
+      child.position.set(0, 0, 0);
+      child.updateWorldMatrix(true, true);
+    }
+  }
+
+  public AddToBone(child: Selectable, boneControl: BoneControl, resetPosition: boolean = true): void {
+    boneControl.add(child);
+
+    if (resetPosition) {
+      child.position.set(0, 0, 0);
+      child.updateWorldMatrix(true, true);
+    }
   }
 } 

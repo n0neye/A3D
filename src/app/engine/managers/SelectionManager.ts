@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
+import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
 import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
 import { BoneControl } from '@/app/engine/entity/components/BoneControl';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
@@ -13,10 +13,10 @@ export class SelectionManager {
   // Observer for selection events
   public selectionObserver = new Observer<{
     entitySelected: { entity: EntityBase | null };
-    selectableSelected: { selectable: ISelectable | null };
+    selectableSelected: { selectable: Selectable | null };
   }>();
 
-  private _currentSelection: ISelectable | null = null;
+  private _currentSelection: Selectable | null = null;
   private _currentEntity: EntityBase | null = null;
   private _transformControlManager: TransformControlManager;
   private _hoveredObject: THREE.Object3D | null = null;
@@ -31,7 +31,7 @@ export class SelectionManager {
   /**
    * Select an object
    */
-  select(newSelectable: ISelectable): void {
+  select(newSelectable: Selectable): void {
     console.log("SelectionManager.select called with:", newSelectable?.getName());
 
     // Determine if need to deselect the current Entity
@@ -40,14 +40,14 @@ export class SelectionManager {
       const isChildOfCurrentEntity = this._isChildOfEntity(newSelectable, this._currentEntity);
       if (!isChildOfCurrentEntity) {
         // deselect the current selection properly
-        console.log("Deselecting previous entity:", this._currentEntity.getName());
+        console.log("SelectionManager: Deselecting previous entity:", this._currentEntity.getName());
         this._currentEntity.onDeselect();
         this._currentEntity = null;
       } 
       // else keep the current entity
     } else if (this._currentEntity && !newSelectable) {
       // Deselect current entity if selecting nothing
-      console.log("Deselecting previous entity:", this._currentEntity.getName());
+      console.log("SelectionManager: Deselecting previous entity:", this._currentEntity.getName());
       this._currentEntity.onDeselect();
       this._currentEntity = null;
     }
@@ -56,13 +56,14 @@ export class SelectionManager {
     if (this._currentSelection && !(this._currentSelection instanceof EntityBase) && 
         (!newSelectable || newSelectable !== this._currentSelection)) {
       // deselect the current selection properly
-      console.log("Deselecting previous selection:", this._currentSelection.getName());
+      console.log("SelectionManager: Deselecting previous selection:", this._currentSelection.getName());
       this._currentSelection.onDeselect();
       this._currentSelection = null;
     }
 
     // On select new entity
     if (newSelectable && newSelectable instanceof EntityBase) {
+      console.log("SelectionManager: Selecting new entity:", newSelectable.getName());
       this._currentEntity = newSelectable;
       this.selectionObserver.notify('entitySelected', { entity: newSelectable });
     }
@@ -72,7 +73,7 @@ export class SelectionManager {
 
     // Configure for new selection
     if (newSelectable) {
-      console.log("Setting up transform controls for new selection:", newSelectable.getName());
+      console.log("SelectionManager: Setting up transform controls for new selection:", newSelectable.getName());
       
       // Configure transform controls based on capabilities
       this._transformControlManager.attachToSelectable(newSelectable);
@@ -83,6 +84,7 @@ export class SelectionManager {
       // Notify observers
       this.selectionObserver.notify('selectableSelected', { selectable: newSelectable });
     } else {
+      console.log("SelectionManager: Detaching transform controls");
       // Detach transform controls
       this._transformControlManager.attachToSelectable(null);
       
@@ -118,7 +120,7 @@ export class SelectionManager {
   /**
    * Check if the new selection is a child of the current selection
    */
-  private _isChildOfEntity(selectable: ISelectable, entity: EntityBase): boolean {
+  private _isChildOfEntity(selectable: Selectable, entity: EntityBase): boolean {
     // Check specifically for BoneControl being a child of CharacterEntity
     if (selectable instanceof BoneControl && entity instanceof CharacterEntity) {
       return selectable.character === entity;
@@ -131,7 +133,7 @@ export class SelectionManager {
   /**
    * Get the current selection
    */
-  getCurrentSelection(): ISelectable | null {
+  getCurrentSelection(): Selectable | null {
     return this._currentSelection;
   }
 
@@ -159,14 +161,14 @@ export class SelectionManager {
     this._hoveredObject = object;
     
     // Find a selectable from the object
-    let selectable: ISelectable | null = null;
+    let selectable: Selectable | null = null;
     
     if (object) {
-      if (isISelectable(object)) {
-        selectable = object as unknown as ISelectable;
-      } else if (object.userData && object.userData.rootEntity && 
-                isISelectable(object.userData.rootEntity)) {
-        selectable = object.userData.rootEntity as ISelectable;
+      if (isSelectable(object)) {
+        selectable = object as unknown as Selectable;
+      } else if (object.userData && object.userData.rootSelectable && 
+                isSelectable(object.userData.rootSelectable)) {
+        selectable = object.userData.rootSelectable as Selectable;
       }
     }
     
@@ -177,7 +179,7 @@ export class SelectionManager {
   /**
    * Update cursor style based on hovered selectable
    */
-  private _updateCursor(selectable: ISelectable | null): void {
+  private _updateCursor(selectable: Selectable | null): void {
     if (selectable) {
       document.body.style.cursor = selectable.cursorType;
     } else {

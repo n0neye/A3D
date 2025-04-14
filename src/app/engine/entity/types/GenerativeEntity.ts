@@ -51,21 +51,10 @@ export class GenerativeEntity extends EntityBase {
   constructor(
     name: string,
     scene: THREE.Scene,
-    options: {
-      uuid?: string;
-      position?: THREE.Vector3;
-      rotation?: THREE.Euler;
-      scaling?: THREE.Vector3;
-      props?: GenerativeEntityProps;
-      onLoaded?: (entity: GenerativeEntity) => void;
-    }
+    data: SerializedGenerativeEntityData,
+    onLoaded?: (entity: GenerativeEntity) => void
   ) {
-    super(name, scene, 'generative', {
-      uuid: options.uuid,
-      position: options.position,
-      rotation: options.rotation,
-      scaling: options.scaling
-    });
+    super(name, scene, 'generative', data);
 
     // Create initial placeholder mesh
     const ratio = '3:4';
@@ -76,9 +65,9 @@ export class GenerativeEntity extends EntityBase {
 
     // Add the mesh to the entity instead of setting parent
     this.add(this.placeholderMesh);
-    this.placeholderMesh.userData = { rootEntity: this };
+    this.placeholderMesh.userData = { rootSelectable: this };
 
-    this.props = options.props || {
+    this.props = data.props || {
       generationLogs: []
     };
 
@@ -92,16 +81,10 @@ export class GenerativeEntity extends EntityBase {
     const currentLog = this.getCurrentGenerationLog();
     if (currentLog) {
       console.log("Constructor: applyGenerationLog", currentLog);
-      this.applyGenerationLog(currentLog, (entity) => {
-        // Temp solution: update the mesh scaling
-        if (entity.gltfModel && options.scaling) {
-          console.log("Constructor: applyGenerationLog: onFinish. Apply scaling", options.scaling);
-          entity.gltfModel.scale.copy(options.scaling);
-        }
-      });
+      this.applyGenerationLog(currentLog);
     }
 
-    options.onLoaded?.(this);
+    onLoaded?.(this);
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
@@ -361,23 +344,6 @@ export class GenerativeEntity extends EntityBase {
     this.props.currentGenerationId = log.id;
     this.props.currentGenerationIdx = this.props.generationLogs.length - 1;
     return log;
-  }
-
-  /**
-   * Deserialize a generative entity from serialized data
-   */
-  static async deserialize(scene: THREE.Scene, data: SerializedGenerativeEntityData): Promise<GenerativeEntity> {
-    const position = data.position ? toThreeVector3(data.position) : undefined;
-    const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
-    const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
-
-    return new GenerativeEntity(data.name, scene, {
-      uuid: data.uuid,
-      position,
-      rotation,
-      scaling,
-      props: data.props
-    });
   }
 
   /**
