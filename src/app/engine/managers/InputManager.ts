@@ -15,7 +15,7 @@ import * as THREE from 'three';
 import { SelectionManager } from './SelectionManager';
 import { HistoryManager } from './HistoryManager';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
+import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
 import { BoneControl } from '@/app/engine/entity/components/BoneControl';
 import { GenerativeEntityProps } from '@/app/engine/entity/types/GenerativeEntity';
 import { EditorEngine } from '../core/EditorEngine';
@@ -109,7 +109,7 @@ export class InputManager {
 
   getSelectableObjects(): THREE.Object3D[] {
     // TODO: better way to do this, maybe manage a list of selectables
-    return this.scene.children.filter(child => (isISelectable(child) && child.visible));
+    return this.scene.children.filter(child => (isSelectable(child) && child.visible));
   }
 
   private handlePointerMove = (event: PointerEvent): void => {
@@ -170,27 +170,28 @@ export class InputManager {
     }
   }
 
-  private findSelectableFromIntersection(object: THREE.Object3D): ISelectable | null {
+  private findSelectableFromIntersection(object: THREE.Object3D): Selectable | null {
     // Skip objects explicitly marked as not selectable
     if (object.userData?.notSelectable === true) {
         return null;
     }
     
     // Check if the object itself is selectable
-    if (isISelectable(object)) {
-        return object as unknown as ISelectable;
+    if (isSelectable(object)) {
+        return object as unknown as Selectable;
     }
 
     // Check if it has a selectable in userData
-    if (object.userData?.rootEntity && isISelectable(object.userData.rootEntity)) {
-      return object.userData.rootEntity as ISelectable;
+    if (object.userData?.rootSelectable && isSelectable(object.userData.rootSelectable)) {
+      console.log("InputManager: Found selectable in userData", object.userData.rootSelectable);
+      return object.userData.rootSelectable as Selectable;
     }
 
     // Check parent hierarchy
     let parent = object.parent;
     while (parent) {
-      if (isISelectable(parent)) {
-        return parent as unknown as ISelectable;
+      if (isSelectable(parent)) {
+        return parent as unknown as Selectable;
       }
       parent = parent.parent;
     }
@@ -217,15 +218,13 @@ export class InputManager {
     }
 
     console.log("InputManager: Intersects:", intersects);
-
+    
     // Check for bone controls (they have special selection behavior)
     const boneControl = intersects.find(intersect =>
-      (intersect.object.visible && intersect.object instanceof BoneControl)
-    )?.object;
+      (intersect.object.visible && intersect.object.userData?.isBoneControlMesh)
+    )?.object.userData?.rootSelectable;
 
     if (boneControl && boneControl instanceof BoneControl) {
-      console.log("InputManager: Bone picked:", boneControl.name);
-      // boneControl.character.selectBone(boneControl.bone, boneControl);
       this.selectionManager.select(boneControl);
       return;
     }
@@ -240,7 +239,7 @@ export class InputManager {
       }
     }
 
-    // If we got here, nothing selectable was found
+    // No selectable was found, deselect
     console.log("InputManager: Nothing selectable found, deselecting");
     this.selectionManager.deselectAll();
   }

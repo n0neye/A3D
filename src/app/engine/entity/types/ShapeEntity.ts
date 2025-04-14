@@ -46,7 +46,7 @@ export class ShapeEntity extends EntityBase {
     // Create the shape mesh
     const newMesh = createShapeMesh(scene, this.props.shapeType);
     this.add(newMesh);
-    newMesh.userData = { rootEntity: this };
+    newMesh.userData = { rootSelectable: this };
     this.modelMesh = newMesh;
 
     // Apply the material and setup shadows

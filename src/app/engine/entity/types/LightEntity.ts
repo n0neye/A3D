@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from '../base/EntityBase';
 import { EditorEngine } from '../../core/EditorEngine';
 import { TransformMode } from '../../managers/TransformControlManager';
-import { SelectableConfig } from '../interfaces/ISelectable';
+import { SelectableConfig } from '../base/Selectable';
 /**
  * Entity that represents lights in the scene
  */
@@ -129,7 +129,7 @@ export class LightEntity extends EntityBase {
 
     // Add the sphere to this entity
     this.add(lightSphere);
-    lightSphere.userData = { rootEntity: this };
+    lightSphere.userData = { rootSelectable: this };
 
     return { lightSphere, material };
   }

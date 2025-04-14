@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Command } from '@/app/engine/managers/HistoryManager';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
 import { EditorEngine } from '@/app/engine/core/EditorEngine';
-import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
+import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {
@@ -15,16 +15,16 @@ export class TransformCommand implements Command {
   private newScaling: THREE.Vector3;
   
   private transformTarget: THREE.Object3D;
-  private selectable: ISelectable | null;
+  private selectable: Selectable | null;
 
-  constructor(target: THREE.Object3D | ISelectable) {
-    // Handle if we receive an ISelectable directly or an Object3D
-    if (isISelectable(target)) {
+  constructor(target: THREE.Object3D | Selectable) {
+    // Handle if we receive an Selectable directly or an Object3D
+    if (isSelectable(target)) {
       this.selectable = target;
       this.transformTarget = target.getTransformTarget();
     } else {
       this.transformTarget = target;
-      this.selectable = isISelectable(target) ? target : null;
+      this.selectable = isSelectable(target) ? target : null;
     }
     
     // Store initial state

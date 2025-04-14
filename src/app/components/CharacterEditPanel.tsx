@@ -61,7 +61,7 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const linkEntityToBone = (selectedEntity: any) => {
     if (selectedBone && engine) {
       const objectManager = engine.getObjectManager();
-      objectManager.LinkEntityToBone(selectedEntity, selectedBone);
+      objectManager.AddToParent(selectedEntity, selectedBone);
       objectManager.notifyHierarchyChanged();
       setShowEntityList(false);
     }

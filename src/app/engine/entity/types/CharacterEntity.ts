@@ -129,7 +129,7 @@ export class CharacterEntity extends EntityBase {
                 // Set metadata for all meshes
                 this.rootMesh.traverse(object => {
                     if (object instanceof THREE.Mesh) {
-                        object.userData.rootEntity = this;
+                        object.userData.rootSelectable = this;
                     }
                 });
 

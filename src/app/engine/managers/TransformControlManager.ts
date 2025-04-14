@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { Observer } from '@/app/engine/utils/Observer';
-import { ISelectable, isISelectable } from '@/app/engine/entity/interfaces/ISelectable';
+import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
 import { EditorEngine } from '@/app/engine/core/EditorEngine';
 import { TransformCommand } from '@/app/lib/commands';
 
@@ -67,8 +67,8 @@ export class TransformControlManager {
                     this.observers.notify('transformEnded', { target: this._currentTarget });
                 }
 
-                if (isISelectable(this._currentTarget)) {
-                    const selectable = this._currentTarget as ISelectable;
+                if (isSelectable(this._currentTarget)) {
+                    const selectable = this._currentTarget as Selectable;
                     if (this._isDragging) {
                         selectable.onTransformStart?.();
                     } else {
@@ -85,9 +85,9 @@ export class TransformControlManager {
 
         // objectChange
         this.transformControls.addEventListener('objectChange', (event) => {
-            console.log(`TransformControlManager.objectChange: `, isISelectable(this._currentTarget));
-            if (isISelectable(this._currentTarget)) {
-                const selectable = this._currentTarget as ISelectable;
+            console.log(`TransformControlManager.objectChange: `, isSelectable(this._currentTarget));
+            if (isSelectable(this._currentTarget)) {
+                const selectable = this._currentTarget as Selectable;
                 selectable.onTransformUpdate?.();
             }
         });
@@ -187,7 +187,7 @@ export class TransformControlManager {
         this.observers.notify('gizmoAllowedModesChanged', { modes });
     }
 
-    public attachToSelectable(selectable: ISelectable | null): void {
+    public attachToSelectable(selectable: Selectable | null): void {
 
         console.log(`TransformControlManager.attachToSelectable: Attaching to selectable: ${selectable?.getName()}`, selectable?.selectableConfig);
 

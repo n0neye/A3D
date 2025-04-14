@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { EntityBase, EntityType, isEntity } from '../entity/base/EntityBase';
 import { Observer } from '../utils/Observer';
-import { ISelectable, isISelectable } from '../entity/interfaces/ISelectable';
 import { EditorEngine } from '../core/EditorEngine';
 import { BoneControl } from '../entity/components/BoneControl';
 
@@ -284,10 +283,10 @@ export class ObjectManager {
     this.observer.notify('hierarchyChanged', {});
   }
 
-  public LinkEntityToBone(entity: EntityBase, bone: BoneControl): void {
-    entity.parent = bone;
-    bone.children.push(entity);
-    entity.position.set(0, 0, 0);
-    entity.updateWorldMatrix(true, true);
+  public AddToParent(child: THREE.Object3D, parent: THREE.Object3D): void {
+    child.parent = parent;
+    parent.children.push(child);
+    child.position.set(0, 0, 0);
+    child.updateWorldMatrix(true, true);
   }
 } 

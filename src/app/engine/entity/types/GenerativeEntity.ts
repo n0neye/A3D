@@ -76,7 +76,7 @@ export class GenerativeEntity extends EntityBase {
 
     // Add the mesh to the entity instead of setting parent
     this.add(this.placeholderMesh);
-    this.placeholderMesh.userData = { rootEntity: this };
+    this.placeholderMesh.userData = { rootSelectable: this };
 
     this.props = options.props || {
       generationLogs: []

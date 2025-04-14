@@ -19,12 +19,12 @@ import { IRenderSettings, IRenderLog } from '../engine/interfaces/rendering';
 import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
-import { ISelectable } from '../engine/entity/interfaces/ISelectable';
+import { Selectable } from '../engine/entity/base/Selectable';
 interface EditorEngineContextType {
   engine: EditorEngine;
   isInitialized: boolean;
   selectedEntity: EntityBase | null;
-  selectedSelectable: ISelectable | null;
+  selectedSelectable: Selectable | null;
   gizmoMode: TransformMode;
   gizmoAllowedModes: TransformMode[];
   renderSettings: IRenderSettings;
@@ -44,7 +44,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const engine = EditorEngine.getInstance();
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<EntityBase | null>(null);
-  const [selectedSelectable, setSelectedSelectable] = useState<ISelectable | null>(null);
+  const [selectedSelectable, setSelectedSelectable] = useState<Selectable | null>(null);
   const [gizmoMode, setGizmoMode] = useState<TransformMode>(TransformMode.Position);
   const [gizmoAllowedModes, setGizmoAllowedModes] = useState<TransformMode[]>([TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox]);
   const [renderSettings, setRenderSettings] = useState<IRenderSettings>(defaultSettings);
