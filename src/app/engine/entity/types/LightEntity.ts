@@ -175,13 +175,6 @@ export class LightEntity extends EntityBase {
   }
 
   /**
-   * Deserialize a light entity from serialized data
-   */
-  static async deserialize(scene: THREE.Scene, data: SerializedLightEntityData): Promise<LightEntity> {
-    return new LightEntity(data.name, scene, data);
-  }
-
-  /**
    * Serialize with light-specific properties
    */
   serialize(): SerializedLightEntityData {

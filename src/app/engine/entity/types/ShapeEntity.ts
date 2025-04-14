@@ -48,13 +48,6 @@ export class ShapeEntity extends EntityBase {
   }
 
   /**
-   * Deserialize a shape entity from serialized data
-   */
-  static async deserialize(scene: THREE.Scene, data: SerializedShapeEntityData): Promise<ShapeEntity> {
-    return new ShapeEntity(data.name, scene, data);
-  }
-
-  /**
    * Serialize with shape-specific properties
    */
   serialize(): SerializedShapeEntityData {

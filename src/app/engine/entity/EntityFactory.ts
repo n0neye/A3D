@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EntityBase, EntityType } from '@/app/engine/entity/base/EntityBase';
+import { EntityBase, EntityType, SerializedEntityData } from '@/app/engine/entity/base/EntityBase';
 import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/app/engine/entity/types/GenerativeEntity';
 import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/types/ShapeEntity';
 import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine/entity/types/LightEntity';
@@ -153,38 +153,65 @@ export class EntityFactory {
 
     const duplicateCommand = new CreateEntityAsyncCommand(
       async () => {
-        console.log("Creating duplicate entity", entity.getEntityType(), entity.userData?.aiData?.aiObjectType);
-        // const duplicate = await duplicateEntity(entity, scene);
-
+        // TODO: Quick and dirty duplicate: serialize and deserialize
         const serializedEntityData = entity.serialize();
+        const newEntity = await this.deserializeEntity(scene, serializedEntityData);
 
-        let newEntity: EntityBase | null = null;
-        if (serializedEntityData.entityType === 'generative') {
-          newEntity = await GenerativeEntity.deserialize(scene, serializedEntityData as SerializedGenerativeEntityData);
-        } else if (serializedEntityData.entityType === 'shape') {
-          newEntity = await ShapeEntity.deserialize(scene, serializedEntityData as SerializedShapeEntityData);
-        } else if (serializedEntityData.entityType === 'light') {
-          newEntity = await LightEntity.deserialize(scene, serializedEntityData as SerializedLightEntityData);
-        } else if (serializedEntityData.entityType === 'character') {
-          newEntity = await CharacterEntity.deserialize(scene, serializedEntityData as SerializedCharacterEntityData);
+        if (newEntity) {
+          newEntity.position.x += 0.2;
+          engine.selectEntity(newEntity);
         } else {
-          throw new Error(`Unknown entity type: ${serializedEntityData.entityType}`);
+          throw new Error(`Failed to deserialize entity`);
         }
-
-        newEntity.position.x += 0.2;
-        engine.selectEntity(newEntity);
         return newEntity;
       },
       scene
     );
     historyManager.executeCommand(duplicateCommand);
     const newEntity = duplicateCommand.getEntity();
-    console.log("New entity", newEntity);
     return newEntity;
   }
 
   static deleteEntity(entity: EntityBase, engine: EditorEngine): void {
     const deleteCommand = new DeleteEntityCommand(entity);
     engine.getHistoryManager().executeCommand(deleteCommand);
+  }
+
+  static async deserializeEntity(scene: THREE.Scene, entityData: SerializedEntityData): Promise<EntityBase | null> {
+    const entityType = entityData.entityType;
+    let entity: EntityBase | null = null;
+    
+    try {
+      return new Promise<EntityBase>((resolve, reject) => {
+        const onLoaded = (entity: EntityBase) => {
+          console.log("EntityFactory: deserializeEntity: onLoaded", entity);
+          resolve(entity);
+        };
+        
+        switch (entityType) {
+          case 'light':
+            entity = new LightEntity(entityData.name, scene, entityData as SerializedLightEntityData, onLoaded);
+            break;
+
+          case 'shape':
+            entity = new ShapeEntity(entityData.name, scene, entityData as SerializedShapeEntityData, onLoaded);
+            break;
+
+          case 'generative':
+            entity = new GenerativeEntity(entityData.name, scene, entityData as SerializedGenerativeEntityData, onLoaded);
+            break;
+
+          case 'character':
+            entity = new CharacterEntity(scene, entityData.name, entityData as SerializedCharacterEntityData, onLoaded);
+            break;
+
+          default:
+            reject(new Error(`Unknown entity type: ${entityType}`));
+            break;
+        }
+      });
+    } catch (error) {
+      throw new Error(`Error deserializing entity: ${error}`);
+    }
   }
 } 

@@ -13,6 +13,7 @@ import { EntityBase, SerializedEntityData, isEntity } from "../entity/base/Entit
 import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
 import { IRenderLog, IRenderSettings } from '@/app/engine/interfaces/rendering';
 import { SerializedTimelineData } from '../managers/timeline/TimelineManager';
+import { EntityFactory } from '../entity/EntityFactory';
 // Interface for serialized render settings
 
 interface IProjectData {
@@ -142,7 +143,7 @@ export class ProjectManager {
 
     serializeProject(): IProjectData {
         const entities: EntityBase[] = this.engine.getObjectManager().getAllVisibleEntities();
-        
+
         // Serialize environment settings
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
 
@@ -167,7 +168,7 @@ export class ProjectManager {
     clearScene(): void {
         // Deselect
         this.engine.getSelectionManager().deselectAll();
-        
+
         // Get all entities from object manager
         const existingEntities = this.engine.getObjectManager().getAllEntities();
         const scene = this.engine.getScene();
@@ -179,12 +180,12 @@ export class ProjectManager {
             this.engine.getObjectManager().unregisterEntity(entity);
         });
     }
-    
-    deserializeProject(
+
+    async deserializeProject(
         data: IProjectData,
-    ): void {
+    ): Promise<void> {
         this.clearScene();
-        
+
         const scene = this.engine.getScene();
 
         // Apply environment settings if present
@@ -192,40 +193,6 @@ export class ProjectManager {
             this.engine.getEnvironmentManager().deserializeEnvironment(data.environment);
         }
 
-
-        // Create entities from the saved data
-        if (data.entities && Array.isArray(data.entities)) {
-            // Create entities from serialized data using entity class deserializers
-            data.entities.forEach((entityData: SerializedEntityData) => {
-                try {
-                    // Create the entity based on its type
-                    const entityType = entityData.entityType;
-
-                    switch (entityType) {
-                        case 'light':
-                            LightEntity.deserialize(scene, entityData as SerializedLightEntityData);
-                            break;
-
-                        case 'shape':
-                            ShapeEntity.deserialize(scene, entityData as SerializedShapeEntityData);
-                            break;
-
-                        case 'generative':
-                            GenerativeEntity.deserialize(scene, entityData as SerializedGenerativeEntityData);
-                            break;
-                        case 'character':
-                            CharacterEntity.deserialize(scene, entityData as SerializedCharacterEntityData);
-                            break;
-                        default:
-                            console.warn(`Unknown entity type: ${entityType}`);
-                            break;
-                    }
-
-                } catch (error) {
-                    console.error(`Error creating entity from saved data:`, error, entityData);
-                }
-            });
-        }
 
         // Deserialize timeline data if present
         if (data.timeline && this.engine.getTimelineManager()) {
@@ -240,10 +207,23 @@ export class ProjectManager {
         if (data.renderLogs) {
             this.renderLogs = data.renderLogs;
             this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs, isNewRenderLog: false });
-            
+
             this.latestRender = data.renderLogs[data.renderLogs.length - 1];
             this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
         }
+
+        // Create entities from the saved data
+        if (data.entities && Array.isArray(data.entities)) {
+            // Create entities from serialized data using entity class deserializers
+            data.entities.forEach((entityData: SerializedEntityData) => {
+                try {
+                    EntityFactory.deserializeEntity(scene, entityData);
+                } catch (error) {
+                    console.error(`Error creating entity from saved data:`, error, entityData);
+                }
+            });
+        }
+
 
         // After creating all entities, scan the scene to ensure all are registered
         this.engine.getObjectManager().scanScene();

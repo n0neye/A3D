@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { v4 as uuidv4 } from 'uuid';
 import { HistoryManager } from '../../managers/HistoryManager';
 import { Selectable, SelectableConfig, SelectableCursorType } from './Selectable';
 import { EditorEngine } from '../../core/EditorEngine';
@@ -37,7 +36,7 @@ export class EntityBase extends Selectable {
     super();
     this.name = name;
 
-    console.log(`EntityBase.constructor:`, name, entityType, data);
+    console.log(`===== EntityBase.constructor:`, name, entityType, data);
 
     // Initialize core properties
     this.engine = EditorEngine.getInstance();
@@ -51,7 +50,19 @@ export class EntityBase extends Selectable {
     if (data.scaling) this.scale.set(data.scaling.x, data.scaling.y, data.scaling.z);
 
     // Add to scene
-    scene.add(this);
+    if (data.parentUUID) {
+      console.log(`EntityBase.constructor: parentUUID`, data.parentUUID);
+      const parent = scene.getObjectByProperty('uuid', data.parentUUID);
+      if (parent) {
+        console.log(`EntityBase.constructor: adding to parent`, parent.name);
+        parent.add(this);
+      } else {
+        console.error(`EntityBase.constructor: parent not found`, data.parentUUID);
+        scene.add(this);
+      }
+    } else {
+      scene.add(this);
+    }
 
     // Notify object manager about the new entity
     this.engine.getObjectManager().registerEntity(this);
@@ -71,6 +82,7 @@ export class EntityBase extends Selectable {
    * Can be extended by derived classes
    */
   serialize(): SerializedEntityData {
+    const parentUUID = this.parent === this.engine.getScene() ? undefined : this.parent?.uuid;
     return {
       uuid: this.uuid,
       name: this.name,
@@ -79,23 +91,8 @@ export class EntityBase extends Selectable {
       rotation: fromThreeEuler(this.rotation),
       scaling: fromThreeVector3(this.scale),
       created: this.created.toISOString(),
-      parentUUID: this.parent?.uuid,
+      parentUUID,
     };
-  }
-
-  /**
-   * Base deserialization method (to be implemented in derived classes)
-   */
-  static async deserialize(scene: THREE.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
-    // throw new Error(`EntityBase.deserialize: Not implemented`);
-    const entity = new EntityBase(data.name, scene, data.entityType, data);
-    const parent = scene.getObjectByProperty('uuid', data.parentUUID);
-    if (parent) {
-        parent.add(entity);
-    }else{
-      scene.add(entity);
-    }
-    return entity;
   }
 
   /**

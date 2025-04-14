@@ -54,15 +54,7 @@ export class GenerativeEntity extends EntityBase {
     data: SerializedGenerativeEntityData,
     onLoaded?: (entity: GenerativeEntity) => void
   ) {
-    super(name, scene, 'generative', {
-      uuid: data.uuid,
-      position: data.position,
-      rotation: data.rotation,
-      scaling: data.scaling,
-      entityType: 'generative',
-      created: new Date().toISOString(),
-      name: name,
-    });
+    super(name, scene, 'generative', data);
 
     // Create initial placeholder mesh
     const ratio = '3:4';
@@ -352,17 +344,6 @@ export class GenerativeEntity extends EntityBase {
     this.props.currentGenerationId = log.id;
     this.props.currentGenerationIdx = this.props.generationLogs.length - 1;
     return log;
-  }
-
-  /**
-   * Deserialize a generative entity from serialized data
-   */
-  static async deserialize(scene: THREE.Scene, data: SerializedGenerativeEntityData): Promise<GenerativeEntity> {
-    const position = data.position ? toThreeVector3(data.position) : undefined;
-    const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
-    const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
-
-    return new GenerativeEntity(data.name, scene, data);
   }
 
   /**
