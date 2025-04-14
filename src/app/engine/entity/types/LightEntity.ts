@@ -42,31 +42,24 @@ export class LightEntity extends EntityBase {
   constructor(
     name: string,
     scene: THREE.Scene,
-    options: {
-      uuid?: string;
-      position?: THREE.Vector3;
-      props?: LightProps,
-      onLoaded?: (entity: LightEntity) => void;
-    } = {}
+    data: SerializedLightEntityData,
+    onLoaded?: (entity: LightEntity) => void
   ) {
-    super(name, scene, 'light', {
-      uuid: options.uuid,
-      position: options.position,
-    });
+    super(name, scene, 'light', data);
 
-    console.log("LightEntity: constructor", options);
+    console.log("LightEntity: constructor", data);
 
     // Create the light
     this._light = this.createLight(
-      options.props?.intensity || 0.7,
-      options.props?.color || { r: 1, g: 1, b: 1 },
-      options.props?.shadowEnabled || false
+      data.props?.intensity || 0.7,
+      data.props?.color || { r: 1, g: 1, b: 1 },
+      data.props?.shadowEnabled || false
     );
 
     this.props = {
-      intensity: options.props?.intensity || 0.7,
-      color: options.props?.color || { r: 1, g: 1, b: 1 },
-      shadowEnabled: options.props?.shadowEnabled || false
+      intensity: data.props?.intensity || 0.7,
+      color: data.props?.color || { r: 1, g: 1, b: 1 },
+      shadowEnabled: data.props?.shadowEnabled || false
     };
 
     // Create light visual representation
@@ -74,7 +67,7 @@ export class LightEntity extends EntityBase {
     this._gizmoMesh = lightSphere;
     this._material = material as THREE.MeshStandardMaterial;
 
-    options.onLoaded?.(this);
+    onLoaded?.(this);
   }
 
   /**
@@ -185,14 +178,7 @@ export class LightEntity extends EntityBase {
    * Deserialize a light entity from serialized data
    */
   static async deserialize(scene: THREE.Scene, data: SerializedLightEntityData): Promise<LightEntity> {
-    const position = data.position ? toThreeVector3(data.position) : undefined;
-    const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
-
-    return new LightEntity(data.name, scene, {
-      uuid: data.uuid,
-      position,
-      props: data.props
-    });
+    return new LightEntity(data.name, scene, data);
   }
 
   /**

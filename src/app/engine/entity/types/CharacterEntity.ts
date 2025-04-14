@@ -47,26 +47,19 @@ export class CharacterEntity extends EntityBase {
     constructor(
         scene: THREE.Scene,
         name: string,
-        id: string,
-        props: CharacterEntityProps,
-        options?: {
-            scaling?: THREE.Vector3,
-            onLoaded?: (entity: EntityBase) => void
-        }) {
-        super(name, scene, 'character', {
-            uuid: id,
-            position: new THREE.Vector3(0, 0, 0),
-            scaling: options?.scaling || new THREE.Vector3(1, 1, 1)
-        });
-        this.characterProps = props;
+        data: SerializedCharacterEntityData,
+        onLoaded?: (entity: EntityBase) => void) {
+
+        super(name, scene, 'character', data);
+        this.characterProps = data.characterProps;
 
         // Track character creation
         trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
             type: 'character',
-            modelUrl: props.url
+            modelUrl: data.characterProps.url
         });
 
-        this._loadingPromise = this._loadCharacter(options?.onLoaded);
+        this._loadingPromise = this._loadCharacter(onLoaded);
 
         // Create visualization material
         this._createMaterials(scene);
@@ -165,9 +158,6 @@ export class CharacterEntity extends EntityBase {
                     // TODO: Implement animation playback system
                 }
 
-                // Position the character at origin by default
-                this.position.set(0, 0, 0);
-
                 this.rootMesh.traverse(object => {
                     if (object instanceof THREE.Mesh) {
                         setupMeshShadows(object);
@@ -265,7 +255,7 @@ export class CharacterEntity extends EntityBase {
             // Hide initially
             boneControl.visible = false;
 
-            if(!this._drawLines) {
+            if (!this._drawLines) {
                 this._boneMap.set(bone.name, { bone, control: boneControl, childBones: [], lineConfigs: [] });
                 return;
             }
@@ -284,7 +274,7 @@ export class CharacterEntity extends EntityBase {
                 line.name = lineName;
                 line.visible = true;
                 boneControl.add(line);
-                
+
                 // Set position of line to the bone control
                 line.position.copy(boneControl.position);
 
@@ -297,9 +287,9 @@ export class CharacterEntity extends EntityBase {
 
                 // Prevent line from being pickable by raycaster without using layers
                 // This is the most reliable approach
-                line.raycast = () => {}; // Empty raycast function prevents picking
+                line.raycast = () => { }; // Empty raycast function prevents picking
                 line.userData.notSelectable = true; // Flag for additional filtering if needed
-                
+
                 lineConfigs.push({ line, targetBone: childBone });
             });
 
@@ -321,7 +311,7 @@ export class CharacterEntity extends EntityBase {
         this._boneMap.forEach(({ control, bone, lineConfigs }) => {
             control.position.copy(bone.position);
             control.quaternion.copy(bone.quaternion);
-            
+
             // Update line positions if they exist
             // lineConfigs.forEach(({ line, targetBone }) => {
             //     if (line.geometry instanceof THREE.BufferGeometry) {
@@ -334,7 +324,7 @@ export class CharacterEntity extends EntityBase {
             //     }
             // });
         });
-        
+
         // Force a redraw
         // this.traverse(object => {
         //     if (object instanceof THREE.SkinnedMesh) {
@@ -414,7 +404,7 @@ export class CharacterEntity extends EntityBase {
     ): Promise<CharacterEntity> {
         try {
             console.log("Deserializing character:", data.name, data.uuid);
-            const entity = new CharacterEntity(scene, data.name, data.uuid, data.characterProps);
+            const entity = new CharacterEntity(scene, data.name, data);
 
             // Wait for model to load before applying bone rotations
             await entity.waitUntilReady();
@@ -423,19 +413,6 @@ export class CharacterEntity extends EntityBase {
             await new Promise(resolve => setTimeout(resolve, 0));
 
             console.log("Character loaded, applying transforms");
-
-            // Apply base properties (transform)
-            entity.position.x = data.position.x;
-            entity.position.y = data.position.y;
-            entity.position.z = data.position.z;
-
-            entity.rotation.x = data.rotation.x;
-            entity.rotation.y = data.rotation.y;
-            entity.rotation.z = data.rotation.z;
-
-            entity.scale.x = data.scaling.x;
-            entity.scale.y = data.scaling.y;
-            entity.scale.z = data.scaling.z;
 
             // Apply saved bone rotations if available
             if (data.boneRotations && entity.skeleton) {
@@ -467,7 +444,7 @@ export class CharacterEntity extends EntityBase {
         } catch (error) {
             console.error("Error during character deserialization:", error);
             // Create a fallback entity without the bone rotations
-            const fallbackEntity = new CharacterEntity(scene, data.name, data.uuid, data.characterProps);
+            const fallbackEntity = new CharacterEntity(scene, data.name, data);
             await fallbackEntity.waitUntilReady();
             return fallbackEntity;
         }

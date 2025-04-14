@@ -32,27 +32,23 @@ export class EntityBase extends Selectable {
     name: string,
     scene: THREE.Scene,
     entityType: EntityType,
-    options: {
-      uuid?: string;
-      position?: THREE.Vector3;
-      rotation?: THREE.Euler;
-      scaling?: THREE.Vector3;
-    } = {}
+    data: SerializedEntityData
   ) {
     super();
     this.name = name;
 
+    console.log(`EntityBase.constructor:`, name, entityType, data);
+
     // Initialize core properties
     this.engine = EditorEngine.getInstance();
-    this.uuid = options.uuid || this.uuid;
+    this.uuid = data.uuid || this.uuid;
     this.entityType = entityType;
     this.created = new Date();
 
     // Set transform properties
-    if (options.position) this.position.copy(options.position);
-    if (options.rotation) this.rotation.copy(options.rotation);
-    if (options.scaling) this.scale.copy(options.scaling);
-
+    if (data.position) this.position.set(data.position.x, data.position.y, data.position.z);
+    if (data.rotation) this.rotation.copy(toThreeEuler(data.rotation));
+    if (data.scaling) this.scale.set(data.scaling.x, data.scaling.y, data.scaling.z);
 
     // Add to scene
     scene.add(this);
@@ -83,6 +79,7 @@ export class EntityBase extends Selectable {
       rotation: fromThreeEuler(this.rotation),
       scaling: fromThreeVector3(this.scale),
       created: this.created.toISOString(),
+      parentUUID: this.parent?.uuid,
     };
   }
 
@@ -90,7 +87,15 @@ export class EntityBase extends Selectable {
    * Base deserialization method (to be implemented in derived classes)
    */
   static async deserialize(scene: THREE.Scene, data: SerializedEntityData): Promise<EntityBase | null> {
-    throw new Error(`EntityBase.deserialize: Not implemented`);
+    // throw new Error(`EntityBase.deserialize: Not implemented`);
+    const entity = new EntityBase(data.name, scene, data.entityType, data);
+    const parent = scene.getObjectByProperty('uuid', data.parentUUID);
+    if (parent) {
+        parent.add(entity);
+    }else{
+      scene.add(entity);
+    }
+    return entity;
   }
 
   /**
@@ -164,10 +169,11 @@ export interface SerializedEntityData {
   uuid: string;
   name: string;
   entityType: EntityType;
-  position: Vector3Data;
-  rotation: EulerData;
-  scaling: Vector3Data;
-  created: string;
+  position?: Vector3Data;
+  rotation?: EulerData;
+  scaling?: Vector3Data;
+  created?: string;
+  parentUUID?: string;
 }
 
 type Vector3Data = {

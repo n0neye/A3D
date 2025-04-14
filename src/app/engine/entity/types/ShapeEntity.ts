@@ -25,23 +25,12 @@ export class ShapeEntity extends EntityBase {
   constructor(
     name: string,
     scene: THREE.Scene,
-    options: {
-      uuid?: string;
-      position?: THREE.Vector3;
-      rotation?: THREE.Euler;
-      scaling?: THREE.Vector3;
-      props: ShapeEntityProps;
-      onLoaded?: (entity: ShapeEntity) => void;
-    }
+    data: SerializedShapeEntityData,
+    onLoaded?: (entity: ShapeEntity) => void
   ) {
-    super(name, scene, 'shape', {
-      uuid: options.uuid,
-      position: options.position,
-      rotation: options.rotation,
-      scaling: options.scaling,
-    });
+    super(name, scene, 'shape', data);
 
-    this.props = options.props;
+    this.props = data.props;
 
     // Create the shape mesh
     const newMesh = createShapeMesh(scene, this.props.shapeType);
@@ -55,24 +44,14 @@ export class ShapeEntity extends EntityBase {
 
     // Return the created mesh
     console.log(`ShapeEntity: constructor done`, this.name, this.uuid);
-    options.onLoaded?.(this);
+    onLoaded?.(this);
   }
 
   /**
    * Deserialize a shape entity from serialized data
    */
   static async deserialize(scene: THREE.Scene, data: SerializedShapeEntityData): Promise<ShapeEntity> {
-    const position = data.position ? toThreeVector3(data.position) : undefined;
-    const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
-    const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
-
-    return new ShapeEntity(data.name, scene, {
-      uuid: data.uuid,
-      position,
-      rotation,
-      scaling,
-      props: data.props
-    });
+    return new ShapeEntity(data.name, scene, data);
   }
 
   /**

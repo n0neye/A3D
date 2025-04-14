@@ -3,6 +3,7 @@ import { EntityBase, EntityType, isEntity } from '../entity/base/EntityBase';
 import { Observer } from '../utils/Observer';
 import { EditorEngine } from '../core/EditorEngine';
 import { BoneControl } from '../entity/components/BoneControl';
+import { Selectable } from '../entity/base/Selectable';
 
 export interface ObjectManagerEvents {
   entityAdded: { entity: EntityBase };
@@ -283,10 +284,13 @@ export class ObjectManager {
     this.observer.notify('hierarchyChanged', {});
   }
 
-  public AddToParent(child: THREE.Object3D, parent: THREE.Object3D): void {
-    child.parent = parent;
-    parent.children.push(child);
-    child.position.set(0, 0, 0);
-    child.updateWorldMatrix(true, true);
+  public AddToParent(child: Selectable, parent: Selectable, resetTransform: boolean = true): void {
+    parent.add(child);
+    
+    if (resetTransform) {
+      child.rotation.set(0, 0, 0);
+      child.position.set(0, 0, 0);
+      child.updateWorldMatrix(true, true);
+    }
   }
 } 

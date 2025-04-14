@@ -51,20 +51,17 @@ export class GenerativeEntity extends EntityBase {
   constructor(
     name: string,
     scene: THREE.Scene,
-    options: {
-      uuid?: string;
-      position?: THREE.Vector3;
-      rotation?: THREE.Euler;
-      scaling?: THREE.Vector3;
-      props?: GenerativeEntityProps;
-      onLoaded?: (entity: GenerativeEntity) => void;
-    }
+    data: SerializedGenerativeEntityData,
+    onLoaded?: (entity: GenerativeEntity) => void
   ) {
     super(name, scene, 'generative', {
-      uuid: options.uuid,
-      position: options.position,
-      rotation: options.rotation,
-      scaling: options.scaling
+      uuid: data.uuid,
+      position: data.position,
+      rotation: data.rotation,
+      scaling: data.scaling,
+      entityType: 'generative',
+      created: new Date().toISOString(),
+      name: name,
     });
 
     // Create initial placeholder mesh
@@ -78,7 +75,7 @@ export class GenerativeEntity extends EntityBase {
     this.add(this.placeholderMesh);
     this.placeholderMesh.userData = { rootSelectable: this };
 
-    this.props = options.props || {
+    this.props = data.props || {
       generationLogs: []
     };
 
@@ -95,7 +92,7 @@ export class GenerativeEntity extends EntityBase {
       this.applyGenerationLog(currentLog);
     }
 
-    options.onLoaded?.(this);
+    onLoaded?.(this);
   }
 
   setDisplayMode(mode: "3d" | "2d"): void {
@@ -365,13 +362,7 @@ export class GenerativeEntity extends EntityBase {
     const rotation = data.rotation ? toThreeEuler(data.rotation) : undefined;
     const scaling = data.scaling ? toThreeVector3(data.scaling) : undefined;
 
-    return new GenerativeEntity(data.name, scene, {
-      uuid: data.uuid,
-      position,
-      rotation,
-      scaling,
-      props: data.props
-    });
+    return new GenerativeEntity(data.name, scene, data);
   }
 
   /**
