@@ -1,12 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { EditorProvider } from './context/OldEditorContext';
-import EngineContainer from './engine/OldEditorContainer';
 import { Laptop } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditorEngineProvider } from './context/EditorEngineContext';
-import EngineUIContainer from './components/EngineUIContainer';
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);

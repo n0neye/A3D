@@ -974,15 +974,15 @@
     tailwindcss "4.0.13"
 
 "@threejs-kit/instanced-sprite-mesh@^2.4.6":
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/@threejs-kit/instanced-sprite-mesh/-/instanced-sprite-mesh-2.5.0.tgz#24b2718d39da17eada1bde2d5c0c0faeccdb7fb1"
-  integrity sha512-W4cRK7f1o15GtacvLi8h1022ySiMM5218eZJQYWHbVGKqpRezmj8hscdzgp4JFSCkRoAIdyIdLZg5U0Mtmcu/w==
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/@threejs-kit/instanced-sprite-mesh/-/instanced-sprite-mesh-2.5.1.tgz#5098c00734986450440db1bc5ec0731f66f53bb5"
+  integrity sha512-pmt1ALRhbHhCJQTj2FuthH6PeLIeaM4hOuS2JO3kWSwlnvx/9xuUkjFR3JOi/myMqsH7pSsLIROSaBxDfttjeA==
   dependencies:
     diet-sprite "^0.0.1"
     earcut "^2.2.4"
     maath "^0.10.7"
-    three-instanced-uniforms-mesh "^0.52.0"
-    troika-three-utils "^0.52.0"
+    three-instanced-uniforms-mesh "^0.52.4"
+    troika-three-utils "^0.52.4"
 
 "@threlte/core@^7.3.1":
   version "7.3.1"
@@ -1214,9 +1214,9 @@ call-bind-apply-helpers@^1.0.1, call-bind-apply-helpers@^1.0.2:
     function-bind "^1.1.2"
 
 camera-controls@^2.8.5:
-  version "2.10.0"
-  resolved "https://registry.yarnpkg.com/camera-controls/-/camera-controls-2.10.0.tgz#d3da9ba4d0ae0b67104b051e27ef0670000498d9"
-  integrity sha512-vBQ5Daxv4KRsn07U/VqkPxoqD8U+S++0oq5NLf4HevMuh/BDta3rg49e/P564AMzFPBePQeXDKOkiIezRgyDwg==
+  version "2.10.1"
+  resolved "https://registry.yarnpkg.com/camera-controls/-/camera-controls-2.10.1.tgz#78bc58001a2d5925c29312154ce77d16967dec56"
+  integrity sha512-KnaKdcvkBJ1Irbrzl8XD6WtZltkRjp869Jx8c0ujs9K+9WD+1D7ryBsCiVqJYUqt6i/HR5FxT7RLASieUD+Q5w==
 
 caniuse-lite@^1.0.30001579:
   version "1.0.30001704"
@@ -1935,11 +1935,6 @@ p-limit@^3.0.1:
   dependencies:
     yocto-queue "^0.1.0"
 
-paper@^0.12.18:
-  version "0.12.18"
-  resolved "https://registry.yarnpkg.com/paper/-/paper-0.12.18.tgz#e024056217a35c36e2b5fda4629310fdc7025c91"
-  integrity sha512-ZSLIEejQTJZuYHhSSqAf4jXOnii0kPhCJGAnYAANtdS72aNwXJ9cP95tZHgq1tnNpvEwgQhggy+4OarviqTCGw==
-
 periscopic@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/periscopic/-/periscopic-3.1.0.tgz#7e9037bf51c5855bd33b48928828db4afa79d97a"
@@ -2278,7 +2273,7 @@ three-inspect@^0.7.2:
     svelte-tweakpane-ui "^1.3.0"
     three-perf "^1.0.10"
 
-three-instanced-uniforms-mesh@^0.52.0:
+three-instanced-uniforms-mesh@^0.52.4:
   version "0.52.4"
   resolved "https://registry.yarnpkg.com/three-instanced-uniforms-mesh/-/three-instanced-uniforms-mesh-0.52.4.tgz#62898bc04a2685edf15889c0b87e484719663212"
   integrity sha512-YwDBy05hfKZQtU+Rp0KyDf9yH4GxfhxMbVt9OYruxdgLfPwmDG5oAbGoW0DrKtKZSM3BfFcCiejiOHCjFBTeng==
@@ -2345,7 +2340,7 @@ troika-three-utils@^0.49.0:
   resolved "https://registry.yarnpkg.com/troika-three-utils/-/troika-three-utils-0.49.0.tgz#3fbdbf8783740ce3c1f7acac642e7e957ea4f090"
   integrity sha512-umitFL4cT+Fm/uONmaQEq4oZlyRHWwVClaS6ZrdcueRvwc2w+cpNQ47LlJKJswpqtMFWbEhOLy0TekmcPZOdYA==
 
-troika-three-utils@^0.52.0, troika-three-utils@^0.52.4:
+troika-three-utils@^0.52.4:
   version "0.52.4"
   resolved "https://registry.yarnpkg.com/troika-three-utils/-/troika-three-utils-0.52.4.tgz#9292019e93cab97582af1cf491c4c895e5c03b66"
   integrity sha512-NORAStSVa/BDiG52Mfudk4j1FG4jC4ILutB3foPnfGbOeIs9+G5vZLa0pnmnaftZUGm4UwSoqEpWdqvC7zms3A==
@@ -2447,11 +2442,6 @@ ws@^8.18.0:
   version "8.18.1"
   resolved "https://registry.yarnpkg.com/ws/-/ws-8.18.1.tgz#ea131d3784e1dfdff91adb0a4a116b127515e3cb"
   integrity sha512-RKW2aJZMXeMxVpnZ6bck+RswznaxmzdULiBr6KY7XkTnW8uvt0iT9H5DkHUChXrc+uurzwa0rVI16n/Xzjdz1w==
-
-yet-another-react-lightbox@^3.21.8:
-  version "3.21.8"
-  resolved "https://registry.yarnpkg.com/yet-another-react-lightbox/-/yet-another-react-lightbox-3.21.8.tgz#7a8002b1301e961cbb98772731b064e46f723989"
-  integrity sha512-8DnjpSmWF+WjGXX+NIJx0V/naUhUYxLt6RIBJZoQ4y1GJVKwiUO2RuRvUBvYQTwAwFqwhJSvxfIhCU3VyCj9WQ==
 
 yocto-queue@^0.1.0:
   version "0.1.0"

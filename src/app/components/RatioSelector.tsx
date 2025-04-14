@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IconCheck } from '@tabler/icons-react';
-import { ImageRatio } from '../util/generation/generation-util';
+import { ImageRatio } from '@/app/engine/utils/imageUtil';
 
 // Ratio options with icons
 const ratioOptions: { value: ImageRatio; label: string }[] = [
@@ -10,40 +10,6 @@ const ratioOptions: { value: ImageRatio; label: string }[] = [
   { value: '3:4', label: '3:4' },
   { value: '9:16', label: '9:16' },
 ];
-
-// CSS for the ratio icons
-const ratioIconStyles = `
-.ratio-icon-square, .ratio-icon-wide, .ratio-icon-tall, .ratio-icon-standard, .ratio-icon-portrait {
-  display: inline-block;
-  border: 2px solid #9ca3af;
-  border-radius: 2px;
-}
-
-.ratio-icon-square {
-  width: 14px;
-  height: 14px;
-}
-
-.ratio-icon-wide {
-  width: 16px;
-  height: 9px;
-}
-
-.ratio-icon-tall {
-  width: 9px;
-  height: 16px;
-}
-
-.ratio-icon-standard {
-  width: 14px;
-  height: 11px;
-}
-
-.ratio-icon-portrait {
-  width: 11px;
-  height: 14px;
-}
-`;
 
 interface RatioSelectorProps {
   value: ImageRatio;
@@ -69,19 +35,6 @@ const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled
     };
   }, []);
 
-  // Add global style for ratio icons
-  useEffect(() => {
-    // Only add the style sheet if it doesn't already exist
-    if (!document.getElementById("ratio-icon-styles")) {
-      const styleSheet = document.createElement("style");
-      styleSheet.id = "ratio-icon-styles";
-      styleSheet.textContent = ratioIconStyles;
-      document.head.appendChild(styleSheet);
-    }
-
-    // No need to remove on unmount, as multiple instances might be using it
-    // We'll let it persist
-  }, []);
 
   // Generate ratio icon CSS class
   const getRatioIconClass = (ratio: ImageRatio) => {
