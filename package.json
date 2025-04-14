@@ -2,11 +2,42 @@
   "name": "ai-editor",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "next dev --turbopack -p 3030",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev:next": "next dev",
+    "build:next": "next build && next export",
+    "start:next": "next start",
+
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "watch:electron": "tsc -p electron/tsconfig.json --watch",
+
+    "start:electron": "wait-on http://localhost:3000 && yarn build:electron && electron .",
+    "dev": "concurrently -k \"yarn dev:next\" \"yarn start:electron\"",
+
+    "build": "yarn build:next && yarn build:electron",
+    "pack": "yarn build && electron-builder --dir",
+    "dist": "yarn build && electron-builder"
+  },
+  "build": {
+    "appId": "com.example.myapp",
+    "productName": "MyApp",
+    "files": [
+      "main/**/*",
+      "renderer/out/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "extraMetadata": {
+      "main": "dist/main.js"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.3",
@@ -28,6 +59,7 @@
     "@types/three": "^0.175.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "electron-is-dev": "^3.0.1",
     "install": "^0.13.0",
     "lucide-react": "^0.483.0",
     "next": "15.2.2",
@@ -49,7 +81,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^35.1.5",
+    "electron-builder": "^26.0.12",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^8.0.3"
   }
 }
