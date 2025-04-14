@@ -108,6 +108,9 @@ export class InputManager {
   }
 
   getSelectableObjects(): THREE.Object3D[] {
+    // console.log("InputManager: getSelectableObjects", this.engine.getObjectManager().getAllSelectables().length);
+    // return this.engine.getObjectManager().getAllSelectables();
+    
     // TODO: better way to do this, maybe manage a list of selectables
     return this.scene.children.filter(child => (isSelectable(child) && child.visible));
   }
@@ -184,7 +187,7 @@ export class InputManager {
 
     // Check if it has a selectable in userData
     if (object.userData?.rootSelectable && isSelectable(object.userData.rootSelectable)) {
-      console.log("InputManager: Found selectable in userData", object.userData.rootSelectable);
+      console.log("InputManager: Found selectable in userData", object.userData.rootSelectable.name);
       return object.userData.rootSelectable as Selectable;
     }
 
@@ -225,7 +228,8 @@ export class InputManager {
       (intersect.object.visible && intersect.object.userData?.isBoneControlMesh)
     )?.object.userData?.rootSelectable;
 
-    if (boneControl && boneControl instanceof BoneControl) {
+    if (boneControl && boneControl instanceof BoneControl && boneControl.visible) {
+      console.log("InputManager: Selected bone control", boneControl.getName());
       this.selectionManager.select(boneControl);
       return;
     }
@@ -234,7 +238,7 @@ export class InputManager {
     for (const intersect of intersects) {
       const selectable = this.findSelectableFromIntersection(intersect.object);
       if (selectable) {
-        console.log("InputManager: Selected:", selectable.getName());
+        console.log("InputManager: Select:", selectable.getName());
         this.selectionManager.select(selectable);
         return;
       }
