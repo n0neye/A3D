@@ -184,7 +184,6 @@ export class EntityFactory {
     try {
       return new Promise<EntityBase>((resolve, reject) => {
         const onLoaded = (entity: EntityBase) => {
-          console.log("EntityFactory: deserializeEntity: onLoaded", entity);
           resolve(entity);
         };
         

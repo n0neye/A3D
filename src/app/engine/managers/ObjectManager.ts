@@ -294,4 +294,12 @@ export class ObjectManager {
     }
   }
 
+  public AddToBone(child: Selectable, boneControl: BoneControl, resetPosition: boolean = true): void {
+    boneControl.add(child);
+
+    if (resetPosition) {
+      child.position.set(0, 0, 0);
+      child.updateWorldMatrix(true, true);
+    }
+  }
 } 

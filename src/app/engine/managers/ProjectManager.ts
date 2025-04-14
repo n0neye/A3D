@@ -228,11 +228,31 @@ export class ProjectManager {
                     }
                 });
             });
-
             await Promise.all(entityPromises);
         }
 
-        console.log("ProjectManager: deserializeProject: all entities created");
+        // Set parent-child relationships
+        const entities = this.engine.getObjectManager().getAllEntities();
+        data.entities.forEach(entityData => {
+            if (entityData.parentUUID) {
+                const parent = entities.find(e => e.uuid === entityData.parentUUID);
+                const child = entities.find(e => e.uuid === entityData.uuid);
+                if (parent && child) {
+                    parent.add(child);
+                } else {
+                    console.warn("DeserializeProject: failed to set parent-child relationship", parent?.name, child?.name);
+                }
+            } else if (entityData.parentBone) {
+                const character = entities.find(e => e.uuid === entityData.parentBone!.characterUUID) as CharacterEntity;
+                const boneControl = character.getBoneControls().find(b => b.bone.name === entityData.parentBone!.boneName);
+                const child = entities.find(e => e.uuid === entityData.uuid);
+                if (character && boneControl && child) {
+                    boneControl.add(child);
+                } else {
+                    console.warn("DeserializeProject: failed to set parent-child relationship", character?.name, boneControl?.name, child?.name);
+                }
+            }
+        });
 
         // After creating all entities, scan the scene to ensure all are registered
         this.engine.getObjectManager().scanScene();

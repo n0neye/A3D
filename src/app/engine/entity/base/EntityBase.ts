@@ -3,6 +3,7 @@ import { HistoryManager } from '../../managers/HistoryManager';
 import { Selectable, SelectableConfig, SelectableCursorType } from './Selectable';
 import { EditorEngine } from '../../core/EditorEngine';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
+import { BoneControl } from '../components/BoneControl';
 /**
  * Base class for all entities in the scene
  * Extends Object3D with common functionality
@@ -36,7 +37,7 @@ export class EntityBase extends Selectable {
     super();
     this.name = name;
 
-    console.log(`===== EntityBase.constructor:`, name, entityType, data);
+    console.log(`EntityBase.constructor:`, name, entityType, data);
 
     // Initialize core properties
     this.engine = EditorEngine.getInstance();
@@ -82,8 +83,8 @@ export class EntityBase extends Selectable {
    * Can be extended by derived classes
    */
   serialize(): SerializedEntityData {
-    const parentUUID = this.parent === this.engine.getScene() ? undefined : this.parent?.uuid;
-    return {
+
+    const data: SerializedEntityData = {
       uuid: this.uuid,
       name: this.name,
       entityType: this.entityType,
@@ -91,8 +92,24 @@ export class EntityBase extends Selectable {
       rotation: fromThreeEuler(this.rotation),
       scaling: fromThreeVector3(this.scale),
       created: this.created.toISOString(),
-      parentUUID,
     };
+
+    // Serialize parent relationship
+    if (this.parent && this.parent !== this.engine.getScene()) {
+      if (this.parent instanceof BoneControl) {
+        
+        console.log(`EntityBase.serialize: parent is a bone`, this.parent.name);
+        data.parentBone = {
+          boneName: this.parent.bone.name,
+          characterUUID: this.parent.character.uuid,
+        };
+
+      } else if (this.parent instanceof EntityBase) {
+        data.parentUUID = this.parent.uuid;
+      }
+    }
+
+    return data;
   }
 
   /**
@@ -171,6 +188,10 @@ export interface SerializedEntityData {
   scaling?: Vector3Data;
   created?: string;
   parentUUID?: string;
+  parentBone?: {
+    boneName: string;
+    characterUUID: string;
+  };
 }
 
 type Vector3Data = {
