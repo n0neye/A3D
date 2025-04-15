@@ -1,5 +1,5 @@
 // electron/main.ts
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, protocol } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import isDev from 'electron-is-dev';
@@ -122,4 +122,20 @@ ipcMain.handle('get-app-data-path', async (event) => {
   }
   
   return userDataPath;
+});
+
+ipcMain.handle('load-image-data', async (event, filePath) => {
+  // Remove file:// prefix if present
+  if (filePath.startsWith('file://')) {
+    filePath = filePath.substring(7);
+  }
+  
+  try {
+    const data = await fs.promises.readFile(filePath);
+    const base64Data = `data:image/jpeg;base64,${data.toString('base64')}`;
+    return base64Data;
+  } catch (error) {
+    console.error('Error loading image', error);
+    throw error;
+  }
 });

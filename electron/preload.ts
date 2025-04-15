@@ -26,7 +26,10 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   // Simple test method
-  ping: () => 'pong'
+  ping: () => 'pong',
+
+  // Add this method
+  loadImageData: (filePath: string) => ipcRenderer.invoke('load-image-data', filePath),
 });
 
 console.log('Preload script loaded.');

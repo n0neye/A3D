@@ -12,6 +12,7 @@ declare global {
       saveFile: (data: ArrayBuffer, fileName: string) => Promise<string>;
       readFile: (filePath: string) => Promise<ArrayBuffer>;
       getAppDataPath: () => Promise<string>;
+      loadImageData: (filePath: string) => Promise<string>;
       isElectron: boolean;
       versions?: {
         electron: string;
