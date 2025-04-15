@@ -8,6 +8,7 @@ import Guide from './Guide';
 import RatioOverlay from './RatioOverlay';
 // import TimelinePanel from './TimelinePanel';
 import DebugPanel from './Debug/DebugPanel';
+import FileDragDropOverlay from './FileDragDropOverlay';
 import { useEffect, useState } from 'react';
 import { UiLayoutMode, useEditorEngine } from '../context/EditorEngineContext';
 import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
@@ -54,6 +55,9 @@ function EngineUIContainer() {
             
             {/* Add the Debug Panel */}
             <DebugPanel />
+            
+            {/* Add File Drag Drop Overlay */}
+            <FileDragDropOverlay />
         </>
     );
 }
