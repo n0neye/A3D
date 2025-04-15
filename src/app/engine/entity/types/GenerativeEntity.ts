@@ -21,6 +21,7 @@ export interface GenerativeEntityProps {
   generationLogs: IGenerationLog[];
   currentGenerationId?: string;
   currentGenerationIdx?: number;
+  isImported?: boolean;
 }
 
 // Processing states

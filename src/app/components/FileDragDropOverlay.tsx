@@ -4,8 +4,8 @@ import { IconFileImport, IconPhoto, Icon3dCubeSphere, IconX } from '@tabler/icon
 import { FileImportService } from '../engine/services/FileImportService';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
-const ACCEPTED_MODEL_TYPES = ['model/gltf-binary', 'model/gltf+json'];
-const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.glb', '.gltf'];
+const ACCEPTED_MODEL_TYPES = ['model/gltf-binary', 'model/gltf+json', 'application/fbx'];
+const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.glb', '.gltf', '.fbx'];
 
 const FileDragDropOverlay: React.FC = () => {
   const { engine } = useEditorEngine();
@@ -18,13 +18,13 @@ const FileDragDropOverlay: React.FC = () => {
     const handleDragOver = (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       if (!isDragging) setIsDragging(true);
-      
+
       // Check if any files are being dragged
       if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
         const item = e.dataTransfer.items[0];
-        
+
         // Check for valid MIME types
         if (ACCEPTED_IMAGE_TYPES.includes(item.type)) {
           setIsValidFile(true);
@@ -33,13 +33,21 @@ const FileDragDropOverlay: React.FC = () => {
           setIsValidFile(true);
           setFileType('model');
         } else {
-          // Check for file extensions when MIME type is not recognized
-          const fileName = e.dataTransfer.items[0].getAsFile()?.name || '';
-          const extension = fileName.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
-          
+          // Check for file extensions when MIME type is not recognized\
+          const file = e.dataTransfer.items[0].getAsFile();
+          const fileName = file?.name || undefined;
+          const extension = fileName?.toLowerCase().match(/\.[^.]*$/)?.[0] || undefined;
+
+          console.log(`FileDragDropOverlay.handleDragOver:`, file, fileName, extension);
+
+          if (!extension) {
+            setIsValidFile(false);
+            return;
+          }
+
           if (ACCEPTED_EXTENSIONS.includes(extension)) {
             setIsValidFile(true);
-            setFileType(extension === '.glb' || extension === '.gltf' ? 'model' : 'image');
+            setFileType(extension === '.glb' || extension === '.gltf' || extension === '.fbx' ? 'model' : 'image');
           } else {
             setIsValidFile(false);
             setFileType(null);
@@ -57,7 +65,7 @@ const FileDragDropOverlay: React.FC = () => {
     const handleDragLeave = (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       // Only set dragging to false if we're leaving the window
       // Use related target to check if we're leaving to outside the window
       if (!e.relatedTarget || !(e.relatedTarget as Node).ownerDocument) {
@@ -70,22 +78,22 @@ const FileDragDropOverlay: React.FC = () => {
     const handleDrop = async (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       if (isImporting) return; // Prevent multiple simultaneous imports
-      
+
       setIsDragging(false);
-      
+
       if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
-        
+
         if (ACCEPTED_EXTENSIONS.includes(extension)) {
           try {
             setIsImporting(true);
-            
+
             // Use the simplified importFile method that handles all the complexity
             await FileImportService.importFile(file);
-            
+
           } catch (error) {
             console.error("Error importing file:", error);
           } finally {
@@ -93,7 +101,7 @@ const FileDragDropOverlay: React.FC = () => {
           }
         }
       }
-      
+
       setIsValidFile(null);
       setFileType(null);
     };
@@ -119,14 +127,14 @@ const FileDragDropOverlay: React.FC = () => {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-none">
       <div className={`
         relative p-8 rounded-lg border-2 border-dashed transition-all duration-300
-        ${isValidFile === true ? 'border-green-500 bg-green-950/20' : 
-          isValidFile === false ? 'border-red-500 bg-red-950/20' : 
-          'border-gray-400 bg-gray-800/20'}
+        ${isValidFile === true ? 'border-green-500 bg-green-950/20' :
+          isValidFile === false ? 'border-red-500 bg-red-950/20' :
+            'border-gray-400 bg-gray-800/20'}
       `} style={{ width: '80%', maxWidth: '500px', height: '300px' }}>
         <div className="absolute top-2 right-2">
           {isValidFile === false && <IconX size={24} className="text-red-500" />}
         </div>
-        
+
         <div className="flex flex-col items-center justify-center h-full gap-4">
           {fileType === 'image' ? (
             <IconPhoto size={64} className="text-blue-400" />
@@ -135,18 +143,18 @@ const FileDragDropOverlay: React.FC = () => {
           ) : (
             <IconFileImport size={64} className="text-gray-400" />
           )}
-          
+
           <div className="text-center">
             <h3 className="text-xl font-semibold mb-2">
               {isImporting ? 'Importing...' :
-               isValidFile === true ? 'Drop to Import' : 
-               isValidFile === false ? 'Unsupported File Type' : 
-               'Drop Files Here'}
+                isValidFile === true ? 'Drop to Import' :
+                  isValidFile === false ? 'Unsupported File Type' :
+                    'Drop Files Here'}
             </h3>
             <p className="text-sm text-gray-300">
-              {isValidFile === false ? 
-                'Please use JPG, PNG, GLB files only' : 
-                'Supported formats: JPG, PNG, GLB'}
+              {isValidFile === false ?
+                'Please use JPG, PNG, GLB, FBX files only' :
+                'Supported formats: JPG, PNG, GLB, FBX'}
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ImageRatio } from "../utils/imageUtil";
 import { EntityFactory } from "../entity/EntityFactory";
 import { FileManagerFactory } from './FileManagerFactory';
+import { Basic3DEntity } from "../entity/types/Basic3DEntity";
 
 // Declare global electron interface
 declare global {
@@ -38,7 +39,7 @@ export class FileImportService {
      * @param file The file object to import
      * @returns Promise resolving to the created entity or null if import failed
      */
-    static async importFile(file: File): Promise<GenerativeEntity | null> {
+    static async importFile(file: File): Promise<GenerativeEntity | Basic3DEntity | null> {
         try {
             console.log(`Importing file: ${file.name}`);
 
@@ -95,11 +96,11 @@ export class FileImportService {
     }
 
     /**
-     * Import a 3D model file and create a GenerativeEntity with it
+     * Import a 3D model file and create a Basic3DEntity with it
      * @param file The 3D model file to import
      * @returns Promise resolving to the created entity or null if import failed
      */
-    static async importModelFile(file: File): Promise<GenerativeEntity | null> {
+    static async importModelFile(file: File): Promise<Basic3DEntity | null> {
         try {
             // Get appropriate file manager
             const fileManager = FileManagerFactory.getFileManager();
@@ -114,8 +115,12 @@ export class FileImportService {
                 file.type || 'model/gltf-binary'
             );
 
+            // Determine the model format based on extension
+            const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
+            const modelFormat = extension === '.fbx' ? 'fbx' : 'glb';
+
             // Create entity with the URL
-            return await FileImportService.createEntityFromModel(modelUrl, file.name);
+            return await FileImportService.createEntityFromModel(modelUrl, file.name, modelFormat);
         } catch (error) {
             console.error("Error importing model file:", error);
             return null;
@@ -188,7 +193,7 @@ export class FileImportService {
             const entity = await EntityFactory.createEntity({
                 type: 'generative',
                 name: name,
-                generativeProps: { generationLogs: [] }
+                generativeProps: { generationLogs: [], isImported: true }
             }) as GenerativeEntity;
 
             if (!entity) {
@@ -216,33 +221,36 @@ export class FileImportService {
     }
 
     /**
-     * Import a 3D model file and create a GenerativeEntity with it
+     * Import a 3D model file and create a Basic3DEntity with it
      * @param modelUrl The model URL (file:// protocol or blob:// URL)
      * @param fileName The original file name (for metadata)
+     * @param modelFormat The format of the model file ('glb', 'gltf', or 'fbx')
      * @returns The created entity or null if import failed
      */
-    static async createEntityFromModel(modelUrl: string, fileName: string): Promise<GenerativeEntity | null> {
+    static async createEntityFromModel(
+        modelUrl: string, 
+        fileName: string, 
+        modelFormat: 'glb' | 'gltf' | 'fbx' = 'glb'
+    ): Promise<Basic3DEntity | null> {
         try {
             // Create a default name from the filename or a generic one
             const name = fileName ? fileName.split('.')[0] : `Model_${new Date().toISOString().slice(0, 10)}`;
 
-            // Create a new generative entity
+            // Create a new basic3D entity
             const entity = await EntityFactory.createEntity({
-                type: 'generative',
+                type: 'basic3D',
                 name: name,
-                generativeProps: { generationLogs: [] }
-            }) as GenerativeEntity;
+                basic3DProps: { 
+                    modelUrl: modelUrl,
+                    modelFormat: modelFormat,
+                    originalFileName: fileName
+                }
+            }) as Basic3DEntity;
 
             if (!entity) {
                 console.error("Failed to create entity for model import");
                 return null;
             }
-
-            // Create a placeholder prompt
-            const prompt = `Imported 3D model: ${fileName}`;
-
-            // Register the model in the entity
-            const log = entity.onNewGeneration('model', modelUrl, prompt);
 
             // Notify user
             console.log(`Imported 3D model as entity: ${entity.name}`);

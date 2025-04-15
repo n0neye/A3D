@@ -9,7 +9,7 @@ import { BoneControl } from '../components/BoneControl';
  * Extends Object3D with common functionality
  */
 // Entity types
-export type EntityType = 'generative' | 'shape' | 'light' | 'character';
+export type EntityType = 'generative' | 'shape' | 'light' | 'character' | 'basic3D';
 
 
 export class EntityBase extends Selectable {

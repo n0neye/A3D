@@ -6,7 +6,7 @@ import { GenerationResult } from '@/app/engine/utils/generation/realtime-generat
 import RatioSelector from '../RatioSelector';
 import { Button } from '@/components/ui/button';
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
-import { GenerativeEntity, GenerationStatus,  } from '@/app/engine/entity/types/GenerativeEntity';
+import { GenerativeEntity, GenerationStatus, } from '@/app/engine/entity/types/GenerativeEntity';
 import { IGenerationLog } from '@/app/engine/interfaces/generation';
 import { ImageRatio } from "@/app/engine/utils/imageUtil";
 
@@ -165,7 +165,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   // Handle image generation
   const handleGenerate2D = async () => {
     console.log('handleGenerate2D', promptInput);
-    if (!props.entity || !promptInput.trim() ) return;
+    if (!props.entity || !promptInput.trim()) return;
     let result: GenerationResult;
     result = await props.entity.generateRealtimeImage(promptInput, { ratio: currentRatio });
   };
@@ -182,7 +182,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
     try {
       console.log('handleGenerate3D');
-      if (!props.entity ) return;
+      if (!props.entity) return;
 
       // Get current generation
       const currentGen = props.entity.getCurrentGenerationLog();
@@ -308,74 +308,77 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
         {/* Prompt */}
         <div className="space-y-2 flex flex-row space-x-2">
-          <div className="flex flex-col m-0">
-            {/* Bottom row */}
-            <div className="flex justify-start space-x-1 h-6 pr-2">
+          {(props.entity.props.isImported === false || props.entity.props.isImported === undefined) &&
+            <div className="flex flex-col m-0">
+              {/* Bottom row */}
+              <div className="flex justify-start space-x-1 h-6 pr-2">
 
-              {<RatioSelector
-                value={currentRatio}
-                onChange={handleRatioChange}
+                {<RatioSelector
+                  value={currentRatio}
+                  onChange={handleRatioChange}
+                  disabled={isGenerating}
+                />}
+
+                {/* History navigation buttons */}
+                {props.entity.props.generationLogs.length > 1 && (
+                  <>
+                    <button
+                      className={`p-1 rounded mr-0 ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                      onClick={goToPreviousGeneration}
+                      disabled={!hasPreviousGeneration || isGenerating}
+                      title="Previous generation (Shift + ←)"
+                    >
+                      <IconArrowLeft size={16} />
+                    </button>
+                    <span className="text-xs text-gray-400 self-center">
+                      {currentGenLogIndex + 1}/{props.entity.props.generationLogs.length}
+                    </span>
+                    <button
+                      className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                      onClick={goToNextGeneration}
+                      disabled={!hasNextGeneration || isGenerating}
+                      title="Next generation (Shift + →)"
+                    >
+                      <IconArrowRight size={16} />
+                    </button>
+                  </>
+                )}
+                <div className='flex-grow'></div>
+                <button className="p-1 rounded text-white hover:bg-gray-700"
+                  onClick={handleDownload}
+                  disabled={!currentGenLog?.fileUrl}
+                >
+                  {/* Icon */}
+                  <IconDownload size={16} />
+                </button>
+              </div>
+              <textarea
+                ref={inputElementRef}
+                placeholder="Enter prompt..."
+                className="w-96 p-0 mt-2 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
+                value={promptInput}
+                onKeyDown={handleInputFieldKeyDown}
+                onChange={(e) => {
+                  setPromptInput(e.target.value)
+                }}
                 disabled={isGenerating}
-              />}
-
-              {/* History navigation buttons */}
-              {props.entity.props.generationLogs.length > 1 && (
-                <>
-                  <button
-                    className={`p-1 rounded mr-0 ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
-                    onClick={goToPreviousGeneration}
-                    disabled={!hasPreviousGeneration || isGenerating}
-                    title="Previous generation (Shift + ←)"
-                  >
-                    <IconArrowLeft size={16} />
-                  </button>
-                  <span className="text-xs text-gray-400 self-center">
-                    {currentGenLogIndex + 1}/{props.entity.props.generationLogs.length}
-                  </span>
-                  <button
-                    className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
-                    onClick={goToNextGeneration}
-                    disabled={!hasNextGeneration || isGenerating}
-                    title="Next generation (Shift + →)"
-                  >
-                    <IconArrowRight size={16} />
-                  </button>
-                </>
-              )}
-              <div className='flex-grow'></div>
-              <button className="p-1 rounded text-white hover:bg-gray-700"
-                onClick={handleDownload}
-                disabled={!currentGenLog?.fileUrl}
-              >
-                {/* Icon */}
-                <IconDownload size={16} />
-              </button>
+                rows={3}
+              />
             </div>
-            <textarea
-              ref={inputElementRef}
-              placeholder="Enter prompt..."
-              className="w-96 p-0 mt-2 text-xs bg-none border-none m-0 mr-2 focus:outline-none"
-              value={promptInput}
-              onKeyDown={handleInputFieldKeyDown}
-              onChange={(e) => {
-                setPromptInput(e.target.value)
-              }}
-              disabled={isGenerating}
-              rows={3}
-            />
+          }
 
-          </div>
+          <div className="flex flex-row space-x-1 min-h-16">
 
-          <div className="flex flex-row space-x-1">
-            <Button
-              variant={"outline"}
-              className={`relative text-xs whitespace-normal w-20 h-full flex-col `}
-              onClick={handleGenerate2D}
-              disabled={isGenerating || !promptInput.trim()}
-            >
-              {isGenerating2D && renderSpinner('Generating')}
-              {!isGenerating2D && <>Generate Image<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={10} className='inline' /></span></>}
-            </Button>
+            {(props.entity.props.isImported === false || props.entity.props.isImported === undefined) &&
+              <Button
+                variant={"outline"}
+                className={`relative text-xs whitespace-normal w-20 h-full flex-col `}
+                onClick={handleGenerate2D}
+                disabled={isGenerating || !promptInput.trim()}
+              >
+                {isGenerating2D && renderSpinner('Generating')}
+                {!isGenerating2D && <>Generate Image<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={10} className='inline' /></span></>}
+              </Button>}
 
             {<Button
               className={`relative text-xs whitespace-normal w-20 h-full flex-col p-1`}

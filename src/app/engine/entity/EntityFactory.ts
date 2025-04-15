@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CreateEntityAsyncCommand } from '@/app/lib/commands';
 import { EditorEngine } from '../core/EditorEngine';
 import { DeleteEntityCommand } from '@/app/lib/commands';
+import { Basic3DEntity, Basic3DEntityProps, SerializedBasic3DEntityData } from '@/app/engine/entity/types/Basic3DEntity';
 
 // Base properties common to all entities
 interface BaseEntityOptions {
@@ -24,7 +25,8 @@ export type CreateEntityOptions =
   | (BaseEntityOptions & { type: 'generative', generativeProps: GenerativeEntityProps })
   | (BaseEntityOptions & { type: 'shape', shapeProps: ShapeEntityProps })
   | (BaseEntityOptions & { type: 'light', lightProps: LightProps, rotation?: THREE.Euler })
-  | (BaseEntityOptions & { type: 'character', characterProps: CharacterEntityProps });
+  | (BaseEntityOptions & { type: 'character', characterProps: CharacterEntityProps })
+  | (BaseEntityOptions & { type: 'basic3D', basic3DProps: Basic3DEntityProps });
 
 /**
  * Factory class for creating entities
@@ -92,7 +94,7 @@ export class EntityFactory {
 
   static createEntity(options: CreateEntityOptions): EntityBase {
     const scene = EditorEngine.getInstance().getScene();
-    const newUuid = uuidv4();
+    const newUuid = options.id || uuidv4();
     const name = options.name || options.type;
     switch (options.type) {
       case 'generative':
@@ -139,6 +141,18 @@ export class EntityFactory {
             name: options.name || options.characterProps.name || options.type,
             characterProps: options.characterProps,
             scaling: options.scaling,
+          },
+          options.onLoaded
+        );
+      case 'basic3D':
+        return new Basic3DEntity(
+          options.name || "3D Model",
+          scene,
+          {
+            uuid: newUuid,
+            entityType: 'basic3D',
+            name: options.name || "3D Model",
+            props: options.basic3DProps,
           },
           options.onLoaded
         );
@@ -204,6 +218,10 @@ export class EntityFactory {
 
           case 'character':
             entity = new CharacterEntity(scene, entityData.name, entityData as SerializedCharacterEntityData, onLoaded);
+            break;
+
+          case 'basic3D':
+            entity = new Basic3DEntity(entityData.name, scene, entityData as SerializedBasic3DEntityData, onLoaded);
             break;
 
           default:
