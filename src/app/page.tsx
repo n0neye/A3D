@@ -15,7 +15,7 @@ export default function Home() {
     // Function to check if device is mobile based on screen width
     const checkIfMobile = () => {
       const width = window.innerWidth;
-      setIsMobile(width < 1024); // Consider devices with width less than 1024px as mobile
+      // setIsMobile(width < 1024); // Consider devices with width less than 1024px as mobile
     };
 
     // Check initially

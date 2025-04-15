@@ -48,6 +48,12 @@ function createWindow() {
 		console.log('CommandOrControl+R is pressed')
 		mainWindow?.reload()
 	})
+
+  mainWindow?.webContents.on('before-input-event', (_, input) => {
+    if (input.type === 'keyDown' && input.key === 'F12') {
+      mainWindow?.webContents.toggleDevTools();
+    }
+});
 }
 
 // (可選) 建立 Preload 腳本 (用於安全地暴露 Node API 給 Renderer)

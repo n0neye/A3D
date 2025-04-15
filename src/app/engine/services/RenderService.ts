@@ -217,6 +217,8 @@ export class RenderService {
                     stopDepthRender();
                 }, duration * 1000);
 
+                resolve();
+
             } catch (error) {
                 console.error("Error generating depth map:", error);
                 this.setAllGizmoVisibility(true);
@@ -345,8 +347,11 @@ export class RenderService {
      */
     public async getDepthMap(): Promise<{ imageUrl: string }> {
         let depthImage: string | null = null;
-        await this.showDepthRenderSeconds(1, (imageUrl) => {
-            depthImage = imageUrl;
+        await new Promise((resolve) => {
+            this.showDepthRenderSeconds(1, (imageUrl) => {
+                depthImage = imageUrl;
+                resolve(null);
+            });
         });
         if (!depthImage) throw new Error("Failed to generate depth map");
         return { imageUrl: depthImage };

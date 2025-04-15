@@ -4,6 +4,7 @@ import { addNoiseToImage, resizeImage } from '@/app/engine/utils/generation/imag
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
 import { downloadImage } from '@/app/engine/utils/helpers';
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
+import { ComfyUIRenderParams, ComfyUIService } from '@/app/engine/services/ComfyUIService';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,8 @@ const RenderComfyUIPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
         // openOnRendered
     } = renderSettings;
 
+    // Add ComfyUI service instance
+    const [comfyUIService] = useState(() => new ComfyUIService());
 
     const updateRenderSettings = (newSettings: Partial<IRenderSettings>) => {
         engine.getProjectManager().updateRenderSettings(newSettings);
@@ -131,32 +134,71 @@ const RenderComfyUIPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
 
             const currentSeed = useRandomSeed ? generateNewSeed() : seed;
 
-            //   const result = await engine.getRenderService().Render({
-            //     isTest: isTest,
-            //     selectedAPI: selectedAPI,
-            //     prompt: prompt,
-            //     promptStrength: promptStrength,
-            //     noiseStrength: noiseStrength,
-            //     seed: currentSeed,
-            //     selectedLoras: selectedLoras,
-            //     onPreview: (imageUrl: string) => {
-            //       setImageUrl(imageUrl);
-            //     },
-            //   });
+            // Take screenshot and get depth map
+            const screenshot = await engine.getRenderService().takeFramedScreenshot();
+            if (!screenshot) throw new Error("Failed to take screenshot");
+            setImageUrl(screenshot);
+            
+            console.log("SendToComfyUI: Screenshot", screenshot?.length);
 
+            // Get depth map if needed
+            let depthImage: string | undefined = undefined;
+            if (depthStrength > 0) {
+                const depthResult = await engine.getRenderService().getDepthMap();
+                depthImage = depthResult.imageUrl;
+                // Show depth preview briefly
+                setImageUrl(depthImage);
+            }
 
-            //   setExecutionTime(result.executionTimeMs);
+            console.log("SendToComfyUI: DepthImage", depthImage?.length);
+
+            // If this is just a test, skip sending to ComfyUI
+            if (isTest) {
+                setExecutionTime(0);
+                return;
+            }
+
+            // Start timing
+            const startTime = Date.now();
+
+            const params: ComfyUIRenderParams = {
+                colorImage: screenshot,
+                depthImage: depthImage,
+                prompt: prompt,
+                promptStrength: promptStrength,
+                depthStrength: depthStrength,
+                seed: currentSeed,
+                // selectedLoras: renderSettings.selectedLoras,
+                metadata: {
+                    test_mode: isTest
+                }
+            }
+
+            console.log("SendToComfyUI, params:", params);
+
+            // Send to ComfyUI
+            const result = await comfyUIService.sendToComfyUI(params);
+
+            // Calculate and set execution time
+            setExecutionTime(Date.now() - startTime);
+
+            // Handle result
+            if (result.success && result.imageUrl) {
+                setImageUrl(result.imageUrl);
+                
+                // If openOnRendered is true and window.openGallery exists, open gallery
+                if (renderSettings.openOnRendered && window.openGallery) {
+                    window.openGallery();
+                }
+            } else {
+                alert(`Failed to render with ComfyUI: ${result.message || 'Unknown error'}`);
+            }
 
             // Track successful render
             trackEvent(ANALYTICS_EVENTS.RENDER_COMFYUI + '_completed', {
                 test_mode: isTest,
                 prompt_length: prompt.length,
             });
-
-            // If it's not a test, add to gallery using the context function
-            if (!isTest) {
-                // handleSuccessfulRender(result, currentSeed);
-            }
         } catch (error) {
             // Track failed render
             trackEvent(ANALYTICS_EVENTS.RENDER_COMFYUI + '_error', {
