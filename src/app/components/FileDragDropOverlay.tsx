@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { IconFileImport, IconPhoto, Icon3dCubeSphere, IconX } from '@tabler/icons-react';
+import { FileImportService } from '../engine/services/FileImportService';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 const ACCEPTED_MODEL_TYPES = ['model/gltf-binary', 'model/gltf+json'];
@@ -11,6 +12,7 @@ const FileDragDropOverlay: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isValidFile, setIsValidFile] = useState<boolean | null>(null);
   const [fileType, setFileType] = useState<'image' | 'model' | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     const handleDragOver = (e: DragEvent) => {
@@ -69,46 +71,74 @@ const FileDragDropOverlay: React.FC = () => {
       e.preventDefault();
       e.stopPropagation();
       
+      if (isImporting) return; // Prevent multiple simultaneous imports
+      
       setIsDragging(false);
-      setIsValidFile(null);
-      setFileType(null);
       
       if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
         
         if (ACCEPTED_EXTENSIONS.includes(extension)) {
-          console.log(`Importing file: ${file.name}`);
-          
-          // Read the file
-          const fileReader = new FileReader();
-          
-          fileReader.onload = async (event) => {
-            const fileData = event.target?.result;
+          try {
+            setIsImporting(true);
+            console.log(`Importing file: ${file.name}`);
             
-            if (fileData) {
-              if (extension === '.glb' || extension === '.gltf') {
-                // Handle 3D model import (placeholder for now)
-                console.log('3D model import will be implemented later');
-                // TODO: engine.importModel(fileData);
-              } else {
-                // Handle image import (placeholder for now)
-                console.log('Image import will be implemented later');
-                // TODO: engine.importImage(fileData);
+            // Read the file
+            const fileReader = new FileReader();
+            
+            fileReader.onload = async (event) => {
+              try {
+                const fileData = event.target?.result;
+                
+                if (!fileData) {
+                  console.error("Failed to read file data");
+                  return;
+                }
+                
+                if (extension === '.glb' || extension === '.gltf') {
+                  // Handle 3D model import using the service
+                  if (fileData instanceof ArrayBuffer) {
+                    await FileImportService.importModel(fileData, file.name);
+                  } else {
+                    console.error("Expected ArrayBuffer for 3D model");
+                  }
+                } else {
+                  // Handle image import using the service
+                  if (typeof fileData === 'string') {
+                    // Determine the aspect ratio automatically
+                    const ratio = await FileImportService.getImageAspectRatio(fileData);
+                    await FileImportService.importImage(fileData, file.name, ratio);
+                  } else {
+                    console.error("Expected string data URL for image");
+                  }
+                }
+              } catch (error) {
+                console.error("Error processing imported file:", error);
+              } finally {
+                setIsImporting(false);
               }
-              
-              // Show success notification
-              // TODO: Add a toast notification system
+            };
+            
+            fileReader.onerror = () => {
+              console.error("Error reading file");
+              setIsImporting(false);
+            };
+            
+            if (extension === '.glb' || extension === '.gltf') {
+              fileReader.readAsArrayBuffer(file);
+            } else {
+              fileReader.readAsDataURL(file);
             }
-          };
-          
-          if (extension === '.glb' || extension === '.gltf') {
-            fileReader.readAsArrayBuffer(file);
-          } else {
-            fileReader.readAsDataURL(file);
+          } catch (error) {
+            console.error("Error starting import:", error);
+            setIsImporting(false);
           }
         }
       }
+      
+      setIsValidFile(null);
+      setFileType(null);
     };
 
     // Add event listeners to the window
@@ -124,7 +154,7 @@ const FileDragDropOverlay: React.FC = () => {
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
     };
-  }, [engine, isDragging]);
+  }, [engine, isDragging, isImporting]);
 
   if (!isDragging) return null;
 
@@ -151,7 +181,8 @@ const FileDragDropOverlay: React.FC = () => {
           
           <div className="text-center">
             <h3 className="text-xl font-semibold mb-2">
-              {isValidFile === true ? 'Drop to Import' : 
+              {isImporting ? 'Importing...' :
+               isValidFile === true ? 'Drop to Import' : 
                isValidFile === false ? 'Unsupported File Type' : 
                'Drop Files Here'}
             </h3>

@@ -33,9 +33,10 @@ export class EntityFactory {
   /**
    * Create an entity based on type
    */
-  static createEntityDefault(scene: THREE.Scene, type: EntityType, onLoaded?: (entity: EntityBase) => void): EntityBase {
+  static createEntityDefault(type: EntityType, onLoaded?: (entity: EntityBase) => void): EntityBase {
     const name = `${type}`;
     const newUuid = uuidv4();
+    const scene = EditorEngine.getInstance().getScene();
 
     switch (type) {
       case 'generative':

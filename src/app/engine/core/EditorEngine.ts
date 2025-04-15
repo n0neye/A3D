@@ -191,7 +191,7 @@ export class EditorEngine {
   }
   public createEntityDefaultCommand(type: EntityType): void {
     const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntityDefault(this.core.getScene(), type, (entity) => {
+      () => EntityFactory.createEntityDefault(type, (entity) => {
         console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
         EditorEngine.getInstance().selectEntity(entity);
       }),
