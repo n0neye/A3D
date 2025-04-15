@@ -459,22 +459,72 @@ export async function loadModel(
 
     // Load the model using GLTFLoader
     const loader = new GLTFLoader();
+    
+    // Handle local file:// URLs using Electron's IPC bridge
+    if (modelUrl.startsWith('file://') && window.electron?.readFile) {
+      console.log('Loading local model via IPC:', modelUrl);
+      
+      try {
+        // Get model data through IPC
+        const modelData = await window.electron.readFile(modelUrl);
+        
+        // Create a promise wrapper for the async load from array buffer
+        const gltf = await new Promise<GLTF>((resolve, reject) => {
+          loader.parse(
+            modelData,
+            '', // Base path, not needed when loading from memory
+            (gltf) => resolve(gltf),
+            (error) => reject(error)
+          );
+        });
+        
+        // Continue with the model processing...
+        return await processLoadedModel(entity, gltf, scene, onProgress);
+      } catch (error) {
+        console.error("Failed to load local model:", error);
+        onProgress?.({ message: `Failed to load local model: ${(error as Error).message}` });
+        return false;
+      }
+    } else {
+      // Standard URL loading
+      // Create a promise wrapper for the async load
+      const gltf = await new Promise<GLTF>((resolve, reject) => {
+        loader.load(
+          modelUrl,
+          (gltf) => resolve(gltf),
+          (xhr) => {
+            if (xhr.lengthComputable) {
+              const progress = Math.round((xhr.loaded / xhr.total) * 100);
+              onProgress?.({ message: `Downloading: ${progress}%` });
+            }
+          },
+          (error) => reject(error)
+        );
+      });
+      
+      // Process the loaded model
+      return await processLoadedModel(entity, gltf, scene, onProgress);
+    }
+  } catch (error) {
+    console.error("Failed to load model:", error);
+    onProgress?.({ message: `Failed to load model: ${(error as Error).message}` });
+    return false;
+  }
+}
 
-    // Create a promise wrapper for the async load
-    const gltf = await new Promise<GLTF>((resolve, reject) => {
-      loader.load(
-        modelUrl,
-        (gltf) => resolve(gltf),
-        (xhr) => {
-          if (xhr.lengthComputable) {
-            const progress = Math.round((xhr.loaded / xhr.total) * 100);
-            onProgress?.({ message: `Downloading: ${progress}%` });
-          }
-        },
-        (error) => reject(error)
-      );
-    });
-
+/**
+ * Process a loaded GLTF model
+ * Helper function to share code between local and remote loading paths
+ */
+async function processLoadedModel(
+  entity: GenerativeEntity, 
+  gltf: GLTF, 
+  scene: THREE.Scene,
+  onProgress?: ProgressCallback
+): Promise<boolean> {
+  try {
+    onProgress?.({ message: 'Processing model...' });
+    
     // If there's an existing model mesh, dispose it
     if (entity.gltfModel) {
       // Remove from parent
@@ -483,13 +533,17 @@ export async function loadModel(
       // Dispose of resources
       entity.gltfModel.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
-          child.material.dispose();
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(material => material.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
         }
       });
     }
-
-    onProgress?.({ message: 'Processing model...' });
 
     // Extract the scene from the GLTF
     const newModel = gltf.scene;
@@ -508,9 +562,9 @@ export async function loadModel(
 
     // Adjust the position to put the bottom center at the pivot point
     newModel.position.set(
-      newModel.position.x,                // Center horizontally
-      -boundingBox.min.y,       // Bottom at the pivot point
-      newModel.position.z                 // Center depth-wise
+      newModel.position.x,          // Center horizontally
+      -boundingBox.min.y,           // Bottom at the pivot point
+      newModel.position.z           // Center depth-wise
     );
 
     // setupMeshShadows
@@ -526,9 +580,8 @@ export async function loadModel(
     onProgress?.({ message: '3D model loaded successfully!' });
     return true;
   } catch (error) {
-    console.error("Failed to load model:", error);
-    onProgress?.({ message: `Failed to load model: ${(error as Error).message}` });
+    console.error("Failed to process model:", error);
+    onProgress?.({ message: `Failed to process model: ${(error as Error).message}` });
     return false;
   }
-  
 }

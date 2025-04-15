@@ -90,7 +90,8 @@ export class EntityFactory {
     }
   }
 
-  static createEntity(scene: THREE.Scene, options: CreateEntityOptions): EntityBase {
+  static createEntity(options: CreateEntityOptions): EntityBase {
+    const scene = EditorEngine.getInstance().getScene();
     const newUuid = uuidv4();
     const name = options.name || options.type;
     switch (options.type) {
