@@ -1,5 +1,5 @@
 // electron/main.ts
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, globalShortcut } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import isDev from 'electron-is-dev';
@@ -38,6 +38,16 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  
+	globalShortcut.register('f5', function() {
+		console.log('f5 is pressed')
+		mainWindow?.reload()
+	})
+	globalShortcut.register('CommandOrControl+R', function() {
+		console.log('CommandOrControl+R is pressed')
+		mainWindow?.reload()
+	})
 }
 
 // (可選) 建立 Preload 腳本 (用於安全地暴露 Node API 給 Renderer)
