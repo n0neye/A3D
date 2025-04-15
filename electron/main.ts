@@ -12,16 +12,16 @@ function createWindow() {
     // titleBarStyle: ,
     autoHideMenuBar: true,
     webPreferences: {
-      nodeIntegration: false, // 保持為 false 以提高安全性
-      contextIsolation: true, // 推薦，保護 main/renderer 邊界
-      preload: path.join(__dirname, 'preload.js'), // 將建立 preload 腳本 (稍後)
+      nodeIntegration: false, // Keep false to improve security
+      contextIsolation: true, // Recommended, protects main/renderer boundaries
+      preload: path.join(__dirname, 'preload.js'), // Will create preload script (later)
     },
   });
 
   const startUrl = isDev
-    ? 'http://localhost:3000' // 開發模式下加載 Next.js 開發伺服器
+    ? 'http://localhost:3000' // Load Next.js dev server in development mode
     : url.format({
-        pathname: path.join(__dirname, '../out/index.html'), // 生產模式下加載 Next.js 匯出的靜態檔案
+        pathname: path.join(__dirname, '../out/index.html'), // Load Next.js exported static files in production mode
         protocol: 'file:',
         slashes: true,
       });
@@ -62,30 +62,30 @@ function createWindow() {
 });
 }
 
-// (可選) 建立 Preload 腳本 (用於安全地暴露 Node API 給 Renderer)
-// 在 electron/ 資料夾內建立 preload.ts
-// 稍後會配置 tsconfig 來編譯它
+// (Optional) Create Preload script (used to safely expose Node API to Renderer)
+// Create preload.ts in the electron/ folder
+// Will configure tsconfig to compile it later
 
 app.on('ready', createWindow);
 
 app.on('window-all-closed', () => {
-  // 在 macOS 上，除非使用者明確按下 Cmd + Q，否則應用程式及其選單列通常會保持活動狀態。
+  // On macOS, applications and their menu bar typically stay active unless the user explicitly quits with Cmd + Q
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('activate', () => {
-  // 在 macOS 上，當點擊 dock 圖標且沒有其他視窗開啟時，通常會重新建立一個視窗。
+  // On macOS, when clicking the dock icon and no other windows are open, a new window is typically created
   if (mainWindow === null) {
     createWindow();
   }
 });
 
-// (可選) 在這裡處理來自 Renderer 的 IPC 訊息
+// (Optional) Handle IPC messages from Renderer here
 // ipcMain.on('some-event', (event, arg) => {
 //   console.log(arg); // prints "ping"
-//   // 做一些事情...
+//   // Do something...
 //   event.reply('some-reply', 'pong');
 // });
 
