@@ -26,6 +26,7 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
 // Event name constants for consistency
 export const ANALYTICS_EVENTS = {
   RENDER_IMAGE: 'render_image',
+  RENDER_COMFYUI: 'render_comfyui',
   GENERATE_IMAGE: 'generate_image',
   CONVERT_TO_3D: 'convert_to_3d',
   SAVE_PROJECT: 'save_project',

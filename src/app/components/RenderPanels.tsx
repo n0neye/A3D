@@ -7,12 +7,14 @@ import RenderPanel from "./RenderPanel";
 import { UiLayoutMode, useEditorEngine } from "../context/EditorEngineContext";
 import StylePanel from "./StylePanel";
 import { createPortal } from "react-dom";
+import RenderComfyUIPanel from "./RenderComfyUIPanel";
 
 function RenderPanels() {
-    const { uiLayoutMode, setUiLayoutMode } = useEditorEngine();
+    // const { uiLayoutMode, setUiLayoutMode } = useEditorEngine();
+    const [renderMode, setRenderMode] = useState<"API" | "ComfyUI">("API");
     const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
     const [selectedLoraIds, setSelectedLoraIds] = useState<string[]>([]);
-    const [onSelectStyle, setOnSelectStyle] = useState<(lora: any) => void>(() => () => {});
+    const [onSelectStyle, setOnSelectStyle] = useState<(lora: any) => void>(() => () => { });
 
     // Handler to open the style panel
     const openStylePanel = (selectedIds: string[], selectHandler: (lora: any) => void) => {
@@ -36,7 +38,9 @@ function RenderPanels() {
 
             <div className={`fixed right-4 h-full flex justify-center items-center`}>
                 <Card className={`panel-shape z-40 w-64 border-border max-h-[90vh] overflow-y-auto gap-2 `}>
-                    <CardHeader className="flex flex-row justify-between items-center">
+                    
+                    {/* Temporary disable video mode */}
+                    {/* <CardHeader className="flex flex-row justify-between items-center">
                         <div className="text-lg font-medium">Render</div>
                         <div className="flex items-center gap-2">
                             <Label>Video</Label>
@@ -44,15 +48,24 @@ function RenderPanels() {
                                 setUiLayoutMode(uiLayoutMode === UiLayoutMode.Video ? UiLayoutMode.Image : UiLayoutMode.Video);
                             }} />
                         </div>
+                    </CardHeader> */}
+                    {/* {uiLayoutMode === UiLayoutMode.Video && <RenderVideoPanel />} */}
+                    {/* {uiLayoutMode === UiLayoutMode.Image && <RenderPanel onOpenStylePanel={openStylePanel} />} */}
+
+                    <CardHeader className="flex flex-row justify-between items-center">
+                        <div className="text-lg font-medium">Render</div>
+                        <div className="flex items-center gap-2">
+                            <Label className="text-sm text-gray-400">ComfyUI</Label>
+                            <Switch checked={renderMode === "ComfyUI"} onCheckedChange={() => {
+                                setRenderMode(renderMode === "ComfyUI" ? "API" : "ComfyUI");
+                            }} />
+                        </div>
                     </CardHeader>
-
-                    {uiLayoutMode === UiLayoutMode.Video && <RenderVideoPanel />}
-                    {uiLayoutMode === UiLayoutMode.Image && <RenderPanel onOpenStylePanel={openStylePanel} />}
-
+                    {renderMode === "API" && <RenderPanel onOpenStylePanel={openStylePanel} />}
+                    {renderMode === "ComfyUI" && <RenderComfyUIPanel />}
                 </Card>
             </div>
         </>
     );
 }
-
 export default RenderPanels;

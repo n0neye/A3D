@@ -52,6 +52,7 @@ const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
     return api || availableAPIs[0];
   });
 
+
   const updateRenderSettings = (newSettings: Partial<IRenderSettings>) => {
     engine.getProjectManager().updateRenderSettings(newSettings);
   };
@@ -296,7 +297,7 @@ const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
     //     engine.getRenderService().cancelRender();
     // }
     setIsLoading(false);
-};
+  };
 
 
   useEffect(() => {

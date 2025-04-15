@@ -5,9 +5,8 @@ import CameraPanel from './CameraPanel';
 import FileMenu from './FileMenu';
 import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
-import RenderPanel from './RenderPanel';
 import RatioOverlay from './RatioOverlay';
-import TimelinePanel from './TimelinePanel';
+// import TimelinePanel from './TimelinePanel';
 import DebugPanel from './Debug/DebugPanel';
 import { useEffect, useState } from 'react';
 import { UiLayoutMode, useEditorEngine } from '../context/EditorEngineContext';
@@ -51,7 +50,7 @@ function EngineUIContainer() {
             {/* Add the Guide component */}
             <Guide />
 
-            {timelineManager && uiLayoutMode === UiLayoutMode.Video && <TimelinePanel timelineManager={timelineManager} />}
+            {/* {timelineManager && uiLayoutMode === UiLayoutMode.Video && <TimelinePanel timelineManager={timelineManager} />} */}
             
             {/* Add the Debug Panel */}
             <DebugPanel />
