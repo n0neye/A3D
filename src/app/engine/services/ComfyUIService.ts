@@ -33,7 +33,7 @@ export interface ComfyUIRenderParams {
 
 // Add a proper interface for the payload
 interface ComfyUIPayload {
-    image_base64: string;
+    color_image_base64: string;
     depth_image_base64?: string;
     metadata: {
         timestamp: number;
@@ -68,13 +68,13 @@ export class ComfyUIService {
 
             // Create payload object with correct typing
             const payload: ComfyUIPayload = {
-                image_base64: colorImageBase64,
+                color_image_base64: colorImageBase64,
                 metadata: {
                     filename: `render_${Date.now()}.png`,
                     timestamp: Date.now() / 1000,
-                    //   prompt: params.prompt,
+                      prompt: params.prompt,
                     //   prompt_strength: params.promptStrength,
-                    //   seed: params.seed,
+                      seed: params.seed,
                     ...params.metadata
                 }
             };
@@ -84,14 +84,6 @@ export class ComfyUIService {
                 payload.depth_image_base64 = depthImageBase64;
                 payload.metadata.depth_strength = params.depthStrength || 0.5;
             }
-
-            // Add LoRAs if provided
-            //   if (params.selectedLoras && params.selectedLoras.length > 0) {
-            //     payload.metadata.loras = params.selectedLoras.map(lora => ({
-            //       name: lora.name,
-            //       strength: lora.strength
-            //     }));
-            //   }
 
             // Convert to JSON
             const jsonData = JSON.stringify(payload);
@@ -120,14 +112,19 @@ export class ComfyUIService {
             }
 
             // Add render log
-            // this.addRenderLog({
-            //     imageUrl: responseData.data?.image_url || null,
-            //     prompt: params.prompt,
-            //     seed: params.seed,
-            //     promptStrength: params.promptStrength,
+            // const renderLog: IRenderLog = {
+            //     timestamp: new Date(),
+            //     imageUrl: responseData.data?.image_url || '',
+            //     prompt: params.prompt || '',
+            //     model: 'ComfyUI',
+            //     seed: params.seed || 0,
+            //     promptStrength: params.promptStrength || 0.5,
             //     depthStrength: params.depthStrength,
-            //     selectedLoras: params.selectedLoras || []
-            // });
+            //     selectedLoras: params.selectedLoras || [],
+            // };
+
+            // // Add render log to project manager
+            // EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog, true);
 
             return {
                 success: true,
@@ -152,24 +149,5 @@ export class ComfyUIService {
             return dataUrl.split(',')[1];
         }
         return dataUrl;
-    }
-
-    /**
-     * Add render log to project manager
-     */
-    private addRenderLog(log: Partial<IRenderLog>): void {
-        const renderLog: IRenderLog = {
-            timestamp: new Date(),
-            imageUrl: log.imageUrl || '',
-            prompt: log.prompt || '',
-            model: 'ComfyUI',
-            seed: log.seed || 0,
-            promptStrength: log.promptStrength || 0.5,
-            depthStrength: log.depthStrength,
-            selectedLoras: log.selectedLoras || [],
-        };
-
-        // Add render log to project manager
-        EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog, true);
     }
 }

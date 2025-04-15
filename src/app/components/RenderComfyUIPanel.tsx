@@ -138,16 +138,18 @@ const RenderComfyUIPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
             const screenshot = await engine.getRenderService().takeFramedScreenshot();
             if (!screenshot) throw new Error("Failed to take screenshot");
             setImageUrl(screenshot);
-            
+
             console.log("SendToComfyUI: Screenshot", screenshot?.length);
 
             // Get depth map if needed
             let depthImage: string | undefined = undefined;
             if (depthStrength > 0) {
                 const depthResult = await engine.getRenderService().getDepthMap();
-                depthImage = depthResult.imageUrl;
+                // Crop
+                const croppedDepthImage = await engine.getRenderService().cropByRatio(depthResult.imageUrl);
+                depthImage = croppedDepthImage;
                 // Show depth preview briefly
-                setImageUrl(depthImage);
+                setImageUrl(croppedDepthImage);
             }
 
             console.log("SendToComfyUI: DepthImage", depthImage?.length);
@@ -185,7 +187,7 @@ const RenderComfyUIPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
             // Handle result
             if (result.success) {
                 // setImageUrl(result.imageUrl);
-                
+
                 // If openOnRendered is true and window.openGallery exists, open gallery
                 // if (renderSettings.openOnRendered && window.openGallery) {
                 //     window.openGallery();
@@ -214,11 +216,6 @@ const RenderComfyUIPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
             setIsLoading(false);
         }
     };
-
-    const enableDepthRender = async () => {
-        await engine.getRenderService().showDepthRenderSeconds(3, setImageUrl);
-    }
-
 
     const handleCancelRender = () => {
         setIsLoading(false);
