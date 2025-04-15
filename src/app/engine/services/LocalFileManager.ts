@@ -1,0 +1,124 @@
+import { FileManager } from '../interfaces/FileManager';
+import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * LocalFileManager handles file operations for Electron environments
+ * using the local filesystem through IPC
+ */
+export class LocalFileManager implements FileManager {
+  private static instance: LocalFileManager;
+  
+  private constructor() {}
+  
+  public static getInstance(): LocalFileManager {
+    if (!LocalFileManager.instance) {
+      LocalFileManager.instance = new LocalFileManager();
+    }
+    return LocalFileManager.instance;
+  }
+
+  /**
+   * Check if we're in an Electron environment with file system access
+   */
+  public isSupported(): boolean {
+    // Primary check: look for our explicit isElectron flag
+    if (typeof window !== 'undefined' && window.electron?.isElectron === true) {
+      return true;
+    }
+    
+    // Secondary checks in case the flag isn't available for some reason
+    
+    // Check user agent for Electron
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.indexOf(' electron/') > -1) {
+      return true;
+    }
+    
+    // Check for Electron-specific objects
+    if (typeof window !== 'undefined' && 
+        (window.process?.type === 'renderer' || 
+         window.electron?.versions?.electron)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Save a file to the local filesystem
+   * @param data Binary data to save
+   * @param fileName Name of the file (optional, will generate UUID if not provided)
+   * @param fileType MIME type of the file
+   * @returns URL to the saved file (file:// protocol)
+   */
+  public async saveFile(data: ArrayBuffer, fileName: string, fileType: string): Promise<string> {
+    if (!this.isSupported()) {
+      throw new Error('Local file operations are not supported in this environment');
+    }
+    
+    // Generate a unique filename if none provided
+    if (!fileName || fileName.trim() === '') {
+      const extension = this.getExtensionFromFileType(fileType);
+      fileName = `${uuidv4()}${extension}`;
+    } else if (!fileName.includes('.')) {
+      // Add extension if missing
+      const extension = this.getExtensionFromFileType(fileType);
+      fileName = `${fileName}${extension}`;
+    }
+    
+    // Check if window.electron exists before using it
+    if (!window.electron) {
+      throw new Error('Electron API is not available');
+    }
+    
+    // Use the Electron IPC bridge to save the file
+    return await window.electron.saveFile(data, fileName);
+  }
+
+  /**
+   * Read a file from the local filesystem
+   * @param fileUrl URL of the file to read (file:// protocol)
+   * @returns File data as ArrayBuffer
+   */
+  public async readFile(fileUrl: string): Promise<ArrayBuffer> {
+    if (!this.isSupported()) {
+      throw new Error('Local file operations are not supported in this environment');
+    }
+    
+    if (!window.electron) {
+      throw new Error('Electron API is not available');
+    }
+    
+    return await window.electron.readFile(fileUrl);
+  }
+
+  /**
+   * Get the path where files are stored
+   * @returns Path to the storage directory
+   */
+  public async getStoragePath(): Promise<string> {
+    if (!this.isSupported()) {
+      throw new Error('Local file operations are not supported in this environment');
+    }
+    
+    if (!window.electron) {
+      throw new Error('Electron API is not available');
+    }
+    
+    return await window.electron.getAppDataPath();
+  }
+  
+  /**
+   * Utility to get file extension from MIME type
+   */
+  private getExtensionFromFileType(fileType: string): string {
+    const map: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'model/gltf-binary': '.glb',
+      'model/gltf+json': '.gltf'
+    };
+    
+    return map[fileType] || '';
+  }
+} 

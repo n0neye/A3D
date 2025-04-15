@@ -1,8 +1,9 @@
 // electron/main.ts
-import { app, BrowserWindow, globalShortcut } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import isDev from 'electron-is-dev';
+import * as fs from 'fs';
 
 let mainWindow: BrowserWindow | null;
 
@@ -87,3 +88,38 @@ app.on('activate', () => {
 //   // 做一些事情...
 //   event.reply('some-reply', 'pong');
 // });
+
+// Add IPC handlers for file operations
+ipcMain.handle('save-file', async (event, data, fileName) => {
+  const userDataPath = path.join(app.getPath('userData'), 'ImportedAssets');
+  
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(userDataPath)) {
+    fs.mkdirSync(userDataPath, { recursive: true });
+  }
+  
+  const filePath = path.join(userDataPath, fileName);
+  await fs.promises.writeFile(filePath, Buffer.from(data));
+  return `file://${filePath.replace(/\\/g, '/')}`;
+});
+
+ipcMain.handle('read-file', async (event, filePath) => {
+  // Remove file:// prefix if present
+  if (filePath.startsWith('file://')) {
+    filePath = filePath.substring(7);
+  }
+  
+  const data = await fs.promises.readFile(filePath);
+  return data.buffer;
+});
+
+ipcMain.handle('get-app-data-path', async (event) => {
+  const userDataPath = path.join(app.getPath('userData'), 'ImportedAssets');
+  
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(userDataPath)) {
+    fs.mkdirSync(userDataPath, { recursive: true });
+  }
+  
+  return userDataPath;
+});

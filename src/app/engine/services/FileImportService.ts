@@ -3,6 +3,24 @@ import { EditorEngine } from "@/app/engine/EditorEngine";
 import { v4 as uuidv4 } from 'uuid';
 import { ImageRatio } from "../utils/imageUtil";
 import { EntityFactory } from "../entity/EntityFactory";
+import { FileManagerFactory } from './FileManagerFactory';
+
+// Declare global electron interface
+declare global {
+  interface Window {
+    electron?: {
+      saveFile: (data: ArrayBuffer, fileName: string) => Promise<string>;
+      readFile: (filePath: string) => Promise<ArrayBuffer>;
+      getAppDataPath: () => Promise<string>;
+      isElectron: boolean;
+      versions?: {
+        electron: string;
+        node: string;
+        chrome: string;
+      };
+    }
+  }
+}
 
 /**
  * Service to handle file imports into the editor
@@ -50,14 +68,25 @@ export class FileImportService {
    */
   static async importImageFile(file: File): Promise<GenerativeEntity | null> {
     try {
-      // Read the file as data URL
-      const imageData = await FileImportService.readFileAsDataURL(file);
+      // Get appropriate file manager
+      const fileManager = FileManagerFactory.getFileManager();
       
-      // Determine aspect ratio
-      const ratio = await FileImportService.getImageAspectRatio(imageData);
+      // Read file as array buffer
+      const imageData = await FileImportService.readFileAsArrayBuffer(file);
       
-      // Create entity with the image
-      return await FileImportService.importImage(imageData, file.name, ratio);
+      // Save the file using the file manager
+      const imageUrl = await fileManager.saveFile(
+        imageData, 
+        file.name,
+        file.type || 'image/jpeg'
+      );
+      
+      // Determine aspect ratio (still need data URL for this)
+      const tempDataUrl = await FileImportService.readFileAsDataURL(file);
+      const ratio = await FileImportService.getImageAspectRatio(tempDataUrl);
+      
+      // Create entity with the URL
+      return await FileImportService.importImage(imageUrl, file.name, ratio);
     } catch (error) {
       console.error("Error importing image file:", error);
       return null;
@@ -71,11 +100,21 @@ export class FileImportService {
    */
   static async importModelFile(file: File): Promise<GenerativeEntity | null> {
     try {
+      // Get appropriate file manager
+      const fileManager = FileManagerFactory.getFileManager();
+      
       // Read the file as ArrayBuffer
       const modelData = await FileImportService.readFileAsArrayBuffer(file);
       
-      // Create entity with the model
-      return await FileImportService.importModel(modelData, file.name);
+      // Save the file using file manager
+      const modelUrl = await fileManager.saveFile(
+        modelData, 
+        file.name,
+        file.type || 'model/gltf-binary'
+      );
+      
+      // Create entity with the URL
+      return await FileImportService.importModel(modelUrl, file.name);
     } catch (error) {
       console.error("Error importing model file:", error);
       return null;
@@ -134,12 +173,12 @@ export class FileImportService {
 
   /**
    * Import an image file and create a GenerativeEntity with it
-   * @param imageData The image data as a data URL or file URL
+   * @param imageUrl The image URL (file:// protocol or blob:// URL)
    * @param fileName The original file name (for metadata)
    * @param ratio The aspect ratio for the image
    * @returns The created entity or null if import failed
    */
-  static async importImage(imageData: string, fileName: string, ratio: ImageRatio = '1:1'): Promise<GenerativeEntity | null> {
+  static async importImage(imageUrl: string, fileName: string, ratio: ImageRatio = '1:1'): Promise<GenerativeEntity | null> {
     try {
       // Create a default name from the filename or a generic one
       const name = fileName ? fileName.split('.')[0] : `Image_${new Date().toISOString().slice(0, 10)}`;
@@ -156,13 +195,10 @@ export class FileImportService {
       const prompt = `Imported image: ${fileName}`;
       
       // Register the image in the entity
-      const log = entity.onNewGeneration('image', imageData, prompt);
+      const log = entity.onNewGeneration('image', imageUrl, prompt);
       
       // Update aspect ratio
       entity.updateAspectRatio(ratio);
-      
-      // Set the entity as selected
-    //   this.engine.getSelectionManager().selectEntity(entity);
       
       // Notify user
       console.log(`Imported image as entity: ${entity.name}`);
@@ -176,16 +212,12 @@ export class FileImportService {
 
   /**
    * Import a 3D model file and create a GenerativeEntity with it
-   * @param modelData The model data as an ArrayBuffer
+   * @param modelUrl The model URL (file:// protocol or blob:// URL)
    * @param fileName The original file name (for metadata)
    * @returns The created entity or null if import failed
    */
-  static async importModel(modelData: ArrayBuffer, fileName: string): Promise<GenerativeEntity | null> {
+  static async importModel(modelUrl: string, fileName: string): Promise<GenerativeEntity | null> {
     try {
-      // Create a blob URL from the array buffer
-      const blob = new Blob([modelData], { type: 'model/gltf-binary' });
-      const modelUrl = URL.createObjectURL(blob);
-      
       // Create a default name from the filename or a generic one
       const name = fileName ? fileName.split('.')[0] : `Model_${new Date().toISOString().slice(0, 10)}`;
       
@@ -202,9 +234,6 @@ export class FileImportService {
       
       // Register the model in the entity
       const log = entity.onNewGeneration('model', modelUrl, prompt);
-      
-      // Set the entity as selected
-    //   this.engine.getSelectionManager().selectEntity(entity);
       
       // Notify user
       console.log(`Imported 3D model as entity: ${entity.name}`);
