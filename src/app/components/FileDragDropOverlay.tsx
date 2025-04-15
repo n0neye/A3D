@@ -145,8 +145,8 @@ const FileDragDropOverlay: React.FC = () => {
             </h3>
             <p className="text-sm text-gray-300">
               {isValidFile === false ? 
-                'Please use JPG, PNG, GLB or GLTF files only' : 
-                'Supported formats: JPG, PNG, GLB, GLTF'}
+                'Please use JPG, PNG, GLB files only' : 
+                'Supported formats: JPG, PNG, GLB'}
             </p>
           </div>
         </div>
