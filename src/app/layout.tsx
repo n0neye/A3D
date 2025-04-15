@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import { PostHogProvider } from './components/PostHogProvider'
 import Script from 'next/script'
 import { initAnalytics } from '@/app/engine/utils/external/analytics'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -57,9 +58,10 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${inter.className} bg-black text-gray-200`}>
-        <PostHogProvider>
-          {children}
-        </PostHogProvider>
+          <Toaster closeButton theme='dark' />
+          <PostHogProvider>
+            {children}
+          </PostHogProvider>
       </body>
     </html>
   )

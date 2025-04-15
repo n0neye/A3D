@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { IconFileImport, IconPhoto, Icon3dCubeSphere, IconX } from '@tabler/icons-react';
-import { FileImportService } from '../engine/services/FileImportService';
-
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
-const ACCEPTED_MODEL_TYPES = ['model/gltf-binary', 'model/gltf+json', 'application/fbx'];
-const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.glb', '.gltf', '.fbx'];
+import { ACCEPTED_EXTENSIONS, ACCEPTED_IMAGE_TYPES, ACCEPTED_MODEL_TYPES, FileImportService } from '../engine/services/FileImportService';
+import { toast } from 'sonner';
 
 const FileDragDropOverlay: React.FC = () => {
   const { engine } = useEditorEngine();
@@ -25,7 +22,7 @@ const FileDragDropOverlay: React.FC = () => {
       if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
         const item = e.dataTransfer.items[0];
 
-        // Check for valid MIME types
+        // Check for valid MIME types ONLY during dragover
         if (ACCEPTED_IMAGE_TYPES.includes(item.type)) {
           setIsValidFile(true);
           setFileType('image');
@@ -33,25 +30,11 @@ const FileDragDropOverlay: React.FC = () => {
           setIsValidFile(true);
           setFileType('model');
         } else {
-          // Check for file extensions when MIME type is not recognized\
-          const file = e.dataTransfer.items[0].getAsFile();
-          const fileName = file?.name || undefined;
-          const extension = fileName?.toLowerCase().match(/\.[^.]*$/)?.[0] || undefined;
-
-          console.log(`FileDragDropOverlay.handleDragOver:`, file, fileName, extension);
-
-          if (!extension) {
-            setIsValidFile(false);
-            return;
-          }
-
-          if (ACCEPTED_EXTENSIONS.includes(extension)) {
-            setIsValidFile(true);
-            setFileType(extension === '.glb' || extension === '.gltf' || extension === '.fbx' ? 'model' : 'image');
-          } else {
-            setIsValidFile(false);
-            setFileType(null);
-          }
+          // If MIME type is not recognized, assume it *might* be valid
+          // but wait for the 'drop' event to check the extension.
+          // Keep isValidFile null to show the neutral "Drop Files Here" state.
+          setIsValidFile(null);
+          setFileType(null);
         }
       }
     };
@@ -82,24 +65,30 @@ const FileDragDropOverlay: React.FC = () => {
       if (isImporting) return; // Prevent multiple simultaneous imports
 
       setIsDragging(false);
+      try {
 
-      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
+        if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+          const file = e.dataTransfer.files[0];
+          // Get extension reliably from the dropped file
+          const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
 
-        if (ACCEPTED_EXTENSIONS.includes(extension)) {
-          try {
-            setIsImporting(true);
+          // Check against accepted extensions here
+          setIsImporting(true);
+          // Use the simplified importFile method that handles all the complexity
+          const result = await FileImportService.importFile(file);
 
-            // Use the simplified importFile method that handles all the complexity
-            await FileImportService.importFile(file);
-
-          } catch (error) {
-            console.error("Error importing file:", error);
-          } finally {
-            setIsImporting(false);
+          if (!result) {
+            throw new Error("An error occurred during import");
           }
         }
+      } catch (error) {
+        console.error("Error importing file:", error);
+        toast.error(`Import failed`, {
+          description: error instanceof Error ? error.message : "Failed to import file",
+          duration: 5000,
+        });
+      } finally {
+        setIsImporting(false);
       }
 
       setIsValidFile(null);

@@ -6,6 +6,11 @@ import { EntityFactory } from "../entity/EntityFactory";
 import { FileManagerFactory } from './FileManagerFactory';
 import { Basic3DEntity } from "../entity/types/Basic3DEntity";
 
+export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
+export const ACCEPTED_MODEL_TYPES = ['model/gltf-binary', 'model/gltf+json', 'application/fbx'];
+export const ACCEPTED_MODEL_EXTENSIONS = ['.glb', '.gltf', '.fbx'];
+export const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', ...ACCEPTED_MODEL_EXTENSIONS];
+
 // Declare global electron interface
 declare global {
     interface Window {
@@ -40,27 +45,20 @@ export class FileImportService {
      * @returns Promise resolving to the created entity or null if import failed
      */
     static async importFile(file: File): Promise<GenerativeEntity | Basic3DEntity | null> {
-        try {
-            console.log(`Importing file: ${file.name}`);
+        console.log(`Importing file: ${file.name}`);
 
-            // Get file extension
-            const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
+        // Get file extension
+        const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
 
-            // Determine which import method to use based on file extension
-            if (extension === '.glb' || extension === '.gltf') {
-                // Handle 3D model
-                return await FileImportService.importModelFile(file);
-            } else if (['.jpg', '.jpeg', '.png'].includes(extension)) {
-                // Handle image
-                return await FileImportService.importImageFile(file);
-            } else {
-                console.error(`Unsupported file type: ${extension}`);
-                return null;
-            }
-        } catch (error) {
-            console.error("Error importing file:", error);
-            return null;
+        // Determine which import method to use based on file extension
+        if (ACCEPTED_MODEL_TYPES.includes(file.type) || ACCEPTED_MODEL_EXTENSIONS.includes(extension)) {
+            // Handle 3D model
+            return await FileImportService.importModelFile(file);
+        } else if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+            // Handle image
+            return await FileImportService.importImageFile(file);
         }
+        throw new Error(`Unsupported file type: ${extension}`);
     }
 
     /**
@@ -228,8 +226,8 @@ export class FileImportService {
      * @returns The created entity or null if import failed
      */
     static async createEntityFromModel(
-        modelUrl: string, 
-        fileName: string, 
+        modelUrl: string,
+        fileName: string,
         modelFormat: 'glb' | 'gltf' | 'fbx' = 'glb'
     ): Promise<Basic3DEntity | null> {
         try {
@@ -240,7 +238,7 @@ export class FileImportService {
             const entity = await EntityFactory.createEntity({
                 type: 'basic3D',
                 name: name,
-                basic3DProps: { 
+                basic3DProps: {
                     modelUrl: modelUrl,
                     modelFormat: modelFormat,
                     originalFileName: fileName

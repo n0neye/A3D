@@ -286,6 +286,9 @@ export class Basic3DEntity extends EntityBase {
       // Set model mesh in entity
       this.modelMesh = fbxModel;
 
+      // Scale the model down to a more manageable size
+      this.modelMesh.scale.set(0.01, 0.01, 0.01);
+
       // Position the model on the pivot point
       // Calculate the bounding box to center the model
       const boundingBox = new THREE.Box3().setFromObject(fbxModel);
