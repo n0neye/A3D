@@ -82,56 +82,13 @@ const FileDragDropOverlay: React.FC = () => {
         if (ACCEPTED_EXTENSIONS.includes(extension)) {
           try {
             setIsImporting(true);
-            console.log(`Importing file: ${file.name}`);
             
-            // Read the file
-            const fileReader = new FileReader();
+            // Use the simplified importFile method that handles all the complexity
+            await FileImportService.importFile(file);
             
-            fileReader.onload = async (event) => {
-              try {
-                const fileData = event.target?.result;
-                
-                if (!fileData) {
-                  console.error("Failed to read file data");
-                  return;
-                }
-                
-                if (extension === '.glb' || extension === '.gltf') {
-                  // Handle 3D model import using the service
-                  if (fileData instanceof ArrayBuffer) {
-                    await FileImportService.importModel(fileData, file.name);
-                  } else {
-                    console.error("Expected ArrayBuffer for 3D model");
-                  }
-                } else {
-                  // Handle image import using the service
-                  if (typeof fileData === 'string') {
-                    // Determine the aspect ratio automatically
-                    const ratio = await FileImportService.getImageAspectRatio(fileData);
-                    await FileImportService.importImage(fileData, file.name, ratio);
-                  } else {
-                    console.error("Expected string data URL for image");
-                  }
-                }
-              } catch (error) {
-                console.error("Error processing imported file:", error);
-              } finally {
-                setIsImporting(false);
-              }
-            };
-            
-            fileReader.onerror = () => {
-              console.error("Error reading file");
-              setIsImporting(false);
-            };
-            
-            if (extension === '.glb' || extension === '.gltf') {
-              fileReader.readAsArrayBuffer(file);
-            } else {
-              fileReader.readAsDataURL(file);
-            }
           } catch (error) {
-            console.error("Error starting import:", error);
+            console.error("Error importing file:", error);
+          } finally {
             setIsImporting(false);
           }
         }

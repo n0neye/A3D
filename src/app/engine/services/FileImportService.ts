@@ -15,6 +15,124 @@ export class FileImportService {
   }
 
   /**
+   * Main entry point for importing files
+   * @param file The file object to import
+   * @returns Promise resolving to the created entity or null if import failed
+   */
+  static async importFile(file: File): Promise<GenerativeEntity | null> {
+    try {
+      console.log(`Importing file: ${file.name}`);
+      
+      // Get file extension
+      const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
+      
+      // Determine which import method to use based on file extension
+      if (extension === '.glb' || extension === '.gltf') {
+        // Handle 3D model
+        return await FileImportService.importModelFile(file);
+      } else if (['.jpg', '.jpeg', '.png'].includes(extension)) {
+        // Handle image
+        return await FileImportService.importImageFile(file);
+      } else {
+        console.error(`Unsupported file type: ${extension}`);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error importing file:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Import an image file and create a GenerativeEntity with it
+   * @param file The image file to import
+   * @returns Promise resolving to the created entity or null if import failed
+   */
+  static async importImageFile(file: File): Promise<GenerativeEntity | null> {
+    try {
+      // Read the file as data URL
+      const imageData = await FileImportService.readFileAsDataURL(file);
+      
+      // Determine aspect ratio
+      const ratio = await FileImportService.getImageAspectRatio(imageData);
+      
+      // Create entity with the image
+      return await FileImportService.importImage(imageData, file.name, ratio);
+    } catch (error) {
+      console.error("Error importing image file:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Import a 3D model file and create a GenerativeEntity with it
+   * @param file The 3D model file to import
+   * @returns Promise resolving to the created entity or null if import failed
+   */
+  static async importModelFile(file: File): Promise<GenerativeEntity | null> {
+    try {
+      // Read the file as ArrayBuffer
+      const modelData = await FileImportService.readFileAsArrayBuffer(file);
+      
+      // Create entity with the model
+      return await FileImportService.importModel(modelData, file.name);
+    } catch (error) {
+      console.error("Error importing model file:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Read file as data URL
+   * @param file The file to read
+   * @returns Promise resolving to data URL string
+   */
+  static readFileAsDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        if (event.target?.result && typeof event.target.result === 'string') {
+          resolve(event.target.result);
+        } else {
+          reject(new Error('Failed to read file as data URL'));
+        }
+      };
+      
+      reader.onerror = (error) => {
+        reject(error);
+      };
+      
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Read file as ArrayBuffer
+   * @param file The file to read
+   * @returns Promise resolving to ArrayBuffer
+   */
+  static readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        if (event.target?.result && event.target.result instanceof ArrayBuffer) {
+          resolve(event.target.result);
+        } else {
+          reject(new Error('Failed to read file as ArrayBuffer'));
+        }
+      };
+      
+      reader.onerror = (error) => {
+        reject(error);
+      };
+      
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  /**
    * Import an image file and create a GenerativeEntity with it
    * @param imageData The image data as a data URL or file URL
    * @param fileName The original file name (for metadata)
