@@ -183,13 +183,13 @@ const RenderComfyUIPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
             setExecutionTime(Date.now() - startTime);
 
             // Handle result
-            if (result.success && result.imageUrl) {
-                setImageUrl(result.imageUrl);
+            if (result.success) {
+                // setImageUrl(result.imageUrl);
                 
                 // If openOnRendered is true and window.openGallery exists, open gallery
-                if (renderSettings.openOnRendered && window.openGallery) {
-                    window.openGallery();
-                }
+                // if (renderSettings.openOnRendered && window.openGallery) {
+                //     window.openGallery();
+                // }
             } else {
                 alert(`Failed to render with ComfyUI: ${result.message || 'Unknown error'}`);
             }

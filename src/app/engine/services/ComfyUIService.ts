@@ -15,9 +15,8 @@ interface ComfyUIResponse {
 }
 
 export interface ComfyUIRenderResult {
-    imageUrl: string | null;
     success: boolean;
-    seed: number;
+    imageUrl?: string | null;
     message?: string;
 }
 
@@ -107,8 +106,6 @@ export class ComfyUIService {
                 body: jsonData
             });
 
-            
-
             console.log("ComfyUI response:", response);
 
             // Handle response
@@ -123,26 +120,25 @@ export class ComfyUIService {
             }
 
             // Add render log
-            this.addRenderLog({
-                imageUrl: responseData.data?.image_url || null,
-                prompt: params.prompt,
-                seed: params.seed,
-                promptStrength: params.promptStrength,
-                depthStrength: params.depthStrength,
-                selectedLoras: params.selectedLoras || []
-            });
+            // this.addRenderLog({
+            //     imageUrl: responseData.data?.image_url || null,
+            //     prompt: params.prompt,
+            //     seed: params.seed,
+            //     promptStrength: params.promptStrength,
+            //     depthStrength: params.depthStrength,
+            //     selectedLoras: params.selectedLoras || []
+            // });
 
             return {
-                imageUrl: responseData.data?.image_url || null,
                 success: true,
-                seed: params.seed
+                // imageUrl: responseData.data?.image_url || null,
+                // seed: params.seed
             };
         } catch (error) {
             console.error('Error sending to ComfyUI:', error);
             return {
                 imageUrl: null,
                 success: false,
-                seed: params.seed,
                 message: error instanceof Error ? error.message : String(error)
             };
         }
