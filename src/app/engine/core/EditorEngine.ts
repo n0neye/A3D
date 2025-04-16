@@ -220,11 +220,15 @@ export class EditorEngine {
 
 
   // TODO: Temp animation mixer
-  private mixers: THREE.AnimationMixer[] = [];
+  private mixers: Map<string, THREE.AnimationMixer> = new Map();
   private clock = new THREE.Clock();
 
   public addMixer(uuid: string, mixer: THREE.AnimationMixer): void {
-    this.mixers.push(mixer);
+    this.mixers.set(uuid, mixer);
+  }
+
+  public removeMixer(uuid: string): void {
+    this.mixers.delete(uuid);
   }
 
   // Define update as an arrow function to correctly bind `this`
@@ -235,7 +239,7 @@ export class EditorEngine {
     this.cameraManager.update();
 
     // Update all mixers
-    if (this.mixers?.length > 0) {
+    if (this.mixers?.size > 0) {
       this.mixers.forEach((mixer) => {
         mixer.update(delta);
       });

@@ -24,6 +24,10 @@ export class CharacterEntity extends EntityBase {
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
     public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
+    public animations: THREE.AnimationClip[] = [];
+    public animationMixer: THREE.AnimationMixer | null = null;
+    public currentAnimationAction: THREE.AnimationAction | null = null;
+
     private _isLoading = false;
     private _isDisposed = false;
     private _loadingPromise: Promise<void> | null = null;
@@ -195,19 +199,17 @@ export class CharacterEntity extends EntityBase {
                 }
 
                 // Handle animations
-                if (result.animations && result.animations.length > 0) {
-                    console.log(`Character has ${result.animations.length} animations`);
-                    // Create animation mixer and store animations for future use
-                    // TODO: Implement animation playback system
-
-                    // Play the first animation
-                    let animation = result.animations[result.animations.length - 1];
-                    const mixer = new THREE.AnimationMixer(this.rootMesh);
-                    const animationAction = mixer.clipAction(animation);
-                    animationAction.play();
-                    this.engine.addMixer(this.uuid, mixer);
+                this.animations = result.animations || [];
+                if (this.animations.length > 0) {
+                    // create animation mixer and store animations for future use
+                    this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
+                    this.currentAnimationAction = this.animationMixer.clipAction(this.animations[this.animations.length - 1]);
+                    this.currentAnimationAction.play();
+                    this.engine.addMixer(this.uuid, this.animationMixer);
                     setTimeout(() => {
-                        animationAction.paused = true;
+                        if (this.currentAnimationAction) {
+                            this.currentAnimationAction.paused = true;
+                        }
                     }, 5);
                 }
 
@@ -451,6 +453,8 @@ export class CharacterEntity extends EntityBase {
         super.delete();
         // Hide all bones
         this.showBoneVisualization(false);
+        // Stop all animations
+        this.engine.removeMixer(this.uuid);
     }
 
     public undoDelete(): void {

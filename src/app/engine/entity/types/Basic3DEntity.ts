@@ -160,7 +160,7 @@ export class Basic3DEntity extends EntityBase {
     }, (entity) => {
       console.log("convertToCharacterEntity done", entity.name, entity.uuid);
       // dispose this entity
-      this.dispose();
+      this.delete();
     });
     return characterEntity;
   }
