@@ -53,7 +53,7 @@ export class FileImportService {
         // Determine which import method to use based on file extension
         if (ACCEPTED_MODEL_TYPES.includes(file.type) || ACCEPTED_MODEL_EXTENSIONS.includes(extension)) {
             // Handle 3D model
-            return await FileImportService.importModelFile(file);
+            return await FileImportService.import3DModelFile(file);
         } else if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
             // Handle image
             return await FileImportService.importImageFile(file);
@@ -98,8 +98,9 @@ export class FileImportService {
      * @param file The 3D model file to import
      * @returns Promise resolving to the created entity or null if import failed
      */
-    static async importModelFile(file: File): Promise<Basic3DEntity | null> {
+    static async import3DModelFile(file: File): Promise<Basic3DEntity | null> {
         try {
+            // TODO: Prevent duplicated read/save with createEntityFromModel?
             // Get appropriate file manager
             const fileWorker = FileManager.getInstance().getPlatformFileWorker();
 
@@ -118,7 +119,8 @@ export class FileImportService {
             const modelFormat = extension === '.fbx' ? 'fbx' : 'glb';
 
             // Create entity with the URL
-            return await FileImportService.createEntityFromModel(modelUrl, file.name, modelFormat);
+            const entity = await FileImportService.createEntityFromModel(modelUrl, file.name, modelFormat);
+            return entity;
         } catch (error) {
             console.error("Error importing model file:", error);
             return null;
@@ -228,36 +230,37 @@ export class FileImportService {
     static async createEntityFromModel(
         modelUrl: string,
         fileName: string,
-        modelFormat: 'glb' | 'gltf' | 'fbx' = 'glb'
+        modelFormat: 'glb' | 'gltf' | 'fbx'
     ): Promise<Basic3DEntity | null> {
-        try {
-            // Create a default name from the filename or a generic one
-            const name = fileName ? fileName.split('.')[0] : `Model_${new Date().toISOString().slice(0, 10)}`;
+        // Create a default name from the filename or a generic one
+        const name = fileName ? fileName.split('.')[0] : `Model_${new Date().toISOString().slice(0, 10)}`;
 
-            // Create a new basic3D entity
-            const entity = await EntityFactory.createEntity({
-                type: 'basic3D',
-                name: name,
-                basic3DProps: {
-                    modelUrl: modelUrl,
-                    modelFormat: modelFormat,
-                    originalFileName: fileName
+        // Create a new basic3D entity
+        const entity = await EntityFactory.createEntity({
+            type: 'basic3D',
+            name: name,
+            basic3DProps: {
+                modelUrl: modelUrl,
+                modelFormat: modelFormat,
+                originalFileName: fileName
+            }, onLoaded: (entity) => {
+                const basic3D = entity as Basic3DEntity;
+                // Check if the model has a skeleton
+                const skeleton = basic3D.findSkinnedMesh();
+                if (skeleton) {
+                    console.log("Skeleton found", skeleton.skeleton?.bones.length);
+                    const characterEntity = basic3D.convertToCharacterEntity();
+                    console.log("CharacterEntity created", characterEntity.name, characterEntity.uuid);
                 }
-            }) as Basic3DEntity;
-
-            if (!entity) {
-                console.error("Failed to create entity for model import");
-                return null;
             }
+        }) as Basic3DEntity;
 
-            // Notify user
-            console.log(`Imported 3D model as entity: ${entity.name}`);
-
-            return entity;
-        } catch (error) {
-            console.error("Error importing 3D model:", error);
-            return null;
+        if (!entity) {
+            throw new Error("Failed to create entity for model import");
         }
+
+
+        return entity;
     }
 
     /**

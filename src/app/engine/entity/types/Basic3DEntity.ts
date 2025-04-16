@@ -1,9 +1,11 @@
+import { v4 as uuidv4 } from 'uuid';
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData } from '../base/EntityBase';
 import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
 import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { ProgressCallback } from '@/app/engine/utils/generation/generation-util';
+import { CharacterEntity } from './CharacterEntity';
 
 /**
  * Entity type specifically for imported 3D models
@@ -362,5 +364,31 @@ export class Basic3DEntity extends EntityBase {
     }
 
     super.dispose();
+  }
+
+
+  // Check skeleton
+  public findSkinnedMesh(): THREE.SkinnedMesh | undefined {
+    const result = this.modelMesh?.children.find(child => child instanceof THREE.SkinnedMesh);
+    console.log("findSkinnedMesh", result, result?.skeleton?.bones.length);
+    return result;
+  }
+
+  public convertToCharacterEntity(): CharacterEntity {
+    console.log("convertToCharacterEntity", this.name, this.uuid);
+    const scene = this.engine.getScene();
+    const characterEntity = new CharacterEntity(scene, this.name, {
+      entityType: "character",
+      characterProps: {
+        url: this.props.modelUrl,
+      },
+      uuid: uuidv4(),
+      name: this.name
+    }, (entity) => {
+      console.log("convertToCharacterEntity done", entity.name, entity.uuid);
+      // dispose this entity
+      this.dispose();
+    });
+    return characterEntity;
   }
 }
