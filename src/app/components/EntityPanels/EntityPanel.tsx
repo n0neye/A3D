@@ -19,7 +19,7 @@ const EntityPanel: React.FC = () => {
   if (selectedEntity.entityType == 'light' || selectedEntity.entityType == 'generative' || selectedEntity.entityType == 'character') {
     return (
       <div
-        id="entity-panel" className="fixed z-10 panel left-1/2 -translate-x-1/2 bottom-4 min-w-[150px]">
+        id="entity-panel" className="fixed z-10 panel left-1/2 -translate-x-1/2 bottom-4 min-w-[100px]">
         {selectedEntity instanceof GenerativeEntity && <GenerativeEntityPanel entity={selectedEntity} />}
         {selectedEntity instanceof LightEntity && <LightEntityPanel entity={selectedEntity} />}
         {selectedEntity instanceof CharacterEntity && <CharacterEditPanel entity={selectedEntity} />}

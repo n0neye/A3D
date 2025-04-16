@@ -7,35 +7,11 @@ import { get3DModelPersistentUrl, upload3DModelToGCP } from "@/app/engine/utils/
 import { GenerativeEntity } from "@/app/engine/entity/types/GenerativeEntity";
 import { loadModel } from "@/app/engine/entity/types/GenerativeEntity";
 import * as THREE from 'three';
-
+import { FileService } from "@/app/engine/services/FileService/FileService";
 
 /**
  * Common helpers for 3D model generation
  */
-
-// Process an image URL to get the right format for API submission
-async function processImageUrl(imageUrl: string): Promise<{ processedUrl: string, base64Data?: string }> {
-    let processedUrl = imageUrl;
-    let base64Data: string | undefined;
-
-    if (imageUrl.startsWith('blob:')) {
-        try {
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
-            base64Data = await blobToBase64(blob);
-            processedUrl = ''; // Clear the URL since we're using base64
-        } catch (error) {
-            console.error("Failed to process image blob:", error);
-            throw new Error("Failed to process image");
-        }
-    } else if (imageUrl.startsWith('data:image')) {
-        // Already a base64 image
-        base64Data = imageUrl;
-        processedUrl = ''; // Clear the URL since we're using base64
-    }
-
-    return { processedUrl, base64Data };
-}
 
 // Handle the final model loading process that's common to both implementations
 export async function finalize3DGeneration(
@@ -96,13 +72,15 @@ export async function generate3DModel_Trellis(
 
     try {
         // Process image URL
-        const { processedUrl } = await processImageUrl(imageUrl);
+        const base64Data = await FileService.getInstance().readFileAsDataUrl(imageUrl);
 
         // Set parameters based on entity type
         const params: any = {
-            image_url: processedUrl,
+            image_url: base64Data,
             mesh_simplify: 0.9,
         };
+
+        console.log("generate3DModel_Trellis", params);
 
         // Call the API
         const startTime = performance.now();
@@ -163,13 +141,7 @@ export async function generate3DModel_Runpod(
         entity.setProcessingState("generating3D", "Processing image...");
 
         // Process source image 
-        console.log("Fetching source image from:", imageUrl);
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-        const blob = await response.blob();
-        const base64Data = await blobToBase64(blob);
+        const base64Data = await FileService.getInstance().readFileAsBase64(imageUrl);
         const payload = { imageBase64: base64Data };
 
         entity.setProcessingState("generating3D", "Submitting...");

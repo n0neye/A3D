@@ -21,6 +21,7 @@ export interface GenerativeEntityProps {
   generationLogs: IGenerationLog[];
   currentGenerationId?: string;
   currentGenerationIdx?: number;
+  isImported?: boolean;
 }
 
 // Processing states
@@ -148,7 +149,7 @@ export class GenerativeEntity extends EntityBase {
       console.log('applyGenerationLog', log);
       if (log.assetType === 'image' && log.fileUrl) {
         // For image assets, apply the image to the entity
-        this.applyImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
+        await this.applyImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
         this.setDisplayMode('2d');
       } else if (log.assetType === 'model' && log.fileUrl) {
         // Load the model into the entity
@@ -222,37 +223,63 @@ export class GenerativeEntity extends EntityBase {
     this.onProgress.trigger({ entity: this, state, message: message || '' });
   }
 
-  applyImage(imageUrl: string, scene: THREE.Scene, ratio?: ImageRatio): void {
-    // Create a texture loader
-    const textureLoader = new THREE.TextureLoader();
-
-    // Load the texture
-    textureLoader.load(
-      imageUrl,
-      (texture) => {
-        // Update the material
-        const newMaterial = new THREE.MeshBasicMaterial({
-          map: texture,
-          side: THREE.DoubleSide
-        });
-
-        // Apply to the placeholder mesh
-        this.placeholderMesh.material = newMaterial;
-
-        // Update the mesh size based on the ratio
-        if (ratio) {
-          const { width, height } = getPlaneSize(ratio);
-          this.placeholderMesh.scale.set(width, height, 1);
-        }
-
-        // Set to 2D mode
-        this.setDisplayMode('2d');
-      },
-      undefined,
-      (error) => {
-        console.error('Error loading image texture:', error);
+  async applyImage(imageUrl: string, scene: THREE.Scene, ratio?: ImageRatio): Promise<void> {
+    try {
+      // Create a texture loader
+      const textureLoader = new THREE.TextureLoader();
+      
+      // For file:// URLs, we need to use IPC to get the image data
+      if (imageUrl.startsWith('file://') && window.electron?.loadImageData) {
+        console.log('Loading local image via IPC:', imageUrl);
+        
+        // Use the IPC bridge to get image as base64 data URL
+        const base64Data = await window.electron.loadImageData(imageUrl);
+        
+        // Replace the file:// URL with the base64 data
+        imageUrl = base64Data;
       }
-    );
+      
+      // Use a promise-based approach for texture loading
+      return new Promise((resolve, reject) => {
+        // Load the texture (now using either the original URL or base64 data)
+        textureLoader.load(
+          imageUrl,
+          (texture) => {
+            try {
+              // Update the material
+              const newMaterial = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+              });
+              
+              // Apply to the placeholder mesh
+              this.placeholderMesh.material = newMaterial;
+              
+              // Update the mesh size based on the ratio
+              if (ratio) {
+                const { width, height } = getPlaneSize(ratio);
+                this.placeholderMesh.scale.set(width, height, 1);
+              }
+              
+              // Set to 2D mode
+              this.setDisplayMode('2d');
+              
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          },
+          undefined, // onProgress not used
+          (error) => {
+            console.error('Error loading image texture:', error);
+            reject(error);
+          }
+        );
+      });
+    } catch (error) {
+      console.error('Error in applyImage:', error);
+    }
   }
 
   async generateRealtimeImage(
@@ -434,22 +461,72 @@ export async function loadModel(
 
     // Load the model using GLTFLoader
     const loader = new GLTFLoader();
+    
+    // Handle local file:// URLs using Electron's IPC bridge
+    if (modelUrl.startsWith('file://') && window.electron?.readFile) {
+      console.log('Loading local model via IPC:', modelUrl);
+      
+      try {
+        // Get model data through IPC
+        const modelData = await window.electron.readFile(modelUrl);
+        
+        // Create a promise wrapper for the async load from array buffer
+        const gltf = await new Promise<GLTF>((resolve, reject) => {
+          loader.parse(
+            modelData,
+            '', // Base path, not needed when loading from memory
+            (gltf) => resolve(gltf),
+            (error) => reject(error)
+          );
+        });
+        
+        // Continue with the model processing...
+        return await processLoadedModel(entity, gltf, scene, onProgress);
+      } catch (error) {
+        console.error("Failed to load local model:", error);
+        onProgress?.({ message: `Failed to load local model: ${(error as Error).message}` });
+        return false;
+      }
+    } else {
+      // Standard URL loading
+      // Create a promise wrapper for the async load
+      const gltf = await new Promise<GLTF>((resolve, reject) => {
+        loader.load(
+          modelUrl,
+          (gltf) => resolve(gltf),
+          (xhr) => {
+            if (xhr.lengthComputable) {
+              const progress = Math.round((xhr.loaded / xhr.total) * 100);
+              onProgress?.({ message: `Downloading: ${progress}%` });
+            }
+          },
+          (error) => reject(error)
+        );
+      });
+      
+      // Process the loaded model
+      return await processLoadedModel(entity, gltf, scene, onProgress);
+    }
+  } catch (error) {
+    console.error("Failed to load model:", error);
+    onProgress?.({ message: `Failed to load model: ${(error as Error).message}` });
+    return false;
+  }
+}
 
-    // Create a promise wrapper for the async load
-    const gltf = await new Promise<GLTF>((resolve, reject) => {
-      loader.load(
-        modelUrl,
-        (gltf) => resolve(gltf),
-        (xhr) => {
-          if (xhr.lengthComputable) {
-            const progress = Math.round((xhr.loaded / xhr.total) * 100);
-            onProgress?.({ message: `Downloading: ${progress}%` });
-          }
-        },
-        (error) => reject(error)
-      );
-    });
-
+/**
+ * Process a loaded GLTF model
+ * Helper function to share code between local and remote loading paths
+ */
+async function processLoadedModel(
+  entity: GenerativeEntity, 
+  gltf: GLTF, 
+  scene: THREE.Scene,
+  onProgress?: ProgressCallback
+): Promise<boolean> {
+  try {
+    onProgress?.({ message: 'Processing model...' });
+    
     // If there's an existing model mesh, dispose it
     if (entity.gltfModel) {
       // Remove from parent
@@ -458,13 +535,17 @@ export async function loadModel(
       // Dispose of resources
       entity.gltfModel.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
-          child.material.dispose();
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(material => material.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
         }
       });
     }
-
-    onProgress?.({ message: 'Processing model...' });
 
     // Extract the scene from the GLTF
     const newModel = gltf.scene;
@@ -483,9 +564,9 @@ export async function loadModel(
 
     // Adjust the position to put the bottom center at the pivot point
     newModel.position.set(
-      newModel.position.x,                // Center horizontally
-      -boundingBox.min.y,       // Bottom at the pivot point
-      newModel.position.z                 // Center depth-wise
+      newModel.position.x,          // Center horizontally
+      -boundingBox.min.y,           // Bottom at the pivot point
+      newModel.position.z           // Center depth-wise
     );
 
     // setupMeshShadows
@@ -501,8 +582,8 @@ export async function loadModel(
     onProgress?.({ message: '3D model loaded successfully!' });
     return true;
   } catch (error) {
-    console.error("Failed to load model:", error);
-    onProgress?.({ message: `Failed to load model: ${(error as Error).message}` });
+    console.error("Failed to process model:", error);
+    onProgress?.({ message: `Failed to process model: ${(error as Error).message}` });
     return false;
   }
 }

@@ -4,6 +4,7 @@ import { EntityBase, EntityType, SerializedEntityData } from '../base/EntityBase
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
 import { BoneControl } from '../components/BoneControl';
 import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
+import { loadModelFromUrl } from '@/app/engine/utils/3dModelUtils';
 
 export interface CharacterEntityProps {
     url: string;
@@ -23,6 +24,10 @@ export class CharacterEntity extends EntityBase {
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
     public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
+    public animations: THREE.AnimationClip[] = [];
+    public animationMixer: THREE.AnimationMixer | null = null;
+    public currentAnimationAction: THREE.AnimationAction | null = null;
+
     private _isLoading = false;
     private _isDisposed = false;
     private _loadingPromise: Promise<void> | null = null;
@@ -72,7 +77,7 @@ export class CharacterEntity extends EntityBase {
         this._createMaterials(scene);
     }
 
-    private  _applyBoneRotationsFromData(boneRotations: boneRotations) {
+    private _applyBoneRotationsFromData(boneRotations: boneRotations) {
         try {
             // Apply saved bone rotations if available
             if (!this.skeleton) {
@@ -144,17 +149,20 @@ export class CharacterEntity extends EntityBase {
             console.error("CharacterEntity: No URL provided.");
             return;
         }
+
         this._isLoading = true;
         console.log(`Loading character from: ${this.characterProps.url}`);
+
         try {
-            // Use Three.js GLTFLoader to load the model
-            const loader = new GLTFLoader();
-            const result = await loader.loadAsync(this.characterProps.url);
+            // Use the unified loading function
+            const result = await loadModelFromUrl(this.characterProps.url, (progress) => {
+                console.log(`Loading character: ${progress.message || 'in progress...'}`);
+            });
 
-            console.log("CharacterEntity: GLTF load result:", result);
+            console.log("CharacterEntity: Model load result:", result);
 
-            if (result.scene) {
-                this.rootMesh = result.scene;
+            if (result.rootMesh) {
+                this.rootMesh = result.rootMesh;
                 this.add(this.rootMesh); // Add to this entity
                 this.rootMesh.name = `${this.name}_meshRoot`;
 
@@ -190,18 +198,21 @@ export class CharacterEntity extends EntityBase {
                     console.warn(`Character ${this.name} loaded but no skeleton found.`);
                 }
 
-                // Handle animations if needed
-                if (result.animations && result.animations.length > 0) {
-                    console.log(`Character has ${result.animations.length} animations`);
-                    // Create animation mixer and store animations for future use
-                    // TODO: Implement animation playback system
+                // Handle animations
+                this.animations = result.animations || [];
+                if (this.animations.length > 0) {
+                    // create animation mixer and store animations for future use
+                    this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
+                    this.currentAnimationAction = this.animationMixer.clipAction(this.animations[this.animations.length - 1]);
+                    this.currentAnimationAction.play();
+                    this.engine.addMixer(this.uuid, this.animationMixer);
+                    setTimeout(() => {
+                        if (this.currentAnimationAction) {
+                            this.currentAnimationAction.paused = true;
+                        }
+                    }, 5);
                 }
 
-                this.rootMesh.traverse(object => {
-                    if (object instanceof THREE.Mesh) {
-                        setupMeshShadows(object);
-                    }
-                });
                 onLoaded?.(this);
             } else {
                 console.error(`No scene loaded for character ${this.name}`);
@@ -287,7 +298,7 @@ export class CharacterEntity extends EntityBase {
                 this,
                 {
                     // Quick hack to keep initial size consistent
-                    diameter: CharacterEntity.boneControlSize / 2,
+                    diameter: CharacterEntity.boneControlSize / 2 / (this.rootMesh?.scale.x || 1),
                 }
             );
 
@@ -442,6 +453,8 @@ export class CharacterEntity extends EntityBase {
         super.delete();
         // Hide all bones
         this.showBoneVisualization(false);
+        // Stop all animations
+        this.engine.removeMixer(this.uuid);
     }
 
     public undoDelete(): void {

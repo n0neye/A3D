@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
-import { IconEye, IconEyeOff, IconLinkPlus } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconLinkPlus, IconPlayerPlay, IconPlayerPause, IconChevronsDown, IconChevronsUp } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { BoneControl } from '../engine/entity/components/BoneControl';
 
@@ -13,6 +13,12 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const [showEntityList, setShowEntityList] = useState(false);
   const [availableEntities, setAvailableEntities] = useState<any[]>([]);
   const entityListRef = useRef<HTMLDivElement>(null);
+
+  // Animation states
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedAnimationIndex, setSelectedAnimationIndex] = useState<number | null>(null);
+  const [showAnimationList, setShowAnimationList] = useState(false);
+  const animationListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (selectedSelectable && selectedSelectable instanceof BoneControl) {
@@ -39,16 +45,33 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
       if (entityListRef.current && !entityListRef.current.contains(event.target as Node)) {
         setShowEntityList(false);
       }
+      if (animationListRef.current && !animationListRef.current.contains(event.target as Node)) {
+        setShowAnimationList(false);
+      }
     };
 
-    if (showEntityList) {
+    if (showEntityList || showAnimationList) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEntityList]);
+  }, [showEntityList, showAnimationList]);
+
+  // Initialize animation state when entity changes
+  useEffect(() => {
+    if (entity) {
+      // Check if there are animations and set default animation
+      if (entity.animations && entity.animations.length > 0) {
+        setSelectedAnimationIndex(entity.animations.length - 1);
+        setIsPlaying(entity.currentAnimationAction ? !entity.currentAnimationAction.paused : false);
+      } else {
+        setSelectedAnimationIndex(null);
+        setIsPlaying(false);
+      }
+    }
+  }, [entity]);
 
   const handleLinkObject = () => {
     setShowEntityList(!showEntityList);
@@ -67,9 +90,95 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     }
   };
 
+  // Animation controls
+  const toggleAnimationPlayback = () => {
+    if (entity.currentAnimationAction) {
+      entity.currentAnimationAction.paused = !entity.currentAnimationAction.paused;
+      setIsPlaying(!entity.currentAnimationAction.paused);
+    }
+  };
+
+  const selectAnimation = (index: number) => {
+    if (entity.animations && entity.animations.length > index && entity.animationMixer) {
+      // Stop current animation
+      if (entity.currentAnimationAction) {
+        entity.currentAnimationAction.stop();
+      }
+
+      // Start new animation
+      const newAction = entity.animationMixer.clipAction(entity.animations[index]);
+      entity.currentAnimationAction = newAction;
+      newAction.play();
+      newAction.paused = !isPlaying;
+
+      setSelectedAnimationIndex(index);
+      setShowAnimationList(false);
+    }
+  };
+
+  const toggleAnimationList = () => {
+    setShowAnimationList(!showAnimationList);
+  };
+
   return (
     <>
-      <div className="p-2 flex flex-col gap-2">
+      <div className="p-2 flex flex-row gap-2 justify-center items-center">
+        {/* Animation Controls */}
+        {entity.animations && entity.animations.length > 0 && (
+          <div className="flex items-center gap-2 mb-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAnimationPlayback}
+              className="w-10 h-8 flex justify-center items-center"
+            >
+              {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
+            </Button>
+
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleAnimationList}
+                className="text-xs flex items-center"
+              >
+                {selectedAnimationIndex !== null && entity.animations[selectedAnimationIndex]?.name
+                  ? entity.animations[selectedAnimationIndex].name
+                  : "Select Animation"}
+                {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
+              </Button>
+
+              {showAnimationList && (
+                <div
+                  ref={animationListRef}
+                  className="absolute bottom-full left-0 z-50 mt-1"
+                >
+                  <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
+                    <h4 className="text-sm font-medium mb-2">Animations:</h4>
+                    {entity.animations.length === 0 ? (
+                      <p className="text-xs text-gray-400">No animations available</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {entity.animations.map((animation, index) => (
+                          <li
+                            key={`anim-${index}`}
+                            className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
+                              }`}
+                            onClick={() => selectAnimation(index)}
+                          >
+                            {animation.name || `Animation ${index + 1}`}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Bone Controls */}
         {selectedBone && (
           <div className="relative">
             <Button
@@ -77,15 +186,11 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
               size="sm"
               onClick={handleLinkObject}
               title={"Attach object to bone"}
+              className="text-xs flex items-center"
             >
               <IconLinkPlus size={16} className="mr-2" />
-              Link Object to {selectedBone.bone.name.replace('mixamorig', '')}
+              Link Object to bone
             </Button>
-          </div>
-        )}
-        {!selectedBone && (
-          <div className="text-xs text-gray-400">
-            No bone selected
           </div>
         )}
       </div>

@@ -34,6 +34,7 @@ import { TimelineManager } from '../managers/timeline/TimelineManager';
 import { CreateEntityCommand } from '../../lib/commands';
 import { ObjectManager } from '../managers/ObjectManager';
 import { RenderVideoService } from '../services/RenderVideoService';
+import { FileService } from '../services/FileService/FileService';
 
 
 /**
@@ -55,6 +56,7 @@ export class EditorEngine {
   private timelineManager: TimelineManager;
   private objectManager: ObjectManager;
   private renderVideoService: RenderVideoService;
+  private fileService: FileService;
 
   public observer = new Observer<{
   }>();
@@ -73,6 +75,7 @@ export class EditorEngine {
     this.environmentManager = new EnvironmentManager(this);
     this.timelineManager = new TimelineManager(this);
     this.objectManager = new ObjectManager(this);
+    this.fileService = new FileService();
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(
@@ -178,7 +181,7 @@ export class EditorEngine {
   }
   public createEntityCommand(options: CreateEntityOptions): void {
     const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntity(this.core.getScene(), {
+      () => EntityFactory.createEntity({
         ...options,
         onLoaded: (entity) => {
           console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
@@ -191,7 +194,7 @@ export class EditorEngine {
   }
   public createEntityDefaultCommand(type: EntityType): void {
     const createCommand = new CreateEntityCommand(
-      () => EntityFactory.createEntityDefault(this.core.getScene(), type, (entity) => {
+      () => EntityFactory.createEntityDefault(type, (entity) => {
         console.log(`handleCreateCharacter onLoaded: ${entity.name}`);
         EditorEngine.getInstance().selectEntity(entity);
       }),
@@ -215,9 +218,32 @@ export class EditorEngine {
     this.transformControlManager.setTransformControlMode(mode);
   }
 
-  public update(): void {
+
+  // TODO: Temp animation mixer
+  private mixers: Map<string, THREE.AnimationMixer> = new Map();
+  private clock = new THREE.Clock();
+
+  public addMixer(uuid: string, mixer: THREE.AnimationMixer): void {
+    this.mixers.set(uuid, mixer);
+  }
+
+  public removeMixer(uuid: string): void {
+    this.mixers.delete(uuid);
+  }
+
+  // Define update as an arrow function to correctly bind `this`
+  public update = (): void => {
+    var delta = this.clock.getDelta();
     // Update all managers that have update methods
-    EditorEngine.instance.cameraManager.update();
+    // Use `this` directly now that it's correctly bound
+    this.cameraManager.update();
+
+    // Update all mixers
+    if (this.mixers?.size > 0) {
+      this.mixers.forEach((mixer) => {
+        mixer.update(delta);
+      });
+    }
 
     // Add other managers as needed
   }
