@@ -194,7 +194,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
       // Call the 3D conversion service
       const result = await props.entity.generate3DModel(currentGen.fileUrl, currentGen.id, {
         prompt: promptInput,
-        // apiProvider: 'trellis'
+        apiProvider: 'trellis'
       });
 
       // Track successful 3D conversion

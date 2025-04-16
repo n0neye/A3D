@@ -3,7 +3,7 @@ import { EditorEngine } from "@/app/engine/EditorEngine";
 import { v4 as uuidv4 } from 'uuid';
 import { ImageRatio } from "../utils/imageUtil";
 import { EntityFactory } from "../entity/EntityFactory";
-import { FileManagerFactory } from './FileManagerFactory';
+import { FileManager } from '../managers/FileManager/FileManager';
 import { Basic3DEntity } from "../entity/types/Basic3DEntity";
 
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
@@ -69,13 +69,13 @@ export class FileImportService {
     static async importImageFile(file: File): Promise<GenerativeEntity | null> {
         try {
             // Get appropriate file manager
-            const fileManager = FileManagerFactory.getFileManager();
+            const fileWorker = FileManager.getInstance().getPlatformFileWorker();
 
             // Read file as array buffer
             const imageData = await FileImportService.readFileAsArrayBuffer(file);
 
             // Save the file using the file manager
-            const imageUrl = await fileManager.saveFile(
+            const imageUrl = await fileWorker.saveFile(
                 imageData,
                 file.name,
                 file.type || 'image/jpeg'
@@ -101,13 +101,13 @@ export class FileImportService {
     static async importModelFile(file: File): Promise<Basic3DEntity | null> {
         try {
             // Get appropriate file manager
-            const fileManager = FileManagerFactory.getFileManager();
+            const fileWorker = FileManager.getInstance().getPlatformFileWorker();
 
             // Read the file as ArrayBuffer
             const modelData = await FileImportService.readFileAsArrayBuffer(file);
 
             // Save the file using file manager
-            const modelUrl = await fileManager.saveFile(
+            const modelUrl = await fileWorker.saveFile(
                 modelData,
                 file.name,
                 file.type || 'model/gltf-binary'

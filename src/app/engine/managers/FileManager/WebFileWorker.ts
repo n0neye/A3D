@@ -1,32 +1,14 @@
-import { FileManager } from '../interfaces/FileManager';
-import { v4 as uuidv4 } from 'uuid';
-
+import { FileWorker } from './FileManager';
 /**
  * BlobFileManager is a web-compatible file manager that uses in-memory storage
  * This is a placeholder implementation that will be expanded in the future
  * with cloud storage upload features
  */
-export class BlobFileManager implements FileManager {
-  private static instance: BlobFileManager;
+export class WebFileWorker implements FileWorker {
+  // private static instance: WebFileWorker;
   private blobUrls: Map<string, string> = new Map();
-  
-  private constructor() {}
-  
-  public static getInstance(): BlobFileManager {
-    if (!BlobFileManager.instance) {
-      BlobFileManager.instance = new BlobFileManager();
-    }
-    return BlobFileManager.instance;
-  }
-
-  public isSupported(): boolean {
-    return typeof window !== 'undefined' && 'URL' in window;
-  }
 
   public async saveFile(data: ArrayBuffer, fileName: string, fileType: string): Promise<string> {
-    if (!this.isSupported()) {
-      throw new Error('Blob URL operations are not supported in this environment');
-    }
     
     // Create a blob URL for in-memory storage
     const blob = new Blob([data], { type: fileType });
@@ -44,9 +26,6 @@ export class BlobFileManager implements FileManager {
   }
 
   public async readFile(fileUrl: string): Promise<ArrayBuffer> {
-    if (!this.isSupported()) {
-      throw new Error('Blob URL operations are not supported in this environment');
-    }
     
     // Simple implementation that fetches the blob URL
     const response = await fetch(fileUrl);
@@ -55,9 +34,23 @@ export class BlobFileManager implements FileManager {
     // TODO: Future implementation will download from cloud storage
   }
 
-  public async getStoragePath(): Promise<string> {
-    return 'memory';
-    // TODO: Future implementation will return cloud storage path
+  /**
+   * Read a file from a blob URL and return it as a Base64 string
+   * @param fileUrl URL of the file to read
+   * @returns File data as a Base64 string
+   */
+  public async readFileAsBase64(fileUrl: string): Promise<string> {
+    
+    // First read the file as an ArrayBuffer
+    const arrayBuffer = await this.readFile(fileUrl);
+    
+    // Convert the ArrayBuffer to a Base64 string
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
   }
   
   // Important: Call this when your app unloads to prevent memory leaks

@@ -1,7 +1,7 @@
 import { fal } from "@fal-ai/client";
 import { getImageSimulationData, } from "../simulation-data";
 import { GenerativeEntity } from '@/app/engine/entity/types/GenerativeEntity';
-import { ProgressCallback,  } from "./generation-util";
+import { ProgressCallback, } from "./generation-util";
 import { ImageRatio, IMAGE_SIZE_MAP, RATIO_MAP } from "@/app/engine/utils/imageUtil";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
@@ -77,24 +77,33 @@ export async function doGenerateRealtimeImage(
     if (positivePrompt === "_") {
         result = getImageSimulationData();
     } else {
-        result = await generateRealtimeImageRunware(enhancedPrompt, {
+
+        // Use FAL AI API
+        result = await generateRealtimeImageFal(enhancedPrompt, {
             width: width,
             height: height,
             negativePrompt: negativePrompt
         });
+
+        // Use Runware API
+        // result = await generateRealtimeImageRunware(enhancedPrompt, {
+        //     width: width,
+        //     height: height,
+        //     negativePrompt: negativePrompt
+        // });
     }
 
     const success = result.success && result.imageUrl !== undefined;
     if (success && result.imageUrl) {
         console.log(`%cImage generation took ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
-        
+
         // Apply the image to the entity
         await entity.applyImage(result.imageUrl, scene, ratio);
-        
+
         // Add to history
         const log = entity.onNewGeneration("image", result.imageUrl, promptInput);
-        
+
         console.log(`%cTask completed in ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 
         entity.setProcessingState('idle', success ? 'Image generated successfully!' : 'Failed to generate image');
@@ -129,9 +138,8 @@ async function generateRealtimeImageFal(
 }
 
 let runwareClient: RunwareClient | null = null;
-const RUNWARE_API_KEY = "hVH7hCVr32kVuQGbJVjUiziJ7a9lXWbZ";
 const initRunwareClient = async () => {
-    runwareClient = new Runware({ apiKey: RUNWARE_API_KEY });
+    runwareClient = new Runware({ apiKey: process.env.NEXT_PUBLIC_RUNWARE_API_KEY! });
     await runwareClient.ensureConnection();
 }
 

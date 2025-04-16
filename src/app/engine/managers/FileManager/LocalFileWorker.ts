@@ -1,47 +1,17 @@
-import { FileManager } from '../interfaces/FileManager';
+import { FileWorker } from './FileManager';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
  * LocalFileManager handles file operations for Electron environments
  * using the local filesystem through IPC
  */
-export class LocalFileManager implements FileManager {
-  private static instance: LocalFileManager;
-  
-  private constructor() {}
-  
-  public static getInstance(): LocalFileManager {
-    if (!LocalFileManager.instance) {
-      LocalFileManager.instance = new LocalFileManager();
-    }
-    return LocalFileManager.instance;
-  }
+export class LocalFileWorker implements FileWorker {
 
   /**
    * Check if we're in an Electron environment with file system access
    */
   public isSupported(): boolean {
-    // Primary check: look for our explicit isElectron flag
-    if (typeof window !== 'undefined' && window.electron?.isElectron === true) {
-      return true;
-    }
-    
-    // Secondary checks in case the flag isn't available for some reason
-    
-    // Check user agent for Electron
-    const userAgent = navigator.userAgent.toLowerCase();
-    if (userAgent.indexOf(' electron/') > -1) {
-      return true;
-    }
-    
-    // Check for Electron-specific objects
-    if (typeof window !== 'undefined' && 
-        (window.process?.type === 'renderer' || 
-         window.electron?.versions?.electron)) {
-      return true;
-    }
-    
-    return false;
+    return typeof window !== 'undefined' && window.electron?.isElectron === true;
   }
 
   /**
@@ -89,7 +59,34 @@ export class LocalFileManager implements FileManager {
       throw new Error('Electron API is not available');
     }
     
-    return await window.electron.readFile(fileUrl);
+    const result = await window.electron.readFile(fileUrl);
+    return result;
+  }
+
+  /**
+   * Read a file from the local filesystem and return it as a Base64 string
+   * @param fileUrl URL of the file to read (file:// protocol)
+   * @returns File data as a Base64 string
+   */
+  public async readFileAsBase64(fileUrl: string): Promise<string> {
+    if (!this.isSupported()) {
+      throw new Error('Local file operations are not supported in this environment');
+    }
+    
+    if (!window.electron) {
+      throw new Error('Electron API is not available');
+    }
+    
+    // First read the file as an ArrayBuffer
+    const arrayBuffer = await this.readFile(fileUrl);
+    
+    // Convert the ArrayBuffer to a Base64 string
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
   }
 
   /**
