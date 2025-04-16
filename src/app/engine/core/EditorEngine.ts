@@ -218,9 +218,28 @@ export class EditorEngine {
     this.transformControlManager.setTransformControlMode(mode);
   }
 
-  public update(): void {
+
+  // TODO: Temp animation mixer
+  private mixers: THREE.AnimationMixer[] = [];
+  private clock = new THREE.Clock();
+
+  public addMixer(uuid: string, mixer: THREE.AnimationMixer): void {
+    this.mixers.push(mixer);
+  }
+
+  // Define update as an arrow function to correctly bind `this`
+  public update = (): void => {
+    var delta = this.clock.getDelta();
     // Update all managers that have update methods
-    EditorEngine.instance.cameraManager.update();
+    // Use `this` directly now that it's correctly bound
+    this.cameraManager.update();
+
+    // Update all mixers
+    if (this.mixers?.length > 0) {
+      this.mixers.forEach((mixer) => {
+        mixer.update(delta);
+      });
+    }
 
     // Add other managers as needed
   }

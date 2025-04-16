@@ -73,7 +73,7 @@ export class CharacterEntity extends EntityBase {
         this._createMaterials(scene);
     }
 
-    private  _applyBoneRotationsFromData(boneRotations: boneRotations) {
+    private _applyBoneRotationsFromData(boneRotations: boneRotations) {
         try {
             // Apply saved bone rotations if available
             if (!this.skeleton) {
@@ -145,16 +145,16 @@ export class CharacterEntity extends EntityBase {
             console.error("CharacterEntity: No URL provided.");
             return;
         }
-        
+
         this._isLoading = true;
         console.log(`Loading character from: ${this.characterProps.url}`);
-        
+
         try {
             // Use the unified loading function
             const result = await loadModelFromUrl(this.characterProps.url, (progress) => {
                 console.log(`Loading character: ${progress.message || 'in progress...'}`);
             });
-            
+
             console.log("CharacterEntity: Model load result:", result);
 
             if (result.rootMesh) {
@@ -199,6 +199,16 @@ export class CharacterEntity extends EntityBase {
                     console.log(`Character has ${result.animations.length} animations`);
                     // Create animation mixer and store animations for future use
                     // TODO: Implement animation playback system
+
+                    // Play the first animation
+                    let animation = result.animations[result.animations.length - 1];
+                    const mixer = new THREE.AnimationMixer(this.rootMesh);
+                    const animationAction = mixer.clipAction(animation);
+                    animationAction.play();
+                    this.engine.addMixer(this.uuid, mixer);
+                    setTimeout(() => {
+                        animationAction.paused = true;
+                    }, 5);
                 }
 
                 onLoaded?.(this);

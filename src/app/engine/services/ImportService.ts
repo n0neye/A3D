@@ -1,10 +1,10 @@
 import { GenerativeEntity } from "../entity/types/GenerativeEntity";
 import { EditorEngine } from "@/app/engine/EditorEngine";
-import { v4 as uuidv4 } from 'uuid';
 import { ImageRatio } from "../utils/imageUtil";
 import { EntityFactory } from "../entity/EntityFactory";
 import { FileService } from './FileService/FileService';
 import { Basic3DEntity } from "../entity/types/Basic3DEntity";
+import { CharacterEntity } from "../entity/types/CharacterEntity";
 
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 export const ACCEPTED_MODEL_TYPES = ['model/gltf-binary', 'model/gltf+json', 'application/fbx'];
@@ -26,7 +26,7 @@ export class ImportService {
      * @param file The file object to import
      * @returns Promise resolving to the created entity or null if import failed
      */
-    static async importFile(file: File): Promise<GenerativeEntity | Basic3DEntity | null> {
+    static async importFile(file: File): Promise<GenerativeEntity | Basic3DEntity | CharacterEntity | null> {
         console.log(`Importing file: ${file.name}`);
 
         // Get file extension
@@ -77,7 +77,7 @@ export class ImportService {
      * @param file The 3D model file to import
      * @returns Promise resolving to the created entity or null if import failed
      */
-    static async import3DModelFile(file: File): Promise<Basic3DEntity | null> {
+    static async import3DModelFile(file: File): Promise<Basic3DEntity | CharacterEntity | null> {
         try {
             // TODO: Prevent duplicated steps (save/read) 
 
@@ -208,34 +208,40 @@ export class ImportService {
         modelUrl: string,
         fileName: string,
         modelFormat: 'glb' | 'gltf' | 'fbx'
-    ): Promise<Basic3DEntity | null> {
+    ): Promise<Basic3DEntity | CharacterEntity | null> {
         // Create a default name from the filename or a generic one
+        let entity: Basic3DEntity | CharacterEntity | null = null;
         const name = fileName ? fileName.split('.')[0] : `Model_${new Date().toISOString().slice(0, 10)}`;
 
         // Create a new basic3D entity
-        const entity = await EntityFactory.createEntity({
-            type: 'basic3D',
-            name: name,
-            basic3DProps: {
-                modelUrl: modelUrl,
-                modelFormat: modelFormat,
-                originalFileName: fileName
-            }, onLoaded: (entity) => {
-                const basic3D = entity as Basic3DEntity;
-                // Check if the model has a skeleton
-                const skeleton = basic3D.findSkinnedMesh();
-                if (skeleton) {
-                    console.log("Skeleton found", skeleton.skeleton?.bones.length);
-                    const characterEntity = basic3D.convertToCharacterEntity();
-                    console.log("CharacterEntity created", characterEntity.name, characterEntity.uuid);
+        const basic3D = await new Promise<Basic3DEntity>((resolve, reject) => {
+            EntityFactory.createEntity({
+                type: 'basic3D',
+                name: name,
+                basic3DProps: {
+                    modelUrl: modelUrl,
+                    modelFormat: modelFormat,
+                    originalFileName: fileName
+                }, onLoaded: (entity) => {
+                    resolve(entity as Basic3DEntity);
                 }
-            }
-        }) as Basic3DEntity;
+            });
+        });
+        entity = basic3D;
 
-        if (!entity) {
+
+        if (!basic3D) {
             throw new Error("Failed to create entity for model import");
         }
-
+        
+        // TODO: Import as character at first place?
+        // Check if the model has a skeleton, and if so, convert to character entity
+        const skeleton = basic3D.findSkinnedMesh();
+        if (skeleton) {
+            console.log("Skeleton found, converting to character entity", skeleton.skeleton?.bones.length);
+            const characterEntity = basic3D.convertToCharacterEntity();
+            entity = characterEntity;
+        }
 
         return entity;
     }

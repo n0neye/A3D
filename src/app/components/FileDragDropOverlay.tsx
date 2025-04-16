@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { IconFileImport, IconPhoto, Icon3dCubeSphere, IconX } from '@tabler/icons-react';
-import { ACCEPTED_EXTENSIONS, ACCEPTED_IMAGE_TYPES, ACCEPTED_MODEL_TYPES, ImportService } from '../engine/services/ImportService';
+import { ACCEPTED_IMAGE_TYPES, ACCEPTED_MODEL_TYPES, ImportService } from '../engine/services/ImportService';
 import { toast } from 'sonner';
 
 const FileDragDropOverlay: React.FC = () => {
@@ -69,8 +69,6 @@ const FileDragDropOverlay: React.FC = () => {
 
         if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
           const file = e.dataTransfer.files[0];
-          // Get extension reliably from the dropped file
-          const extension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
 
           // Check against accepted extensions here
           setIsImporting(true);
