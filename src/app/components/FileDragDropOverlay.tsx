@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { IconFileImport, IconPhoto, Icon3dCubeSphere, IconX } from '@tabler/icons-react';
-import { ACCEPTED_EXTENSIONS, ACCEPTED_IMAGE_TYPES, ACCEPTED_MODEL_TYPES, FileImportService } from '../engine/services/FileImportService';
+import { ACCEPTED_EXTENSIONS, ACCEPTED_IMAGE_TYPES, ACCEPTED_MODEL_TYPES, ImportService } from '../engine/services/ImportService';
 import { toast } from 'sonner';
 
 const FileDragDropOverlay: React.FC = () => {
@@ -75,7 +75,7 @@ const FileDragDropOverlay: React.FC = () => {
           // Check against accepted extensions here
           setIsImporting(true);
           // Use the simplified importFile method that handles all the complexity
-          const result = await FileImportService.importFile(file);
+          const result = await ImportService.importFile(file);
 
           if (!result) {
             throw new Error("An error occurred during import");

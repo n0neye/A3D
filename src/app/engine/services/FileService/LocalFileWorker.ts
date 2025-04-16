@@ -1,4 +1,4 @@
-import { FileWorker } from './FileManager';
+import { FileWorker } from './FileService';
 import { v4 as uuidv4 } from 'uuid';
 
 // Declare global electron interface
@@ -20,7 +20,7 @@ declare global {
 }
 
 /**
- * LocalFileManager handles file operations for Electron environments
+ * LocalFileWorker handles file operations for Electron environments
  * using the local filesystem through IPC
  */
 export class LocalFileWorker implements FileWorker {

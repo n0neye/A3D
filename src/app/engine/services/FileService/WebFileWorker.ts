@@ -1,8 +1,7 @@
-import { FileWorker } from './FileManager';
+import { FileWorker } from './FileService';
 /**
- * BlobFileManager is a web-compatible file manager that uses in-memory storage
- * This is a placeholder implementation that will be expanded in the future
- * with cloud storage upload features
+ * WebFileWorker is a web-compatible file manager that utilizes cloud storage and in-memory storage
+ * This is a placeholder implementation that will be expanded in the future with cloud storage upload features
  */
 export class WebFileWorker implements FileWorker {
   // private static instance: WebFileWorker;

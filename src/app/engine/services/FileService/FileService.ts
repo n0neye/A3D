@@ -7,21 +7,21 @@ export interface FileWorker {
   readFileAsBase64(fileUrl: string): Promise<string>;
 }
 /**
- * Factory that provides the appropriate FileManager implementation
+ * Factory that provides the appropriate FileService implementation
  * based on the current environment
  */
-export class FileManager {
+export class FileService {
 
-  static instance: FileManager;
+  static instance: FileService;
   private isElectron: boolean = false;
   private localFileWorker: LocalFileWorker;
   private webFileWorker: WebFileWorker;
 
-  static getInstance(): FileManager {
-    if (!FileManager.instance) {
-      FileManager.instance = new FileManager();
+  static getInstance(): FileService {
+    if (!FileService.instance) {
+      FileService.instance = new FileService();
     }
-    return FileManager.instance;
+    return FileService.instance;
   }
 
   constructor() {

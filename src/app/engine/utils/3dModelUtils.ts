@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { FileManager } from '../managers/FileManager/FileManager';
+import { FileService } from '../services/FileService/FileService';
 import { setupMeshShadows } from './lightUtil';
 
 export interface ModelLoadingProgress {
@@ -35,8 +35,8 @@ export async function loadModelFromUrl(
     const isFbx = fileExtension === 'fbx';
     
     // Get file manager to handle local vs remote files
-    const fileManager = FileManager.getInstance();
-    const isLocalFile = fileManager.isLocalFile(modelUrl);
+    const fileService = FileService.getInstance();
+    const isLocalFile = fileService.isLocalFile(modelUrl);
 
     if (isFbx) {
       return await loadFbxModel(modelUrl, isLocalFile, onProgress);
@@ -65,7 +65,7 @@ async function loadGltfModel(
   if (isLocalFile && window.electron?.readFile) {
     try {
       // Get model data through file worker
-      const modelData = await FileManager.getInstance().readFile(modelUrl);
+      const modelData = await FileService.getInstance().readFile(modelUrl);
       
       // Parse the model data
       gltf = await new Promise<GLTF>((resolve, reject) => {
@@ -127,7 +127,7 @@ async function loadFbxModel(
     try {
       
       // Get model data through file worker
-      const modelData = await FileManager.getInstance().readFile(modelUrl);
+      const modelData = await FileService.getInstance().readFile(modelUrl);
       
       // FBXLoader doesn't have a parse method, create a blob URL
       const blob = new Blob([modelData]);

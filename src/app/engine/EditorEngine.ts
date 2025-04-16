@@ -1,18 +1,18 @@
-import { FileImportService } from './services/FileImportService';
+import { ImportService } from './services/ImportService';
 
 export class EditorEngine {
-  private fileImportService: FileImportService;
+  private fileImportService: ImportService;
   
   constructor() {
     // Initialize services
-    this.fileImportService = new FileImportService(this);
+    this.fileImportService = new ImportService(this);
   }
   
   /**
    * Get file import service
    * @returns FileImportService instance
    */
-  public getFileImportService(): FileImportService {
+  public getFileImportService(): ImportService {
     return this.fileImportService;
   }
 } 

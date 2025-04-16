@@ -7,7 +7,7 @@ import { get3DModelPersistentUrl, upload3DModelToGCP } from "@/app/engine/utils/
 import { GenerativeEntity } from "@/app/engine/entity/types/GenerativeEntity";
 import { loadModel } from "@/app/engine/entity/types/GenerativeEntity";
 import * as THREE from 'three';
-import { FileManager } from "@/app/engine/managers/FileManager/FileManager";
+import { FileService } from "@/app/engine/services/FileService/FileService";
 
 /**
  * Common helpers for 3D model generation
@@ -72,7 +72,7 @@ export async function generate3DModel_Trellis(
 
     try {
         // Process image URL
-        const base64Data = await FileManager.getInstance().readFileAsDataUrl(imageUrl);
+        const base64Data = await FileService.getInstance().readFileAsDataUrl(imageUrl);
 
         // Set parameters based on entity type
         const params: any = {
@@ -141,7 +141,7 @@ export async function generate3DModel_Runpod(
         entity.setProcessingState("generating3D", "Processing image...");
 
         // Process source image 
-        const base64Data = await FileManager.getInstance().readFileAsBase64(imageUrl);
+        const base64Data = await FileService.getInstance().readFileAsBase64(imageUrl);
         const payload = { imageBase64: base64Data };
 
         entity.setProcessingState("generating3D", "Submitting...");

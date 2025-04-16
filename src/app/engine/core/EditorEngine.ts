@@ -34,7 +34,7 @@ import { TimelineManager } from '../managers/timeline/TimelineManager';
 import { CreateEntityCommand } from '../../lib/commands';
 import { ObjectManager } from '../managers/ObjectManager';
 import { RenderVideoService } from '../services/RenderVideoService';
-import { FileManager } from '../managers/FileManager/FileManager';
+import { FileService } from '../services/FileService/FileService';
 
 
 /**
@@ -56,7 +56,7 @@ export class EditorEngine {
   private timelineManager: TimelineManager;
   private objectManager: ObjectManager;
   private renderVideoService: RenderVideoService;
-  private fileManager: FileManager;
+  private fileService: FileService;
 
   public observer = new Observer<{
   }>();
@@ -75,7 +75,7 @@ export class EditorEngine {
     this.environmentManager = new EnvironmentManager(this);
     this.timelineManager = new TimelineManager(this);
     this.objectManager = new ObjectManager(this);
-    this.fileManager = new FileManager();
+    this.fileService = new FileService();
 
     // Create the input manager and pass references to other managers
     this.inputManager = new InputManager(

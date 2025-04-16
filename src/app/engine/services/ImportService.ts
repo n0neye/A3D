@@ -3,7 +3,7 @@ import { EditorEngine } from "@/app/engine/EditorEngine";
 import { v4 as uuidv4 } from 'uuid';
 import { ImageRatio } from "../utils/imageUtil";
 import { EntityFactory } from "../entity/EntityFactory";
-import { FileManager } from '../managers/FileManager/FileManager';
+import { FileService } from './FileService/FileService';
 import { Basic3DEntity } from "../entity/types/Basic3DEntity";
 
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
@@ -14,7 +14,7 @@ export const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', ...ACCEPTED_MODEL_E
 /**
  * Service to handle file imports into the editor
  */
-export class FileImportService {
+export class ImportService {
     private engine: EditorEngine;
 
     constructor(engine: EditorEngine) {
@@ -35,10 +35,10 @@ export class FileImportService {
         // Determine which import method to use based on file extension
         if (ACCEPTED_MODEL_TYPES.includes(file.type) || ACCEPTED_MODEL_EXTENSIONS.includes(extension)) {
             // Handle 3D model
-            return await FileImportService.import3DModelFile(file);
+            return await ImportService.import3DModelFile(file);
         } else if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
             // Handle image
-            return await FileImportService.importImageFile(file);
+            return await ImportService.importImageFile(file);
         }
         throw new Error(`Unsupported file type: ${extension}`);
     }
@@ -51,21 +51,21 @@ export class FileImportService {
     static async importImageFile(file: File): Promise<GenerativeEntity | null> {
         try {
             // Read file as array buffer
-            const imageData = await FileImportService.readFileAsArrayBuffer(file);
+            const imageData = await ImportService.readFileAsArrayBuffer(file);
 
             // Save the file using the file manager
-            const imageUrl = await FileManager.getInstance().saveFile(
+            const imageUrl = await FileService.getInstance().saveFile(
                 imageData,
                 file.name,
                 file.type || 'image/jpeg'
             );
 
             // Determine aspect ratio (still need data URL for this)
-            const tempDataUrl = await FileImportService.readFileAsDataURL(file);
-            const ratio = await FileImportService.getImageAspectRatio(tempDataUrl);
+            const tempDataUrl = await ImportService.readFileAsDataURL(file);
+            const ratio = await ImportService.getImageAspectRatio(tempDataUrl);
 
             // Create entity with the URL
-            return await FileImportService.createEntityFromImage(imageUrl, file.name, ratio);
+            return await ImportService.createEntityFromImage(imageUrl, file.name, ratio);
         } catch (error) {
             console.error("Error importing image file:", error);
             return null;
@@ -82,10 +82,10 @@ export class FileImportService {
             // TODO: Prevent duplicated steps (save/read) 
 
             // Read the file as ArrayBuffer
-            const modelData = await FileImportService.readFileAsArrayBuffer(file);
+            const modelData = await ImportService.readFileAsArrayBuffer(file);
 
             // Save the file using file manager
-            const modelUrl = await FileManager.getInstance().saveFile(
+            const modelUrl = await FileService.getInstance().saveFile(
                 modelData,
                 file.name,
                 file.type || 'model/gltf-binary'
@@ -96,7 +96,7 @@ export class FileImportService {
             const modelFormat = extension === '.fbx' ? 'fbx' : 'glb';
 
             // Create entity with the URL
-            const entity = await FileImportService.createEntityFromModel(modelUrl, file.name, modelFormat);
+            const entity = await ImportService.createEntityFromModel(modelUrl, file.name, modelFormat);
             return entity;
         } catch (error) {
             console.error("Error importing model file:", error);
