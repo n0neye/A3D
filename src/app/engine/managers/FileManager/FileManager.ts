@@ -30,16 +30,20 @@ export class FileManager {
     this.webFileWorker = new WebFileWorker();
   }
 
-  /**
-   * Get the appropriate FileManager for the current environment
-   * Prefers LocalFileManager (Electron) if available, falls back to BlobFileManager (Web)
-   */
-  getPlatformFileWorker(): FileWorker {
+  saveFile(data: ArrayBuffer, fileName: string, fileType: string): Promise<string> {
     if (this.isElectron) {
-      return this.localFileWorker;
+      return this.localFileWorker.saveFile(data, fileName, fileType);
     }
-    return this.webFileWorker;
+    return this.webFileWorker.saveFile(data, fileName, fileType);
   }
+
+  readFile(fileUrl: string): Promise<ArrayBuffer> {
+    if (this.isLocalFile(fileUrl)) {
+      return this.localFileWorker.readFile(fileUrl);
+    }
+    return this.webFileWorker.readFile(fileUrl);
+  }
+  
 
   readFileAsBase64(fileUrl: string): Promise<string> {
     if (this.isLocalFile(fileUrl)) {

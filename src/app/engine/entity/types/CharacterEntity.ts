@@ -4,6 +4,7 @@ import { EntityBase, EntityType, SerializedEntityData } from '../base/EntityBase
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
 import { BoneControl } from '../components/BoneControl';
 import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
+import { loadModelFromUrl } from '@/app/engine/utils/3dModelUtils';
 
 export interface CharacterEntityProps {
     url: string;
@@ -144,17 +145,20 @@ export class CharacterEntity extends EntityBase {
             console.error("CharacterEntity: No URL provided.");
             return;
         }
+        
         this._isLoading = true;
         console.log(`Loading character from: ${this.characterProps.url}`);
+        
         try {
-            // Use Three.js GLTFLoader to load the model
-            const loader = new GLTFLoader();
-            const result = await loader.loadAsync(this.characterProps.url);
+            // Use the unified loading function
+            const result = await loadModelFromUrl(this.characterProps.url, (progress) => {
+                console.log(`Loading character: ${progress.message || 'in progress...'}`);
+            });
+            
+            console.log("CharacterEntity: Model load result:", result);
 
-            console.log("CharacterEntity: GLTF load result:", result);
-
-            if (result.scene) {
-                this.rootMesh = result.scene;
+            if (result.rootMesh) {
+                this.rootMesh = result.rootMesh;
                 this.add(this.rootMesh); // Add to this entity
                 this.rootMesh.name = `${this.name}_meshRoot`;
 
@@ -190,18 +194,13 @@ export class CharacterEntity extends EntityBase {
                     console.warn(`Character ${this.name} loaded but no skeleton found.`);
                 }
 
-                // Handle animations if needed
+                // Handle animations
                 if (result.animations && result.animations.length > 0) {
                     console.log(`Character has ${result.animations.length} animations`);
                     // Create animation mixer and store animations for future use
                     // TODO: Implement animation playback system
                 }
 
-                this.rootMesh.traverse(object => {
-                    if (object instanceof THREE.Mesh) {
-                        setupMeshShadows(object);
-                    }
-                });
                 onLoaded?.(this);
             } else {
                 console.error(`No scene loaded for character ${this.name}`);

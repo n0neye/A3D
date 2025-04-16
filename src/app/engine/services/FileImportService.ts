@@ -11,24 +11,6 @@ export const ACCEPTED_MODEL_TYPES = ['model/gltf-binary', 'model/gltf+json', 'ap
 export const ACCEPTED_MODEL_EXTENSIONS = ['.glb', '.gltf', '.fbx'];
 export const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', ...ACCEPTED_MODEL_EXTENSIONS];
 
-// Declare global electron interface
-declare global {
-    interface Window {
-        electron?: {
-            saveFile: (data: ArrayBuffer, fileName: string) => Promise<string>;
-            readFile: (filePath: string) => Promise<ArrayBuffer>;
-            getAppDataPath: () => Promise<string>;
-            loadImageData: (filePath: string) => Promise<string>;
-            isElectron: boolean;
-            versions?: {
-                electron: string;
-                node: string;
-                chrome: string;
-            };
-        }
-    }
-}
-
 /**
  * Service to handle file imports into the editor
  */
@@ -68,14 +50,11 @@ export class FileImportService {
      */
     static async importImageFile(file: File): Promise<GenerativeEntity | null> {
         try {
-            // Get appropriate file manager
-            const fileWorker = FileManager.getInstance().getPlatformFileWorker();
-
             // Read file as array buffer
             const imageData = await FileImportService.readFileAsArrayBuffer(file);
 
             // Save the file using the file manager
-            const imageUrl = await fileWorker.saveFile(
+            const imageUrl = await FileManager.getInstance().saveFile(
                 imageData,
                 file.name,
                 file.type || 'image/jpeg'
@@ -100,15 +79,13 @@ export class FileImportService {
      */
     static async import3DModelFile(file: File): Promise<Basic3DEntity | null> {
         try {
-            // TODO: Prevent duplicated read/save with createEntityFromModel?
-            // Get appropriate file manager
-            const fileWorker = FileManager.getInstance().getPlatformFileWorker();
+            // TODO: Prevent duplicated steps (save/read) 
 
             // Read the file as ArrayBuffer
             const modelData = await FileImportService.readFileAsArrayBuffer(file);
 
             // Save the file using file manager
-            const modelUrl = await fileWorker.saveFile(
+            const modelUrl = await FileManager.getInstance().saveFile(
                 modelData,
                 file.name,
                 file.type || 'model/gltf-binary'
