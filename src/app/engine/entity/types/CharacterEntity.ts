@@ -286,7 +286,7 @@ export class CharacterEntity extends EntityBase {
                 this,
                 {
                     // Quick hack to keep initial size consistent
-                    diameter: CharacterEntity.boneControlSize / 2,
+                    diameter: CharacterEntity.boneControlSize / 2 / (this.rootMesh?.scale.x || 1),
                 }
             );
 
