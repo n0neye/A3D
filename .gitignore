@@ -40,6 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local config
 /gcp
 .env
 .env.local
+
+# assets
+/_assets

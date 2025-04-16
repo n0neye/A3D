@@ -2,6 +2,21 @@ import * as THREE from 'three';
 import { ImageRatio } from "@/app/engine/utils/imageUtil";
 import { EditorEngine } from "../core/EditorEngine";
 
+export const skyboxFolder = "./demoAssets/skybox/";
+export const skyboxFiles = [
+    "1.jpg",
+    "2.jpg",
+    "3.jpg",
+    "4.jpg",
+    "5.jpg",
+    "PaintedSky_Dawn.jpg",
+    "6.jpg",
+    "fantasy.jpg",
+    "7.jpg",
+    "8.jpg",
+    "9.jpg",
+];
+
 interface SerializedEnvironment {
     sun?: {
         intensity: number;
@@ -18,6 +33,9 @@ interface SerializedEnvironment {
         padding: number;
         rightExtraPadding?: number;
     };
+    skybox: {
+        path?: string;
+    };
     camera?: {
         fov: number;
         farClip: number;
@@ -31,14 +49,16 @@ export interface EnvironmentObjects {
     sunHelper?: THREE.DirectionalLightHelper;
     ambientLight?: THREE.AmbientLight;
     pointLights: THREE.PointLight[];
-    skybox?: THREE.Mesh;
+    skybox?: {
+        path?: string;
+    }
     background?: THREE.Mesh;
     grid?: THREE.GridHelper | THREE.Mesh;
 }
 
 export class EnvironmentManager {
     private engine: EditorEngine;
-    private envObjects: EnvironmentObjects = {
+    private envSetting: EnvironmentObjects = {
         pointLights: [],
     };
 
@@ -65,7 +85,7 @@ export class EnvironmentManager {
         scene.add(grid);
 
         // Store in environment objects
-        this.envObjects.grid = grid;
+        this.envSetting.grid = grid;
 
         return grid;
     };
@@ -103,33 +123,42 @@ export class EnvironmentManager {
         // this.envObjects.sunHelper = sunHelper;
     };
 
-    createSkybox = (scene: THREE.Scene, equirectangularPath?: string): void => {
-        if (equirectangularPath) {
+    createSkybox = (scene: THREE.Scene, url?: string): void => {
+        if (url) {
             // Load equirectangular texture
             const textureLoader = new THREE.TextureLoader();
-            textureLoader.load(equirectangularPath, (texture) => {
+            textureLoader.load(url, (texture) => {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
-                
+
                 // Set as background and environment map
                 scene.background = texture;
                 scene.environment = texture; // For reflections on materials
-                scene.environmentIntensity = 0.2;
+                scene.environmentIntensity = 0.5;
             });
         } else {
             // Fallback to solid color background
             scene.background = new THREE.Color(0.3, 0.3, 0.3);
         }
+
+        this.envSetting.skybox = {
+            path: url
+        };
     };
 
+
     public getEnvObjects(): EnvironmentObjects {
-        return this.envObjects;
+        return this.envSetting;
     }
 
     // Serialize environment settings
     serializeEnvironment(): SerializedEnvironment {
         const scene = this.engine.getScene();
-        const env = this.envObjects;
-        const serializedEnv: SerializedEnvironment = {};
+        const env = this.envSetting;
+        const serializedEnv: SerializedEnvironment = {
+            skybox: {
+                path: env.skybox?.path || undefined
+            }
+        };
 
         // Serialize sun properties
         if (env.sun) {
@@ -184,33 +213,39 @@ export class EnvironmentManager {
         const scene = this.engine.getScene();
 
         // Apply sun settings
-        if (data.sun && this.envObjects.sun) {
-            this.envObjects.sun.intensity = data.sun.intensity;
-            this.envObjects.sun.color.setRGB(
+        if (data.sun && this.envSetting.sun) {
+            this.envSetting.sun.intensity = data.sun.intensity;
+            this.envSetting.sun.color.setRGB(
                 data.sun.color.r,
                 data.sun.color.g,
                 data.sun.color.b
             );
-            this.envObjects.sun.position.set(
+            this.envSetting.sun.position.set(
                 data.sun.direction.x,
                 data.sun.direction.y,
                 data.sun.direction.z
             );
 
             // Update helper if it exists
-            if (this.envObjects.sunHelper) {
-                this.envObjects.sunHelper.update();
+            if (this.envSetting.sunHelper) {
+                this.envSetting.sunHelper.update();
             }
         }
 
         // Apply ambient light settings
-        if (data.ambientLight && this.envObjects.ambientLight) {
-            this.envObjects.ambientLight.intensity = data.ambientLight.intensity;
-            this.envObjects.ambientLight.color.setRGB(
+        if (data.ambientLight && this.envSetting.ambientLight) {
+            this.envSetting.ambientLight.intensity = data.ambientLight.intensity;
+            this.envSetting.ambientLight.color.setRGB(
                 data.ambientLight.color.r,
                 data.ambientLight.color.g,
                 data.ambientLight.color.b
             );
+        }
+
+        // Apply skybox settings
+        if (data.skybox && this.envSetting.skybox) {
+            this.envSetting.skybox.path = data.skybox.path;
+            this.createSkybox(scene, data.skybox.path);
         }
 
         // Apply camera settings
