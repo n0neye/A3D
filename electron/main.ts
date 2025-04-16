@@ -19,7 +19,7 @@ function createWindow() {
   });
 
   const startUrl = isDev
-    ? 'http://localhost:3000' // Load Next.js dev server in development mode
+    ? 'http://localhost:3030' // Load Next.js dev server in development mode
     : url.format({
         pathname: path.join(__dirname, '../out/index.html'), // Load Next.js exported static files in production mode
         protocol: 'file:',

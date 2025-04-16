@@ -104,7 +104,7 @@ The RenderService handles all rendering operations:
 
 1. Install dependencies: `npm install`
 2. Run the development server: `npm run dev`
-3. Open your browser to `http://localhost:3000`
+3. Open your browser to `http://localhost:3030`
 
 ## Usage
 
