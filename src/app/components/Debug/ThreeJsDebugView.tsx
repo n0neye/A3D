@@ -3,7 +3,7 @@ import { useEditorEngine } from '@/app/context/EditorEngineContext';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, ChevronRight, RefreshCw, Box, Activity } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Card,
   CardContent,
   CardHeader,
@@ -14,6 +14,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Switch } from "@/components/ui/switch";
 import * as THREE from 'three';
 import { EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { IconEyeOff } from '@tabler/icons-react';
+import { IconEye } from '@tabler/icons-react';
 
 interface ThreeObjectNodeProps {
   object: THREE.Object3D;
@@ -22,54 +24,61 @@ interface ThreeObjectNodeProps {
   onSelectObject: (object: THREE.Object3D) => void;
 }
 
-const ThreeObjectNode: React.FC<ThreeObjectNodeProps> = ({ 
-  object, 
-  level, 
-  selectedObject, 
-  onSelectObject 
+const ThreeObjectNode: React.FC<ThreeObjectNodeProps> = ({
+  object,
+  level,
+  selectedObject,
+  onSelectObject
 }) => {
   const [expanded, setExpanded] = useState(false);
   const isSelected = selectedObject?.uuid === object.uuid;
   const hasChildren = object.children.length > 0;
-  
+
   // Determine if this is an entity
   const isEntity = object instanceof EntityBase;
-  
+
   return (
     <div className="select-none">
-      <div 
+      <div
         className={`flex items-center py-1 px-1 ${isSelected ? 'bg-primary/20 rounded' : 'hover:bg-gray-100 dark:hover:bg-gray-800 rounded'}`}
         style={{ paddingLeft: `${level * 12}px` }}
         onClick={() => onSelectObject(object)}
       >
-        <div className="flex items-center mr-1" onClick={(e) => { 
+        <div className="flex items-center mr-1" onClick={(e) => {
           e.stopPropagation();
           setExpanded(!expanded);
         }}>
           {hasChildren ? (
-            expanded ? 
-              <ChevronDown className="h-4 w-4" /> : 
+            expanded ?
+              <ChevronDown className="h-4 w-4" /> :
               <ChevronRight className="h-4 w-4" />
           ) : (
             <div className="w-4"></div>
           )}
         </div>
         <Box className="h-4 w-4 mr-2" />
-        <span className={`text-sm truncate ${isEntity ? 'font-medium' : ''}`}>
+        <span className={`text-sm truncate  ${isEntity ? 'font-medium' : ''}`}>
           {object.name || `<${object.type}>`}
           <span className="text-xs text-gray-400 ml-1">
             {isEntity ? `[Entity: ${(object as EntityBase).entityType}]` : `[${object.type}]`}
           </span>
         </span>
+        {/* Toggle visibility */}
+        {object instanceof THREE.Object3D && <button className='p-1'
+          onClick={() => {
+            object.visible = !object.visible;
+          }}>
+          {object.visible ? <IconEye size={16} /> : <IconEyeOff size={16} />}
+        </button>}
       </div>
-      
+
       {expanded && hasChildren && (
         <div>
           {object.children.map((child) => (
-            <ThreeObjectNode 
-              key={child.uuid} 
-              object={child} 
-              level={level + 1} 
+            <ThreeObjectNode
+              key={child.uuid}
+              object={child}
+              level={level + 1}
               selectedObject={selectedObject}
               onSelectObject={onSelectObject}
             />
@@ -105,7 +114,7 @@ interface ObjectProperties {
   visible: PropertyState;
 }
 
-const ThreeObjectDetails: React.FC<{ 
+const ThreeObjectDetails: React.FC<{
   object: THREE.Object3D | null;
   liveMonitoring: boolean;
 }> = ({ object, liveMonitoring }) => {
@@ -158,7 +167,7 @@ const ThreeObjectDetails: React.FC<{
       if (frameCountRef.current === 0 && object) {
         updateProperties(object);
       }
-      
+
       animationFrameRef.current = requestAnimationFrame(updatePropertiesLoop);
     };
 
@@ -180,9 +189,9 @@ const ThreeObjectDetails: React.FC<{
         z: { value: Number(obj.position.z).toFixed(2), isChanging: false }
       },
       rotation: {
-        x: { value: (Number(obj.rotation.x) * (180/Math.PI)).toFixed(1), isChanging: false },
-        y: { value: (Number(obj.rotation.y) * (180/Math.PI)).toFixed(1), isChanging: false },
-        z: { value: (Number(obj.rotation.z) * (180/Math.PI)).toFixed(1), isChanging: false }
+        x: { value: (Number(obj.rotation.x) * (180 / Math.PI)).toFixed(1), isChanging: false },
+        y: { value: (Number(obj.rotation.y) * (180 / Math.PI)).toFixed(1), isChanging: false },
+        z: { value: (Number(obj.rotation.z) * (180 / Math.PI)).toFixed(1), isChanging: false }
       },
       scale: {
         x: { value: Number(obj.scale.x).toFixed(2), isChanging: false },
@@ -199,38 +208,38 @@ const ThreeObjectDetails: React.FC<{
 
     const prev = prevPropsRef.current;
     const newProperties = { ...properties };
-    
+
     // Check for position changes
     ['x', 'y', 'z'].forEach((axis) => {
       const propValue = Number(obj.position[axis as keyof THREE.Vector3]);
       const value = propValue.toFixed(2);
       newProperties.position[axis as keyof typeof newProperties.position].value = value;
-      newProperties.position[axis as keyof typeof newProperties.position].isChanging = 
+      newProperties.position[axis as keyof typeof newProperties.position].isChanging =
         prev.position![axis as keyof THREE.Vector3] !== obj.position[axis as keyof THREE.Vector3];
     });
-    
+
     // Check for rotation changes (convert to degrees)
     ['x', 'y', 'z'].forEach((axis) => {
       const propValue = Number(obj.rotation[axis as keyof THREE.Euler]);
-      const value = (propValue * (180/Math.PI)).toFixed(1);
+      const value = (propValue * (180 / Math.PI)).toFixed(1);
       newProperties.rotation[axis as keyof typeof newProperties.rotation].value = value;
-      newProperties.rotation[axis as keyof typeof newProperties.rotation].isChanging = 
+      newProperties.rotation[axis as keyof typeof newProperties.rotation].isChanging =
         prev.rotation![axis as keyof THREE.Euler] !== obj.rotation[axis as keyof THREE.Euler];
     });
-    
+
     // Check for scale changes
     ['x', 'y', 'z'].forEach((axis) => {
       const propValue = Number(obj.scale[axis as keyof THREE.Vector3]);
       const value = propValue.toFixed(2);
       newProperties.scale[axis as keyof typeof newProperties.scale].value = value;
-      newProperties.scale[axis as keyof typeof newProperties.scale].isChanging = 
+      newProperties.scale[axis as keyof typeof newProperties.scale].isChanging =
         prev.scale![axis as keyof THREE.Vector3] !== obj.scale[axis as keyof THREE.Vector3];
     });
-    
+
     // Check visibility change
     newProperties.visible.value = obj.visible ? 'Yes' : 'No';
     newProperties.visible.isChanging = prev.visible !== obj.visible;
-    
+
     // Update prev values reference
     prevPropsRef.current = {
       position: obj.position.clone(),
@@ -238,7 +247,7 @@ const ThreeObjectDetails: React.FC<{
       scale: obj.scale.clone(),
       visible: obj.visible
     };
-    
+
     setProperties(newProperties);
   };
 
@@ -261,9 +270,9 @@ const ThreeObjectDetails: React.FC<{
   };
 
   const rotation = {
-    x: (object.rotation.x * (180/Math.PI)).toFixed(1),
-    y: (object.rotation.y * (180/Math.PI)).toFixed(1),
-    z: (object.rotation.z * (180/Math.PI)).toFixed(1),
+    x: (object.rotation.x * (180 / Math.PI)).toFixed(1),
+    y: (object.rotation.y * (180 / Math.PI)).toFixed(1),
+    z: (object.rotation.z * (180 / Math.PI)).toFixed(1),
   };
 
   const scale = {
@@ -277,13 +286,13 @@ const ThreeObjectDetails: React.FC<{
   if (object instanceof THREE.Mesh) {
     const geometry = object.geometry;
     const material = object.material;
-    
+
     const geometryInfo = {
       type: geometry.type,
       vertices: geometry.attributes?.position ? geometry.attributes.position.count : 'N/A',
       index: geometry.index ? geometry.index.count / 3 : 'N/A',
     };
-    
+
     let materialInfo;
     if (Array.isArray(material)) {
       materialInfo = `Multiple (${material.length})`;
@@ -294,7 +303,7 @@ const ThreeObjectDetails: React.FC<{
         transparent: material.transparent ? 'Yes' : 'No',
       };
     }
-    
+
     meshDetails = (
       <>
         <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-800">
@@ -303,7 +312,7 @@ const ThreeObjectDetails: React.FC<{
           <div><span className="opacity-70">Vertices:</span> {geometryInfo.vertices}</div>
           <div><span className="opacity-70">Triangles:</span> {geometryInfo.index}</div>
         </div>
-        
+
         <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-800">
           <div className="font-medium mb-1">Material</div>
           {typeof materialInfo === 'string' ? (
@@ -340,34 +349,34 @@ const ThreeObjectDetails: React.FC<{
           <span className="font-medium">Type:</span> {object.type}
         </div>
         <div>
-          <span className="font-medium">UUID:</span> 
+          <span className="font-medium">UUID:</span>
           <span className="text-xs break-all opacity-70">{object.uuid}</span>
         </div>
         <div>
           <span className="font-medium">Visible:</span> {renderProperty(properties.visible)}
         </div>
         <div>
-          <span className="font-medium">Position:</span> 
-          x: {renderProperty(properties.position.x)}, 
-          y: {renderProperty(properties.position.y)}, 
+          <span className="font-medium">Position:</span>
+          x: {renderProperty(properties.position.x)},
+          y: {renderProperty(properties.position.y)},
           z: {renderProperty(properties.position.z)}
         </div>
         <div>
-          <span className="font-medium">Rotation:</span> 
-          x: {renderProperty(properties.rotation.x, '°')}, 
-          y: {renderProperty(properties.rotation.y, '°')}, 
+          <span className="font-medium">Rotation:</span>
+          x: {renderProperty(properties.rotation.x, '°')},
+          y: {renderProperty(properties.rotation.y, '°')},
           z: {renderProperty(properties.rotation.z, '°')}
         </div>
         <div>
-          <span className="font-medium">Scale:</span> 
-          x: {renderProperty(properties.scale.x)}, 
-          y: {renderProperty(properties.scale.y)}, 
+          <span className="font-medium">Scale:</span>
+          x: {renderProperty(properties.scale.x)},
+          y: {renderProperty(properties.scale.y)},
           z: {renderProperty(properties.scale.z)}
         </div>
         <div>
           <span className="font-medium">Children:</span> {object.children.length}
         </div>
-        
+
         {meshDetails}
       </CardContent>
     </Card>
@@ -390,10 +399,10 @@ const ThreeJsDebugView: React.FC = () => {
 
   const handleRefresh = () => {
     if (!engine) return;
-    
+
     setIsRefreshing(true);
     setSceneRoot(engine.getScene());
-    
+
     // Visual feedback
     setTimeout(() => {
       setIsRefreshing(false);
@@ -429,14 +438,14 @@ const ThreeJsDebugView: React.FC = () => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={handleRefresh}
                   className="h-7 w-7"
                 >
-                  <RefreshCw 
-                    className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+                  <RefreshCw
+                    className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
                   />
                 </Button>
               </TooltipTrigger>
@@ -447,22 +456,22 @@ const ThreeJsDebugView: React.FC = () => {
           </TooltipProvider>
         </div>
       </div>
-      
+
       <div className="flex flex-col h-[calc(100%-2rem)]">
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full pr-4">
-            <ThreeObjectNode 
-              object={sceneRoot} 
-              level={0} 
+            <ThreeObjectNode
+              object={sceneRoot}
+              level={0}
               selectedObject={selectedObject}
               onSelectObject={handleSelectObject}
             />
           </ScrollArea>
         </div>
-        
+
         <div className="mt-4 pt-2 border-t border-gray-200 dark:border-gray-800">
-          <ThreeObjectDetails 
-            object={selectedObject} 
+          <ThreeObjectDetails
+            object={selectedObject}
             liveMonitoring={liveMonitoring}
           />
         </div>

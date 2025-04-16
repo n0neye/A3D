@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const DebugPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("entities");
+  const [activeTab, setActiveTab] = useState("threejs");
   const { engine } = useEditorEngine();
 
   if (!engine) return null;

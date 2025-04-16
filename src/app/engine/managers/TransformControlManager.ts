@@ -240,7 +240,7 @@ export class TransformControlManager {
         if (node) {
             this._currentTarget = node;
             this.transformControls.attach(node);
-            console.log(`TransformControlManager.attachToNode: Attached to node: ${node.name}`, node);
+            console.log(`TransformControlManager.attachToNode: Attached to node: ${node.name}`);
         }
     }
 
