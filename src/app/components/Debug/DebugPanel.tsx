@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useEditorEngine } from '@/app/context/EditorEngineContext';
 import SceneOutliner from './SceneOutliner';
 import EntityDetails from './EntityDetails';
-import ThreeJsDebugView from './ThreeJsDebugView';
+import ThreeJsDebugView from './ThreeDebugView';
 import { Bug, X, Keyboard, Layers } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
