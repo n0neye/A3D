@@ -4,6 +4,7 @@ import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
 import { IconEye, IconEyeOff, IconLinkPlus, IconPlayerPlay, IconPlayerPause, IconChevronsDown, IconChevronsUp } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { BoneControl } from '../engine/entity/components/BoneControl';
+import { ICharacterData, characterDatas } from '../engine/data/CharacterData';
 
 const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const { selectedSelectable, engine } = useEditorEngine();
@@ -63,8 +64,8 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   useEffect(() => {
     if (entity) {
       // Check if there are animations and set default animation
-      if (entity.animations && entity.animations.length > 0) {
-        setSelectedAnimationIndex(entity.animations.length - 1);
+      if (entity.modelAnimations && entity.modelAnimations.length > 0) {
+        setSelectedAnimationIndex(entity.modelAnimations.length - 1);
         setIsPlaying(entity.currentAnimationAction ? !entity.currentAnimationAction.paused : false);
       } else {
         setSelectedAnimationIndex(null);
@@ -98,22 +99,18 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     }
   };
 
-  const selectAnimation = (index: number) => {
-    if (entity.animations && entity.animations.length > index && entity.animationMixer) {
-      // Stop current animation
-      if (entity.currentAnimationAction) {
-        entity.currentAnimationAction.stop();
-      }
+  const selectFileAnimation = (index: number) => {
+    // entity.selectAnimation(index, isPlaying);
+    entity.selectAnimationFile(index, isPlaying);
+    setSelectedAnimationIndex(index);
+    setShowAnimationList(false);
+  };
 
-      // Start new animation
-      const newAction = entity.animationMixer.clipAction(entity.animations[index]);
-      entity.currentAnimationAction = newAction;
-      newAction.play();
-      newAction.paused = !isPlaying;
-
-      setSelectedAnimationIndex(index);
-      setShowAnimationList(false);
-    }
+  
+  const selectModelAnimation = (index: number) => {
+    entity.selectModelAnimation(index, isPlaying);
+    setSelectedAnimationIndex(index);
+    setShowAnimationList(false);
   };
 
   const toggleAnimationList = () => {
@@ -124,7 +121,7 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     <>
       <div className="p-2 flex flex-row gap-2 justify-center items-center">
         {/* Animation Controls */}
-        {entity.animations && entity.animations.length > 0 && (
+        {entity.animationsFiles.length + entity.modelAnimations.length > 0 && (
           <div className="flex items-center gap-2 mb-1">
             <Button
               variant="outline"
@@ -134,7 +131,6 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
             >
               {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
             </Button>
-
             <div className="relative">
               <Button
                 variant="outline"
@@ -142,9 +138,7 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
                 onClick={toggleAnimationList}
                 className="text-xs flex items-center"
               >
-                {selectedAnimationIndex !== null && entity.animations[selectedAnimationIndex]?.name
-                  ? entity.animations[selectedAnimationIndex].name
-                  : "Select Animation"}
+                {"Select Animation"}
                 {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
               </Button>
 
@@ -155,22 +149,28 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
                 >
                   <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
                     <h4 className="text-sm font-medium mb-2">Animations:</h4>
-                    {entity.animations.length === 0 ? (
-                      <p className="text-xs text-gray-400">No animations available</p>
-                    ) : (
-                      <ul className="space-y-1">
-                        {entity.animations.map((animation, index) => (
-                          <li
-                            key={`anim-${index}`}
-                            className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
-                              }`}
-                            onClick={() => selectAnimation(index)}
-                          >
-                            {animation.name || `Animation ${index + 1}`}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <ul className="space-y-1">
+                      {entity.modelAnimations.map((animation, index) => (
+                        <li
+                          key={`anim-${index}`}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
+                            }`}
+                          onClick={() => selectModelAnimation(index)}
+                        >
+                          {animation.name || `Animation ${index + 1}`}
+                        </li>
+                      ))}
+                      {entity.animationsFiles.map((animation, index) => (
+                        <li
+                          key={`anim-${index}`}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
+                            }`}
+                          onClick={() => selectFileAnimation(index)}
+                        >
+                          {animation.replace('.fbx', '') || `Animation ${index + 1}`}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               )}

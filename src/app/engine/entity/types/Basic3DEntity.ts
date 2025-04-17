@@ -25,7 +25,7 @@ export class Basic3DEntity extends EntityBase {
   modelMesh?: THREE.Object3D;
   isLoaded: boolean = false;
   loadError?: string;
-  animations: THREE.AnimationClip[] = [];
+  modelAnimations: THREE.AnimationClip[] = [];
 
   constructor(
     name: string,
@@ -69,7 +69,7 @@ export class Basic3DEntity extends EntityBase {
       
       // Store the result
       this.modelMesh = result.rootMesh;
-      this.animations = result.animations;
+      this.modelAnimations = result.animations;
       
       // Add the model to this entity
       this.add(this.modelMesh);

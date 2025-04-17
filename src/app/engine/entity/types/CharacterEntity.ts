@@ -5,6 +5,8 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analyt
 import { BoneControl } from '../components/BoneControl';
 import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
 import { loadModelFromUrl } from '@/app/engine/utils/3dModelUtils';
+import { characterDatas, ICharacterData } from '@/app/engine/data/CharacterData';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 
 export interface CharacterEntityProps {
     url: string;
@@ -24,7 +26,8 @@ export class CharacterEntity extends EntityBase {
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
     public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
-    public animations: THREE.AnimationClip[] = [];
+    public modelAnimations: THREE.AnimationClip[] = [];
+    public animationsFiles: string[] = [];
     public animationMixer: THREE.AnimationMixer | null = null;
     public currentAnimationAction: THREE.AnimationAction | null = null;
 
@@ -33,6 +36,7 @@ export class CharacterEntity extends EntityBase {
     private _loadingPromise: Promise<void> | null = null;
     private _isVisualizationVisible = false;
     private _drawLines = true;
+    private _characterData: ICharacterData | null = null;
 
     // Materials
     public static DefaultBoneMaterial: THREE.Material;
@@ -198,12 +202,12 @@ export class CharacterEntity extends EntityBase {
                     console.warn(`Character ${this.name} loaded but no skeleton found.`);
                 }
 
-                // Handle animations
-                this.animations = result.animations || [];
-                if (this.animations.length > 0) {
+                // Handle model animations
+                this.modelAnimations = result.animations || [];
+                if (this.modelAnimations.length > 0) {
                     // create animation mixer and store animations for future use
                     this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
-                    this.currentAnimationAction = this.animationMixer.clipAction(this.animations[this.animations.length - 1]);
+                    this.currentAnimationAction = this.animationMixer.clipAction(this.modelAnimations[this.modelAnimations.length - 1]);
                     this.currentAnimationAction.play();
                     this.engine.addMixer(this.uuid, this.animationMixer);
                     setTimeout(() => {
@@ -211,6 +215,19 @@ export class CharacterEntity extends EntityBase {
                             this.currentAnimationAction.paused = true;
                         }
                     }, 5);
+                }
+
+                // Get animation files from character data
+                const characterData = characterDatas.get(this.name);
+                console.log("CharacterEntity: find characterData", this.name, characterData);
+                if (characterData) {
+                    this.animationsFiles = characterData.animationsFiles;
+                    this._characterData = characterData;
+                    if (this.animationsFiles.length > 0) {
+                        this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
+                        this.engine.addMixer(this.uuid, this.animationMixer);
+                        // this.selectAnimationFile(0, false);
+                    }
                 }
 
                 onLoaded?.(this);
@@ -459,6 +476,63 @@ export class CharacterEntity extends EntityBase {
 
     public undoDelete(): void {
         super.undoDelete();
+    }
+
+    public selectModelAnimation(index: number, isPlaying: boolean): void {
+        if (this.modelAnimations && this.modelAnimations.length > index && this.animationMixer) {
+            // Stop current animation
+            if (this.currentAnimationAction) {
+                this.currentAnimationAction.stop();
+            }
+            // Start new animation
+            const newAction = this.animationMixer.clipAction(this.modelAnimations[index]);
+            this.currentAnimationAction = newAction;
+            newAction.play();
+            newAction.paused = !isPlaying;
+        }
+    }
+
+    public async selectAnimationFile(index: number, playOnLoaded: boolean): Promise<void> {
+        
+        console.log("CharacterEntity: selectAnimationFile", index, playOnLoaded, this.animationsFiles, this.animationMixer);
+
+        if (!this.animationsFiles || !this.animationMixer) {
+            console.error("CharacterEntity: selectAnimationFile: no animations files or animation mixer");
+            return;
+        }
+        if (this.animationsFiles.length <= index) {
+            console.error("CharacterEntity: selectAnimationFile: index out of range");
+            return;
+        }
+
+        // Stop current animation
+        if (this.currentAnimationAction) {
+            this.currentAnimationAction.stop();
+        }
+
+        // Load animation file
+        const animationFile = this.animationsFiles[index];
+        const animation = await this.loadAnimationFromFbxFile(this._characterData?.basePath + "animations/" + animationFile);
+
+        // Create new animation action
+        const newAction = this.animationMixer.clipAction(animation);
+
+        // Store the new animation action
+        this.currentAnimationAction = newAction;
+
+        // Play the new animation
+        newAction.play();
+        newAction.paused = !playOnLoaded;
+    }
+
+    private async loadAnimationFromFbxFile(url: string): Promise<THREE.AnimationClip> {
+        const fbxLoader = new FBXLoader();
+        const result = await fbxLoader.loadAsync(url);
+        console.log("CharacterEntity: loadAnimationFromFbxFile result animations:", result.animations);
+        if(result.animations == null || result.animations.length == 0) {
+            throw new Error("CharacterEntity: loadAnimationFromFbxFile: no animations found");
+        }
+        return result.animations[0];
     }
 
 } 
