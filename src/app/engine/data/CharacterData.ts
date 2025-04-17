@@ -25,23 +25,28 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
             'Male Laying Pose.fbx',
         ]
     }],
-    ["mannequin", {
+    ["Mannequin", {
         name: 'Mannequin',
         basePath: '/characters/mannequin_man_idle/',
         fileName: 'mannequin_man_idle_opt.glb',
         thumbnail: '/characters/thumbs/mannequin.webp',
         scale: 1,
-        animationsFiles: []
+        animationsFiles: [
+            'Fast Run.fbx',
+            'Jump.fbx',
+        ]
     }],
-    ["xbot", {
+    ["Xbot", {
         name: 'Xbot',
         basePath: '/characters/xbot/',
-        fileName: 'xbot_idle_opt.glb',
+        fileName: 'xbot_Idle.fbx',
         thumbnail: '/characters/thumbs/xbot.webp',
         scale: 1,
-        animationsFiles: []
+        animationsFiles: [
+            'Fast Run.fbx',
+        ]
     }],
-    ["cat", {
+    ["Cat", {
         name: 'Cat',
         basePath: '/characters/cat/',
         fileName: 'cat_orange.glb',

@@ -338,6 +338,17 @@ const ThreeObjectDetails: React.FC<{
     );
   };
 
+  // Format userData for display
+  let userDataDisplay = null;
+  console.log("ThreeObjectDetails: userData", object.userData);
+  if (object.userData && Object.keys(object.userData).length > 0) {
+    try {
+      userDataDisplay = Object.entries(object.userData).map(([key, value]) => `${key}: ${value}`).join('\n');
+    } catch (error) {
+      userDataDisplay = 'Error stringifying userData';
+    }
+  }
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-2">
@@ -378,6 +389,16 @@ const ThreeObjectDetails: React.FC<{
         </div>
 
         {meshDetails}
+
+        {/* Display userData */}
+        {userDataDisplay && (
+          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+            <div className="font-medium mb-1">User Data</div>
+            <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto max-h-40">
+              <code>{userDataDisplay}</code>
+            </pre>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
