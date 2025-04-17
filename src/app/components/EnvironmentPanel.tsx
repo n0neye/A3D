@@ -48,14 +48,14 @@ const EnvironmentPanel: React.FC = () => {
               {skyboxFiles.map((skyboxFile, index) => (
                 <div 
                   key={index}
-                  className={`relative cursor-pointer rounded-md overflow-hidden hover:ring-2 hover:ring-primary transition-all 
+                  className={`relative cursor-pointer overflow-hidden hover:ring-2 hover:ring-primary transition-all rounded-full h-16 w-16 shadow-lg
                     ${activeSkybox === skyboxFile ? 'ring-2 ring-primary' : ''}`}
                   onClick={() => handleSkyboxChange(skyboxFile)}
                 >
                   <img 
                     src={`${skyboxFolder}${skyboxFile.replace('.jpg', '_thumb.webp')}`} 
                     alt={`Skybox ${index + 1}`}
-                    className="w-full h-16 object-cover"
+                    className="h-16 w-16 "
                   />
                 </div>
               ))}

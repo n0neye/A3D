@@ -97,25 +97,25 @@ export class EnvironmentManager {
         // this.envObjects.ambientLight = ambientLight;
 
         // Create directional light (sun)
-        // const sunLight = new THREE.DirectionalLight(0xffffff, 0.3);
-        // sunLight.position.set(0, 2, 0);
-        // sunLight.castShadow = false;
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        sunLight.position.set(0, 2, 0);
+        sunLight.castShadow = false;
 
-        // // Configure shadow properties
-        // sunLight.shadow.mapSize.width = 2048;
-        // sunLight.shadow.mapSize.height = 2048;
-        // sunLight.shadow.camera.near = 0.5;
-        // sunLight.shadow.camera.far = 50;
+        // Configure shadow properties
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 50;
 
-        // // Set up shadow camera frustum
-        // const d = 20;
-        // sunLight.shadow.camera.left = -d;
-        // sunLight.shadow.camera.right = d;
-        // sunLight.shadow.camera.top = d;
-        // sunLight.shadow.camera.bottom = -d;
+        // Set up shadow camera frustum
+        const d = 20;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
 
-        // scene.add(sunLight);
-        // this.envObjects.sun = sunLight;
+        scene.add(sunLight);
+        this.envSetting.sun = sunLight;
 
         // // Create helper for the sun
         // const sunHelper = new THREE.DirectionalLightHelper(sunLight, 5);
