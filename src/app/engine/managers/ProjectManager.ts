@@ -148,8 +148,7 @@ export class ProjectManager {
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
 
         // Serialize timeline data
-        const timelineManager = this.engine.getTimelineManager();
-        const timeline = timelineManager ? timelineManager.serialize() : undefined;
+        const timeline = this.engine.getTimelineManager().serialize();
 
         // Create project data structure
         const project: IProjectData = {
