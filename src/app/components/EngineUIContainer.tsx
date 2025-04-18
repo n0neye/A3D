@@ -3,7 +3,6 @@ import EntityPanel from './EntityPanels/EntityPanel';
 import GizmoModeSelector from './TransformModeSelector';
 import CameraPanel from './CameraPanel';
 import EnvironmentPanel from './EnvironmentPanel';
-import MaterialPanel from './MaterialPanel';
 import FileMenu from './FileMenu';
 import GalleryPanel from './GalleryPanel';
 import Guide from './Guide';
@@ -45,7 +44,6 @@ function EngineUIContainer() {
                     <IconMinusVertical width={10} height={20} className='opacity-20' />
                     <CameraPanel />
                     <EnvironmentPanel />
-                    <MaterialPanel />
                 </div>
             </div>
 

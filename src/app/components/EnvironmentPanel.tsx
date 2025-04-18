@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { IconSun } from '@tabler/icons-react';
+import { IconCloud, IconSun } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { skyboxFiles, skyboxFolder } from '../engine/managers/environmentManager';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import MaterialSelector from './MaterialSelector';
 
 const EnvironmentPanel: React.FC = () => {
   const { engine } = useEditorEngine();
@@ -20,10 +21,10 @@ const EnvironmentPanel: React.FC = () => {
   // Handle skybox selection
   const handleSkyboxChange = (skyboxFile: string) => {
     if (!engine) return;
-    
+
     const environmentManager = engine.getEnvironmentManager();
     const scene = engine.getScene();
-    
+
     // Update the skybox
     environmentManager.createSkybox(scene, `${skyboxFolder}${skyboxFile}`);
     setActiveSkybox(skyboxFile);
@@ -37,29 +38,29 @@ const EnvironmentPanel: React.FC = () => {
         aria-label="environment settings"
         className='relative'
       >
-        <IconSun className="h-4 w-4" />
+        <IconCloud className="h-4 w-4" />
       </Button>
       <div className="hidden group-hover:block absolute top-8 pt-5 left-1/2 -translate-x-1/2 z-10">
-        <div className="panel-shape p-4 space-y-4 w-48">
-          <h3 className="text-sm font-medium">Environment</h3>
-          
-          <ScrollArea className="h-72">
-            <div className="grid grid-cols-2 gap-2">
+        <div className="panel-shape space-y-2 w-48 py-2">
+          <ScrollArea className="h-96">
+            <h3 className="text-sm font-medium px-4 py-2">Skybox</h3>
+            <div className="grid grid-cols-3 gap-2 px-4 py-2">
               {skyboxFiles.map((skyboxFile, index) => (
-                <div 
+                <div
                   key={index}
-                  className={`relative cursor-pointer overflow-hidden hover:ring-2 hover:ring-primary transition-all rounded-full h-16 w-16 shadow-lg
+                  className={`relative cursor-pointer overflow-hidden hover:ring-2 hover:ring-primary transition-all rounded-full h-12 w-12 shadow-lg
                     ${activeSkybox === skyboxFile ? 'ring-2 ring-primary' : ''}`}
                   onClick={() => handleSkyboxChange(skyboxFile)}
                 >
-                  <img 
-                    src={`${skyboxFolder}${skyboxFile.replace('.jpg', '_thumb.webp')}`} 
+                  <img
+                    src={`${skyboxFolder}${skyboxFile.replace('.jpg', '_thumb.webp')}`}
                     alt={`Skybox ${index + 1}`}
-                    className="h-16 w-16 "
+                    className=""
                   />
                 </div>
               ))}
             </div>
+            <MaterialSelector />
           </ScrollArea>
         </div>
       </div>

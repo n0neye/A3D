@@ -9,12 +9,14 @@ export const skyboxFiles = [
     "3.jpg",
     "4.jpg",
     "5.jpg",
-    "PaintedSky_Dawn.jpg",
     "6.jpg",
-    "fantasy.jpg",
     "7.jpg",
-    "8.jpg",
-    "9.jpg",
+    // "8.jpg",
+    // "9.jpg",
+    // "10.jpg",
+    "HDRI2_7_output.jpg",
+    "HDRI2_21_output.jpg",
+    // "HDRI2_28_output.jpg"
 ];
 
 interface SerializedEnvironment {
