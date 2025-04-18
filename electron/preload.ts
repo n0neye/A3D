@@ -30,6 +30,15 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Add this method
   loadImageData: (filePath: string) => ipcRenderer.invoke('load-image-data', filePath),
+
+  // Add user preferences API
+  userPreferences: {
+    get: (key: string) => ipcRenderer.invoke('get-preference', key),
+    set: (key: string, value: any) => ipcRenderer.invoke('set-preference', key, value),
+    getAll: () => ipcRenderer.invoke('get-all-preferences'),
+    setAll: (preferences: any) => ipcRenderer.invoke('set-all-preferences', preferences),
+    reset: () => ipcRenderer.invoke('reset-preferences')
+  }
 });
 
 console.log('Preload script loaded.');

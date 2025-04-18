@@ -95,10 +95,13 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
           }
         );
         
+        // Get initial values (asynchronously)
+        const prefs = await engine.getUserPrefManager().getPreferences();
+        setUserPreferences(prefs);
+        
         // Apply theme from preferences
-        const theme = engine.getUserPrefManager().getPreference('theme');
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-
+        document.documentElement.classList.toggle('dark', prefs.theme === 'dark');
+        
         unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubSelectableSelected, unsubRenderSettingsChanged, unsubProjectLoaded, unsubGizmoSpace, unsubPreferences);
       }
 
