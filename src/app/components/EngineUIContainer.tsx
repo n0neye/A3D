@@ -10,6 +10,7 @@ import RatioOverlay from './RatioOverlay';
 // import TimelinePanel from './TimelinePanel';
 import DebugPanel from './Debug/DebugPanel';
 import FileDragDropOverlay from './FileDragDropOverlay';
+import UserPrefPanel from './UserPrefPanel';
 import { useEffect, useState } from 'react';
 import { UiLayoutMode, useEditorEngine } from '../context/EditorEngineContext';
 import { TimelineManager } from '../engine/managers/timeline/TimelineManager';
@@ -44,6 +45,7 @@ function EngineUIContainer() {
                     <IconMinusVertical width={10} height={20} className='opacity-20' />
                     <CameraPanel />
                     <EnvironmentPanel />
+                    <UserPrefPanel />
                 </div>
             </div>
 

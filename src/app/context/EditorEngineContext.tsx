@@ -20,6 +20,8 @@ import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 import { Selectable } from '../engine/entity/base/Selectable';
+import { UserPreferences } from '../engine/managers/UserPrefManager';
+
 interface EditorEngineContextType {
   engine: EditorEngine;
   isInitialized: boolean;
@@ -31,6 +33,8 @@ interface EditorEngineContextType {
   uiLayoutMode: UiLayoutMode;
   setUiLayoutMode: (mode: UiLayoutMode) => void;
   gizmoSpace: 'world' | 'local';
+  userPreferences: UserPreferences;
+  setUserPreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
 }
 
 export enum UiLayoutMode {
@@ -52,6 +56,10 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [uiLayoutMode, setUiLayoutMode] = useState<UiLayoutMode>(UiLayoutMode.Image);
   const [gizmoSpace, setGizmoSpace] = useState<'world' | 'local'>('world');
+  const [userPreferences, setUserPreferences] = useState<UserPreferences>({
+    falApiKey: '',
+    theme: 'dark'
+  });
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -79,7 +87,19 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
           }
         );
 
-        unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubSelectableSelected, unsubRenderSettingsChanged, unsubProjectLoaded, unsubGizmoSpace);
+        // Subscribe to user preferences changes
+        const unsubPreferences = engine.getUserPrefManager().observer.subscribe(
+          'preferencesChanged',
+          ({ preferences }) => {
+            setUserPreferences(preferences);
+          }
+        );
+        
+        // Apply theme from preferences
+        const theme = engine.getUserPrefManager().getPreference('theme');
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+
+        unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubSelectableSelected, unsubRenderSettingsChanged, unsubProjectLoaded, unsubGizmoSpace, unsubPreferences);
       }
 
       initEngine();
@@ -97,6 +117,13 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
     }
   }, [isInitialized]);
 
+  // Create a function to update a specific preference
+  const setUserPreference = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]): void => {
+    if (engine) {
+      engine.getUserPrefManager().setPreference(key, value);
+    }
+  };
+
   return (
     <EditorEngineContext.Provider
       value={{
@@ -110,6 +137,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         uiLayoutMode,
         setUiLayoutMode,
         gizmoSpace,
+        userPreferences,
+        setUserPreference,
       }}
     >
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
