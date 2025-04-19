@@ -1,15 +1,14 @@
 // electron/main.ts
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
-import path from 'path'; // Use default import for path
-import url from 'url'; // Use default import for url
-import isDev from 'electron-is-dev';
-import fs from 'fs'; // Use default import for fs
-import Store from 'electron-store';
-import { fileURLToPath } from 'url'; // Import fileURLToPath
+import { app, BrowserWindow, globalShortcut, ipcMain, protocol } from 'electron';
+import * as path from 'path';
+import * as url from 'url';
+// import isDev from 'electron-is-dev'; // Comment out ES6 import
+import * as fs from 'fs';
+import type Store from 'electron-store'; // Import the TYPE Store
 
-// Replicate __dirname functionality in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Use require for potentially problematic CJS/ESM interop packages
+const isDev = require('electron-is-dev');
+const ActualStore = require('electron-store'); // Keep require for the VALUE
 
 let mainWindow: BrowserWindow | null;
 
@@ -19,14 +18,20 @@ interface UserPreferences {
   theme: 'light' | 'dark';
 }
 
+// Use the imported Store type directly
 interface ElectronStoreWithAPI<T extends Record<string, any>> extends Store<T> {
-  get: (key?: string) => any;
-  set: (key: string | Partial<T>, value?: any) => void;
+  // You might not even need this custom interface if the base Store<T> is sufficient
+  // But if you add custom methods, keep it. Ensure methods match the actual Store API.
+  get: (key?: keyof T) => T[keyof T] | undefined; // More type-safe get
+  set: (key: keyof T | Partial<T>, value?: T[keyof T]) => void; // More type-safe set
   store: T;
   clear: () => void;
 }
 
-const userPrefs = new Store<UserPreferences>({
+// Cast ActualStore to the correct type before using it
+const TypedStore = ActualStore as typeof Store;
+
+const userPrefs = new TypedStore<UserPreferences>({ // Use the typed constructor
   name: 'user-preferences',
   defaults: {
     falApiKey: '',
@@ -48,16 +53,16 @@ function createWindow() {
     // titleBarStyle: ,
     autoHideMenuBar: true,
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'), // Use the ESM-compatible __dirname
+      nodeIntegration: false, // Keep false to improve security
+      contextIsolation: true, // Recommended, protects main/renderer boundaries
+      preload: path.join(__dirname, 'preload.js'), // Will create preload script (later)
     },
   });
 
   const startUrl = isDev
-    ? 'http://localhost:3030'
+    ? 'http://localhost:3030' // Load Next.js dev server in development mode
     : url.format({
-        pathname: path.join(__dirname, '../out/index.html'), // Use the ESM-compatible __dirname
+        pathname: path.join(__dirname, '../out/index.html'), // Load Next.js exported static files in production mode
         protocol: 'file:',
         slashes: true,
       });
@@ -136,12 +141,15 @@ ipcMain.handle('save-file', async (event, data, fileName) => {
   
   const filePath = path.join(userDataPath, fileName);
   await fs.promises.writeFile(filePath, Buffer.from(data));
-  return url.pathToFileURL(filePath).toString();
+  return `file://${filePath.replace(/\\/g, '/')}`;
 });
 
-ipcMain.handle('read-file', async (event, fileUrl) => {
-  // Convert file URL string back to path
-  const filePath = fileURLToPath(fileUrl);
+ipcMain.handle('read-file', async (event, filePath) => {
+  // Remove file:// prefix if present
+  if (filePath.startsWith('file://')) {
+    filePath = filePath.substring(7);
+  }
+  
   const data = await fs.promises.readFile(filePath);
   return data.buffer;
 });
@@ -157,21 +165,15 @@ ipcMain.handle('get-app-data-path', async (event) => {
   return userDataPath;
 });
 
-ipcMain.handle('load-image-data', async (event, fileUrl) => {
-  // Convert file URL string back to path
-  const filePath = fileURLToPath(fileUrl);
+ipcMain.handle('load-image-data', async (event, filePath) => {
+  // Remove file:// prefix if present
+  if (filePath.startsWith('file://')) {
+    filePath = filePath.substring(7);
+  }
   
   try {
     const data = await fs.promises.readFile(filePath);
-    // Determine image type based on extension (basic example)
-    const ext = path.extname(filePath).toLowerCase();
-    let mimeType = 'image/jpeg'; // Default
-    if (ext === '.png') mimeType = 'image/png';
-    else if (ext === '.gif') mimeType = 'image/gif';
-    else if (ext === '.webp') mimeType = 'image/webp';
-    // Add more types as needed
-
-    const base64Data = `data:${mimeType};base64,${data.toString('base64')}`;
+    const base64Data = `data:image/jpeg;base64,${data.toString('base64')}`;
     return base64Data;
   } catch (error) {
     console.error('Error loading image', error);

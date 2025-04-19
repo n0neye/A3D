@@ -2,6 +2,7 @@
   "name": "ai-editor",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "dist/main.js",
   "scripts": {
     "dev:next": "next dev --port 3030",
@@ -19,9 +20,11 @@
     "appId": "com.example.myapp",
     "productName": "MyApp",
     "files": [
-      "main/**/*",
+      "dist/**/*",
       "out/**/*",
-      "package.json"
+      "package.json",
+      "!**/_assets",
+      "!**/src"
     ],
     "directories": {
       "buildResources": "assets"
@@ -76,7 +79,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "concurrently": "^9.1.2",

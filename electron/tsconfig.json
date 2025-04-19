@@ -1,9 +1,9 @@
 // electron/tsconfig.json
 {
   "compilerOptions": {
-    "target": "ES2018", // Electron usually supports newer ES versions
-    "module": "CommonJS", // Electron Main Process uses CommonJS
-    "lib": ["ES2018", "DOM"], // Include DOM because preload might operate on DOM
+    "target": "ES2020", // Updated target
+    "module": "NodeNext", // Changed from CommonJS to ESNext for ESM
+    "lib": ["ES2020", "DOM"], // Include DOM because preload might operate on DOM
     "outDir": "../dist", // Output compiled JS to the dist folder in the root
     "rootDir": ".",
     "strict": true,
@@ -11,7 +11,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext", // Use NodeNext for modern Node resolution
     "sourceMap": true // Source Map is recommended for development
   },
   "include": ["main.ts", "preload.ts"], // Specify files to compile
