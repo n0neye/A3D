@@ -19,16 +19,13 @@ const UserPrefPanel: React.FC = () => {
   const handleThemeToggle = (checked: boolean) => {
     const newTheme = checked ? 'dark' : 'light';
     setUserPreference('theme', newTheme);
-    document.documentElement.classList.toggle('dark', checked);
   };
 
   useEffect(() => {
-    console.log("UserPrefPanel: useEffect: userPreferences", userPreferences);
     setApiKeyInput(userPreferences.falApiKey);
-  }, [userPreferences]);
+  }, [userPreferences.falApiKey]);
 
   useEffect(() => {
-    console.log("UserPrefPanel: apiKeyInput changed, updating user preference", apiKeyInput);
     setUserPreference('falApiKey', apiKeyInput);
   }, [apiKeyInput]);
 

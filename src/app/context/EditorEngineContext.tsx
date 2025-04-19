@@ -87,7 +87,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         const unsubPreferences = engine.getUserPrefManager().observer.subscribe(
           'preferencesChanged',
           ({ preferences }) => {
-            setUserPreferences(preferences);
+            // TODO: Force an update for all preferences, may be inefficient
+            setUserPreferences({...preferences});
           }
         );
         
@@ -95,9 +96,6 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         const prefs = await engine.getUserPrefManager().getPreferences();
         console.log("EditorEngineContext: initEngine: getPreferences", prefs);
         setUserPreferences(prefs);
-        
-        // Apply theme from preferences
-        document.documentElement.classList.toggle('dark', prefs.theme === 'dark');
         
         unsubAll.push(unsubGizmoMode, unsubGizmoAllowedModes, unsubEntitySelected, unsubSelectableSelected, unsubRenderSettingsChanged, unsubProjectLoaded, unsubGizmoSpace, unsubPreferences);
 
@@ -119,6 +117,11 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       console.log(`EditorEngineContext: isInitialized:`, isInitialized);
     }
   }, [isInitialized]);
+
+  useEffect(() => {
+    // if theme changed, update the document element class
+    document.documentElement.classList.toggle('dark', userPreferences.theme === 'dark');
+  }, [userPreferences.theme]);
 
   // Create a function to update a specific preference
   const storeUserPreference = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]): void => {
