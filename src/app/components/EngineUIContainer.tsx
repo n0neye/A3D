@@ -37,17 +37,37 @@ function EngineUIContainer() {
             {/* Render Panel - simplified props */}
             <RenderPanels />
 
-            <div className='fixed top-2 px-2 w-full flex justify-center items-center  select-none'>
-                <div className=' panel-shape flex justify-between items-center p-1'>
-                    <div className="flex gap-1 items-center">
+            {/* Top Bar: Fixed */}
+            {/* <div className='fixed top-0 px-2 w-full flex justify-center items-center bg-background shadow-md  select-none'>
+                <div className='w-full flex justify-between items-center p-1'>
+                    <div className="panel-shape flex space-x-0 gap-0 items-center p-1">
                         <FileMenu />
                     </div>
                     <IconMinusVertical width={10} height={20} className='opacity-20' />
-                    <div className="flex gap-1 items-center">
+                    <div className="panel-shape flex gap-1 items-center p-1">
                         <GizmoModeSelector />
                     </div>
                     <IconMinusVertical width={10} height={20} className='opacity-20' />
-                    <div className="flex gap-1 items-center">
+                    <div className="panel-shape flex gap-1 items-center p-1">
+                        <CameraPanel />
+                        <EnvironmentPanel />
+                        <UserPrefPanel />
+                    </div>
+                </div>
+            </div> */}
+
+            {/* Top Bar: Floating */}
+            <div className='fixed top-0 px-2 w-full flex justify-center items-center   select-none'>
+                <div className=' flex justify-between items-center p-1 bg-background/20 rounded-b-md panel-shape mt-2'>
+                    <div className=" flex space-x-0 gap-0 items-center p-1">
+                        <FileMenu />
+                    </div>
+                    <IconMinusVertical width={10} height={20} className='opacity-20' />
+                    <div className="flex gap-1 items-center p-1">
+                        <GizmoModeSelector />
+                    </div>
+                    <IconMinusVertical width={10} height={20} className='opacity-20' />
+                    <div className="flex gap-1 items-center p-1">
                         <CameraPanel />
                         <EnvironmentPanel />
                         <UserPrefPanel />

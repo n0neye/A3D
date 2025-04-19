@@ -22,12 +22,15 @@ import { LocalFileWorker } from '../services/FileService/LocalFileWorker';
 interface IProjectData {
     version: string;
     timestamp: string;
+    projectName: string;
     entities: SerializedEntityData[];
     environment: any;
     renderSettings: IRenderSettings;
     renderLogs: IRenderLog[];
     timeline?: SerializedTimelineData;
 }
+
+const DEFAULT_PROJECT_NAME = 'Untitled Project';
 
 export class ProjectManager {
     private engine: EditorEngine;
@@ -38,12 +41,14 @@ export class ProjectManager {
     private localFileWorker: LocalFileWorker;
     private isElectron: boolean;
     private currentProjectPath: string | null = null;
+    private currentProjectName: string = DEFAULT_PROJECT_NAME;
     public observers = new Observer<{
         projectLoaded: { project: IRenderSettings };
         renderLogsChanged: { renderLogs: IRenderLog[], isNewRenderLog: boolean };
         renderSettingsChanged: { renderSettings: IRenderSettings };
         latestRenderChanged: { latestRender: IRenderLog | null };
         projectPathChanged: { path: string | null };
+        projectNameChanged: { name: string };
     }>();
 
     constructor(engine: EditorEngine) {
@@ -55,14 +60,29 @@ export class ProjectManager {
 
     private async loadProjectData(projectJsonString: string, filePath: string | null = null): Promise<void> {
         try {
-            const projectData = JSON.parse(projectJsonString);
+            const projectData: IProjectData = JSON.parse(projectJsonString);
+            let nameToSet = projectData.projectName || DEFAULT_PROJECT_NAME;
+            if (!projectData.projectName && filePath) {
+                const filename = filePath.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "");
+                if (filename) {
+                    nameToSet = filename;
+                }
+            }
+
             await this.deserializeProject(projectData);
+
             this.currentProjectPath = filePath;
+            this.currentProjectName = nameToSet;
+
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+
         } catch (error) {
             console.error("Error parsing or deserializing project data:", error);
             this.currentProjectPath = null;
+            this.currentProjectName = DEFAULT_PROJECT_NAME;
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
             throw new Error(`Failed to parse project data: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -116,6 +136,7 @@ export class ProjectManager {
     }
 
     public async saveProject(): Promise<void> {
+        const fileName = `${this.currentProjectName}.mud`;
         if (this.isElectron && this.currentProjectPath) {
             try {
                 const projectData = this.serializeProject();
@@ -129,12 +150,12 @@ export class ProjectManager {
                 throw error;
             }
         } else {
-            await this.saveProjectAs();
+            await this.saveProjectAs(fileName);
         }
     }
 
     public async saveProjectAs(
-        fileName: string = 'scene-project.mud'
+        fileName: string = `${this.currentProjectName}.mud`
     ): Promise<void> {
         const projectData = this.serializeProject();
         const jsonString = JSON.stringify(projectData, null, 2);
@@ -149,7 +170,9 @@ export class ProjectManager {
                     await this.localFileWorker.saveFileToPath(arrayBuffer, selectedPath);
 
                     this.currentProjectPath = selectedPath;
+                    this.currentProjectName = selectedPath.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
                     this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+                    this.observers.notify('projectNameChanged', { name: this.currentProjectName });
                     console.log(`Project saved as: ${this.currentProjectPath}`);
                 } else {
                     console.log("Save As cancelled by user.");
@@ -176,7 +199,9 @@ export class ProjectManager {
                     await writable.write(blob);
                     await writable.close();
                     this.currentProjectPath = null;
+                    this.currentProjectName = fileName.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
                     this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+                    this.observers.notify('projectNameChanged', { name: this.currentProjectName });
                     return;
                 } catch (err) {
                     console.log("File System Access API failed or cancelled, falling back to download method");
@@ -194,7 +219,9 @@ export class ProjectManager {
                 URL.revokeObjectURL(url);
             }, 100);
             this.currentProjectPath = null;
+            this.currentProjectName = fileName.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
         }
     }
 
@@ -208,6 +235,7 @@ export class ProjectManager {
         const project: IProjectData = {
             version: "1.0.1",
             timestamp: new Date().toISOString(),
+            projectName: this.currentProjectName,
             entities: entities.map(entity => entity.serialize()),
             environment: environment,
             renderSettings: this.settings,
@@ -231,7 +259,9 @@ export class ProjectManager {
         });
 
         this.currentProjectPath = null;
+        this.currentProjectName = DEFAULT_PROJECT_NAME;
         this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+        this.observers.notify('projectNameChanged', { name: this.currentProjectName });
     }
 
     async deserializeProject(
@@ -314,7 +344,9 @@ export class ProjectManager {
 
         this.engine.getObjectManager().scanScene();
 
+        this.currentProjectName = data.projectName || DEFAULT_PROJECT_NAME;
         this.observers.notify('projectLoaded', { project: this.settings });
+        this.observers.notify('projectNameChanged', { name: this.currentProjectName });
     }
 
     updateRenderSettings(newSettings: Partial<IRenderSettings>): void {
@@ -345,6 +377,19 @@ export class ProjectManager {
 
     getCurrentProjectPath(): string | null {
         return this.currentProjectPath;
+    }
+
+    updateProjectName(newName: string): void {
+        const trimmedName = newName.trim();
+        if (trimmedName && trimmedName !== this.currentProjectName) {
+            this.currentProjectName = trimmedName;
+            console.log("ProjectManager: updateProjectName", this.currentProjectName);
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+        }
+    }
+
+    getCurrentProjectName(): string {
+        return this.currentProjectName;
     }
 }
 
