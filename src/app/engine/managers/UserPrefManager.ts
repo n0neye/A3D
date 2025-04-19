@@ -3,11 +3,13 @@ import { Observer } from "../utils/Observer";
 export interface UserPreferences {
   falApiKey: string;
   theme: 'light' | 'dark';
+  renderMode: "fal" | "comfyui";
 }
 
-const DEFAULT_PREFERENCES: UserPreferences = {
+export const DEFAULT_PREFERENCES: UserPreferences = {
   falApiKey: '',
-  theme: 'dark'
+  theme: 'dark',
+  renderMode: "fal"
 };
 
 /**
@@ -42,6 +44,7 @@ export class UserPrefManager {
       if (this.isElectron && window.electron) {
         // Use Electron IPC bridge to get preferences
         const prefs = await window.electron.userPreferences.getAll();
+        console.log("UserPrefManager: initPreferences", prefs);
         this.inMemoryPrefs = prefs as UserPreferences;
       } else {
         // Fallback to localStorage in browser context
@@ -54,6 +57,7 @@ export class UserPrefManager {
       console.error('Error initializing preferences', error);
       this.inMemoryPrefs = DEFAULT_PREFERENCES;
     }
+
   }
 
   /**

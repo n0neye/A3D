@@ -1,31 +1,36 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { IconSettings, IconSun, IconMoon } from '@tabler/icons-react';
+import { IconSettings, IconSun, IconMoon, IconEye, IconEyeOff } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
 const UserPrefPanel: React.FC = () => {
   const { userPreferences, setUserPreference } = useEditorEngine();
   const [apiKeyInput, setApiKeyInput] = useState(userPreferences.falApiKey);
-  
+
   // Show/hide API key 
   const [showApiKey, setShowApiKey] = useState(false);
-  
+
   // Handle theme toggle
   const handleThemeToggle = (checked: boolean) => {
     const newTheme = checked ? 'dark' : 'light';
     setUserPreference('theme', newTheme);
     document.documentElement.classList.toggle('dark', checked);
   };
-  
-  // Handle API key update
-  const handleSaveApiKey = () => {
+
+  useEffect(() => {
+    console.log("UserPrefPanel: useEffect: userPreferences", userPreferences);
+    setApiKeyInput(userPreferences.falApiKey);
+  }, [userPreferences]);
+
+  useEffect(() => {
+    console.log("UserPrefPanel: apiKeyInput changed, updating user preference", apiKeyInput);
     setUserPreference('falApiKey', apiKeyInput);
-  };
+  }, [apiKeyInput]);
 
   return (
     <div className='group relative'>
@@ -40,14 +45,14 @@ const UserPrefPanel: React.FC = () => {
       <div className="hidden group-hover:block absolute top-8 pt-5 right-0">
         <div className="panel-shape p-4 space-y-4 w-64">
           <h3 className="text-sm font-medium">User Preferences</h3>
-          
+
           <div className="space-y-4">
             {/* Theme Toggle */}
             <div className="flex justify-between items-center">
               <Label htmlFor="theme-toggle" className="text-xs flex items-center gap-2">
-                Theme
-                {userPreferences.theme === 'dark' ? 
-                  <IconMoon className="h-3 w-3" /> : 
+                Dark Mode
+                {userPreferences.theme === 'dark' ?
+                  <IconMoon className="h-3 w-3" /> :
                   <IconSun className="h-3 w-3" />}
               </Label>
               <Switch
@@ -56,39 +61,29 @@ const UserPrefPanel: React.FC = () => {
                 onCheckedChange={handleThemeToggle}
               />
             </div>
-            
+
             {/* Fal.ai API Key */}
             <div className="space-y-2">
               <Label htmlFor="api-key" className="text-xs">Fal.ai API Key</Label>
-              <div className="flex gap-2">
+              <div className="flex">
                 <Input
                   id="api-key"
                   type={showApiKey ? "text" : "password"}
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder="Enter your API key"
-                  className="text-xs h-8"
+                  className="text-xs h-8 rounded-r-none"
                 />
+                <Button
+                  variant={showApiKey ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="rounded-l-none h-8 w-8"
+                  title={showApiKey ? "Showing API Key" : "Hiding API Key"}
+                >
+                  {showApiKey ? <IconEye size={16} /> : <IconEyeOff size={16} />}
+                </Button>
               </div>
-              <div className="flex justify-between items-center mt-1">
-                <Label htmlFor="show-api-key" className="text-xs">
-                  Show API Key
-                </Label>
-                <Switch
-                  id="show-api-key"
-                  checked={showApiKey}
-                  onCheckedChange={setShowApiKey}
-                />
-              </div>
-              
-              <Button 
-                size="sm" 
-                className="w-full mt-2 h-8"
-                onClick={handleSaveApiKey}
-                disabled={apiKeyInput === userPreferences.falApiKey}
-              >
-                Save API Key
-              </Button>
             </div>
           </div>
         </div>
