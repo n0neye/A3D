@@ -4,8 +4,39 @@ import * as path from 'path';
 import * as url from 'url';
 import isDev from 'electron-is-dev';
 import * as fs from 'fs';
+import Store from 'electron-store';
 
 let mainWindow: BrowserWindow | null;
+
+// Define preference types
+interface UserPreferences {
+  falApiKey: string;
+  theme: 'light' | 'dark';
+}
+
+interface ElectronStoreWithAPI<T extends Record<string, any>> extends Store<T> {
+  get: (key?: string) => any;
+  set: (key: string | Partial<T>, value?: any) => void;
+  store: T;
+  clear: () => void;
+}
+
+const userPrefs = new Store<UserPreferences>({
+  name: 'user-preferences',
+  defaults: {
+    falApiKey: '',
+    theme: 'dark'
+  },
+  schema: {
+    falApiKey: {
+      type: 'string'
+    },
+    theme: {
+      type: 'string',
+      enum: ['light', 'dark']
+    }
+  },
+}) as ElectronStoreWithAPI<UserPreferences>;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -138,4 +169,28 @@ ipcMain.handle('load-image-data', async (event, filePath) => {
     console.error('Error loading image', error);
     throw error;
   }
+});
+
+// Handle preferences via IPC
+ipcMain.handle('get-preference', async (event, key) => {
+  return userPrefs.get(key);
+});
+
+ipcMain.handle('set-preference', async (event, key, value) => {
+  userPrefs.set(key, value);
+  return true;
+});
+
+ipcMain.handle('get-all-preferences', async () => {
+  return userPrefs.store;
+});
+
+ipcMain.handle('set-all-preferences', async (event, preferences) => {
+  userPrefs.set(preferences);
+  return true;
+});
+
+ipcMain.handle('reset-preferences', async () => {
+  userPrefs.clear();
+  return true;
 });

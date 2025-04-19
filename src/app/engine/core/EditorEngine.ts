@@ -35,6 +35,7 @@ import { CreateEntityCommand } from '../../lib/commands';
 import { ObjectManager } from '../managers/ObjectManager';
 import { RenderVideoService } from '../services/RenderVideoService';
 import { FileService } from '../services/FileService/FileService';
+import { UserPrefManager } from '../managers/UserPrefManager';
 
 
 /**
@@ -57,6 +58,7 @@ export class EditorEngine {
   private objectManager: ObjectManager;
   private renderVideoService: RenderVideoService;
   private fileService: FileService;
+  private userPrefManager: UserPrefManager;
 
   public observer = new Observer<{
   }>();
@@ -64,6 +66,9 @@ export class EditorEngine {
   private constructor(canvas: HTMLCanvasElement) {
     console.log("EditorEngine constructor");
     this.core = new ThreeCore(canvas);
+
+    // Create user preferences manager (early in the initialization process)
+    this.userPrefManager = new UserPrefManager();
 
     const scene = this.core.getScene();
     const threeRenderer = this.core.getRenderer();
@@ -165,6 +170,10 @@ export class EditorEngine {
 
   public getRenderVideoService(): RenderVideoService {
     return this.renderVideoService;
+  }
+
+  public getUserPrefManager(): UserPrefManager {
+    return this.userPrefManager;
   }
 
 

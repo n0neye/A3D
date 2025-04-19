@@ -107,12 +107,12 @@ const AddPanel: React.FC = () => {
   ];
 
   return (
-    <div className="fixed z-50 left-4 top-1/2 -translate-y-1/2 panel-shape">
+    <div className="fixed z-50 left-4 top-1/2 -translate-y-1/2 panel-shape p-1">
       {/* Entity type buttons */}
       <div className="grid gap-2">
         <Button
           onClick={() => handleCreateGenerativeEntity('generative')}
-          variant="default"
+          variant="outline"
           className="h-14 w-14 rounded-md"
         >
           <div className="flex flex-col items-center justify-center">
@@ -127,7 +127,7 @@ const AddPanel: React.FC = () => {
           onMouseLeave={() => setShowShapesMenu(false)}
         >
           <Button
-            variant="secondary"
+            variant="ghost"
             className="h-14 w-14 rounded-md"
           >
             <div className="flex flex-col items-center justify-center">
@@ -159,7 +159,7 @@ const AddPanel: React.FC = () => {
 
         <Button
           onClick={handleCreateLight}
-          variant="secondary"
+          variant="ghost"
           className="h-14 w-14 rounded-md"
         >
           <div className="flex flex-col items-center justify-center">
@@ -175,7 +175,7 @@ const AddPanel: React.FC = () => {
           onMouseLeave={() => setShowCharactersMenu(false)}
         >
           <Button
-            variant="secondary"
+            variant="ghost"
             className="h-14 w-14 rounded-md"
           >
             <div className="flex flex-col items-center justify-center">

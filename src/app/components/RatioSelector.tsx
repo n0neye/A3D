@@ -63,7 +63,7 @@ const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute bottom-8 z-10 left-0 mt-1 panel-shape-dark shadow-lg rounded-md py-1 min-w-[160px]">
+        <div className="absolute bottom-8 z-10 left-0 mt-1 panel-shape shadow-lg rounded-md py-1 min-w-[160px]">
           {ratioOptions.map((option) => (
             <div
               key={option.value}

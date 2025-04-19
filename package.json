@@ -7,13 +7,10 @@
     "dev:next": "next dev --port 3030",
     "build:next": "next build && next export",
     "start:next": "next start",
-
     "build:electron": "tsc -p electron/tsconfig.json",
     "watch:electron": "tsc -p electron/tsconfig.json --watch",
-
     "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron .",
     "dev": "concurrently -k \"yarn dev:next\" \"yarn start:electron\"",
-
     "build": "yarn build:next && yarn build:electron",
     "pack": "yarn build && electron-builder --dir",
     "dist": "yarn build && electron-builder"
@@ -60,6 +57,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron-is-dev": "^3.0.1",
+    "electron-store": "^10.0.1",
     "install": "^0.13.0",
     "lucide-react": "^0.483.0",
     "next": "15.2.2",
