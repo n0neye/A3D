@@ -2,12 +2,14 @@ import { fal } from "@fal-ai/client";
 import { LoraWeight } from "@fal-ai/client/endpoints";
 import { LoraConfig } from "@/app/engine/interfaces/rendering";
 import { blobToBase64 } from "./image-processing";
+import { EditorEngine } from "@/app/engine/core/EditorEngine";
 
-fal.config({
-  // use the proxy in nextjs web app
-  // proxyUrl: "/api/fal/proxy",
-
-});
+// use the proxy in nextjs web app
+if (window.electron?.isElectron !== true) {
+  fal.config({
+    proxyUrl: "/api/fal/proxy",
+  });
+}
 
 export interface API_Info {
   id: 'fal-turbo' | 'fast-lcm-diffusion' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm' | 'fal-ai/flux-control-lora-depth/image-to-image' | 'fal-ai/flux-control-lora-depth';
@@ -150,7 +152,17 @@ export async function renderImage(params: ImageToImageParams): Promise<ImageToIm
     }
     return result;
   } catch (error) {
-    throw new Error("Failed to call " + params.modelApiInfo.provider + " API. Please make sure you have entered a valid API key in the settings,l and enough credits in your account. " + (error as Error).message);
+    // Check if api key is stored in userPreferences
+    const prefManager = EditorEngine.getInstance().getUserPrefManager();
+    const falApiKey = await prefManager.getPreference("falApiKey");
+
+    if (!falApiKey) {
+      // No api key, throw error
+      throw new Error(`Failed to call ${params.modelApiInfo.provider} API. Please enter a valid API key in the settings.`);
+    }
+
+    // Api key is stored, but still failed
+    throw new Error(`Failed to call ${params.modelApiInfo.provider} API. Please make sure you have entered a valid API key in the settings, and enough credits in your ${params.modelApiInfo.provider} account.`);
   }
 
 }
