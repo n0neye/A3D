@@ -34,7 +34,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "electron/preload.mts"  ],
   "exclude": [
     "node_modules",
     "electron"
