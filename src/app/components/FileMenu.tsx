@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
+import { Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -9,9 +10,11 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analyt
 import { isEntity } from '@/app/engine/entity/base/EntityBase';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { toast } from 'sonner';
+import { ImportService, ACCEPTED_EXTENSIONS } from '../engine/services/ImportService';
 
 export default function FileMenu() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const { renderSettings, engine } = useEditorEngine();
   const [isElectron, setIsElectron] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -30,7 +33,7 @@ export default function FileMenu() {
     const unsubscribeName = projectManager.observers.subscribe('projectNameChanged', handleNameChange);
 
     const handleUnsavedChange = (data: { hasUnsaved: boolean }) => {
-        setHasUnsaved(data.hasUnsaved);
+      setHasUnsaved(data.hasUnsaved);
     };
     const unsubscribeUnsaved = projectManager.observers.subscribe('unsavedChangesStatusChanged', handleUnsavedChange);
 
@@ -143,6 +146,45 @@ export default function FileMenu() {
     }
   };
 
+  const handleImportClick = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const files = Array.from(e.target.files);
+    const importPromises = files.map(async (file) => {
+      try {
+        const result = await ImportService.importFile(file);
+        if (result) {
+          toast.success(`Imported ${file.name} successfully.`);
+          trackEvent(ANALYTICS_EVENTS.IMPORT_ASSET, {
+            file_name: file.name,
+            file_type: file.type,
+            success: true,
+          });
+        } else {
+          throw new Error(`Import failed for ${file.name}`);
+        }
+      } catch (error) {
+        console.error(`Error importing file ${file.name}:`, error);
+        toast.error(`Import failed for ${file.name}`, {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+        trackEvent(ANALYTICS_EVENTS.IMPORT_ASSET, {
+          file_name: file.name,
+          file_type: file.type,
+          success: false,
+          error_message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+
+    await Promise.all(importPromises);
+    e.target.value = '';
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
@@ -201,6 +243,23 @@ export default function FileMenu() {
           </TooltipContent>
         </Tooltip>
 
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleImportClick}
+              className="h-9 w-9"
+            >
+              <Import size={18} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Import Assets</p>
+            <p className="text-xs text-muted-foreground">Images (JPG, PNG), Models (GLB, FBX)</p>
+          </TooltipContent>
+        </Tooltip>
+
         <Input
           type="text"
           value={projectName + (hasUnsaved ? '*' : '')}
@@ -220,6 +279,15 @@ export default function FileMenu() {
           className="hidden"
         />
       )}
+
+      <input
+        type="file"
+        ref={importInputRef}
+        onChange={handleImportFileChange}
+        accept={[...ACCEPTED_EXTENSIONS].join(',')}
+        className="hidden"
+        multiple
+      />
     </div>
   );
 } 
