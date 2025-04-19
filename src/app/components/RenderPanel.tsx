@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { IRenderSettings, LoraConfig, LoraInfo } from '@/app/engine/interfaces/rendering';
+import { toast } from 'sonner';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {
@@ -280,7 +281,9 @@ const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
       });
 
       console.error("Error generating preview:", error);
-      alert("Failed to generate Render. Please try again.");
+
+      // Show a toast notification
+      toast.error(error instanceof Error ? error.message : String(error));
     } finally {
       // Restore gizmos after rendering
       setIsLoading(false);

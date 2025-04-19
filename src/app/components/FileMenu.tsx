@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
 import { isEntity } from '@/app/engine/entity/base/EntityBase';
 import { useEditorEngine } from '../context/EditorEngineContext';
+import { toast } from 'sonner';
 
 export default function FileMenu() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +45,7 @@ export default function FileMenu() {
       });
     } catch (error) {
       console.error('Error loading project:', error);
-      alert('Failed to load project. See console for details.');
+      toast.error(error instanceof Error ? error.message : String(error));
 
       // Track load failure
       trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
