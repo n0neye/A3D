@@ -283,7 +283,9 @@ const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
       console.error("Error generating preview:", error);
 
       // Show a toast notification
-      toast.error(error instanceof Error ? error.message : String(error));
+      toast.error( (error instanceof Error) ? error.message : String(error), {
+        duration: 8000
+      });
     } finally {
       // Restore gizmos after rendering
       setIsLoading(false);
