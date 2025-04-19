@@ -11,8 +11,8 @@ ipcRenderer.invoke('echo', 'Preload script is loaded').then(response => {
 // expose the electronAPI to the renderer process
 contextBridge.exposeInMainWorld('electron', {
   // File handling
-  saveFile: (data: Buffer, fileName: string) => ipcRenderer.invoke('save-file', data, fileName),
-  readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
+  saveFile: (data: ArrayBuffer, fileName: string) => ipcRenderer.invoke('save-file', data, fileName),
+  readFile: (fileUrl: string) => ipcRenderer.invoke('read-file', fileUrl),
   getAppDataPath: () => ipcRenderer.invoke('get-app-data-path'),
 
   // Add a reliable indicator that we're in Electron
@@ -33,12 +33,17 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Add user preferences API
   userPreferences: {
-    get: (key: string) => ipcRenderer.invoke('get-preference', key),
-    set: (key: string, value: any) => ipcRenderer.invoke('set-preference', key, value),
-    getAll: () => ipcRenderer.invoke('get-all-preferences'),
-    setAll: (preferences: any) => ipcRenderer.invoke('set-all-preferences', preferences),
-    reset: () => ipcRenderer.invoke('reset-preferences')
-  }
+    get: (key: string) => ipcRenderer.invoke('get-user-preference', key),
+    getAll: () => ipcRenderer.invoke('get-all-user-preferences'),
+    set: (key: string, value: any) => ipcRenderer.invoke('set-user-preference', key, value),
+    setAll: (prefs: any) => ipcRenderer.invoke('set-all-user-preferences', prefs),
+    reset: () => ipcRenderer.invoke('reset-user-preferences'),
+  },
+
+  // New methods
+  showOpenDialog: () => ipcRenderer.invoke('showOpenDialog'),
+  showSaveDialog: (defaultName: string) => ipcRenderer.invoke('showSaveDialog', defaultName),
+  writeFile: (filePath: string, data: ArrayBuffer) => ipcRenderer.invoke('writeFile', filePath, data),
 });
 
 console.log('Preload script loaded.');

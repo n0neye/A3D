@@ -14,11 +14,16 @@ import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
 import { IRenderLog, IRenderSettings } from '@/app/engine/interfaces/rendering';
 import { SerializedTimelineData } from '../managers/timeline/TimelineManager';
 import { EntityFactory } from '../entity/EntityFactory';
+import { FileService } from '../services/FileService/FileService';
+import { LocalFileWorker } from '../services/FileService/LocalFileWorker';
+import { HistoryManager } from './HistoryManager';
+
 // Interface for serialized render settings
 
 interface IProjectData {
     version: string;
     timestamp: string;
+    projectName: string;
     entities: SerializedEntityData[];
     environment: any;
     renderSettings: IRenderSettings;
@@ -26,34 +31,96 @@ interface IProjectData {
     timeline?: SerializedTimelineData;
 }
 
+const DEFAULT_PROJECT_NAME = 'Untitled Project';
+
 export class ProjectManager {
     private engine: EditorEngine;
     private settings: IRenderSettings = defaultSettings;
     private renderLogs: IRenderLog[] = [];
     private latestRender: IRenderLog | null = null;
+    private fileService: FileService;
+    private localFileWorker: LocalFileWorker;
+    private isElectron: boolean;
+    private currentProjectPath: string | null = null;
+    private currentProjectName: string = DEFAULT_PROJECT_NAME;
+    private hasUnsavedChanges: boolean = false;
     public observers = new Observer<{
         projectLoaded: { project: IRenderSettings };
         renderLogsChanged: { renderLogs: IRenderLog[], isNewRenderLog: boolean };
         renderSettingsChanged: { renderSettings: IRenderSettings };
         latestRenderChanged: { latestRender: IRenderLog | null };
+        projectPathChanged: { path: string | null };
+        projectNameChanged: { name: string };
+        unsavedChangesStatusChanged: { hasUnsaved: boolean };
     }>();
 
     constructor(engine: EditorEngine) {
         this.engine = engine;
+        this.fileService = FileService.getInstance();
+        this.localFileWorker = new LocalFileWorker();
+        this.isElectron = typeof window !== 'undefined' && !!window.electron?.isElectron;
+
+        this.engine.getHistoryManager().observer.subscribe('historyChanged', this.onHistoryChanged);
     }
 
-    // Load project from a file
+    private onHistoryChanged = (): void => {
+        if (!this.hasUnsavedChanges) {
+            this.setUnsavedChanges(true);
+        }
+    }
+
+    private setUnsavedChanges(hasUnsaved: boolean): void {
+        if (this.hasUnsavedChanges !== hasUnsaved) {
+            this.hasUnsavedChanges = hasUnsaved;
+            this.observers.notify('unsavedChangesStatusChanged', { hasUnsaved: this.hasUnsavedChanges });
+            console.log("ProjectManager: Unsaved changes status:", this.hasUnsavedChanges);
+        }
+    }
+
+    private async loadProjectData(projectJsonString: string, filePath: string | null = null): Promise<void> {
+        try {
+            const projectData: IProjectData = JSON.parse(projectJsonString);
+            let nameToSet = projectData.projectName || DEFAULT_PROJECT_NAME;
+            if (!projectData.projectName && filePath) {
+                const filename = filePath.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "");
+                if (filename) {
+                    nameToSet = filename;
+                }
+            }
+
+            await this.deserializeProject(projectData);
+
+            this.currentProjectPath = filePath;
+            this.currentProjectName = nameToSet;
+
+            this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+
+            this.setUnsavedChanges(false);
+
+        } catch (error) {
+            console.error("Error parsing or deserializing project data:", error);
+            this.currentProjectPath = null;
+            this.currentProjectName = DEFAULT_PROJECT_NAME;
+            this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+            this.setUnsavedChanges(false);
+            throw new Error(`Failed to parse project data: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     public async loadProjectFromFile(
         file: File,
     ): Promise<void> {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 try {
                     if (event.target && typeof event.target.result === 'string') {
-                        const projectData = JSON.parse(event.target.result);
-                        this.deserializeProject(projectData);
+                        await this.loadProjectData(event.target.result, null);
                         resolve();
+                    } else {
+                         reject(new Error('Failed to read file content.'));
                     }
                 } catch (error) {
                     reject(error);
@@ -68,10 +135,21 @@ export class ProjectManager {
         });
     }
 
+    public async loadProjectFromPath(filePath: string, content: string): Promise<void> {
+        if (!this.isElectron) {
+            console.warn("loadProjectFromPath called in non-Electron environment.");
+            return;
+        }
+        await this.loadProjectData(content, filePath);
+    }
+
     public async loadProjectFromUrl(url: string): Promise<void> {
         const response = await fetch(url);
-        const projectData = await response.json();
-        this.deserializeProject(projectData);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch project from URL: ${response.statusText}`);
+        }
+        const projectJsonString = await response.text();
+        await this.loadProjectData(projectJsonString, null);
     }
 
     onProjectLoaded(project: IRenderSettings): void {
@@ -79,81 +157,111 @@ export class ProjectManager {
         this.observers.notify('projectLoaded', { project });
     }
 
-    // TODO: Integrate project-util.ts
+    public async saveProject(): Promise<void> {
+        const fileName = `${this.currentProjectName}.mud`;
+        if (this.isElectron && this.currentProjectPath) {
+            try {
+                const projectData = this.serializeProject();
+                const jsonString = JSON.stringify(projectData, null, 2);
+                const uint8Array = new TextEncoder().encode(jsonString);
+                const arrayBuffer = uint8Array.buffer.slice(0) as ArrayBuffer;
+                await this.localFileWorker.saveFileToPath(arrayBuffer, this.currentProjectPath);
+                console.log(`Project saved to: ${this.currentProjectPath}`);
+                this.setUnsavedChanges(false);
+            } catch (error) {
+                console.error(`Error saving project to ${this.currentProjectPath}:`, error);
+                throw error;
+            }
+        } else {
+            await this.saveProjectAs(fileName);
+        }
+    }
 
-    public async saveProjectToFile(
-        fileName: string = 'scene-project.mud'
+    public async saveProjectAs(
+        fileName: string = `${this.currentProjectName}.mud`
     ): Promise<void> {
         const projectData = this.serializeProject();
         const jsonString = JSON.stringify(projectData, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/mud' });
 
-        // Try to use the File System Access API if available (modern browsers)
-        if ('showSaveFilePicker' in window) {
+        if (this.isElectron && window.electron) {
             try {
-                // @ts-ignore - TypeScript might not recognize this API yet
-                const fileHandle = await window.showSaveFilePicker({
-                    suggestedName: fileName,
-                    types: [{
-                        description: 'MUD Files',
-                        accept: { 'application/mud': ['.mud'] },
-                    }],
-                });
+                const selectedPath = await window.electron.showSaveDialog(fileName);
 
-                // Create a writable stream
-                // @ts-ignore - TypeScript might not recognize this API yet
-                const writable = await fileHandle.createWritable();
+                if (selectedPath) {
+                    const uint8Array = new TextEncoder().encode(jsonString);
+                    const arrayBuffer = uint8Array.buffer.slice(0) as ArrayBuffer;
+                    await this.localFileWorker.saveFileToPath(arrayBuffer, selectedPath);
 
-                // Write the blob to the file
-                // @ts-ignore - TypeScript might not recognize this API yet
-                await writable.write(blob);
-
-                // Close the file
-                // @ts-ignore - TypeScript might not recognize this API yet
-                await writable.close();
-
-                return;
+                    this.currentProjectPath = selectedPath;
+                    this.currentProjectName = selectedPath.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
+                    this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+                    this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+                    console.log(`Project saved as: ${this.currentProjectPath}`);
+                    this.setUnsavedChanges(false);
+                } else {
+                    console.log("Save As cancelled by user.");
+                }
             } catch (err) {
-                // User probably cancelled the save dialog or browser doesn't support it
-                console.log("File System Access API failed, falling back to download method");
+                console.error("Error during Electron Save As:", err);
+                throw err;
             }
         } else {
+            const blob = new Blob([jsonString], { type: 'application/mud' });
 
-            // Fallback method for browsers that don't support File System Access API
-            // This doesn't always show a Save As dialog, but we can try to encourage it
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const fileHandle = await window.showSaveFilePicker!({
+                        suggestedName: fileName,
+                        types: [{
+                            description: 'MUD Files',
+                            accept: { 'application/mud': ['.mud'] },
+                        }],
+                    });
+                    const writable = await fileHandle.createWritable();
+                    const uint8Array = new TextEncoder().encode(jsonString);
+                    const arrayBuffer = uint8Array.buffer.slice(0);
+                    await writable.write(blob);
+                    await writable.close();
+                    this.currentProjectPath = null;
+                    this.currentProjectName = fileName.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
+                    this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+                    this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+                    this.setUnsavedChanges(false);
+                    return;
+                } catch (err) {
+                    console.log("File System Access API failed or cancelled, falling back to download method");
+                }
+            }
+
             const url = URL.createObjectURL(blob);
-
-            // Create and trigger download
             const a = document.createElement('a');
             a.href = url;
             a.download = fileName;
-
-            // Append to body and click (to ensure it works in all browsers)
             document.body.appendChild(a);
             a.click();
-
-            // Clean up
             setTimeout(() => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 100);
-
+            this.currentProjectPath = null;
+            this.currentProjectName = fileName.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
+            this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+            this.setUnsavedChanges(false);
         }
     }
 
     serializeProject(): IProjectData {
         const entities: EntityBase[] = this.engine.getObjectManager().getAllVisibleEntities();
 
-        // Serialize environment settings
         const environment = this.engine.getEnvironmentManager().serializeEnvironment();
 
-        // Serialize timeline data
         const timeline = this.engine.getTimelineManager().serialize();
 
-        // Create project data structure
         const project: IProjectData = {
             version: "1.0.1",
             timestamp: new Date().toISOString(),
+            projectName: this.currentProjectName,
             entities: entities.map(entity => entity.serialize()),
             environment: environment,
             renderSettings: this.settings,
@@ -165,19 +273,24 @@ export class ProjectManager {
     }
 
     clearScene(): void {
-        // Deselect
         this.engine.getSelectionManager().deselectAll();
 
-        // Get all entities from object manager
         const existingEntities = this.engine.getObjectManager().getAllEntities();
         const scene = this.engine.getScene();
 
-        // Dispose entities
         existingEntities.forEach(entity => {
             entity.dispose();
             scene.remove(entity);
             this.engine.getObjectManager().unregisterEntity(entity);
         });
+
+        this.currentProjectPath = null;
+        this.currentProjectName = DEFAULT_PROJECT_NAME;
+        this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
+        this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+
+        this.engine.getHistoryManager().clearHistory();
+        this.setUnsavedChanges(false);
     }
 
     async deserializeProject(
@@ -187,35 +300,34 @@ export class ProjectManager {
 
         const scene = this.engine.getScene();
 
-        // Apply environment settings if present
         if (data.environment) {
             this.engine.getEnvironmentManager().deserializeEnvironment(data.environment);
         }
 
-
-        // Deserialize timeline data if present
         if (data.timeline && this.engine.getTimelineManager()) {
             this.engine.getTimelineManager().deserialize(data.timeline, this.engine);
         }
 
-        // Notify observers that the project has been loaded
         if (data.renderSettings) {
             this.settings = data.renderSettings;
-            this.observers.notify('projectLoaded', { project: data.renderSettings });
+        } else {
+            this.settings = defaultSettings;
         }
+        this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
+
         if (data.renderLogs) {
             this.renderLogs = data.renderLogs;
-            this.observers.notify('renderLogsChanged', { renderLogs: data.renderLogs, isNewRenderLog: false });
-
-            this.latestRender = data.renderLogs[data.renderLogs.length - 1];
-            this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
+            this.latestRender = data.renderLogs.length > 0 ? data.renderLogs[data.renderLogs.length - 1] : null;
+        } else {
+            this.renderLogs = [];
+            this.latestRender = null;
         }
+        this.observers.notify('renderLogsChanged', { renderLogs: this.renderLogs, isNewRenderLog: false });
+        this.observers.notify('latestRenderChanged', { latestRender: this.latestRender });
 
-        console.log("ProjectManager: deserializeProject: entities", data.entities.length);
+        console.log("ProjectManager: deserializeProject: entities", data.entities?.length || 0);
 
-        // Create entities from the saved data
         if (data.entities && Array.isArray(data.entities)) {
-            // Create entities from serialized data using entity class deserializers in parallel
             const entityPromises = data.entities.map((entityData: SerializedEntityData) => {
                 return new Promise<void>(async (resolve) => {
                     try {
@@ -223,38 +335,47 @@ export class ProjectManager {
                         resolve();
                     } catch (error) {
                         console.error(`Error creating entity from saved data:`, error, entityData);
-                        resolve(); // Still resolve to not block other entities
+                        resolve();
                     }
                 });
             });
             await Promise.all(entityPromises);
         }
 
-        // Set parent-child relationships
-        const entities = this.engine.getObjectManager().getAllEntities();
-        data.entities.forEach(entityData => {
-            if (entityData.parentUUID) {
-                const parent = entities.find(e => e.uuid === entityData.parentUUID);
-                const child = entities.find(e => e.uuid === entityData.uuid);
-                if (parent && child) {
-                    parent.add(child);
-                } else {
-                    console.warn("DeserializeProject: failed to set parent-child relationship", parent?.name, child?.name);
-                }
-            } else if (entityData.parentBone) {
-                const character = entities.find(e => e.uuid === entityData.parentBone!.characterUUID) as CharacterEntity;
-                const boneControl = character.getBoneControls().find(b => b.bone.name === entityData.parentBone!.boneName);
-                const child = entities.find(e => e.uuid === entityData.uuid);
-                if (character && boneControl && child) {
-                    boneControl.add(child);
-                } else {
-                    console.warn("DeserializeProject: failed to set parent-child relationship", character?.name, boneControl?.name, child?.name);
-                }
-            }
-        });
+        const entitiesMap = new Map<string, EntityBase>(this.engine.getObjectManager().getAllEntities().map(e => [e.uuid, e]));
+        if (data.entities && Array.isArray(data.entities)) {
+            data.entities.forEach(entityData => {
+                const child = entitiesMap.get(entityData.uuid);
+                if (!child) return;
 
-        // After creating all entities, scan the scene to ensure all are registered
+                if (entityData.parentUUID) {
+                    const parent = entitiesMap.get(entityData.parentUUID);
+                    if (parent) {
+                        parent.add(child);
+                    } else {
+                        console.warn(`DeserializeProject: Parent UUID ${entityData.parentUUID} not found for child ${child.name} (${child.uuid})`);
+                    }
+                } else if (entityData.parentBone) {
+                    const character = entitiesMap.get(entityData.parentBone.characterUUID) as CharacterEntity;
+                    if (character && character.getBoneControls) {
+                         const boneControl = character.getBoneControls().find(b => b.bone.name === entityData.parentBone!.boneName);
+                         if (boneControl) {
+                             boneControl.add(child);
+                         } else {
+                             console.warn(`DeserializeProject: Parent bone ${entityData.parentBone.boneName} not found on character ${character.name} for child ${child.name}`);
+                         }
+                    } else {
+                         console.warn(`DeserializeProject: Parent character UUID ${entityData.parentBone.characterUUID} not found or not a CharacterEntity for child ${child.name}`);
+                    }
+                }
+            });
+        }
+
         this.engine.getObjectManager().scanScene();
+
+        this.currentProjectName = data.projectName || DEFAULT_PROJECT_NAME;
+        this.observers.notify('projectLoaded', { project: this.settings });
+        this.observers.notify('projectNameChanged', { name: this.currentProjectName });
     }
 
     updateRenderSettings(newSettings: Partial<IRenderSettings>): void {
@@ -276,11 +397,36 @@ export class ProjectManager {
     }
 
     getLatestRender(): IRenderLog | null {
-        return this.renderLogs.length > 0 ? this.renderLogs[this.renderLogs.length - 1] : null;
+        return this.latestRender;
     }
 
     getRenderLogs(): IRenderLog[] {
         return this.renderLogs;
+    }
+
+    getCurrentProjectPath(): string | null {
+        return this.currentProjectPath;
+    }
+
+    updateProjectName(newName: string): void {
+        const trimmedName = newName.trim();
+        if (trimmedName && trimmedName !== this.currentProjectName) {
+            this.currentProjectName = trimmedName;
+            console.log("ProjectManager: updateProjectName", this.currentProjectName);
+            this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+        }
+    }
+
+    getCurrentProjectName(): string {
+        return this.currentProjectName;
+    }
+
+    hasUnsavedChangesStatus(): boolean {
+        return this.hasUnsavedChanges;
+    }
+
+    dispose(): void {
+        // TODO: Unsubscribe from historyChanged
     }
 }
 

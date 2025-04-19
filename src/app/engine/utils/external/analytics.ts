@@ -35,4 +35,5 @@ export const ANALYTICS_EVENTS = {
   DELETE_ENTITY: 'delete_entity',
   CHANGE_SETTINGS: 'change_settings',
   CHARACTER_EDIT: 'character_edit',
+  IMPORT_ASSET: 'import_asset',
 }; 

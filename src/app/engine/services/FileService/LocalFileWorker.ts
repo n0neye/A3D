@@ -118,4 +118,25 @@ export class LocalFileWorker implements FileWorker {
     
     return map[fileType] || '';
   }
+
+  /**
+   * Save a file to a specific path on the local filesystem (Electron only)
+   * @param data Binary data to save
+   * @param filePath The full, absolute path to save the file to
+   * @returns Promise resolving when save is complete or rejecting on error
+   */
+  public async saveFileToPath(data: ArrayBuffer, filePath: string): Promise<void> {
+    if (!this.isSupported() || !window.electron) {
+      throw new Error('Local file operations (saveFileToPath) are not supported in this environment');
+    }
+    if (!filePath) {
+        throw new Error('File path cannot be empty');
+    }
+
+    // Use the Electron IPC bridge to write the file to the specified path
+    const result = await window.electron.writeFile(filePath, data);
+    if (!result.success) {
+        throw new Error(`Failed to save file to path ${filePath}: ${result.error || 'Unknown error'}`);
+    }
+  }
 } 

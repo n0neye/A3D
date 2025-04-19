@@ -1,10 +1,11 @@
 // electron/main.ts
-import { app, BrowserWindow, globalShortcut, ipcMain, protocol } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, protocol, dialog } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import isDev from 'electron-is-dev';
 import * as fs from 'fs';
 import Store from 'electron-store';
+import fsPromises from 'fs/promises'; // Use promises version of fs
 
 let mainWindow: BrowserWindow | null;
 
@@ -172,25 +173,94 @@ ipcMain.handle('load-image-data', async (event, filePath) => {
 });
 
 // Handle preferences via IPC
-ipcMain.handle('get-preference', async (event, key) => {
+ipcMain.handle('get-user-preference', async (event, key) => {
   return userPrefs.get(key);
 });
 
-ipcMain.handle('set-preference', async (event, key, value) => {
+ipcMain.handle('set-user-preference', async (event, key, value) => {
   userPrefs.set(key, value);
   return true;
 });
 
-ipcMain.handle('get-all-preferences', async () => {
+ipcMain.handle('get-all-user-preferences', async () => {
   return userPrefs.store;
 });
 
-ipcMain.handle('set-all-preferences', async (event, preferences) => {
+ipcMain.handle('set-all-user-preferences', async (event, preferences) => {
   userPrefs.set(preferences);
   return true;
 });
 
-ipcMain.handle('reset-preferences', async () => {
+ipcMain.handle('reset-user-preferences', async () => {
   userPrefs.clear();
   return true;
+});
+
+// Function to get the main window (adjust selector if needed)
+function getMainWindow(): BrowserWindow | null {
+  return BrowserWindow.getAllWindows()[0];
+}
+
+// Handle opening a project file
+ipcMain.handle('showOpenDialog', async () => {
+  const mainWindow = getMainWindow();
+  if (!mainWindow) return null;
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Open Project',
+    properties: ['openFile'],
+    filters: [{ name: 'MUD Project Files', extensions: ['mud'] }],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null; // User cancelled
+  }
+
+  const filePath = result.filePaths[0];
+  try {
+    const content = await fsPromises.readFile(filePath, 'utf-8'); // Read as text for JSON parsing later
+    return { filePath, content }; // Return both path and content
+  } catch (error) {
+    console.error('Error reading file:', error);
+    // Optionally show an error dialog to the user
+    dialog.showErrorBox('Error Opening File', `Could not read the file: ${filePath}\n${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+});
+
+// Handle saving a project file (Save As)
+ipcMain.handle('showSaveDialog', async (event, defaultName: string) => {
+    const mainWindow = getMainWindow();
+    if (!mainWindow) return null;
+
+    const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save Project As',
+        defaultPath: path.join(app.getPath('documents'), defaultName || 'scene-project.mud'), // Suggest documents folder
+        filters: [{ name: 'MUD Project Files', extensions: ['mud'] }],
+    });
+
+    if (result.canceled || !result.filePath) {
+        return null; // User cancelled
+    }
+
+    return result.filePath; // Return the chosen path
+});
+
+// Handle writing data to a specific file path
+ipcMain.handle('writeFile', async (event, filePath: string, data: ArrayBuffer) => {
+    if (!filePath) {
+        console.error('writeFile IPC handler received null or empty filePath');
+        return { success: false, error: 'No file path specified.' };
+    }
+    try {
+        // Convert ArrayBuffer to Buffer for fs.writeFile
+        const buffer = Buffer.from(data);
+        await fsPromises.writeFile(filePath, buffer);
+        return { success: true };
+    } catch (error) {
+        console.error(`Error writing file to ${filePath}:`, error);
+        // Optionally show an error dialog
+        dialog.showErrorBox('Error Saving File', `Could not save the file: ${filePath}\n${error instanceof Error ? error.message : String(error)}`);
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
 });

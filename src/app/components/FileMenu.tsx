@@ -1,111 +1,239 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
+import { Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
 import { isEntity } from '@/app/engine/entity/base/EntityBase';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { toast } from 'sonner';
+import { ImportService, ACCEPTED_EXTENSIONS } from '../engine/services/ImportService';
 
 export default function FileMenu() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const { renderSettings, engine } = useEditorEngine();
+  const [isElectron, setIsElectron] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [hasUnsaved, setHasUnsaved] = useState(false);
 
-  const handleSaveProject = () => {
-    const projectName = `proj-${new Date().toISOString().split('T')[0]}.mud`;
-    engine.getProjectManager().saveProjectToFile(projectName);
+  useEffect(() => {
+    if (!engine) return;
+    const projectManager = engine.getProjectManager();
 
-    // Track save event
-    trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
-      entities_count: engine.getScene().children.filter(node => isEntity(node)).length,
-      has_settings: !!renderSettings,
-    });
-  }
+    setProjectName(projectManager.getCurrentProjectName());
+    setHasUnsaved(projectManager.hasUnsavedChangesStatus());
 
-  const handleOpenProject = () => {
-    fileInputRef.current?.click();
+    const handleNameChange = (data: { name: string }) => {
+      setProjectName(data.name);
+    };
+    const unsubscribeName = projectManager.observers.subscribe('projectNameChanged', handleNameChange);
+
+    const handleUnsavedChange = (data: { hasUnsaved: boolean }) => {
+      setHasUnsaved(data.hasUnsaved);
+    };
+    const unsubscribeUnsaved = projectManager.observers.subscribe('unsavedChangesStatusChanged', handleUnsavedChange);
+
+    setIsElectron(typeof window !== 'undefined' && !!window.electron?.isElectron);
+
+    return () => {
+      unsubscribeName();
+      unsubscribeUnsaved();
+    };
+  }, [engine]);
+
+  const handleProjectNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = event.target.value;
+    setProjectName(newName);
+    engine.getProjectManager().updateProjectName(newName);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
+  const handleSaveProject = async (event?: React.MouseEvent | KeyboardEvent) => {
+    const isSaveAs = event?.shiftKey;
+    const projectManager = engine.getProjectManager();
 
     try {
-      const file = e.target.files[0];
-      await engine.getProjectManager().loadProjectFromFile(file);
-      // Reset file input
-      e.target.value = '';
+      if (isSaveAs) {
+        console.log("Triggering Save As...");
+        await projectManager.saveProjectAs();
+        toast.success('Project saved successfully.');
+      } else {
+        console.log("Triggering Save...");
+        await projectManager.saveProject();
+        toast.success('Project saved successfully.');
+      }
 
-      // Track load event
-      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
-        file_size: file.size,
-        file_name: file.name,
-        success: true,
+      trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
+        entities_count: engine.getScene().children.filter(node => isEntity(node)).length,
+        has_settings: !!renderSettings,
+        save_mode: isSaveAs ? 'save_as' : 'save',
+        environment: isElectron ? 'electron' : 'web',
       });
-    } catch (error) {
-      console.error('Error loading project:', error);
-      toast.error(error instanceof Error ? error.message : String(error));
 
-      // Track load failure
-      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
-        error_message: error instanceof Error ? error.message : String(error),
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast.error(`Save failed: ${error instanceof Error ? error.message : String(error)}`);
+      trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
+        save_mode: isSaveAs ? 'save_as' : 'save',
+        environment: isElectron ? 'electron' : 'web',
         success: false,
+        error_message: error instanceof Error ? error.message : String(error),
       });
     }
   };
 
-  // Add keyboard shortcuts
+  const handleOpenProject = async () => {
+    if (isElectron && window.electron) {
+      try {
+        const result = await window.electron.showOpenDialog();
+        if (result) {
+          const { filePath, content } = result;
+          await engine.getProjectManager().loadProjectFromPath(filePath, content);
+          toast.success(`Project loaded from ${filePath.split(/[\\/]/).pop()}`);
+
+          trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+            file_name: filePath.split(/[\\/]/).pop(),
+            environment: 'electron',
+            success: true,
+          });
+        } else {
+          console.log("Open cancelled by user.");
+        }
+      } catch (error) {
+        console.error('Error opening project via Electron:', error);
+        toast.error(`Open failed: ${error instanceof Error ? error.message : String(error)}`);
+        trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+          environment: 'electron',
+          success: false,
+          error_message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isElectron) return;
+
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+
+    try {
+      await engine.getProjectManager().loadProjectFromFile(file);
+      toast.success(`Project loaded from ${file.name}`);
+      e.target.value = '';
+
+      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+        file_size: file.size,
+        file_name: file.name,
+        environment: 'web',
+        success: true,
+      });
+    } catch (error) {
+      console.error('Error loading project:', error);
+      toast.error(`Load failed: ${error instanceof Error ? error.message : String(error)}`);
+
+      trackEvent(ANALYTICS_EVENTS.LOAD_PROJECT, {
+        file_name: file.name,
+        environment: 'web',
+        success: false,
+        error_message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  const handleImportClick = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const files = Array.from(e.target.files);
+    const importPromises = files.map(async (file) => {
+      try {
+        const result = await ImportService.importFile(file);
+        if (result) {
+          toast.success(`Imported ${file.name} successfully.`);
+          trackEvent(ANALYTICS_EVENTS.IMPORT_ASSET, {
+            file_name: file.name,
+            file_type: file.type,
+            success: true,
+          });
+        } else {
+          throw new Error(`Import failed for ${file.name}`);
+        }
+      } catch (error) {
+        console.error(`Error importing file ${file.name}:`, error);
+        toast.error(`Import failed for ${file.name}`, {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+        trackEvent(ANALYTICS_EVENTS.IMPORT_ASSET, {
+          file_name: file.name,
+          file_type: file.type,
+          success: false,
+          error_message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+
+    await Promise.all(importPromises);
+    e.target.value = '';
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Save project (Ctrl+S)
       if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault(); // Prevent browser's save dialog
-        handleSaveProject();
+        if (document.activeElement?.tagName === 'INPUT') return;
+        event.preventDefault();
+        handleSaveProject(event);
       }
 
-      // Open project (Ctrl+O)
       if (event.key === 'o' && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault(); // Prevent browser's open dialog
+        if (document.activeElement?.tagName === 'INPUT') return;
+        event.preventDefault();
         handleOpenProject();
       }
     };
 
-    // Add event listener
     window.addEventListener('keydown', handleKeyDown);
-
-    // Clean up
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [renderSettings]); // Re-attach when scene or settings change
+  }, [engine, isElectron, handleSaveProject, handleOpenProject]);
 
   return (
     <div className="flex gap-2 items-center">
+
       <TooltipProvider>
-        {/* Save Button with Tooltip */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
+              size="icon"
               onClick={handleSaveProject}
-              className=""
+              className={`h-9 w-9 ${hasUnsaved ? 'border-primary text-primary hover:bg-primary/10' : ''}`}
             >
               <IconDeviceFloppy size={18} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Save Project (Ctrl+S)</p>
+            <p>Save Project {hasUnsaved ? '(Unsaved)' : ''} (Ctrl+S)</p>
+            <p className="text-xs text-muted-foreground">Hold Shift for Save As</p>
           </TooltipContent>
         </Tooltip>
 
-        {/* Open Button with Tooltip */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
+              size="icon"
               onClick={handleOpenProject}
-              className=""
+              className="h-9 w-9"
             >
               <IconFolderOpen size={18} />
             </Button>
@@ -114,15 +242,51 @@ export default function FileMenu() {
             <p>Open Project (Ctrl+O)</p>
           </TooltipContent>
         </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleImportClick}
+              className="h-9 w-9"
+            >
+              <Import size={18} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Import Assets</p>
+            <p className="text-xs text-muted-foreground">Images (JPG, PNG), Models (GLB, FBX)</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Input
+          type="text"
+          value={projectName + (hasUnsaved ? '*' : '')}
+          onChange={handleProjectNameChange}
+          placeholder="Project Name"
+          className="w-48 h-9 text-sm"
+          aria-label="Project Name"
+        />
       </TooltipProvider>
 
-      {/* Hidden file input for opening files */}
+      {!isElectron && (
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept=".mud"
+          className="hidden"
+        />
+      )}
+
       <input
         type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept=".mud"
+        ref={importInputRef}
+        onChange={handleImportFileChange}
+        accept={[...ACCEPTED_EXTENSIONS].join(',')}
         className="hidden"
+        multiple
       />
     </div>
   );
