@@ -2,14 +2,18 @@ import { fal } from "@fal-ai/client";
 import { LoraWeight } from "@fal-ai/client/endpoints";
 import { LoraConfig } from "@/app/engine/interfaces/rendering";
 import { blobToBase64 } from "./image-processing";
+import { EditorEngine } from "@/app/engine/core/EditorEngine";
 
-// Configure fal.ai client to use the proxy
-fal.config({
-  proxyUrl: "/api/fal/proxy",
-});
+// use the proxy in nextjs web app
+if (window.electron?.isElectron !== true) {
+  fal.config({
+    proxyUrl: "/api/fal/proxy",
+  });
+}
 
 export interface API_Info {
   id: 'fal-turbo' | 'fast-lcm-diffusion' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm' | 'fal-ai/flux-control-lora-depth/image-to-image' | 'fal-ai/flux-control-lora-depth';
+  provider: 'fal' | 'replicate' | 'runware';
   name: string;
   description: string;
   useDepthImage: boolean;
@@ -41,12 +45,14 @@ export const availableAPIs: API_Info[] = [
   // },
   {
     id: 'flux-lora-depth',
+    provider: 'fal',
     name: 'Flux Dev',
     description: 'With style transformations',
     useDepthImage: false,
   },
   {
     id: "fal-ai/flux-control-lora-depth",
+    provider: 'fal',
     name: 'Flux Dev Depth',
     description: 'With style transformations',
     useDepthImage: true,
@@ -109,43 +115,56 @@ export async function renderImage(params: ImageToImageParams): Promise<ImageToIm
     params.negativePrompt = negativePrompt;
     params.prompt = positivePrompt;
   }
-  
-  let result: ImageToImageResult|null = null;
-  switch (params.modelApiInfo.id) {
-    case 'fal-turbo':
-      result = await generateFalTurboImage(params);
-      break;
-    case 'fast-lcm-diffusion':
-      result = await generateFalLcmImage(params);
-      break;
-    case 'flux-dev':
-      result = await generateFluxDevImage(params);
-      break;
-    case 'flux-pro-depth':
-      result = await generateFluxProDepthImage(params);
-      break;
-    case 'flux-lora-depth':
-      result = await generateFluxLoraDepthImage(params);
-      break;
-    case 'replicate-lcm':
-      result = await generateReplicateLcmImage(params);
-      break;
-    case 'fal-ai/flux-control-lora-depth/image-to-image':
-      result = await generateFluxControlLoraDepthI2I(params);
-      break;
-    case 'fal-ai/flux-control-lora-depth':
-      result = await generateFluxControlLoraDepthT2I(params);
-      break;
-    default:
-      result = await generateFalTurboImage(params);
+
+  try {
+
+    let result: ImageToImageResult | null = null;
+    switch (params.modelApiInfo.id) {
+      case 'fal-turbo':
+        result = await generateFalTurboImage(params);
+        break;
+      case 'fast-lcm-diffusion':
+        result = await generateFalLcmImage(params);
+        break;
+      case 'flux-dev':
+        result = await generateFluxDevImage(params);
+        break;
+      case 'flux-pro-depth':
+        result = await generateFluxProDepthImage(params);
+        break;
+      case 'flux-lora-depth':
+        result = await generateFluxLoraDepthImage(params);
+        break;
+      case 'replicate-lcm':
+        result = await generateReplicateLcmImage(params);
+        break;
+      case 'fal-ai/flux-control-lora-depth/image-to-image':
+        result = await generateFluxControlLoraDepthI2I(params);
+        break;
+      case 'fal-ai/flux-control-lora-depth':
+        result = await generateFluxControlLoraDepthT2I(params);
+        break;
+      default:
+        result = await generateFalTurboImage(params);
+    }
+    if (!result) {
+      throw new Error('No result from renderImage');
+    }
+    return result;
+  } catch (error) {
+    // Check if api key is stored in userPreferences
+    const prefManager = EditorEngine.getInstance().getUserPrefManager();
+    const falApiKey = await prefManager.getPreference("falApiKey");
+
+    if (!falApiKey) {
+      // No api key, throw error
+      throw new Error(`Failed to call ${params.modelApiInfo.provider} API. Please enter a valid API key in the settings.`);
+    }
+
+    // Api key is stored, but still failed
+    throw new Error(`Failed to call ${params.modelApiInfo.provider} API. Please make sure you have entered a valid API key in the settings, and enough credits in your ${params.modelApiInfo.provider} account.`);
   }
 
-  if (!result) {
-    throw new Error('No result from renderImage');
-  }
-
-
-  return result;
 }
 
 // Add a new function for Flux Pro Depth

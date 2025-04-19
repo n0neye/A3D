@@ -21,6 +21,7 @@ import EngineUIContainer from '../components/EngineUIContainer';
 import { TransformMode } from '@/app/engine/managers/TransformControlManager';
 import { Selectable } from '../engine/entity/base/Selectable';
 import { DEFAULT_PREFERENCES, UserPreferences } from '../engine/managers/UserPrefManager';
+import { fal } from '@fal-ai/client';
 
 interface EditorEngineContextType {
   engine: EditorEngine;
@@ -118,10 +119,19 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
     }
   }, [isInitialized]);
 
+
+  // React to user preferences changes
   useEffect(() => {
     // if theme changed, update the document element class
     document.documentElement.classList.toggle('dark', userPreferences.theme === 'dark');
   }, [userPreferences.theme]);
+
+  // Fal api key changed, update the fal client
+  useEffect(() => {
+    if (userPreferences.falApiKey) {
+      fal.config({ credentials: userPreferences.falApiKey });
+    }
+  }, [userPreferences.falApiKey]);
 
   // Create a function to update a specific preference
   const storeUserPreference = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]): void => {

@@ -9,6 +9,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analyt
 import { GenerativeEntity, GenerationStatus, } from '@/app/engine/entity/types/GenerativeEntity';
 import { IGenerationLog } from '@/app/engine/interfaces/generation';
 import { ImageRatio } from "@/app/engine/utils/imageUtil";
+import { toast } from 'sonner';
 
 // TODO: This is a hack to get the previous entity.
 let PREV_ENTITY: GenerativeEntity | null = null;
@@ -187,7 +188,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
       // Get current generation
       const currentGen = props.entity.getCurrentGenerationLog();
       if (!currentGen || currentGen.assetType !== 'image' || !currentGen.fileUrl) {
-        alert('Please generate an image first');
+        toast.error('Please generate an image first');
         return;
       }
 
