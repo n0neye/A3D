@@ -1,24 +1,6 @@
 import { FileWorker } from './FileService';
 import { v4 as uuidv4 } from 'uuid';
 
-// Declare global electron interface
-declare global {
-  interface Window {
-      electron?: {
-          saveFile: (data: ArrayBuffer, fileName: string) => Promise<string>;
-          readFile: (filePath: string) => Promise<ArrayBuffer>;
-          getAppDataPath: () => Promise<string>;
-          loadImageData: (filePath: string) => Promise<string>;
-          isElectron: boolean;
-          versions?: {
-              electron: string;
-              node: string;
-              chrome: string;
-          };
-      }
-  }
-}
-
 /**
  * LocalFileWorker handles file operations for Electron environments
  * using the local filesystem through IPC

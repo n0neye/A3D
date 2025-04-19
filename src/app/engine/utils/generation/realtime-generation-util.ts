@@ -78,7 +78,7 @@ export async function doGenerateRealtimeImage(
         result = getImageSimulationData();
     } else {
 
-        // Use FAL AI API
+        // Use FAL AI API for now
         result = await generateRealtimeImageFal(enhancedPrompt, {
             width: width,
             height: height,

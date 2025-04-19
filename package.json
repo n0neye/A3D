@@ -5,10 +5,10 @@
   "main": "dist/main.js",
   "scripts": {
     "dev:next": "next dev --port 3030",
-    "build:next": "next build && next export",
+    "build:next": "next build",
     "start:next": "next start",
-    "build:electron": "tsc -p electron/tsconfig.json",
-    "watch:electron": "tsc -p electron/tsconfig.json --watch",
+    "build:electron": "tsc --project electron/tsconfig.json",
+    "watch:electron": "tsc --project electron/tsconfig.json --watch",
     "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron .",
     "dev": "concurrently -k \"yarn dev:next\" \"yarn start:electron\"",
     "build": "yarn build:next && yarn build:electron",
@@ -20,7 +20,7 @@
     "productName": "MyApp",
     "files": [
       "main/**/*",
-      "renderer/out/**/*",
+      "out/**/*",
       "package.json"
     ],
     "directories": {

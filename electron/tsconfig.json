@@ -1,10 +1,10 @@
 // electron/tsconfig.json
 {
   "compilerOptions": {
-    "target": "ES2018", // Electron 通常支援較新的 ES 版本
-    "module": "CommonJS", // Electron Main Process 使用 CommonJS
-    "lib": ["ES2018", "DOM"], // 包含 DOM 是因為 preload 可能操作 DOM
-    "outDir": "../dist", // 編譯後的 JS 輸出到根目錄的 dist 資料夾
+    "target": "ES2018", // Electron usually supports newer ES versions
+    "module": "CommonJS", // Electron Main Process uses CommonJS
+    "lib": ["ES2018", "DOM"], // Include DOM because preload might operate on DOM
+    "outDir": "../dist", // Output compiled JS to the dist folder in the root
     "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
@@ -12,8 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "sourceMap": true // 開發時建議開啟 Source Map
+    "sourceMap": true // Source Map is recommended for development
   },
-  "include": ["main.ts", "preload.ts"], // 指定要編譯的檔案
+  "include": ["main.ts", "preload.ts"], // Specify files to compile
   "exclude": ["node_modules"]
 }

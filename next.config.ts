@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+
+  // Build settings for Electron
+  output: 'export',
   
   /* config options here */
   async rewrites() {

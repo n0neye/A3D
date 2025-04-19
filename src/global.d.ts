@@ -6,7 +6,8 @@ interface Window {
       node: string;
       chrome: string;
     };
-    saveFile: (data: Buffer, fileName: string) => Promise<string>;
+    
+    saveFile: (data: ArrayBuffer, fileName: string) => Promise<string>;
     readFile: (filePath: string) => Promise<ArrayBuffer>;
     getAppDataPath: () => Promise<string>;
     ping: () => string;
