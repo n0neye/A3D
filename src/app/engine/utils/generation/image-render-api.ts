@@ -5,11 +5,11 @@ import { blobToBase64 } from "./image-processing";
 import { EditorEngine } from "@/app/engine/core/EditorEngine";
 
 // use the proxy in nextjs web app
-if (window.electron?.isElectron !== true) {
-  fal.config({
-    proxyUrl: "/api/fal/proxy",
-  });
-}
+// if (window && window.electron?.isElectron !== true) {
+//   fal.config({
+//     proxyUrl: "/api/fal/proxy",
+//   });
+// }
 
 export interface API_Info {
   id: 'fal-turbo' | 'fast-lcm-diffusion' | 'flux-dev' | 'flux-pro-depth' | 'flux-lora-depth' | 'replicate-lcm' | 'fal-ai/flux-control-lora-depth/image-to-image' | 'fal-ai/flux-control-lora-depth';
