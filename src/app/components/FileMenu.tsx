@@ -15,22 +15,30 @@ export default function FileMenu() {
   const { renderSettings, engine } = useEditorEngine();
   const [isElectron, setIsElectron] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const [hasUnsaved, setHasUnsaved] = useState(false);
 
   useEffect(() => {
     if (!engine) return;
     const projectManager = engine.getProjectManager();
 
     setProjectName(projectManager.getCurrentProjectName());
+    setHasUnsaved(projectManager.hasUnsavedChangesStatus());
 
     const handleNameChange = (data: { name: string }) => {
       setProjectName(data.name);
     };
-    const unsubscribe = projectManager.observers.subscribe('projectNameChanged', handleNameChange);
+    const unsubscribeName = projectManager.observers.subscribe('projectNameChanged', handleNameChange);
+
+    const handleUnsavedChange = (data: { hasUnsaved: boolean }) => {
+        setHasUnsaved(data.hasUnsaved);
+    };
+    const unsubscribeUnsaved = projectManager.observers.subscribe('unsavedChangesStatusChanged', handleUnsavedChange);
 
     setIsElectron(typeof window !== 'undefined' && !!window.electron?.isElectron);
 
     return () => {
-      unsubscribe();
+      unsubscribeName();
+      unsubscribeUnsaved();
     };
   }, [engine]);
 
@@ -166,13 +174,13 @@ export default function FileMenu() {
               variant="outline"
               size="icon"
               onClick={handleSaveProject}
-              className="h-9 w-9"
+              className={`h-9 w-9 ${hasUnsaved ? 'border-primary text-primary hover:bg-primary/10' : ''}`}
             >
               <IconDeviceFloppy size={18} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Save Project (Ctrl+S)</p>
+            <p>Save Project {hasUnsaved ? '(Unsaved)' : ''} (Ctrl+S)</p>
             <p className="text-xs text-muted-foreground">Hold Shift for Save As</p>
           </TooltipContent>
         </Tooltip>
@@ -195,7 +203,7 @@ export default function FileMenu() {
 
         <Input
           type="text"
-          value={projectName}
+          value={projectName + (hasUnsaved ? '*' : '')}
           onChange={handleProjectNameChange}
           placeholder="Project Name"
           className="w-48 h-9 text-sm"

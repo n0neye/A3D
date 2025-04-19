@@ -16,6 +16,7 @@ import { SerializedTimelineData } from '../managers/timeline/TimelineManager';
 import { EntityFactory } from '../entity/EntityFactory';
 import { FileService } from '../services/FileService/FileService';
 import { LocalFileWorker } from '../services/FileService/LocalFileWorker';
+import { HistoryManager } from './HistoryManager';
 
 // Interface for serialized render settings
 
@@ -42,6 +43,7 @@ export class ProjectManager {
     private isElectron: boolean;
     private currentProjectPath: string | null = null;
     private currentProjectName: string = DEFAULT_PROJECT_NAME;
+    private hasUnsavedChanges: boolean = false;
     public observers = new Observer<{
         projectLoaded: { project: IRenderSettings };
         renderLogsChanged: { renderLogs: IRenderLog[], isNewRenderLog: boolean };
@@ -49,6 +51,7 @@ export class ProjectManager {
         latestRenderChanged: { latestRender: IRenderLog | null };
         projectPathChanged: { path: string | null };
         projectNameChanged: { name: string };
+        unsavedChangesStatusChanged: { hasUnsaved: boolean };
     }>();
 
     constructor(engine: EditorEngine) {
@@ -56,6 +59,22 @@ export class ProjectManager {
         this.fileService = FileService.getInstance();
         this.localFileWorker = new LocalFileWorker();
         this.isElectron = typeof window !== 'undefined' && !!window.electron?.isElectron;
+
+        this.engine.getHistoryManager().observer.subscribe('historyChanged', this.onHistoryChanged);
+    }
+
+    private onHistoryChanged = (): void => {
+        if (!this.hasUnsavedChanges) {
+            this.setUnsavedChanges(true);
+        }
+    }
+
+    private setUnsavedChanges(hasUnsaved: boolean): void {
+        if (this.hasUnsavedChanges !== hasUnsaved) {
+            this.hasUnsavedChanges = hasUnsaved;
+            this.observers.notify('unsavedChangesStatusChanged', { hasUnsaved: this.hasUnsavedChanges });
+            console.log("ProjectManager: Unsaved changes status:", this.hasUnsavedChanges);
+        }
     }
 
     private async loadProjectData(projectJsonString: string, filePath: string | null = null): Promise<void> {
@@ -77,12 +96,15 @@ export class ProjectManager {
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
             this.observers.notify('projectNameChanged', { name: this.currentProjectName });
 
+            this.setUnsavedChanges(false);
+
         } catch (error) {
             console.error("Error parsing or deserializing project data:", error);
             this.currentProjectPath = null;
             this.currentProjectName = DEFAULT_PROJECT_NAME;
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
             this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+            this.setUnsavedChanges(false);
             throw new Error(`Failed to parse project data: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -145,6 +167,7 @@ export class ProjectManager {
                 const arrayBuffer = uint8Array.buffer.slice(0) as ArrayBuffer;
                 await this.localFileWorker.saveFileToPath(arrayBuffer, this.currentProjectPath);
                 console.log(`Project saved to: ${this.currentProjectPath}`);
+                this.setUnsavedChanges(false);
             } catch (error) {
                 console.error(`Error saving project to ${this.currentProjectPath}:`, error);
                 throw error;
@@ -174,6 +197,7 @@ export class ProjectManager {
                     this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
                     this.observers.notify('projectNameChanged', { name: this.currentProjectName });
                     console.log(`Project saved as: ${this.currentProjectPath}`);
+                    this.setUnsavedChanges(false);
                 } else {
                     console.log("Save As cancelled by user.");
                 }
@@ -202,6 +226,7 @@ export class ProjectManager {
                     this.currentProjectName = fileName.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
                     this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
                     this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+                    this.setUnsavedChanges(false);
                     return;
                 } catch (err) {
                     console.log("File System Access API failed or cancelled, falling back to download method");
@@ -222,6 +247,7 @@ export class ProjectManager {
             this.currentProjectName = fileName.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || DEFAULT_PROJECT_NAME;
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
             this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+            this.setUnsavedChanges(false);
         }
     }
 
@@ -262,6 +288,9 @@ export class ProjectManager {
         this.currentProjectName = DEFAULT_PROJECT_NAME;
         this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
         this.observers.notify('projectNameChanged', { name: this.currentProjectName });
+
+        this.engine.getHistoryManager().clearHistory();
+        this.setUnsavedChanges(false);
     }
 
     async deserializeProject(
@@ -390,6 +419,14 @@ export class ProjectManager {
 
     getCurrentProjectName(): string {
         return this.currentProjectName;
+    }
+
+    hasUnsavedChangesStatus(): boolean {
+        return this.hasUnsavedChanges;
+    }
+
+    dispose(): void {
+        // TODO: Unsubscribe from historyChanged
     }
 }
 
