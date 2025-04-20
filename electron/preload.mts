@@ -8,49 +8,44 @@ ipcRenderer.invoke('echo', 'Preload script is loaded').then(response => {
   console.error('IPC test failed:', err);
 });
 
-console.log('Minimal preload script attempting to load.');
+console.log('preload.mts loading...');
 
 try {
+
+  // expose the electronAPI to the renderer process
   contextBridge.exposeInMainWorld('electron', {
-      ping: () => 'pong from minimal preload',
-      isElectron: true // Keep a basic property
+    // File handling
+    saveFile: (data: Buffer, fileName: string) => ipcRenderer.invoke('save-file', data, fileName),
+    readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
+    getAppDataPath: () => ipcRenderer.invoke('get-app-data-path'),
+
+    // Add a reliable indicator that we're in Electron
+    isElectron: true,
+
+    // Also expose Electron version info
+    versions: {
+      electron: process.versions.electron,
+      node: process.versions.node,
+      chrome: process.versions.chrome
+    },
+
+    // Simple test method
+    ping: () => 'pong',
+
+    // Add this method
+    loadImageData: (filePath: string) => ipcRenderer.invoke('load-image-data', filePath),
+
+    // Add user preferences API
+    userPreferences: {
+      get: (key: string) => ipcRenderer.invoke('get-preference', key),
+      set: (key: string, value: any) => ipcRenderer.invoke('set-preference', key, value),
+      getAll: () => ipcRenderer.invoke('get-all-preferences'),
+      setAll: (preferences: any) => ipcRenderer.invoke('set-all-preferences', preferences),
+      reset: () => ipcRenderer.invoke('reset-preferences')
+    }
   });
-  console.log('Minimal preload script finished exposing API.');
+
 } catch (error) {
-  console.error('Error in minimal preload script:', error);
+  console.error('Error in preload.mts:', error);
 }
-
-// // expose the electronAPI to the renderer process
-// contextBridge.exposeInMainWorld('electron', {
-//   // File handling
-//   saveFile: (data: Buffer, fileName: string) => ipcRenderer.invoke('save-file', data, fileName),
-//   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
-//   getAppDataPath: () => ipcRenderer.invoke('get-app-data-path'),
-
-//   // Add a reliable indicator that we're in Electron
-//   isElectron: true,
-
-//   // Also expose Electron version info
-//   versions: {
-//     electron: process.versions.electron,
-//     node: process.versions.node,
-//     chrome: process.versions.chrome
-//   },
-
-//   // Simple test method
-//   ping: () => 'pong',
-
-//   // Add this method
-//   loadImageData: (filePath: string) => ipcRenderer.invoke('load-image-data', filePath),
-
-//   // Add user preferences API
-//   userPreferences: {
-//     get: (key: string) => ipcRenderer.invoke('get-preference', key),
-//     set: (key: string, value: any) => ipcRenderer.invoke('set-preference', key, value),
-//     getAll: () => ipcRenderer.invoke('get-all-preferences'),
-//     setAll: (preferences: any) => ipcRenderer.invoke('set-all-preferences', preferences),
-//     reset: () => ipcRenderer.invoke('reset-preferences')
-//   }
-// });
-
-console.log('Preload script loaded.');
+console.log('preload.mts loaded.');

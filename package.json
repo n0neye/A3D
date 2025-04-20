@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": "dist/main.js",
+  "exports": "dist/main.mjs",
   "scripts": {
     "dev:next": "next dev --port 3030",
     "build:next": "next build",
     "start:next": "next start",
     "build:electron": "tsc --project electron/tsconfig.json",
     "watch:electron": "tsc --project electron/tsconfig.json --watch",
-    "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron dist/main.js",
+    "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron dist/main.mjs",
     "dev": "concurrently -k \"yarn dev:next\" \"yarn start:electron\"",
     "build": "yarn build:next && yarn build:electron",
     "pack": "yarn build && electron-builder --dir",
@@ -31,7 +31,7 @@
       "buildResources": "assets"
     },
     "extraMetadata": {
-      "main": "dist/main.js"
+      "main": "dist/main.mjs"
     },
     "mac": {
       "target": "dmg"

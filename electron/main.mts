@@ -9,7 +9,11 @@ import { fileURLToPath } from 'url'; // Import fileURLToPath
 
 // Replicate __dirname functionality in ESM
 const __filename = fileURLToPath(import.meta.url);
+// __dirname here will point to the 'dist' folder where main.mjs is located after compilation
 const __dirname = path.dirname(__filename);
+
+console.log('main.ts __dirname', __dirname);
+console.log('main.ts __filename', __filename);
 
 let mainWindow: BrowserWindow | null;
 
@@ -43,6 +47,9 @@ const userPrefs = new Store<UserPreferences>({
   },
 }) as ElectronStoreWithAPI<UserPreferences>;
 
+const preloadPath = path.join(__dirname, 'preload.mjs');
+console.log('main.mts preloadPath', preloadPath);
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     // titleBarStyle: ,
@@ -50,18 +57,26 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.mjs'), // Change to preload.mjs
+      preload: preloadPath, // Change to preload.mjs
+      sandbox: false,
     },
   });
+
+  // Correctly calculate path to 'out' relative to 'dist'
+  // main.mjs is in 'dist', so we go up one level ('../') and then into 'out'
+  const buildPath = path.join(__dirname, '../out/index.html');
+  console.log('main.mts isDev', isDev);
+  console.log('main.mts buildPath', buildPath); // Verify this path looks correct in console
 
   const startUrl = isDev
     ? 'http://localhost:3030'
     : url.format({
-        pathname: path.join(__dirname, '../out/index.html'), // Use the ESM-compatible __dirname
+        pathname: buildPath, // Use the corrected buildPath
         protocol: 'file:',
         slashes: true,
       });
 
+  console.log('startUrl:', startUrl); // Log the final URL
   mainWindow.loadURL(startUrl);
 
   if (isDev) {
@@ -201,4 +216,10 @@ ipcMain.handle('set-all-preferences', async (event, preferences) => {
 ipcMain.handle('reset-preferences', async () => {
   userPrefs.clear();
   return true;
+});
+
+// Add this handler if you keep the invoke in preload
+ipcMain.handle('echo', (event, message) => {
+  console.log('Received echo:', message);
+  return `Main process received: ${message}`;
 });

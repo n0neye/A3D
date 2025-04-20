@@ -1,9 +1,9 @@
 // electron/tsconfig.json
 {
   "compilerOptions": {
-    "target": "ES2020", // Updated target
-    "module": "NodeNext", // Changed from CommonJS to ESNext for ESM
-    "lib": ["ES2020", "DOM"], // Include DOM because preload might operate on DOM
+    "target": "ES2022", // Updated target
+    "module": "NodeNext", // Keep NodeNext for ESM
+    "lib": ["ES2022", "DOM"], // Updated lib, keep DOM
     "outDir": "../dist", // Output compiled JS to the dist folder in the root
     "rootDir": ".",
     "strict": true,
@@ -11,9 +11,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "NodeNext", // Use NodeNext for modern Node resolution
+    "moduleResolution": "NodeNext", // Keep NodeNext
     "sourceMap": true // Source Map is recommended for development
   },
-  "include": ["main.ts", "preload.mts"], // Update to preload.mts
+  "include": ["main.mts", "preload.mts"], // Update to main.mts
   "exclude": ["node_modules"]
 }
