@@ -1,13 +1,19 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    "target": "es5",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false, //will change
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -22,19 +28,17 @@
         "./src/*"
       ]
     },
-    "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ]
+    "strictNullChecks": true
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
-, "electron/preload.mts", "electron/main.mts"  ],
+    ".next/types/**/*.ts",
+    "electron/main.mts",
+    "electron/preload.mts",
+    "next-env.d.ts",
+    "build/types/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
     "electron"

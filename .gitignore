@@ -17,6 +17,13 @@
 /.next/
 /out/
 
+# Build
+dist
+backend/build
+src/build
+src/.next
+src/next-env.d.ts
+
 # production
 /build
 /dist

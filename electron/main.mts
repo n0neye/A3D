@@ -47,34 +47,33 @@ const userPrefs = new Store<UserPreferences>({
   },
 }) as ElectronStoreWithAPI<UserPreferences>;
 
-const preloadPath = path.join(__dirname, 'preload.mjs');
-console.log('main.mts preloadPath', preloadPath);
-
 function createWindow() {
+
+
+  const RESOURCES_PATH = isDev
+    ? path.join(__dirname, '../../assets')
+    : path.join(process.resourcesPath, 'assets')
+
+  const getAssetPath = (...paths: string[]): string => {
+    return path.join(RESOURCES_PATH, ...paths)
+  }
+
+  const PRELOAD_PATH = path.join(__dirname, 'preload.mjs')
+
   mainWindow = new BrowserWindow({
     // titleBarStyle: ,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: preloadPath, // Change to preload.mjs
+      preload: PRELOAD_PATH, // Change to preload.mjs
       sandbox: false,
     },
   });
 
-  // Correctly calculate path to 'out' relative to 'dist'
-  // main.mjs is in 'dist', so we go up one level ('../') and then into 'out'
-  const buildPath = path.join(__dirname, '../out/index.html');
-  console.log('main.mts isDev', isDev);
-  console.log('main.mts buildPath', buildPath); // Verify this path looks correct in console
-
   const startUrl = isDev
     ? 'http://localhost:3030'
-    : url.format({
-        pathname: buildPath, // Use the corrected buildPath
-        protocol: 'file:',
-        slashes: true,
-      });
+    : `file://${path.join(__dirname, '../../src/build/index.html')}`
 
   console.log('startUrl:', startUrl); // Log the final URL
   mainWindow.loadURL(startUrl);
@@ -96,21 +95,21 @@ function createWindow() {
     mainWindow = null;
   });
 
-  
-	globalShortcut.register('f5', function() {
-		console.log('f5 is pressed')
-		mainWindow?.reload()
-	})
-	globalShortcut.register('CommandOrControl+R', function() {
-		console.log('CommandOrControl+R is pressed')
-		mainWindow?.reload()
-	})
+
+  globalShortcut.register('f5', function () {
+    console.log('f5 is pressed')
+    mainWindow?.reload()
+  })
+  globalShortcut.register('CommandOrControl+R', function () {
+    console.log('CommandOrControl+R is pressed')
+    mainWindow?.reload()
+  })
 
   mainWindow?.webContents.on('before-input-event', (_, input) => {
     if (input.type === 'keyDown' && input.key === 'F12') {
       mainWindow?.webContents.toggleDevTools();
     }
-});
+  });
 }
 
 // (Optional) Create Preload script (used to safely expose Node API to Renderer)
@@ -133,22 +132,21 @@ app.on('activate', () => {
   }
 });
 
-// (Optional) Handle IPC messages from Renderer here
-// ipcMain.on('some-event', (event, arg) => {
-//   console.log(arg); // prints "ping"
-//   // Do something...
-//   event.reply('some-reply', 'pong');
-// });
+/*
+ * ======================================================================================
+ *                                IPC Main Events
+ * ======================================================================================
+ */
 
 // Add IPC handlers for file operations
 ipcMain.handle('save-file', async (event, data, fileName) => {
   const userDataPath = path.join(app.getPath('userData'), 'ImportedAssets');
-  
+
   // Create directory if it doesn't exist
   if (!fs.existsSync(userDataPath)) {
     fs.mkdirSync(userDataPath, { recursive: true });
   }
-  
+
   const filePath = path.join(userDataPath, fileName);
   await fs.promises.writeFile(filePath, Buffer.from(data));
   return url.pathToFileURL(filePath).toString();
@@ -163,19 +161,19 @@ ipcMain.handle('read-file', async (event, fileUrl) => {
 
 ipcMain.handle('get-app-data-path', async (event) => {
   const userDataPath = path.join(app.getPath('userData'), 'ImportedAssets');
-  
+
   // Create directory if it doesn't exist
   if (!fs.existsSync(userDataPath)) {
     fs.mkdirSync(userDataPath, { recursive: true });
   }
-  
+
   return userDataPath;
 });
 
 ipcMain.handle('load-image-data', async (event, fileUrl) => {
   // Convert file URL string back to path
   const filePath = fileURLToPath(fileUrl);
-  
+
   try {
     const data = await fs.promises.readFile(filePath);
     // Determine image type based on extension (basic example)

@@ -12,7 +12,7 @@ import { SerializedLightEntityData } from "../entity/types/LightEntity";
 import { EntityBase, SerializedEntityData, isEntity } from "../entity/base/EntityBase";
 import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
 import { IRenderLog, IRenderSettings } from '@/app/engine/interfaces/rendering';
-import { SerializedTimelineData } from '../managers/timeline/TimelineManager';
+import { SerializedTimelineData } from './timeline/TimelineManager';
 import { EntityFactory } from '../entity/EntityFactory';
 // Interface for serialized render settings
 
