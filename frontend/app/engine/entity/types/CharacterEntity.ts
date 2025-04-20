@@ -1,4 +1,3 @@
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { EntityBase, EntityType, SerializedEntityData } from '../base/EntityBase';
 import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';

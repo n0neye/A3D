@@ -73,7 +73,7 @@ function createWindow() {
 
   const startUrl = isDev
     ? 'http://localhost:3030'
-    : `file://${path.join(__dirname, '../../src/build/index.html')}`
+    : `file://${path.join(__dirname, '../../frontend/build/index.html')}`
 
   console.log('startUrl:', startUrl); // Log the final URL
   mainWindow.loadURL(startUrl);

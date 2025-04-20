@@ -9,7 +9,7 @@
 		"noEmit": true,
 		"esModuleInterop": true,
 		"module": "esnext",
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"jsx": "preserve",
@@ -19,10 +19,10 @@
 				"name": "next"
 			}
 		],
-		"baseUrl": ".",
+		"baseUrl": "./app",
 		"paths": {
-			"@/*": ["app/*"]
-		}
+			"@/*": ["./*"]
+		},
 	},
 	"include": [
 		"context.d.ts",
@@ -33,7 +33,9 @@
 		"../build/types/**/*.ts",
 		"dist/types/**/*.ts",
 		"build/types/**/*.ts",
-		"customImageLoader.js"
+		"customImageLoader.js",
+		"app/**/*.ts",
+		"app/**/*.tsx"
 	],
 	"exclude": ["node_modules"]
 }
