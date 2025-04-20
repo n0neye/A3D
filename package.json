@@ -10,7 +10,7 @@
     "start:next": "next start",
     "build:electron": "tsc --project electron/tsconfig.json",
     "watch:electron": "tsc --project electron/tsconfig.json --watch",
-    "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron .",
+    "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron dist/main.js",
     "dev": "concurrently -k \"yarn dev:next\" \"yarn start:electron\"",
     "build": "yarn build:next && yarn build:electron",
     "pack": "yarn build && electron-builder --dir",
