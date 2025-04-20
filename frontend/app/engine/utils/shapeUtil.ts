@@ -39,7 +39,7 @@ export async function loadShapeMeshes(scene: THREE.Scene): Promise<void> {
     // Load the model
     const gltf = await new Promise<any>((resolve, reject) => {
       loader.load(
-        "/models/shapes.gltf",
+        "./models/shapes.gltf",
         (gltf) => resolve(gltf),
         undefined,
         (error) => reject(error)

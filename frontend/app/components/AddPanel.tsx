@@ -100,9 +100,9 @@ const AddPanel: React.FC = () => {
 
   // List of available character models
   const characterModels = [
-    { url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: '/characters/thumbs/mannequin.webp', scale: 1 },
-    { url: '/characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: '/characters/thumbs/xbot.webp', scale: 1 },
-    { url: '/characters/cat/cat_orange.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.webp', scale: 0.02 },
+    { url: './characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: './characters/thumbs/mannequin.webp', scale: 1 },
+    { url: './characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: './characters/thumbs/xbot.webp', scale: 1 },
+    { url: './characters/cat/cat_orange.glb', name: 'Cat', thumbnail: './characters/thumbs/cat.webp', scale: 0.02 },
     // { url: '/characters/cat/cat_-_walking_scale.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.png', scale: 1 },
   ];
 
