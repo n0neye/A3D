@@ -1,19 +1,13 @@
-// electron/main.ts
 import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
-import path from 'path'; // Use default import for path
-import url from 'url'; // Use default import for url
+import path from 'path'; 
+import url from 'url'; 
 import isDev from 'electron-is-dev';
-import fs from 'fs'; // Use default import for fs
+import fs from 'fs'; 
 import Store from 'electron-store';
-import { fileURLToPath } from 'url'; // Import fileURLToPath
+import { fileURLToPath } from 'url';
 
-// Replicate __dirname functionality in ESM
 const __filename = fileURLToPath(import.meta.url);
-// __dirname here will point to the 'dist' folder where main.mjs is located after compilation
 const __dirname = path.dirname(__filename);
-
-console.log('main.ts __dirname', __dirname);
-console.log('main.ts __filename', __filename);
 
 let mainWindow: BrowserWindow | null;
 
@@ -49,7 +43,6 @@ const userPrefs = new Store<UserPreferences>({
 
 function createWindow() {
 
-
   const RESOURCES_PATH = isDev
     ? path.join(__dirname, '../../assets')
     : path.join(process.resourcesPath, 'assets')
@@ -62,6 +55,7 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     // titleBarStyle: ,
+    icon: getAssetPath('icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
@@ -71,17 +65,14 @@ function createWindow() {
     },
   });
 
-  const startUrl = isDev
+  const START_URL = isDev
     ? 'http://localhost:3030'
     : `file://${path.join(__dirname, '../../frontend/build/index.html')}`
 
-  console.log('startUrl:', startUrl); // Log the final URL
-  mainWindow.loadURL(startUrl);
+  mainWindow.loadURL(START_URL);
 
-  if (isDev) {
-    // Automatically open the DevTools in dev mode
-    mainWindow.webContents.openDevTools();
-  }
+  // Automatically open the DevTools in dev mode
+  if (isDev) { mainWindow.webContents.openDevTools(); }
 
   mainWindow.removeMenu();
   mainWindow.maximize();
@@ -95,6 +86,7 @@ function createWindow() {
     mainWindow = null;
   });
 
+  // Global Shortcuts
 
   globalShortcut.register('f5', function () {
     console.log('f5 is pressed')
@@ -112,9 +104,8 @@ function createWindow() {
   });
 }
 
-// (Optional) Create Preload script (used to safely expose Node API to Renderer)
-// Create preload.ts in the electron/ folder
-// Will configure tsconfig to compile it later
+// ======================================================================================
+// App Events
 
 app.on('ready', createWindow);
 
@@ -132,11 +123,10 @@ app.on('activate', () => {
   }
 });
 
-/*
- * ======================================================================================
- *                                IPC Main Events
- * ======================================================================================
- */
+
+// ======================================================================================
+// IPC Main Events
+
 
 // Add IPC handlers for file operations
 ipcMain.handle('save-file', async (event, data, fileName) => {

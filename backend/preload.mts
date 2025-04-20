@@ -1,6 +1,4 @@
-// electron/preload.ts
 import { contextBridge, ipcRenderer } from 'electron';
-
 
 ipcRenderer.invoke('echo', 'Preload script is loaded').then(response => {
   console.log('IPC test response:', response);
@@ -28,9 +26,6 @@ try {
       node: process.versions.node,
       chrome: process.versions.chrome
     },
-
-    // Simple test method
-    ping: () => 'pong',
 
     // Add this method
     loadImageData: (filePath: string) => ipcRenderer.invoke('load-image-data', filePath),

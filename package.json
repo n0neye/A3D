@@ -18,7 +18,8 @@
     "test:build": "yarn build && concurrently -k \"yarn serve:next:build\" \"wait-on http://localhost:5000 && yarn start:electron:prod\"",
     "build": "yarn build:next && yarn build:electron",
     "pack": "yarn build && electron-builder --dir",
-    "dist": "yarn build && electron-builder"
+    "dist": "yarn build && electron-builder",
+    "pack-portable": "yarn build && electron-builder --win=portable"
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.3",
