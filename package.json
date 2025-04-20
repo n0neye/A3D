@@ -5,8 +5,8 @@
   "type": "module",
   "exports": "electron/build/main.mjs",
   "scripts": {
-    "dev:next": "next dev --port 3030",
-    "build:next": "next build src",
+    "dev:next": "next dev frontend --port 3030",
+    "build:next": "next build frontend",
     "start:next": "next start",
     "build:electron": "tsc --project electron/tsconfig.json",
     "watch:electron": "tsc --project electron/tsconfig.json --watch",
@@ -15,30 +15,6 @@
     "build": "yarn build:next && yarn build:electron",
     "pack": "yarn build && electron-builder --dir",
     "dist": "yarn build && electron-builder"
-  },
-  "build": {
-    "asar": false,
-    "appId": "com.example.myapp",
-    "productName": "MyApp",
-    "files": [
-      "dist/**/*",
-      "out/**/*",
-      "package.json",
-      "!**/_assets",
-      "!**/src"
-    ],
-    "directories": {
-      "buildResources": "assets"
-    },
-    "extraMetadata": {
-      "main": "dist/main.mjs"
-    },
-    "mac": {
-      "target": "dmg"
-    },
-    "win": {
-      "target": "nsis"
-    }
   },
   "engines": {
     "node": ">=20"

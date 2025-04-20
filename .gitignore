@@ -20,9 +20,9 @@
 # Build
 dist
 backend/build
-src/build
-src/.next
-src/next-env.d.ts
+frontend/build
+frontend/.next
+frontend/next-env.d.ts
 
 # production
 /build
