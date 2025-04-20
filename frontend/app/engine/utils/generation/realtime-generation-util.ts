@@ -1,12 +1,12 @@
 import { fal } from "@fal-ai/client";
 import { getImageSimulationData, } from "../simulation-data";
-import { GenerativeEntity } from '@/app/engine/entity/types/GenerativeEntity';
+import { GenerativeEntity } from '@/engine/entity/types/GenerativeEntity';
 import { ProgressCallback, } from "./generation-util";
-import { ImageRatio, IMAGE_SIZE_MAP, RATIO_MAP } from "@/app/engine/utils/imageUtil";
+import { ImageRatio, IMAGE_SIZE_MAP, RATIO_MAP } from "@/engine/utils/imageUtil";
 import { PromptProps } from "./generation-util";
 import { Runware, RunwareClient } from "@runware/sdk-js";
 import * as THREE from 'three';
-import { IGenerationLog } from '@/app/engine/interfaces/generation';
+import { IGenerationLog } from '@/engine/interfaces/generation';
 
 // Types for callbacks and results
 export interface Generation2DRealtimResult {

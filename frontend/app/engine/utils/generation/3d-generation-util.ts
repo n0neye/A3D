@@ -1,13 +1,13 @@
 import { fal, Result } from "@fal-ai/client";
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
-import { blobToBase64 } from "@/app/engine/utils/generation/image-processing";
+import { blobToBase64 } from "@/engine/utils/generation/image-processing";
 import { v4 as uuidv4 } from 'uuid';
-import { get3DModelPersistentUrl, upload3DModelToGCP } from "@/app/engine/utils/external/storageUtil";
-import { GenerativeEntity } from "@/app/engine/entity/types/GenerativeEntity";
-import { loadModel } from "@/app/engine/entity/types/GenerativeEntity";
+import { get3DModelPersistentUrl, upload3DModelToGCP } from "@/engine/utils/external/storageUtil";
+import { GenerativeEntity } from "@/engine/entity/types/GenerativeEntity";
+import { loadModel } from "@/engine/entity/types/GenerativeEntity";
 import * as THREE from 'three';
-import { FileService } from "@/app/engine/services/FileService/FileService";
+import { FileService } from "@/engine/services/FileService/FileService";
 
 /**
  * Common helpers for 3D model generation

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { Slider } from '@/components/ui/slider';
-import { LightEntity } from '@/app/engine/entity/types/LightEntity';
+import { LightEntity } from '@/engine/entity/types/LightEntity';
 
 function LightEntityPanel(props: { entity: LightEntity }) {
     // State for light settings

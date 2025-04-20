@@ -14,10 +14,10 @@
 import * as THREE from 'three';
 import { SelectionManager } from './SelectionManager';
 import { HistoryManager } from './HistoryManager';
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
-import { BoneControl } from '@/app/engine/entity/components/BoneControl';
-import { GenerativeEntityProps } from '@/app/engine/entity/types/GenerativeEntity';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
+import { Selectable, isSelectable } from '@/engine/entity/base/Selectable';
+import { BoneControl } from '@/engine/entity/components/BoneControl';
+import { GenerativeEntityProps } from '@/engine/entity/types/GenerativeEntity';
 import { EditorEngine } from '../core/EditorEngine';
 import { TransformMode } from './TransformControlManager';
 

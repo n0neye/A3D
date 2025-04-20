@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, fromThreeVector3, toThreeVector3, toThreeEuler } from '../base/EntityBase';
-import { ProgressCallback } from '@/app/engine/utils/generation/generation-util';
+import { ProgressCallback } from '@/engine/utils/generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
-import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/app/engine/utils/materialUtil';
-import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
-import { createShapeMesh } from '@/app/engine/utils/shapeUtil';
-import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/app/engine/utils/generation/3d-generation-util';
-import { doGenerateRealtimeImage, GenerationResult } from '@/app/engine/utils/generation/realtime-generation-util';
+import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/engine/utils/materialUtil';
+import { setupMeshShadows } from '@/engine/utils/lightUtil';
+import { createShapeMesh } from '@/engine/utils/shapeUtil';
+import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/engine/utils/generation/3d-generation-util';
+import { doGenerateRealtimeImage, GenerationResult } from '@/engine/utils/generation/realtime-generation-util';
 import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { get3DSimulationData } from '@/app/engine/utils/simulation-data';
-import { IGenerationLog, AssetType } from '@/app/engine/interfaces/generation';
-import { ImageRatio } from '@/app/engine/utils/imageUtil';
+import { get3DSimulationData } from '@/engine/utils/simulation-data';
+import { IGenerationLog, AssetType } from '@/engine/interfaces/generation';
+import { ImageRatio } from '@/engine/utils/imageUtil';
 
 
 /**

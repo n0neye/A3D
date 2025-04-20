@@ -1,10 +1,10 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { EntityBase, EntityType, SerializedEntityData } from '../base/EntityBase';
-import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
+import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';
 import { BoneControl } from '../components/BoneControl';
-import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
-import { loadModelFromUrl } from '@/app/engine/utils/3dModelUtils';
+import { setupMeshShadows } from '@/engine/utils/lightUtil';
+import { loadModelFromUrl } from '@/engine/utils/3dModelUtils';
 
 export interface CharacterEntityProps {
     url: string;

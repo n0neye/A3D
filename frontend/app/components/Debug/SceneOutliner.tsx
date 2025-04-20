@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useEditorEngine } from '@/app/context/EditorEngineContext';
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { useEditorEngine } from '@/context/EditorEngineContext';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
 import { Folder, ChevronDown, ChevronRight, Box, Lightbulb, User, Shapes, EyeOff, Trash } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 

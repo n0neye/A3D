@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { HistoryManager } from '../../managers/HistoryManager';
 import { Selectable, SelectableConfig, SelectableCursorType } from './Selectable';
 import { EditorEngine } from '../../core/EditorEngine';
-import { TransformMode } from '@/app/engine/managers/TransformControlManager';
+import { TransformMode } from '@/engine/managers/TransformControlManager';
 import { BoneControl } from '../components/BoneControl';
 /**
  * Base class for all entities in the scene

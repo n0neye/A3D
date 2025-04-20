@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { EditorEngine } from "../core/EditorEngine";
-import { Observer } from "@/app/engine/utils/Observer";
+import { Observer } from "@/engine/utils/Observer";
 import { SerializedShapeEntityData } from "../entity/types/ShapeEntity";
 import { SerializedGenerativeEntityData } from "../entity/types/GenerativeEntity";
 import { CharacterEntity } from "../entity/types/CharacterEntity";
@@ -10,8 +10,8 @@ import { ShapeEntity } from "../entity/types/ShapeEntity";
 import { LightEntity } from "../entity/types/LightEntity";
 import { SerializedLightEntityData } from "../entity/types/LightEntity";
 import { EntityBase, SerializedEntityData, isEntity } from "../entity/base/EntityBase";
-import { defaultSettings } from "@/app/engine/utils/ProjectUtil";
-import { IRenderLog, IRenderSettings } from '@/app/engine/interfaces/rendering';
+import { defaultSettings } from "@/engine/utils/ProjectUtil";
+import { IRenderLog, IRenderSettings } from '@/engine/interfaces/rendering';
 import { SerializedTimelineData } from './timeline/TimelineManager';
 import { EntityFactory } from '../entity/EntityFactory';
 // Interface for serialized render settings

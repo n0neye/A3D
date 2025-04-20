@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData } from '../base/EntityBase';
-import { loadModelFromUrl, hasValidSkeleton } from '@/app/engine/utils/3dModelUtils';
-import { ProgressCallback } from '@/app/engine/utils/generation/generation-util';
+import { loadModelFromUrl, hasValidSkeleton } from '@/engine/utils/3dModelUtils';
+import { ProgressCallback } from '@/engine/utils/generation/generation-util';
 import { CharacterEntity } from './CharacterEntity';
 
 /**

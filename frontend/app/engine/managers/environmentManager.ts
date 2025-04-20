@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ImageRatio } from "@/app/engine/utils/imageUtil";
+import { ImageRatio } from "@/engine/utils/imageUtil";
 import { EditorEngine } from "../core/EditorEngine";
 
 export const skyboxFolder = "./demoAssets/skybox/";

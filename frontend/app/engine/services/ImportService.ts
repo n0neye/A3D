@@ -1,5 +1,5 @@
 import { GenerativeEntity } from "../entity/types/GenerativeEntity";
-import { EditorEngine } from "@/app/engine/EditorEngine";
+import { EditorEngine } from "@/engine/EditorEngine";
 import { ImageRatio } from "../utils/imageUtil";
 import { EntityFactory } from "../entity/EntityFactory";
 import { FileService } from './FileService/FileService';

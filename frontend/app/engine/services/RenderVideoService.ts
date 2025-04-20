@@ -11,10 +11,10 @@
  * Works in conjunction with RenderService and TimelineManager.
  */
 import * as THREE from 'three';
-import { EditorEngine } from '@/app/engine/core/EditorEngine';
+import { EditorEngine } from '@/engine/core/EditorEngine';
 import { RenderService } from './RenderService';
 import { TimelineManager } from '../managers/timeline/TimelineManager';
-import { dataURLtoBlob, resizeImage } from '@/app/engine/utils/generation/image-processing';
+import { dataURLtoBlob, resizeImage } from '@/engine/utils/generation/image-processing';
 
 // Define interfaces for video rendering
 export interface VideoRenderOptions {

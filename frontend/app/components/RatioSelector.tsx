@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IconCheck } from '@tabler/icons-react';
-import { ImageRatio } from '@/app/engine/utils/imageUtil';
+import { ImageRatio } from '@/engine/utils/imageUtil';
 
 // Ratio options with icons
 const ratioOptions: { value: ImageRatio; label: string }[] = [

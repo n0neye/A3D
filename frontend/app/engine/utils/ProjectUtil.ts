@@ -1,5 +1,5 @@
-import { IRenderSettings } from "@/app/engine/interfaces/rendering";
-import { availableAPIs } from "@/app/engine/utils/generation/image-render-api";
+import { IRenderSettings } from "@/engine/interfaces/rendering";
+import { availableAPIs } from "@/engine/utils/generation/image-render-api";
 
 export const defaultSettings: IRenderSettings = {
     prompt: '',

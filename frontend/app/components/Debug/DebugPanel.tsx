@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEditorEngine } from '@/app/context/EditorEngineContext';
+import { useEditorEngine } from '@/context/EditorEngineContext';
 import SceneOutliner from './SceneOutliner';
 import EntityDetails from './EntityDetails';
 import ThreeJsDebugView from './ThreeJsDebugView';

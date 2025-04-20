@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useEditorEngine } from '@/app/context/EditorEngineContext';
+import { useEditorEngine } from '@/context/EditorEngineContext';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, ChevronRight, RefreshCw, Box, Activity } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import * as THREE from 'three';
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
 import { IconEyeOff } from '@tabler/icons-react';
 import { IconEye } from '@tabler/icons-react';
 

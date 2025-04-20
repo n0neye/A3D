@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { IconVideo } from '@tabler/icons-react';
-import { ImageRatio } from '@/app/engine/utils/imageUtil';
+import { ImageRatio } from '@/engine/utils/imageUtil';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
 const CameraPanel: React.FC = () => {

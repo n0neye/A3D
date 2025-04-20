@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { ShapeType } from '@/app/engine/entity/types/ShapeEntity';
+import { ShapeType } from '@/engine/entity/types/ShapeEntity';
 
 let cachedMeshes: Map<string, THREE.Mesh> = new Map();
 

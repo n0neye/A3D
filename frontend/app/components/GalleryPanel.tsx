@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconArrowRight, IconX, IconDownload } from '@tabler/icons-react';
 import { downloadImage } from '../engine/utils/helpers';
-import { IRenderLog } from '@/app/engine/interfaces/rendering';
+import { IRenderLog } from '@/engine/interfaces/rendering';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { API_Info, availableAPIs } from '../engine/utils/generation/image-render-api';
 

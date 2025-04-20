@@ -4,8 +4,8 @@ import React, { useRef, useEffect } from 'react';
 import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
-import { isEntity } from '@/app/engine/entity/base/EntityBase';
+import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';
+import { isEntity } from '@/engine/entity/base/EntityBase';
 import { useEditorEngine } from '../context/EditorEngineContext';
 
 export default function FileMenu() {

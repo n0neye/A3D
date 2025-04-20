@@ -14,11 +14,11 @@
  */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { EditorEngine } from '../engine/core/EditorEngine';
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
 import { IRenderSettings, IRenderLog } from '../engine/interfaces/rendering';
-import { defaultSettings } from '@/app/engine/utils/ProjectUtil';
+import { defaultSettings } from '@/engine/utils/ProjectUtil';
 import EngineUIContainer from '../components/EngineUIContainer';
-import { TransformMode } from '@/app/engine/managers/TransformControlManager';
+import { TransformMode } from '@/engine/managers/TransformControlManager';
 import { Selectable } from '../engine/entity/base/Selectable';
 import { DEFAULT_PREFERENCES, UserPreferences } from '../engine/managers/UserPrefManager';
 

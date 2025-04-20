@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { EntityBase, SerializedEntityData, toThreeVector3, toThreeEuler } from '../base/EntityBase';
-import { createShapeMesh } from '@/app/engine/utils/shapeUtil';
-import { defaultShapeMaterial } from '@/app/engine/utils/materialUtil';
-import { setupMeshShadows } from '@/app/engine/utils/lightUtil';
+import { createShapeMesh } from '@/engine/utils/shapeUtil';
+import { defaultShapeMaterial } from '@/engine/utils/materialUtil';
+import { setupMeshShadows } from '@/engine/utils/lightUtil';
 
 /**
  * Entity that represents primitive shapes

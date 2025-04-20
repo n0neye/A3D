@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { Command } from '@/app/engine/managers/HistoryManager';
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { EditorEngine } from '@/app/engine/core/EditorEngine';
-import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
+import { Command } from '@/engine/managers/HistoryManager';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
+import { EditorEngine } from '@/engine/core/EditorEngine';
+import { Selectable, isSelectable } from '@/engine/entity/base/Selectable';
 
 // Base class for mesh transform operations
 export class TransformCommand implements Command {

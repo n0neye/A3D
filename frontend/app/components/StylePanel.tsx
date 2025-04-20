@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { CivitaiResponse, customLoras, getAllLoraInfo,  } from '@/app/engine/utils/generation/lora';
-import { LoraInfo } from '@/app/engine/interfaces/rendering';
+import { CivitaiResponse, customLoras, getAllLoraInfo,  } from '@/engine/utils/generation/lora';
+import { LoraInfo } from '@/engine/interfaces/rendering';
 
 
 interface StylePanelProps {

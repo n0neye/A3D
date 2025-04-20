@@ -1,7 +1,7 @@
 import { fal, Result } from "@fal-ai/client";
 import * as THREE from 'three';
-import { GenerativeEntity } from '@/app/engine/entity/types/GenerativeEntity';
-import { IGenerationLog } from '@/app/engine/interfaces/generation';
+import { GenerativeEntity } from '@/engine/entity/types/GenerativeEntity';
+import { IGenerationLog } from '@/engine/interfaces/generation';
 import { GenerationResult } from "./realtime-generation-util";
 
 

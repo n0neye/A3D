@@ -1,4 +1,4 @@
-import { LoraInfo } from "@/app/engine/interfaces/rendering";
+import { LoraInfo } from "@/engine/interfaces/rendering";
 
 
 

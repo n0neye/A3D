@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { EntityBase } from '../../entity/base/EntityBase';
-import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
+import { CharacterEntity } from '@/engine/entity/types/CharacterEntity';
 import { Track, IKeyframe } from './Track';
-import { BoneControl } from '@/app/engine/entity/components/BoneControl';
+import { BoneControl } from '@/engine/entity/components/BoneControl';
 
 // Character Pose keyframe - storing only modified bones for efficiency
 export interface CharacterPoseKeyframe extends IKeyframe<{

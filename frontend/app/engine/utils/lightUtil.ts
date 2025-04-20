@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EditorEngine } from '@/app/engine/core/EditorEngine';
+import { EditorEngine } from '@/engine/core/EditorEngine';
 
 /**
  * Configures a renderer for shadows

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useEditorEngine } from '@/app/context/EditorEngineContext';
+import { useEditorEngine } from '@/context/EditorEngineContext';
 import { 
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
 import { RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
 
 const EntityDetails: React.FC = () => {
   const { selectedEntity: initialSelectedEntity } = useEditorEngine();

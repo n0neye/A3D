@@ -4,9 +4,9 @@
  * Responsible for communicating with the ComfyUI server.
  * This service enables sending images and receiving results from ComfyUI.
  */
-import { dataURLtoBlob } from '@/app/engine/utils/generation/image-processing';
-import { IRenderLog, LoraConfig } from '@/app/engine/interfaces/rendering';
-import { EditorEngine } from '@/app/engine/core/EditorEngine';
+import { dataURLtoBlob } from '@/engine/utils/generation/image-processing';
+import { IRenderLog, LoraConfig } from '@/engine/interfaces/rendering';
+import { EditorEngine } from '@/engine/core/EditorEngine';
 
 interface ComfyUIResponse {
     status: string;

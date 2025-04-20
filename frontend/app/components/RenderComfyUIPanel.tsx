@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { availableAPIs, API_Info } from '@/app/engine/utils/generation/image-render-api';
-import { addNoiseToImage, resizeImage } from '@/app/engine/utils/generation/image-processing';
+import { availableAPIs, API_Info } from '@/engine/utils/generation/image-render-api';
+import { addNoiseToImage, resizeImage } from '@/engine/utils/generation/image-processing';
 import { IconDownload, IconRefresh, IconDice } from '@tabler/icons-react';
-import { downloadImage } from '@/app/engine/utils/helpers';
-import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
-import { ComfyUIRenderParams, ComfyUIService } from '@/app/engine/services/ComfyUIService';
+import { downloadImage } from '@/engine/utils/helpers';
+import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';
+import { ComfyUIRenderParams, ComfyUIService } from '@/engine/services/ComfyUIService';
 
 // Import Shadcn components
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from '@/components/ui/switch';
 import { useEditorEngine } from '../context/EditorEngineContext';
-import { IRenderSettings, LoraConfig, LoraInfo } from '@/app/engine/interfaces/rendering';
+import { IRenderSettings, LoraConfig, LoraInfo } from '@/engine/interfaces/rendering';
 
 // Update the props of RenderPanel
 interface RenderPanelProps {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
+import { CharacterEntity } from '@/engine/entity/types/CharacterEntity';
 import { IconEye, IconEyeOff, IconLinkPlus, IconPlayerPlay, IconPlayerPause, IconChevronsDown, IconChevronsUp } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { BoneControl } from '../engine/entity/components/BoneControl';

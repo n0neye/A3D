@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { EntityBase, EntityType, SerializedEntityData } from '@/app/engine/entity/base/EntityBase';
-import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/app/engine/entity/types/GenerativeEntity';
-import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/app/engine/entity/types/ShapeEntity';
-import { LightEntity, LightProps, SerializedLightEntityData } from '@/app/engine/entity/types/LightEntity';
-import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } from '@/app/engine/entity/types/CharacterEntity'
+import { EntityBase, EntityType, SerializedEntityData } from '@/engine/entity/base/EntityBase';
+import { GenerativeEntity, GenerativeEntityProps, SerializedGenerativeEntityData } from '@/engine/entity/types/GenerativeEntity';
+import { SerializedShapeEntityData, ShapeEntity, ShapeEntityProps } from '@/engine/entity/types/ShapeEntity';
+import { LightEntity, LightProps, SerializedLightEntityData } from '@/engine/entity/types/LightEntity';
+import { CharacterEntity, CharacterEntityProps, SerializedCharacterEntityData } from '@/engine/entity/types/CharacterEntity'
 import { v4 as uuidv4 } from 'uuid';
-import { CreateEntityAsyncCommand } from '@/app/lib/commands';
+import { CreateEntityAsyncCommand } from '@/lib/commands';
 import { EditorEngine } from '../core/EditorEngine';
-import { DeleteEntityCommand } from '@/app/lib/commands';
-import { Basic3DEntity, Basic3DEntityProps, SerializedBasic3DEntityData } from '@/app/engine/entity/types/Basic3DEntity';
+import { DeleteEntityCommand } from '@/lib/commands';
+import { Basic3DEntity, Basic3DEntityProps, SerializedBasic3DEntityData } from '@/engine/entity/types/Basic3DEntity';
 
 // Base properties common to all entities
 interface BaseEntityOptions {

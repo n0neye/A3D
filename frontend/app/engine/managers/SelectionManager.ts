@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { Selectable, isSelectable } from '@/app/engine/entity/base/Selectable';
-import { CharacterEntity } from '@/app/engine/entity/types/CharacterEntity';
-import { BoneControl } from '@/app/engine/entity/components/BoneControl';
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { Observer } from "@/app/engine/utils/Observer";
+import { Selectable, isSelectable } from '@/engine/entity/base/Selectable';
+import { CharacterEntity } from '@/engine/entity/types/CharacterEntity';
+import { BoneControl } from '@/engine/entity/components/BoneControl';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
+import { Observer } from "@/engine/utils/Observer";
 import { TransformControlManager } from './TransformControlManager';
 /**
  * Manages selection of objects in the scene

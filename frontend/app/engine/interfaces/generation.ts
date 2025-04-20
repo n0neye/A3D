@@ -1,4 +1,4 @@
-import { ImageRatio } from "@/app/engine/utils/imageUtil";
+import { ImageRatio } from "@/engine/utils/imageUtil";
 
 // GenerationLog: Represents the one generation step inside a GenerativeEntity, which can be an image or a 3D model. Logs can be derived from another log (eg. image to 3D model), and logs in the same generativeEntity can be applied any time to be displayed.
 export interface IGenerationLog {

@@ -15,12 +15,12 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { normalizeDepthMap } from '@/app/engine/utils/generation/image-processing';
-import { EditorEngine } from '@/app/engine/core/EditorEngine';
-import { EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { resizeImage, addNoiseToImage, dataURLtoBlob, cropImageToRatioFrame } from '@/app/engine/utils/generation/image-processing';
-import { API_Info, ImageToImageResult, renderImage } from '@/app/engine/utils/generation/image-render-api';
-import { IRenderLog, LoraConfig } from '@/app/engine/interfaces/rendering';
+import { normalizeDepthMap } from '@/engine/utils/generation/image-processing';
+import { EditorEngine } from '@/engine/core/EditorEngine';
+import { EntityBase } from '@/engine/entity/base/EntityBase';
+import { resizeImage, addNoiseToImage, dataURLtoBlob, cropImageToRatioFrame } from '@/engine/utils/generation/image-processing';
+import { API_Info, ImageToImageResult, renderImage } from '@/engine/utils/generation/image-render-api';
+import { IRenderLog, LoraConfig } from '@/engine/interfaces/rendering';
 
 interface RenderParams {
     isTest: boolean;

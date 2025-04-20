@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { EntityType, EntityBase } from '@/app/engine/entity/base/EntityBase';
-import { ShapeType } from '@/app/engine/entity/types/ShapeEntity';
+import { EntityType, EntityBase } from '@/engine/entity/base/EntityBase';
+import { ShapeType } from '@/engine/entity/types/ShapeEntity';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateEntityCommand } from '../lib/commands';
@@ -16,8 +16,8 @@ import {
   IconBulb,
   IconUser,
 } from '@tabler/icons-react';
-import { trackEvent, ANALYTICS_EVENTS } from '@/app/engine/utils/external/analytics';
-import { EditorEngine } from '@/app/engine/core/EditorEngine';
+import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';
+import { EditorEngine } from '@/engine/core/EditorEngine';
 import * as THREE from 'three';
 
 const AddPanel: React.FC = () => {
