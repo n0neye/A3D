@@ -19,9 +19,9 @@
 				"name": "next"
 			}
 		],
-		"baseUrl": "./app",
+		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./*"]
+			"@/*": ["app/*"]
 		}
 	},
 	"include": [

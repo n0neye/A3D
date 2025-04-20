@@ -16,9 +16,6 @@
     "pack": "yarn build && electron-builder --dir",
     "dist": "yarn build && electron-builder"
   },
-  "engines": {
-    "node": ">=20"
-  },
   "dependencies": {
     "@fal-ai/client": "^1.2.3",
     "@fal-ai/server-proxy": "^1.1.1",
