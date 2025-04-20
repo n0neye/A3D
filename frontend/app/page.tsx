@@ -10,6 +10,7 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    console.log("page.tsx init")
     setIsClient(true);
 
     // Function to check if device is mobile based on screen width

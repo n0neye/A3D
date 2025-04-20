@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-	"main": "backend/build/main.mjs",
+  "main": "backend/build/main.mjs",
   "exports": "backend/build/main.mjs",
   "scripts": {
     "dev:next": "next dev frontend --port 3030",
@@ -13,6 +13,10 @@
     "watch:electron": "tsc --project backend/tsconfig.json --watch",
     "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron backend/build/main.mjs",
     "dev": "concurrently -k \"yarn dev:next\" \"yarn start:electron\"",
+    
+    "serve:next:build": "serve frontend/build -p 5000",
+    "start:electron:prod": "yarn build:electron && electron backend/build/main.mjs http://localhost:5000",
+    "test:build": "yarn build && concurrently -k \"yarn serve:next:build\" \"wait-on http://localhost:5000 && yarn start:electron:prod\"",
     "build": "yarn build:next && yarn build:electron",
     "pack": "yarn build && electron-builder --dir",
     "dist": "yarn build && electron-builder"
@@ -68,6 +72,7 @@
     "eslint": "^9.25.0",
     "eslint-config-next": "^15.3.1",
     "node": "^20",
+    "serve": "^14.2.4",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wait-on": "^8.0.3"

@@ -1,9 +1,11 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { PostHogProvider } from './components/PostHogProvider'
+// import { PostHogProvider } from './components/PostHogProvider'
 import Script from 'next/script'
-import { initAnalytics } from './engine/utils/external/analytics'
+// import { initAnalytics } from './engine/utils/external/analytics'
 import { Toaster } from 'sonner'
+
+console.log('layout.tsx')
 
 
 export const metadata: Metadata = {
@@ -25,7 +27,7 @@ export default function RootLayout({
 }) {
   // Initialize analytics on client side
   if (typeof window !== 'undefined') {
-    initAnalytics();
+    // initAnalytics();
   }
 
   return (
@@ -57,9 +59,9 @@ export default function RootLayout({
       </head>
       <body className={`bg-black text-gray-200`}>
           <Toaster closeButton theme='dark' />
-          <PostHogProvider>
+          {/* <PostHogProvider> */}
             {children}
-          </PostHogProvider>
+          {/* </PostHogProvider> */}
       </body>
     </html>
   )

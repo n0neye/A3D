@@ -63,6 +63,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
       let unsubAll: (() => void)[] = [];
 
       const initEngine = async () => {
+        console.log('EditorEngineContext: initEngine: initEngine');
+        
         if (!canvasRef.current) return;
         const engine = await EditorEngine.initEngine(canvasRef.current);
 
