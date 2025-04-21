@@ -63,6 +63,12 @@ export class CharacterEntity extends EntityBase {
 
         super(name, scene, 'character', data);
         this.characterProps = data.characterProps;
+        
+        // Get character data
+        const characterData = characterDatas.get(this.name);
+        if (characterData) {
+            this._characterData = characterData;
+        }
 
         // Track character creation
         trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
@@ -163,6 +169,7 @@ export class CharacterEntity extends EntityBase {
                 console.log(`Loading character: ${progress.message || 'in progress...'}`);
             });
 
+
             console.log("CharacterEntity: Model load result:", result);
 
             let skeletonFound = false;
@@ -220,31 +227,25 @@ export class CharacterEntity extends EntityBase {
                 }
 
                 // Handle model animations
-                this.modelAnimations = result.animations || [];
+                this.animationsFiles = this._characterData?.animationsFiles || [];
+                this.modelAnimations = result.animations;
+
+                // Create animation mixer, if any animations are found
+                if (this.animationsFiles.length + this.modelAnimations.length > 0) {
+                    this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
+                    this.engine.addMixer(this.uuid, this.animationMixer);
+                }
+
+                // Set pose to the default animation
                 if (this.modelAnimations.length > 0) {
                     // create animation mixer and store animations for future use
-                    this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
                     this.currentAnimationAction = this.animationMixer.clipAction(this.modelAnimations[this.modelAnimations.length - 1]);
                     this.currentAnimationAction.play();
-                    this.engine.addMixer(this.uuid, this.animationMixer);
                     setTimeout(() => {
                         if (this.currentAnimationAction) {
                             this.currentAnimationAction.paused = true;
                         }
                     }, 5);
-                }
-
-                // Get animation files from character data
-                const characterData = characterDatas.get(this.name);
-                console.log("CharacterEntity: find characterData", this.name, characterData);
-                if (characterData) {
-                    this.animationsFiles = characterData.animationsFiles;
-                    this._characterData = characterData;
-                    if (this.animationsFiles.length > 0) {
-                        this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
-                        this.engine.addMixer(this.uuid, this.animationMixer);
-                        // this.selectAnimationFile(0, false);
-                    }
                 }
 
                 onLoaded?.(this);
