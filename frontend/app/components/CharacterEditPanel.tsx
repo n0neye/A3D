@@ -8,6 +8,26 @@ import { ICharacterData, characterDatas } from '../engine/data/CharacterData';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
+// Define common skin tones
+const skinTones = [
+  // White Tones
+  '#F9E4D0', // Light Peach
+  '#FFE0BD', // Pale Ivory
+  '#FFCDA8', // Light Beige
+  // Asian Tones
+  '#EAC086', // Golden Beige
+  '#EEC8A9', // Light Olive
+  '#D8AE84', // Warm Beige
+  // Brown Tones
+  '#C68E71', // Medium Tan
+  '#A56A51', // Sienna
+  '#8D5524', // Caramel Brown
+  // Black Tones
+  '#693A2A', // Dark Brown
+  '#5C2D1E', // Deep Brown
+  '#3E1D10', // Espresso
+];
+
 const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const { selectedSelectable, engine } = useEditorEngine();
   const [showBones, setShowBones] = useState(true);
@@ -24,6 +44,8 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const animationListRef = useRef<HTMLDivElement>(null);
 
   const [characterColor, setCharacterColor] = useState(entity.characterProps.color || '#ffffff');
+  const [showColorPopover, setShowColorPopover] = useState(false); // State for popover visibility
+  const colorPopoverRef = useRef<HTMLDivElement>(null); // Ref for popover container
 
   useEffect(() => {
     if (selectedSelectable && selectedSelectable instanceof BoneControl) {
@@ -53,16 +75,19 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
       if (animationListRef.current && !animationListRef.current.contains(event.target as Node)) {
         setShowAnimationList(false);
       }
+      if (colorPopoverRef.current && !colorPopoverRef.current.contains(event.target as Node)) {
+        setShowColorPopover(false);
+      }
     };
 
-    if (showEntityList || showAnimationList) {
+    if (showEntityList || showAnimationList || showColorPopover) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEntityList, showAnimationList]);
+  }, [showEntityList, showAnimationList, showColorPopover]);
 
   // Initialize animation state when entity changes
   useEffect(() => {
@@ -115,7 +140,7 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     setShowAnimationList(false);
   };
 
-  
+
   const selectModelAnimation = (index: number) => {
     entity.selectModelAnimation(index, isPlaying);
     setSelectedAnimationIndex(index);
@@ -126,102 +151,140 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     setShowAnimationList(!showAnimationList);
   };
 
-  const handleColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newColor = event.target.value;
+  // Updated function to set color from swatches or input
+  const handleSetColor = (newColor: string) => {
     setCharacterColor(newColor);
     entity.setColor(newColor);
+    // Optionally close popover after selection, or keep it open
+    // setShowColorPopover(false);
+  };
+
+  // Handler specifically for the color input element
+  const handleCustomColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleSetColor(event.target.value);
   };
 
   return (
     <>
-      <div className="p-2 flex flex-col gap-2">
-        {/* Color Picker */}
-        <div className="flex items-center gap-2 mb-2">
-          <Label htmlFor="characterColor" className="text-xs whitespace-nowrap">Color:</Label>
-          <Input
-            id="characterColor"
-            type="color"
-            value={characterColor}
-            onChange={handleColorChange}
-            className="h-8 w-16 p-1 border-none cursor-pointer"
+      <div className="p-2 flex flex-row gap-2 items-center justify-start">
+        {/* --- Enhanced Color Picker --- */}
+        <div ref={colorPopoverRef} className="relative flex items-center gap-2">
+          {/* <Label className="text-xs whitespace-nowrap">Color:</Label> */}
+          {/* Color Circle Trigger */}
+          <div
+            className="w-7 h-7 rounded-full border border-slate-500 cursor-pointer outline-1"
+            style={{ backgroundColor: characterColor }}
+            onClick={() => setShowColorPopover(!showColorPopover)}
           />
-        </div>
 
-        <div className="p-2 flex flex-row gap-2 justify-center items-center">
-          {/* Animation Controls */}
-          {entity.animationsFiles.length + entity.modelAnimations.length > 0 && (
-            <div className="flex items-center gap-2 mb-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleAnimationPlayback}
-                className="w-10 h-8 flex justify-center items-center"
-              >
-                {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
-              </Button>
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleAnimationList}
-                  className="text-xs flex items-center"
-                >
-                  {"Select Animation"}
-                  {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
-                </Button>
-
-                {showAnimationList && (
+          {/* Color Popover */}
+          {showColorPopover && (
+            <div className="absolute bottom-full mb-5 -left-7 p-2">
+            <div
+              className="z-50 panel-shape p-3 w-48"
+            >
+              <div className="mb-2 text-xs font-medium">Select Color</div>
+              {/* Predefined Skin Tone Swatches */}
+              <div className="grid grid-cols-6 gap-2 mb-3">
+                {skinTones.map((tone) => (
                   <div
-                    ref={animationListRef}
-                    className="absolute bottom-full left-0 z-50 mt-1"
-                  >
-                    <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
-                      <h4 className="text-sm font-medium mb-2">Animations:</h4>
-                      <ul className="space-y-1">
-                        {entity.modelAnimations.map((animation, index) => (
-                          <li
-                            key={`anim-${index}`}
-                            className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
-                              }`}
-                            onClick={() => selectModelAnimation(index)}
-                          >
-                            {animation.name || `Animation ${index + 1}`}
-                          </li>
-                        ))}
-                        {entity.animationsFiles.map((animation, index) => (
-                          <li
-                            key={`anim-${index}`}
-                            className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
-                              }`}
-                            onClick={() => selectFileAnimation(index)}
-                          >
-                            {animation.replace('.fbx', '') || `Animation ${index + 1}`}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
+                    key={tone}
+                    className="w-6 h-6 rounded cursor-pointer border border-slate-600 hover:border-slate-400"
+                    style={{ backgroundColor: tone }}
+                    onClick={() => handleSetColor(tone)}
+                  />
+                ))}
+              </div>
+              {/* Custom Color Input */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="customColor" className="text-xs flex-shrink-0">Custom:</Label>
+                <Input
+                  id="customColor"
+                  type="color"
+                  value={characterColor}
+                  onChange={handleCustomColorInputChange}
+                  className="h-7 w-full p-0 border-none cursor-pointer"
+                />
+              </div>
               </div>
             </div>
           )}
+        </div>
+        {/* --- End Enhanced Color Picker --- */}
 
-          {/* Bone Controls */}
-          {selectedBone && (
+        {/* --- Animation Controls --- */}
+        {entity.animationsFiles.length + entity.modelAnimations.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAnimationPlayback}
+              className="w-10 h-8 flex justify-center items-center"
+            >
+              {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
+            </Button>
             <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleLinkObject}
-                title={"Attach object to bone"}
+                onClick={toggleAnimationList}
                 className="text-xs flex items-center"
               >
-                <IconLinkPlus size={16} className="mr-2" />
-                Link Object to bone
+                {"Animation"}
+                {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
               </Button>
+
+              {showAnimationList && (
+                <div
+                  ref={animationListRef}
+                  className="absolute bottom-full left-0 z-50 mt-1"
+                >
+                  <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
+                    <h4 className="text-sm font-medium mb-2">Animations:</h4>
+                    <ul className="space-y-1">
+                      {entity.modelAnimations.map((animation, index) => (
+                        <li
+                          key={`model-anim-${index}`}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index && !entity.animationsFiles.length ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
+                          onClick={() => selectModelAnimation(index)}
+                        >
+                          {animation.name || `Animation ${index + 1}`}
+                        </li>
+                      ))}
+                      {entity.animationsFiles.map((animationFile, index) => (
+                        <li
+                          key={`file-anim-${index}`}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index + entity.modelAnimations.length ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
+                          onClick={() => selectFileAnimation(index)}
+                        >
+                          {animationFile.replace('.fbx', '') || `File Anim ${index + 1}`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+        {/* --- End Animation Controls --- */}
+
+
+        {/* Row for Bone Controls (only if a bone is selected) */}
+        {/* {selectedBone && (
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLinkObject}
+              title={"Attach object to bone"}
+              className="text-xs flex items-center"
+            >
+              <IconLinkPlus size={16} className="mr-2" />
+              Link Object to Bone
+            </Button>
+          </div>
+        )} */}
       </div>
 
       {showEntityList && (
@@ -236,13 +299,13 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
               <p className="text-xs text-gray-400">No available objects to link</p>
             ) : (
               <ul className="space-y-1">
-                {availableEntities.map((entity) => (
+                {availableEntities.map((e) => (
                   <li
-                    key={entity.uuid}
+                    key={e.uuid}
                     className="text-xs p-2 hover:bg-slate-700 rounded cursor-pointer transition-colors"
-                    onClick={() => linkEntityToBone(entity)}
+                    onClick={() => linkEntityToBone(e)}
                   >
-                    {entity.name || `Entity-${entity.uuid.substring(0, 6)}`}
+                    {e.name || `Entity-${e.uuid.substring(0, 6)}`}
                   </li>
                 ))}
               </ul>
