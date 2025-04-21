@@ -6,14 +6,13 @@ ipcRenderer.invoke('echo', 'Preload script is loaded').then(response => {
   console.error('IPC test failed:', err);
 });
 
-console.log('preload.mts loading...');
-
 try {
 
   // expose the electronAPI to the renderer process
   contextBridge.exposeInMainWorld('electron', {
     // File handling
     saveFile: (data: Buffer, fileName: string) => ipcRenderer.invoke('save-file', data, fileName),
+    writeFile: (filePath: string, data: ArrayBuffer) => ipcRenderer.invoke('writeFile', filePath, data), // TODO: repeated
     readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
     getAppDataPath: () => ipcRenderer.invoke('get-app-data-path'),
 
@@ -37,7 +36,11 @@ try {
       getAll: () => ipcRenderer.invoke('get-all-preferences'),
       setAll: (preferences: any) => ipcRenderer.invoke('set-all-preferences', preferences),
       reset: () => ipcRenderer.invoke('reset-preferences')
-    }
+    },
+
+    // File dialogs
+    showOpenDialog: () => ipcRenderer.invoke('showOpenDialog'),
+    showSaveDialog: (defaultName: string) => ipcRenderer.invoke('showSaveDialog', defaultName),
   });
 
 } catch (error) {
