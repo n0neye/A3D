@@ -36,6 +36,7 @@ import { ObjectManager } from '../managers/ObjectManager';
 import { RenderVideoService } from '../services/RenderVideoService';
 import { FileService } from '../services/FileService/FileService';
 import { UserPrefManager } from '../managers/UserPrefManager';
+import { CharacterEntity } from '../entity/types/CharacterEntity';
 
 
 /**
@@ -253,6 +254,16 @@ export class EditorEngine {
         mixer.update(delta);
       });
     }
+
+    // Update bounding box of all character entities, for raycaster to work properly
+    const characterEntities = this.objectManager.getEntitiesByType("character");
+    characterEntities.forEach((characterEntity: CharacterEntity) => {
+      if (characterEntity.visible && characterEntity.skinnedMesh) {
+        console.log(`Updating bounding box for ${characterEntity.name}`);
+        characterEntity.skinnedMesh.computeBoundingBox();
+        characterEntity.skinnedMesh.computeBoundingSphere();
+      }
+    });
 
     // Add other managers as needed
   }

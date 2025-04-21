@@ -22,6 +22,7 @@ type boneRotations = Record<string, { x: number, y: number, z: number, w: number
 
 export class CharacterEntity extends EntityBase {
     public skeleton: THREE.Skeleton | null = null;
+    public skinnedMesh: THREE.SkinnedMesh | null = null;
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
     public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
@@ -181,6 +182,7 @@ export class CharacterEntity extends EntityBase {
                 this.rootMesh.traverse(object => {
                     if (object instanceof THREE.SkinnedMesh && object.skeleton && !skeletonFound) {
                         this.skeleton = object.skeleton;
+                        this.skinnedMesh = object;
                         skeletonFound = true;
                         console.log(`Character ${this.name} loaded with skeleton: ${this.skeleton.uuid}`);
 
@@ -305,7 +307,8 @@ export class CharacterEntity extends EntityBase {
             if (this._isFingerBone(bone)) {
                 return;
             }
-
+            // Bounding size
+            const boundingSphere= this.skinnedMesh?.boundingSphere;
             // Create a BoneControl for this bone
             const boneControl = new BoneControl(
                 `bone_${bone.name}_${this.id}`,
@@ -314,7 +317,7 @@ export class CharacterEntity extends EntityBase {
                 this,
                 {
                     // Quick hack to keep initial size consistent
-                    diameter: CharacterEntity.boneControlSize / 2 / (this.rootMesh?.scale.x || 1),
+                    diameter: CharacterEntity.boneControlSize / 2 / (boundingSphere?.radius || 1),
                 }
             );
 
