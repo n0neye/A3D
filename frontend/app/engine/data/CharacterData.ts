@@ -5,9 +5,21 @@ export interface ICharacterData {
     name: string,
     thumbnail: string,
     scale: number,
-    animationsFiles: string[]
+    animationsFiles: string[],
+    useMixamoAnimations?: boolean
 }
 
+// characters/_mixamo_animations/
+const mixamoAnimations: string[] = [
+    'Walking.fbx',
+    'Running.fbx',
+    'Sitting Idle.fbx',
+    'Sitting.fbx',
+    'Male Sitting Pose.fbx',
+    'Jump.fbx'
+];
+
+export const mixamoAnimationPaths: string[] = mixamoAnimations.map(animation => `./characters/_mixamo_animations/${animation}`);
 
 export const characterDatas: Map<string, ICharacterData> = new Map([
     ["lily", {
@@ -31,13 +43,11 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
         builtInModelId: 'mannequin',
         name: 'Mannequin',
         basePath: './characters/mannequin_man_idle/',
-        fileName: 'mannequin_man_idle_opt.glb',
+        fileName: 'mannequin_idle_opt.fbx',
         thumbnail: './characters/thumbs/mannequin.webp',
         scale: 1,
-        animationsFiles: [
-            'Fast Run.fbx',
-            'Jump.fbx',
-        ]
+        useMixamoAnimations: true,
+        animationsFiles: []
     }],
     ["xbot", {
         builtInModelId: 'xbot',
@@ -62,7 +72,7 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
         basePath: './characters/cat/',
         fileName: 'cat_orange.glb',
         thumbnail: './characters/thumbs/cat.webp',
-        scale: 0.02,
+        scale: 0.01,
         animationsFiles: []
     }],
     // ["female_mannequin", {

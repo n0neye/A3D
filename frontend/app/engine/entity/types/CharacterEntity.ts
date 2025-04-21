@@ -4,8 +4,9 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics'
 import { BoneControl } from '../components/BoneControl';
 import { setupMeshShadows } from '@/engine/utils/lightUtil';
 import { loadModelFromUrl } from '@/engine/utils/3dModelUtils';
-import { characterDatas, ICharacterData } from '@/engine/data/CharacterData';
+import { characterDatas, ICharacterData, mixamoAnimationPaths } from '@/engine/data/CharacterData';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { setWorldScale } from '@/engine/utils/transformUtils';
 
 export interface CharacterEntityProps {
     modelUrl?: string;
@@ -30,7 +31,7 @@ export class CharacterEntity extends EntityBase {
     public meshes: THREE.Mesh[] = [];
     public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
     public modelAnimations: THREE.AnimationClip[] = [];
-    public animationsFiles: string[] = [];
+    public animationFiles: string[] = [];
     public animationMixer: THREE.AnimationMixer | null = null;
     public currentAnimationAction: THREE.AnimationAction | null = null;
 
@@ -186,7 +187,7 @@ export class CharacterEntity extends EntityBase {
             if (result.rootMesh) {
                 this.rootMesh = result.rootMesh;
                 this.add(this.rootMesh); // Add to this entity
-                this.rootMesh.name = `${this.name}_meshRoot`;
+                this.rootMesh.name = `${this.rootMesh.name}_rootMesh`;
 
                 // Traverse all child meshes
                 this.rootMesh.traverse(object => {
@@ -241,16 +242,20 @@ export class CharacterEntity extends EntityBase {
                 }
 
                 // Handle model animations
-                this.animationsFiles = this._builtInCharacterData?.animationsFiles || [];
+                if (this._builtInCharacterData?.useMixamoAnimations) {
+                    this.animationFiles = mixamoAnimationPaths
+                } else if (this._builtInCharacterData?.animationsFiles) {
+                    this.animationFiles = this._builtInCharacterData?.animationsFiles.map(fileName => this._builtInCharacterData.basePath + "animations/" + fileName)
+                }
                 this.modelAnimations = result.animations;
 
                 // Create animation mixer, if any animations are found
-                if (this.animationsFiles.length + this.modelAnimations.length > 0) {
+                if (this.animationFiles.length + this.modelAnimations.length > 0) {
                     this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
                     this.engine.addMixer(this.uuid, this.animationMixer);
                 }
 
-                // Set pose to the default animation
+                // Set pose to the default modelAnimations animation
                 if (this.modelAnimations.length > 0) {
                     // create animation mixer and store animations for future use
                     this.currentAnimationAction = this.animationMixer.clipAction(this.modelAnimations[this.modelAnimations.length - 1]);
@@ -317,17 +322,20 @@ export class CharacterEntity extends EntityBase {
     private _createBoneVisualization(): void {
         if (!this.mainSkeleton) return;
 
+        // Bounding size
+        const boundingSphere = this.mainSkinnedMesh?.boundingSphere;
+
+        console.log("CharacterEntity: _createBoneVisualization", boundingSphere);
+
         // Create bone control spheres for each bone
         this.mainSkeleton.bones.forEach(bone => {
             // Skip fingers and other small bones for cleaner visualization
             if (this._isIgnorableBone(bone)) {
                 return;
             }
-            // Bounding size
-            const boundingSphere = this.mainSkinnedMesh?.boundingSphere;
             // Create a BoneControl for this bone
             const boneControl = new BoneControl(
-                `bone_${bone.name}_${this.id}`,
+                `boneCtrl_${bone.name}`,
                 this.engine.getScene(),
                 bone,
                 this,
@@ -337,8 +345,10 @@ export class CharacterEntity extends EntityBase {
                 }
             );
 
+            console.log("CharacterEntity: _createBoneVisualization", bone.name, boneControl.mesh.scale.x);
+
             // Hide initially
-            boneControl.mesh.visible = false;
+            // boneControl.mesh.visible = false;
 
             if (!this._drawLines) {
                 this._boneMap.set(bone.name, { bone, control: boneControl, childBones: [], lineConfigs: [] });
@@ -390,8 +400,14 @@ export class CharacterEntity extends EntityBase {
 
         // Sync the position and rotation of the bone control to the bone
         this._boneMap.forEach(({ control, bone, lineConfigs }) => {
+            // Update position and rotation
             control.position.copy(bone.position);
             control.quaternion.copy(bone.quaternion);
+
+            // Update size
+            setWorldScale(control.mesh, new THREE.Vector3(1,1,1));
+
+            // Update line positions
             lineConfigs.forEach(({ line, targetBone }) => {
                 line.geometry.setFromPoints([new THREE.Vector3(0, 0, 0), targetBone.position]);
                 line.updateMatrixWorld();
@@ -517,13 +533,13 @@ export class CharacterEntity extends EntityBase {
 
     public async selectAnimationFile(index: number, playOnLoaded: boolean): Promise<void> {
 
-        console.log("CharacterEntity: selectAnimationFile", index, playOnLoaded, this.animationsFiles, this.animationMixer);
+        console.log("CharacterEntity: selectAnimationFile", index, playOnLoaded, this.animationFiles, this.animationMixer);
 
-        if (!this.animationsFiles || !this.animationMixer) {
+        if (!this.animationFiles || !this.animationMixer) {
             console.error("CharacterEntity: selectAnimationFile: no animations files or animation mixer");
             return;
         }
-        if (this.animationsFiles.length <= index) {
+        if (this.animationFiles.length <= index) {
             console.error("CharacterEntity: selectAnimationFile: index out of range");
             return;
         }
@@ -534,8 +550,8 @@ export class CharacterEntity extends EntityBase {
         }
 
         // Load animation file
-        const animationFile = this.animationsFiles[index];
-        const animation = await this.loadAnimationFromFbxFile(this._builtInCharacterData?.basePath + "animations/" + animationFile);
+        const animationFilePath = this.animationFiles[index];
+        const animation = await this.loadAnimationFromFbxFile(animationFilePath);
 
         // Create new animation action
         const newAction = this.animationMixer.clipAction(animation);

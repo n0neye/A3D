@@ -213,7 +213,7 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
         {/* --- End Enhanced Color Picker --- */}
 
         {/* --- Animation Controls --- */}
-        {entity.animationsFiles.length + entity.modelAnimations.length > 0 && (
+        {entity.animationFiles.length + entity.modelAnimations.length > 0 && (
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -245,19 +245,19 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
                       {entity.modelAnimations.map((animation, index) => (
                         <li
                           key={`model-anim-${index}`}
-                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index && !entity.animationsFiles.length ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index && !entity.animationFiles.length ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
                           onClick={() => selectModelAnimation(index)}
                         >
                           {animation.name || `Animation ${index + 1}`}
                         </li>
                       ))}
-                      {entity.animationsFiles.map((animationFile, index) => (
+                      {entity.animationFiles.map((animationFile, index) => (
                         <li
                           key={`file-anim-${index}`}
                           className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index + entity.modelAnimations.length ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
                           onClick={() => selectFileAnimation(index)}
                         >
-                          {animationFile.replace('.fbx', '') || `File Anim ${index + 1}`}
+                          {animationFile.replace('.fbx', '').split('/').pop() || `File Anim ${index + 1}`}
                         </li>
                       ))}
                     </ul>
