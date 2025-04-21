@@ -2,7 +2,7 @@ import { fal } from "@fal-ai/client";
 import { LoraWeight } from "@fal-ai/client/endpoints";
 import { LoraConfig } from "@/engine/interfaces/rendering";
 import { blobToBase64 } from "./image-processing";
-import { EditorEngine } from "@/app/engine/core/EditorEngine";
+import { EditorEngine } from "@/engine/core/EditorEngine";
 
 // use the proxy in nextjs web app
 // if (window && window.electron?.isElectron !== true) {
