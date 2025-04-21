@@ -309,21 +309,24 @@ export class CharacterEntity extends EntityBase {
     }
 
     /**
-     * Creates visualization elements for the skeleton's bones
+     * Check if the bone is ignorable
      */
-
-    private _isFingerBone(bone: THREE.Bone): boolean {
+    private _isIgnorableBone(bone: THREE.Bone): boolean {
+        const toIgnore = ["thumb", "index", "middle", "ring", "pinky", "eye", "_end"];
         const boneName = bone.name.toLowerCase();
-        return boneName.includes('thumb') || boneName.includes('index') || boneName.includes('middle') || boneName.includes('ring') || boneName.includes('pinky');
+        return toIgnore.some(name => boneName.includes(name));
     }
 
+    /**
+     * Creates visualization elements for the skeleton's bones
+     */
     private _createBoneVisualization(): void {
         if (!this.mainSkeleton) return;
 
         // Create bone control spheres for each bone
         this.mainSkeleton.bones.forEach(bone => {
             // Skip fingers and other small bones for cleaner visualization
-            if (this._isFingerBone(bone)) {
+            if (this._isIgnorableBone(bone)) {
                 return;
             }
             // Bounding size
@@ -352,7 +355,7 @@ export class CharacterEntity extends EntityBase {
             const childBones = bone.children.filter(child => child instanceof THREE.Bone) as THREE.Bone[];
             const lineConfigs: { line: THREE.Line, targetBone: THREE.Bone }[] = [];
             childBones.forEach(childBone => {
-                if (this._isFingerBone(childBone)) {
+                if (this._isIgnorableBone(childBone)) {
                     return;
                 }
 
@@ -368,7 +371,7 @@ export class CharacterEntity extends EntityBase {
 
                 // Set points of line to the bone control and child bone
                 const points = [
-                    boneControl.position,
+                    new THREE.Vector3(0, 0, 0),
                     childBone.position
                 ];
                 geometry.setFromPoints(points);
@@ -391,12 +394,14 @@ export class CharacterEntity extends EntityBase {
         if (!this._isVisualizationVisible) return;
         if (this._isDisposed) return;
 
-        console.log("CharacterEntity: updateBoneVisualization", this.name);
-
         // Sync the position and rotation of the bone control to the bone
         this._boneMap.forEach(({ control, bone, lineConfigs }) => {
             control.position.copy(bone.position);
             control.quaternion.copy(bone.quaternion);
+            lineConfigs.forEach(({ line, targetBone }) => {
+                line.geometry.setFromPoints([new THREE.Vector3(0, 0, 0), targetBone.position]);
+                line.updateMatrixWorld();
+            });
         });
     }
 

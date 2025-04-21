@@ -28,7 +28,7 @@ export class ThreeCore {
   private scene: THREE.Scene;
   private canvas: HTMLCanvasElement;
   private clock: THREE.Clock;
-  private engineUpdate?: () => void;
+  private _onEngineAnimate?: (delta: number) => void;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -64,10 +64,6 @@ export class ThreeCore {
     this._setupScene();
   }
 
-  setEngineUpdate(engineUpdate: () => void): void {
-    this.engineUpdate = engineUpdate;
-  }
-
   public getScene(): THREE.Scene {
     return this.scene;
   }
@@ -78,6 +74,10 @@ export class ThreeCore {
 
   public getCanvas(): HTMLCanvasElement | null {
     return this.canvas;
+  }
+
+  public setEngineUpdate(onEngineAnimate: (delta: number) => void): void {
+    this._onEngineAnimate = onEngineAnimate;
   }
 
   // Other core methods
@@ -93,9 +93,10 @@ export class ThreeCore {
 
       // Update and render
       const delta = this.clock.getDelta();
+
       // This will be called by camera manager later
-      if (this.engineUpdate) {
-        this.engineUpdate();
+      if (this._onEngineAnimate) {
+        this._onEngineAnimate(delta);
       }
 
       // TODO: A quick hack to get the camera manager after the engine is initialized
