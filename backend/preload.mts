@@ -31,11 +31,11 @@ try {
 
     // Add user preferences API
     userPreferences: {
-      get: (key: string) => ipcRenderer.invoke('get-preference', key),
-      set: (key: string, value: any) => ipcRenderer.invoke('set-preference', key, value),
-      getAll: () => ipcRenderer.invoke('get-all-preferences'),
-      setAll: (preferences: any) => ipcRenderer.invoke('set-all-preferences', preferences),
-      reset: () => ipcRenderer.invoke('reset-preferences')
+      get: (key: string) => ipcRenderer.invoke('get-user-preference', key),
+      set: (key: string, value: any) => ipcRenderer.invoke('set-user-preference', key, value),
+      getAll: () => ipcRenderer.invoke('get-all-user-preferences'),
+      setAll: (preferences: any) => ipcRenderer.invoke('set-all-user-preferences', preferences),
+      reset: () => ipcRenderer.invoke('reset-user-preferences')
     },
 
     // File dialogs

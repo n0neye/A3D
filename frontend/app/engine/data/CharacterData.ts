@@ -11,9 +11,9 @@ export interface ICharacterData {
 export const characterDatas: Map<string, ICharacterData> = new Map([
     ["Lily", {
         name: 'Lily',
-        basePath: '/characters/lily/',
+        basePath: './characters/lily/',
         fileName: 'lily_basic_expression.glb',
-        thumbnail: '/characters/thumbs/lily.webp',
+        thumbnail: './characters/thumbs/lily.webp',
         scale: 1,
         animationsFiles: [
             'Idle.fbx',
@@ -27,9 +27,9 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
     }],
     ["Mannequin", {
         name: 'Mannequin',
-        basePath: '/characters/mannequin_man_idle/',
+        basePath: './characters/mannequin_man_idle/',
         fileName: 'mannequin_man_idle_opt.glb',
-        thumbnail: '/characters/thumbs/mannequin.webp',
+        thumbnail: './characters/thumbs/mannequin.webp',
         scale: 1,
         animationsFiles: [
             'Fast Run.fbx',
@@ -38,9 +38,9 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
     }],
     ["Xbot", {
         name: 'Xbot',
-        basePath: '/characters/xbot/',
+        basePath: './characters/xbot/',
         fileName: 'xbot_Idle.fbx',
-        thumbnail: '/characters/thumbs/xbot.webp',
+        thumbnail: './characters/thumbs/xbot.webp',
         scale: 1,
         animationsFiles: [
             'Fast Run.fbx',
@@ -48,9 +48,9 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
     }],
     ["Cat", {
         name: 'Cat',
-        basePath: '/characters/cat/',
+        basePath: './characters/cat/',
         fileName: 'cat_orange.glb',
-        thumbnail: '/characters/thumbs/cat.webp',
+        thumbnail: './characters/thumbs/cat.webp',
         scale: 0.02,
         animationsFiles: []
     }]

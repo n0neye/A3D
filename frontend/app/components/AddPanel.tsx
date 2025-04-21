@@ -19,7 +19,7 @@ import {
 import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';
 import { EditorEngine } from '@/engine/core/EditorEngine';
 import * as THREE from 'three';
-import { characterDatas, ICharacterData } from '@/app/engine/data/CharacterData'
+import { characterDatas, ICharacterData } from '@/engine/data/CharacterData'
 
 const AddPanel: React.FC = () => {
   const [showShapesMenu, setShowShapesMenu] = useState(false);
