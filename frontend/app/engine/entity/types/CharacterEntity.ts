@@ -29,7 +29,7 @@ export class CharacterEntity extends EntityBase {
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
     public meshes: THREE.Mesh[] = [];
-    public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
+    // public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
     public modelAnimations: THREE.AnimationClip[] = [];
     public animationFiles: string[] = [];
     public animationMixer: THREE.AnimationMixer | null = null;
@@ -62,37 +62,35 @@ export class CharacterEntity extends EntityBase {
     constructor(
         scene: THREE.Scene,
         name: string,
-        data: SerializedCharacterEntityData,
+        initialData: SerializedCharacterEntityData,
         onLoaded?: (entity: EntityBase) => void) {
 
-        super(name, scene, 'character', data);
-        this.characterProps = data.characterProps;
+        super(name, scene, 'character', initialData);
+        this.characterProps = initialData.characterProps;
 
         if (!this.characterProps.modelUrl && !this.characterProps.builtInModelId) {
             throw new Error("No model URL or built-in model ID provided for character: " + this.name);
         }
 
         // Get built-in character data
-        if (data.characterProps.builtInModelId) {
-            const characterData = characterDatas.get(data.characterProps.builtInModelId);
+        if (initialData.characterProps.builtInModelId) {
+            const characterData = characterDatas.get(initialData.characterProps.builtInModelId);
             if (characterData) { this._builtInCharacterData = characterData; }
         }
 
         // Track character creation
         trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
             type: 'character',
-            modelUrl: data.characterProps.modelUrl
+            modelUrl: initialData.characterProps.modelUrl
         });
+        
+        // Create visualization material
+        this._createDefaultMaterials(scene);
 
-        this._loadingPromise = this._loadCharacter((entity) => {
-            if (data.boneRotations) {
-                this._applyBoneRotationsFromData(data.boneRotations);
-            }
+        // Load character model
+        this._loadingPromise = this._loadCharacter(initialData, (entity) => {
             onLoaded?.(entity);
         });
-
-        // Create visualization material
-        this._createMaterials(scene);
 
         // Apply initial color if provided
         if (this.characterProps.color) {
@@ -100,39 +98,7 @@ export class CharacterEntity extends EntityBase {
         }
     }
 
-    private _applyBoneRotationsFromData(boneRotations: boneRotations) {
-        try {
-            // Apply saved bone rotations if available
-            if (!this.mainSkeleton) {
-                throw new Error("Skeleton not found");
-            }
-
-            // First ensure all bones have their initial transforms updated
-            this.mainSkeleton.bones.forEach(bone => bone.updateMatrixWorld(true));
-            this.mainSkeleton.update();
-
-            // Apply rotations in a try/catch to prevent errors from breaking deserialization
-            try {
-                Object.entries(boneRotations).forEach(([boneName, rotation]) => {
-                    const bone = this.mainSkeleton!.bones.find(b => b.name === boneName);
-                    if (bone) {
-                        bone.quaternion.set(
-                            rotation.x,
-                            rotation.y,
-                            rotation.z,
-                            rotation.w
-                        );
-                    }
-                });
-            } catch (rotErr) {
-                console.error("Error applying bone rotations:", rotErr);
-            }
-        } catch (error) {
-            console.error("Error during character deserialization:", error);
-        }
-    }
-
-    private _createMaterials(scene: THREE.Scene): void {
+    private _createDefaultMaterials(scene: THREE.Scene): void {
         // Create standard material for bones
         if (!CharacterEntity.DefaultBoneMaterial) {
             CharacterEntity.DefaultBoneMaterial = new THREE.MeshStandardMaterial({
@@ -167,7 +133,7 @@ export class CharacterEntity extends EntityBase {
     }
 
 
-    private async _loadCharacter(onLoaded?: (entity: EntityBase) => void): Promise<void> {
+    private async _loadCharacter(initialData: SerializedCharacterEntityData, onLoaded?: (entity: EntityBase) => void): Promise<void> {
 
         this._isLoading = true;
         console.log(`Loading character from: ${this.characterProps.modelUrl}`);
@@ -223,14 +189,6 @@ export class CharacterEntity extends EntityBase {
                         skeletonFound = true;
                         console.log(`CharacterEntity: ${this.name} loaded with skeleton: ${this.mainSkeleton.uuid}`);
 
-                        // Store initial bone rotations for reset capability
-                        this.mainSkeleton.bones.forEach(bone => {
-                            this.initialBoneRotations.set(
-                                bone.name,
-                                bone.quaternion.clone()
-                            );
-                        });
-
                         // Create bone visualization elements
                         this._createBoneVisualization();
                     }
@@ -255,16 +213,21 @@ export class CharacterEntity extends EntityBase {
                     this.engine.addMixer(this.uuid, this.animationMixer);
                 }
 
-                // Set pose to the default modelAnimations animation
-                if (this.modelAnimations.length > 0) {
-                    // create animation mixer and store animations for future use
-                    this.currentAnimationAction = this.animationMixer.clipAction(this.modelAnimations[this.modelAnimations.length - 1]);
-                    this.currentAnimationAction.play();
-                    setTimeout(() => {
-                        if (this.currentAnimationAction) {
-                            this.currentAnimationAction.paused = true;
-                        }
-                    }, 5);
+                if (initialData.boneRotations) {
+                    // Apply saved bone rotations stored in project
+                    this._applyBoneRotationsFromData(initialData.boneRotations);
+                } else {
+                    // Set pose to the default modelAnimations animation
+                    if (this.modelAnimations.length > 0) {
+                        this.currentAnimationAction = this.animationMixer.clipAction(this.modelAnimations[this.modelAnimations.length - 1]);
+                        this.currentAnimationAction.play();
+                        this.currentAnimationAction.paused = true;
+                        // setTimeout(() => {
+                        //     if (this.currentAnimationAction) {
+                        //         this.currentAnimationAction.paused = true;
+                        //     }
+                        // }, 5);
+                    }
                 }
 
                 onLoaded?.(this);
@@ -275,6 +238,38 @@ export class CharacterEntity extends EntityBase {
             console.error(`Error loading character model: ${error}`);
         } finally {
             this._isLoading = false;
+        }
+    }
+    
+    private _applyBoneRotationsFromData(boneRotations: boneRotations) {
+        try {
+            // Apply saved bone rotations if available
+            if (!this.mainSkeleton) {
+                throw new Error("Skeleton not found");
+            }
+
+            // First ensure all bones have their initial transforms updated
+            this.mainSkeleton.bones.forEach(bone => bone.updateMatrixWorld(true));
+            this.mainSkeleton.update();
+
+            // Apply rotations in a try/catch to prevent errors from breaking deserialization
+            try {
+                Object.entries(boneRotations).forEach(([boneName, rotation]) => {
+                    const bone = this.mainSkeleton!.bones.find(b => b.name === boneName);
+                    if (bone) {
+                        bone.quaternion.set(
+                            rotation.x,
+                            rotation.y,
+                            rotation.z,
+                            rotation.w
+                        );
+                    }
+                });
+            } catch (rotErr) {
+                console.error("Error applying bone rotations:", rotErr);
+            }
+        } catch (error) {
+            console.error("Error during character deserialization:", error);
         }
     }
 
@@ -288,12 +283,12 @@ export class CharacterEntity extends EntityBase {
     public resetAllBones(): void {
         if (!this.mainSkeleton) return;
 
-        this.mainSkeleton.bones.forEach(bone => {
-            const initialRotation = this.initialBoneRotations.get(bone.name);
-            if (initialRotation) {
-                bone.quaternion.copy(initialRotation);
-            }
-        });
+        // this.mainSkeleton.bones.forEach(bone => {
+        //     const initialRotation = this.initialBoneRotations.get(bone.name);
+        //     if (initialRotation) {
+        //         bone.quaternion.copy(initialRotation);
+        //     }
+        // });
 
         // Track the reset action
         trackEvent(ANALYTICS_EVENTS.CHANGE_SETTINGS, {
@@ -324,8 +319,6 @@ export class CharacterEntity extends EntityBase {
 
         // Bounding size
         const boundingSphere = this.mainSkinnedMesh?.boundingSphere;
-
-        console.log("CharacterEntity: _createBoneVisualization", boundingSphere);
 
         // Create bone control spheres for each bone
         this.mainSkeleton.bones.forEach(bone => {
@@ -405,7 +398,7 @@ export class CharacterEntity extends EntityBase {
             control.quaternion.copy(bone.quaternion);
 
             // Update size
-            setWorldScale(control.mesh, new THREE.Vector3(1,1,1));
+            setWorldScale(control.mesh, new THREE.Vector3(1, 1, 1));
 
             // Update line positions
             lineConfigs.forEach(({ line, targetBone }) => {
