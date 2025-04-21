@@ -241,11 +241,15 @@ export class EditorEngine {
     this.mixers.delete(uuid);
   }
 
+  private _boundUpdateInterval = 1 / 15; // 15fps
+  private _boundUpdateCounter = 0;
+
   // Define update as an arrow function to correctly bind `this`
   public update = (): void => {
+
     var delta = this.clock.getDelta();
+
     // Update all managers that have update methods
-    // Use `this` directly now that it's correctly bound
     this.cameraManager.update();
 
     // Update all mixers
@@ -256,14 +260,18 @@ export class EditorEngine {
     }
 
     // Update bounding box of all character entities, for raycaster to work properly
-    const characterEntities = this.objectManager.getEntitiesByType("character");
-    characterEntities.forEach((characterEntity: CharacterEntity) => {
-      if (characterEntity.visible && characterEntity.skinnedMesh) {
-        console.log(`Updating bounding box for ${characterEntity.name}`);
-        characterEntity.skinnedMesh.computeBoundingBox();
-        characterEntity.skinnedMesh.computeBoundingSphere();
-      }
-    });
+    // Limit the update to 15fps to avoid performance issues
+    this._boundUpdateCounter += delta;
+    if (this._boundUpdateCounter >= this._boundUpdateInterval) {
+      const characterEntities = this.objectManager.getEntitiesByType("character");
+      characterEntities.forEach((characterEntity: CharacterEntity) => {
+        if (characterEntity.visible && characterEntity.mainSkinnedMesh !== null) {
+          characterEntity.mainSkinnedMesh.computeBoundingBox();
+          characterEntity.mainSkinnedMesh.computeBoundingSphere();
+        }
+      });
+      this._boundUpdateCounter = 0;
+    }
 
     // Add other managers as needed
   }

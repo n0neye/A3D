@@ -6,7 +6,7 @@
   "main": "backend/build/main.mjs",
   "exports": "backend/build/main.mjs",
   "scripts": {
-    "dev:next": "next dev frontend --port 3030",
+    "dev:next": "next dev frontend --port 3030 --turbo",
     "build:next": "next build frontend",
     "start:next": "next start",
     "build:electron": "tsc --project backend/tsconfig.json",

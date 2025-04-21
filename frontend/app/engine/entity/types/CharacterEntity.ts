@@ -21,8 +21,8 @@ export interface SerializedCharacterEntityData extends SerializedEntityData {
 type boneRotations = Record<string, { x: number, y: number, z: number, w: number }>;
 
 export class CharacterEntity extends EntityBase {
-    public skeleton: THREE.Skeleton | null = null;
-    public skinnedMesh: THREE.SkinnedMesh | null = null;
+    public mainSkeleton: THREE.Skeleton | null = null;
+    public mainSkinnedMesh: THREE.SkinnedMesh | null = null;
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
     public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
@@ -84,18 +84,18 @@ export class CharacterEntity extends EntityBase {
     private _applyBoneRotationsFromData(boneRotations: boneRotations) {
         try {
             // Apply saved bone rotations if available
-            if (!this.skeleton) {
+            if (!this.mainSkeleton) {
                 throw new Error("Skeleton not found");
             }
 
             // First ensure all bones have their initial transforms updated
-            this.skeleton.bones.forEach(bone => bone.updateMatrixWorld(true));
-            this.skeleton.update();
+            this.mainSkeleton.bones.forEach(bone => bone.updateMatrixWorld(true));
+            this.mainSkeleton.update();
 
             // Apply rotations in a try/catch to prevent errors from breaking deserialization
             try {
                 Object.entries(boneRotations).forEach(([boneName, rotation]) => {
-                    const bone = this.skeleton!.bones.find(b => b.name === boneName);
+                    const bone = this.mainSkeleton!.bones.find(b => b.name === boneName);
                     if (bone) {
                         bone.quaternion.set(
                             rotation.x,
@@ -165,29 +165,44 @@ export class CharacterEntity extends EntityBase {
 
             console.log("CharacterEntity: Model load result:", result);
 
+            let skeletonFound = false;
+
             if (result.rootMesh) {
                 this.rootMesh = result.rootMesh;
                 this.add(this.rootMesh); // Add to this entity
                 this.rootMesh.name = `${this.name}_meshRoot`;
 
-                // Set metadata for all meshes
+                // Traverse all child meshes
                 this.rootMesh.traverse(object => {
+                    // Set metadata for all child meshes
                     if (object instanceof THREE.Mesh) {
-                        object.userData.rootSelectable = this;
+                        object.userData = {
+                            ...object.userData,
+                            rootSelectable: this
+                        };
                     }
-                });
 
-                // Find the skeleton if available
-                let skeletonFound = false;
-                this.rootMesh.traverse(object => {
+                    // Find the main skinnedMesh and skeleton, and setup the bone visualization
                     if (object instanceof THREE.SkinnedMesh && object.skeleton && !skeletonFound) {
-                        this.skeleton = object.skeleton;
-                        this.skinnedMesh = object;
+
+
+                        const extraMeshesName = ["eye", "teeth", "tongue", "head", "hair"]
+                        let shouldSkip = false;
+                        extraMeshesName.forEach(name => {
+                            if (object.name.includes(name)) {
+                                shouldSkip = true;
+                            }
+                        });
+
+                        if (shouldSkip) { return; }
+
+                        this.mainSkeleton = object.skeleton;
+                        this.mainSkinnedMesh = object;
                         skeletonFound = true;
-                        console.log(`Character ${this.name} loaded with skeleton: ${this.skeleton.uuid}`);
+                        console.log(`CharacterEntity: ${this.name} loaded with skeleton: ${this.mainSkeleton.uuid}`);
 
                         // Store initial bone rotations for reset capability
-                        this.skeleton.bones.forEach(bone => {
+                        this.mainSkeleton.bones.forEach(bone => {
                             this.initialBoneRotations.set(
                                 bone.name,
                                 bone.quaternion.clone()
@@ -198,6 +213,7 @@ export class CharacterEntity extends EntityBase {
                         this._createBoneVisualization();
                     }
                 });
+
 
                 if (!skeletonFound) {
                     console.warn(`Character ${this.name} loaded but no skeleton found.`);
@@ -257,7 +273,7 @@ export class CharacterEntity extends EntityBase {
     }
 
     public getBones(): THREE.Bone[] {
-        return this.skeleton?.bones || [];
+        return this.mainSkeleton?.bones || [];
     }
 
     public getBoneControls(): BoneControl[] {
@@ -268,9 +284,9 @@ export class CharacterEntity extends EntityBase {
      * Reset all bones to their initial rotations
      */
     public resetAllBones(): void {
-        if (!this.skeleton) return;
+        if (!this.mainSkeleton) return;
 
-        this.skeleton.bones.forEach(bone => {
+        this.mainSkeleton.bones.forEach(bone => {
             const initialRotation = this.initialBoneRotations.get(bone.name);
             if (initialRotation) {
                 bone.quaternion.copy(initialRotation);
@@ -299,16 +315,16 @@ export class CharacterEntity extends EntityBase {
     }
 
     private _createBoneVisualization(): void {
-        if (!this.skeleton) return;
+        if (!this.mainSkeleton) return;
 
         // Create bone control spheres for each bone
-        this.skeleton.bones.forEach(bone => {
+        this.mainSkeleton.bones.forEach(bone => {
             // Skip fingers and other small bones for cleaner visualization
             if (this._isFingerBone(bone)) {
                 return;
             }
             // Bounding size
-            const boundingSphere= this.skinnedMesh?.boundingSphere;
+            const boundingSphere = this.mainSkinnedMesh?.boundingSphere;
             // Create a BoneControl for this bone
             const boneControl = new BoneControl(
                 `bone_${bone.name}_${this.id}`,
@@ -426,8 +442,8 @@ export class CharacterEntity extends EntityBase {
         // Serialize bone rotations
         const boneRotations: Record<string, { x: number, y: number, z: number, w: number }> = {};
 
-        if (this.skeleton) {
-            this.skeleton.bones.forEach(bone => {
+        if (this.mainSkeleton) {
+            this.mainSkeleton.bones.forEach(bone => {
                 boneRotations[bone.name] = {
                     x: bone.quaternion.x,
                     y: bone.quaternion.y,
@@ -461,7 +477,7 @@ export class CharacterEntity extends EntityBase {
             });
         });
 
-        this.skeleton?.dispose();
+        this.mainSkeleton?.dispose();
 
         this._isDisposed = true;
 
@@ -495,7 +511,7 @@ export class CharacterEntity extends EntityBase {
     }
 
     public async selectAnimationFile(index: number, playOnLoaded: boolean): Promise<void> {
-        
+
         console.log("CharacterEntity: selectAnimationFile", index, playOnLoaded, this.animationsFiles, this.animationMixer);
 
         if (!this.animationsFiles || !this.animationMixer) {
@@ -531,7 +547,7 @@ export class CharacterEntity extends EntityBase {
         const fbxLoader = new FBXLoader();
         const result = await fbxLoader.loadAsync(url);
         console.log("CharacterEntity: loadAnimationFromFbxFile result animations:", result.animations);
-        if(result.animations == null || result.animations.length == 0) {
+        if (result.animations == null || result.animations.length == 0) {
             throw new Error("CharacterEntity: loadAnimationFromFbxFile: no animations found");
         }
         return result.animations[0];

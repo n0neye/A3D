@@ -12,7 +12,7 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
     ["Lily", {
         name: 'Lily',
         basePath: './characters/lily/',
-        fileName: 'lily_basic_expression.glb',
+        fileName: 'lily_Breathing Idle_w_skin.fbx',
         thumbnail: './characters/thumbs/lily.webp',
         scale: 1,
         animationsFiles: [
@@ -53,5 +53,13 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
         thumbnail: './characters/thumbs/cat.webp',
         scale: 0.02,
         animationsFiles: []
-    }]
+    }],
+    // ["female_mannequin", {
+    //     name: 'female_mannequin',
+    //     basePath: './characters/female_mannequin/',
+    //     fileName: 'Female Mannequin@Standing Idle.fbx',
+    //     thumbnail: './characters/thumbs/female_mannequin.webp',
+    //     scale: 0.1,
+    //     animationsFiles: []
+    // }]
 ]);

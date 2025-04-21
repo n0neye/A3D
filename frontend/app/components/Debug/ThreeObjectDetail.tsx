@@ -260,7 +260,7 @@ export const ThreeObjectDetails: React.FC<{
   
     // Format userData for display
     let userDataDisplay = null;
-    console.log("ThreeObjectDetails: userData", object.userData);
+    console.log("ThreeObjectDetails: userData", object);
     if (object.userData && Object.keys(object.userData).length > 0) {
       try {
         userDataDisplay = Object.entries(object.userData).map(([key, value]) => `${key}: ${value}`).join('\n');
