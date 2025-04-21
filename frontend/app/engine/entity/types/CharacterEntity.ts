@@ -27,6 +27,7 @@ export class CharacterEntity extends EntityBase {
     public mainSkinnedMesh: THREE.SkinnedMesh | null = null;
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
+    public meshes: THREE.Mesh[] = [];
     public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
     public modelAnimations: THREE.AnimationClip[] = [];
     public animationsFiles: string[] = [];
@@ -191,6 +192,7 @@ export class CharacterEntity extends EntityBase {
                 this.rootMesh.traverse(object => {
                     // Set metadata for all child meshes
                     if (object instanceof THREE.Mesh) {
+                        this.meshes.push(object);
                         object.userData = {
                             ...object.userData,
                             rootSelectable: this
@@ -579,21 +581,15 @@ export class CharacterEntity extends EntityBase {
      */
     public setColor(colorString: string): void {
         this.characterProps.color = colorString;
-        if (this.rootMesh) {
-            this.rootMesh.traverse(object => {
-                if (object instanceof THREE.Mesh && object.material) {
-                    this._applyColorToMaterial(object.material, colorString);
-                } else if (object instanceof THREE.SkinnedMesh && object.material) {
-                     this._applyColorToMaterial(object.material, colorString);
-                }
-            });
-        }
-         // Track color change
-         trackEvent(ANALYTICS_EVENTS.CHANGE_SETTINGS, {
+        this.meshes.forEach(mesh => {
+            // Apply color to materials
+            if (mesh.material) { this._applyColorToMaterial(mesh.material, colorString); }
+        });
+        // Track color change
+        trackEvent(ANALYTICS_EVENTS.CHANGE_SETTINGS, {
             entityType: 'character',
             action: 'set_color',
             color: colorString
         });
     }
-
 } 
