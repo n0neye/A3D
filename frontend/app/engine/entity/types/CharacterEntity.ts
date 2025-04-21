@@ -11,6 +11,7 @@ export interface CharacterEntityProps {
     modelUrl?: string;
     builtInModelId?: string;
     name?: string;
+    color?: string;
 }
 
 export interface SerializedCharacterEntityData extends SerializedEntityData {
@@ -39,7 +40,7 @@ export class CharacterEntity extends EntityBase {
     private _drawLines = true;
     private _builtInCharacterData: ICharacterData | null = null;
 
-    // Materials
+    // Bone visualization materials
     public static DefaultBoneMaterial: THREE.Material;
     public static HighlightBoneMaterial: THREE.Material;
     public static LineMaterial: THREE.Material;
@@ -90,6 +91,11 @@ export class CharacterEntity extends EntityBase {
 
         // Create visualization material
         this._createMaterials(scene);
+
+        // Apply initial color if provided
+        if (this.characterProps.color) {
+            this.setColor(this.characterProps.color);
+        }
     }
 
     private _applyBoneRotationsFromData(boneRotations: boneRotations) {
@@ -189,6 +195,10 @@ export class CharacterEntity extends EntityBase {
                             ...object.userData,
                             rootSelectable: this
                         };
+                        // Apply initial color to materials if set
+                        if (this.characterProps.color && object.material) {
+                            this._applyColorToMaterial(object.material, this.characterProps.color);
+                        }
                     }
 
                     // Find the main skinnedMesh and skeleton, and setup the bone visualization
@@ -259,24 +269,6 @@ export class CharacterEntity extends EntityBase {
         } finally {
             this._isLoading = false;
         }
-    }
-
-    public async waitUntilReady(): Promise<void> {
-        if (this._loadingPromise) {
-            await this._loadingPromise;
-        }
-    }
-
-    public isReady(_completeCheck?: boolean): boolean {
-        return !this._isLoading;
-    }
-
-    public get isLoading(): boolean {
-        return this._isLoading;
-    }
-
-    public getBones(): THREE.Bone[] {
-        return this.mainSkeleton?.bones || [];
     }
 
     public getBoneControls(): BoneControl[] {
@@ -464,7 +456,10 @@ export class CharacterEntity extends EntityBase {
         return {
             ...super.serialize(),
             entityType: 'character',
-            characterProps: this.characterProps,
+            characterProps: {
+                ...this.characterProps,
+                color: this.characterProps.color
+            },
             boneRotations
         };
     }
@@ -554,11 +549,51 @@ export class CharacterEntity extends EntityBase {
     private async loadAnimationFromFbxFile(url: string): Promise<THREE.AnimationClip> {
         const fbxLoader = new FBXLoader();
         const result = await fbxLoader.loadAsync(url);
-        console.log("CharacterEntity: loadAnimationFromFbxFile result animations:", result.animations);
         if (result.animations == null || result.animations.length == 0) {
             throw new Error("CharacterEntity: loadAnimationFromFbxFile: no animations found");
         }
         return result.animations[0];
+    }
+
+    /**
+     * Applies a color string to a material or array of materials.
+     * @param material The material or array of materials.
+     * @param colorString The color string (e.g., "#ff0000").
+     */
+    private _applyColorToMaterial(material: THREE.Material | THREE.Material[], colorString: string): void {
+        const color = new THREE.Color(colorString);
+        if (Array.isArray(material)) {
+            material.forEach(mat => {
+                if ('color' in mat) {
+                    (mat as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial).color.set(color);
+                }
+            });
+        } else if ('color' in material) {
+            (material as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial).color.set(color);
+        }
+    }
+
+    /**
+     * Sets the color of the character's main materials.
+     * @param colorString The color string (e.g., "#ff0000").
+     */
+    public setColor(colorString: string): void {
+        this.characterProps.color = colorString;
+        if (this.rootMesh) {
+            this.rootMesh.traverse(object => {
+                if (object instanceof THREE.Mesh && object.material) {
+                    this._applyColorToMaterial(object.material, colorString);
+                } else if (object instanceof THREE.SkinnedMesh && object.material) {
+                     this._applyColorToMaterial(object.material, colorString);
+                }
+            });
+        }
+         // Track color change
+         trackEvent(ANALYTICS_EVENTS.CHANGE_SETTINGS, {
+            entityType: 'character',
+            action: 'set_color',
+            color: colorString
+        });
     }
 
 } 

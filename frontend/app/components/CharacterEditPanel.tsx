@@ -5,6 +5,8 @@ import { IconEye, IconEyeOff, IconLinkPlus, IconPlayerPlay, IconPlayerPause, Ico
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { BoneControl } from '../engine/entity/components/BoneControl';
 import { ICharacterData, characterDatas } from '../engine/data/CharacterData';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const { selectedSelectable, engine } = useEditorEngine();
@@ -20,6 +22,8 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const [selectedAnimationIndex, setSelectedAnimationIndex] = useState<number | null>(null);
   const [showAnimationList, setShowAnimationList] = useState(false);
   const animationListRef = useRef<HTMLDivElement>(null);
+
+  const [characterColor, setCharacterColor] = useState(entity.characterProps.color || '#ffffff');
 
   useEffect(() => {
     if (selectedSelectable && selectedSelectable instanceof BoneControl) {
@@ -74,6 +78,11 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     }
   }, [entity]);
 
+  // Update local color state if entity's color changes externally
+  useEffect(() => {
+    setCharacterColor(entity.characterProps.color || '#ffffff');
+  }, [entity.characterProps.color]);
+
   const handleLinkObject = () => {
     setShowEntityList(!showEntityList);
   };
@@ -117,84 +126,103 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     setShowAnimationList(!showAnimationList);
   };
 
+  const handleColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newColor = event.target.value;
+    setCharacterColor(newColor);
+    entity.setColor(newColor);
+  };
+
   return (
     <>
-      <div className="p-2 flex flex-row gap-2 justify-center items-center">
-        {/* Animation Controls */}
-        {entity.animationsFiles.length + entity.modelAnimations.length > 0 && (
-          <div className="flex items-center gap-2 mb-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleAnimationPlayback}
-              className="w-10 h-8 flex justify-center items-center"
-            >
-              {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
-            </Button>
+      <div className="p-2 flex flex-col gap-2">
+        {/* Color Picker */}
+        <div className="flex items-center gap-2 mb-2">
+          <Label htmlFor="characterColor" className="text-xs whitespace-nowrap">Color:</Label>
+          <Input
+            id="characterColor"
+            type="color"
+            value={characterColor}
+            onChange={handleColorChange}
+            className="h-8 w-16 p-1 border-none cursor-pointer"
+          />
+        </div>
+
+        <div className="p-2 flex flex-row gap-2 justify-center items-center">
+          {/* Animation Controls */}
+          {entity.animationsFiles.length + entity.modelAnimations.length > 0 && (
+            <div className="flex items-center gap-2 mb-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleAnimationPlayback}
+                className="w-10 h-8 flex justify-center items-center"
+              >
+                {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
+              </Button>
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleAnimationList}
+                  className="text-xs flex items-center"
+                >
+                  {"Select Animation"}
+                  {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
+                </Button>
+
+                {showAnimationList && (
+                  <div
+                    ref={animationListRef}
+                    className="absolute bottom-full left-0 z-50 mt-1"
+                  >
+                    <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
+                      <h4 className="text-sm font-medium mb-2">Animations:</h4>
+                      <ul className="space-y-1">
+                        {entity.modelAnimations.map((animation, index) => (
+                          <li
+                            key={`anim-${index}`}
+                            className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
+                              }`}
+                            onClick={() => selectModelAnimation(index)}
+                          >
+                            {animation.name || `Animation ${index + 1}`}
+                          </li>
+                        ))}
+                        {entity.animationsFiles.map((animation, index) => (
+                          <li
+                            key={`anim-${index}`}
+                            className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
+                              }`}
+                            onClick={() => selectFileAnimation(index)}
+                          >
+                            {animation.replace('.fbx', '') || `Animation ${index + 1}`}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Bone Controls */}
+          {selectedBone && (
             <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={toggleAnimationList}
+                onClick={handleLinkObject}
+                title={"Attach object to bone"}
                 className="text-xs flex items-center"
               >
-                {"Select Animation"}
-                {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
+                <IconLinkPlus size={16} className="mr-2" />
+                Link Object to bone
               </Button>
-
-              {showAnimationList && (
-                <div
-                  ref={animationListRef}
-                  className="absolute bottom-full left-0 z-50 mt-1"
-                >
-                  <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
-                    <h4 className="text-sm font-medium mb-2">Animations:</h4>
-                    <ul className="space-y-1">
-                      {entity.modelAnimations.map((animation, index) => (
-                        <li
-                          key={`anim-${index}`}
-                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
-                            }`}
-                          onClick={() => selectModelAnimation(index)}
-                        >
-                          {animation.name || `Animation ${index + 1}`}
-                        </li>
-                      ))}
-                      {entity.animationsFiles.map((animation, index) => (
-                        <li
-                          key={`anim-${index}`}
-                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
-                            }`}
-                          onClick={() => selectFileAnimation(index)}
-                        >
-                          {animation.replace('.fbx', '') || `Animation ${index + 1}`}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
-        )}
-
-        {/* Bone Controls */}
-        {selectedBone && (
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLinkObject}
-              title={"Attach object to bone"}
-              className="text-xs flex items-center"
-            >
-              <IconLinkPlus size={16} className="mr-2" />
-              Link Object to bone
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
 
       {showEntityList && (
         <div
