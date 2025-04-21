@@ -82,7 +82,7 @@ export class EntityFactory {
             created: new Date().toISOString(),
             name: name,
             characterProps: {
-              url: '/characters/mannequin_man_idle/mannequin_man_idle_opt.glb',
+              builtInModelId: 'lily',
             },
           },
           onLoaded

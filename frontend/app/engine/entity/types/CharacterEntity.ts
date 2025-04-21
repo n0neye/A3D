@@ -8,7 +8,8 @@ import { characterDatas, ICharacterData } from '@/engine/data/CharacterData';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 
 export interface CharacterEntityProps {
-    url: string;
+    modelUrl?: string;
+    builtInModelId?: string;
     name?: string;
 }
 
@@ -36,7 +37,7 @@ export class CharacterEntity extends EntityBase {
     private _loadingPromise: Promise<void> | null = null;
     private _isVisualizationVisible = false;
     private _drawLines = true;
-    private _characterData: ICharacterData | null = null;
+    private _builtInCharacterData: ICharacterData | null = null;
 
     // Materials
     public static DefaultBoneMaterial: THREE.Material;
@@ -63,17 +64,21 @@ export class CharacterEntity extends EntityBase {
 
         super(name, scene, 'character', data);
         this.characterProps = data.characterProps;
-        
-        // Get character data
-        const characterData = characterDatas.get(this.name);
-        if (characterData) {
-            this._characterData = characterData;
+
+        if (!this.characterProps.modelUrl && !this.characterProps.builtInModelId) {
+            throw new Error("No model URL or built-in model ID provided for character: " + this.name);
+        }
+
+        // Get built-in character data
+        if (data.characterProps.builtInModelId) {
+            const characterData = characterDatas.get(data.characterProps.builtInModelId);
+            if (characterData) { this._builtInCharacterData = characterData; }
         }
 
         // Track character creation
         trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
             type: 'character',
-            modelUrl: data.characterProps.url
+            modelUrl: data.characterProps.modelUrl
         });
 
         this._loadingPromise = this._loadCharacter((entity) => {
@@ -155,17 +160,14 @@ export class CharacterEntity extends EntityBase {
 
 
     private async _loadCharacter(onLoaded?: (entity: EntityBase) => void): Promise<void> {
-        if (!this.characterProps.url) {
-            console.error("CharacterEntity: No URL provided.");
-            return;
-        }
 
         this._isLoading = true;
-        console.log(`Loading character from: ${this.characterProps.url}`);
+        console.log(`Loading character from: ${this.characterProps.modelUrl}`);
 
         try {
+            const modelUrl = this.characterProps.modelUrl || this._builtInCharacterData.basePath + this._builtInCharacterData.fileName;
             // Use the unified loading function
-            const result = await loadModelFromUrl(this.characterProps.url, (progress) => {
+            const result = await loadModelFromUrl(modelUrl, (progress) => {
                 console.log(`Loading character: ${progress.message || 'in progress...'}`);
             });
 
@@ -227,7 +229,7 @@ export class CharacterEntity extends EntityBase {
                 }
 
                 // Handle model animations
-                this.animationsFiles = this._characterData?.animationsFiles || [];
+                this.animationsFiles = this._builtInCharacterData?.animationsFiles || [];
                 this.modelAnimations = result.animations;
 
                 // Create animation mixer, if any animations are found
@@ -531,7 +533,7 @@ export class CharacterEntity extends EntityBase {
 
         // Load animation file
         const animationFile = this.animationsFiles[index];
-        const animation = await this.loadAnimationFromFbxFile(this._characterData?.basePath + "animations/" + animationFile);
+        const animation = await this.loadAnimationFromFbxFile(this._builtInCharacterData?.basePath + "animations/" + animationFile);
 
         // Create new animation action
         const newAction = this.animationMixer.clipAction(animation);

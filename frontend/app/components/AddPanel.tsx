@@ -72,7 +72,7 @@ const AddPanel: React.FC = () => {
     EditorEngine.getInstance().createEntityCommand({
       type: 'character',
       characterProps: {
-        url: model.basePath + model.fileName,
+        builtInModelId: model.builtInModelId,
         name: model.name,
       },
       scaling: new THREE.Vector3(model.scale, model.scale, model.scale),

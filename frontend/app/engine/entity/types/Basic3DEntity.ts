@@ -153,7 +153,7 @@ export class Basic3DEntity extends EntityBase {
     const characterEntity = new CharacterEntity(scene, this.name, {
       entityType: "character",
       characterProps: {
-        url: this.props.modelUrl,
+        modelUrl: this.props.modelUrl,
       },
       uuid: uuidv4(),
       name: this.name

@@ -1,4 +1,5 @@
 export interface ICharacterData {
+    builtInModelId: string,
     basePath: string,
     fileName: string,
     name: string,
@@ -9,7 +10,8 @@ export interface ICharacterData {
 
 
 export const characterDatas: Map<string, ICharacterData> = new Map([
-    ["Lily", {
+    ["lily", {
+        builtInModelId: 'lily',
         name: 'Lily',
         basePath: './characters/lily/',
         fileName: 'lily_Breathing Idle_w_skin.fbx',
@@ -25,7 +27,8 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
             'Male Laying Pose.fbx',
         ]
     }],
-    ["Mannequin", {
+    ["mannequin", {
+        builtInModelId: 'mannequin',
         name: 'Mannequin',
         basePath: './characters/mannequin_man_idle/',
         fileName: 'mannequin_man_idle_opt.glb',
@@ -36,17 +39,25 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
             'Jump.fbx',
         ]
     }],
-    ["Xbot", {
+    ["xbot", {
+        builtInModelId: 'xbot',
         name: 'Xbot',
         basePath: './characters/xbot/',
         fileName: 'xbot_Idle.fbx',
         thumbnail: './characters/thumbs/xbot.webp',
         scale: 1,
         animationsFiles: [
+            'Idle.fbx',
+            'Walking.fbx',
             'Fast Run.fbx',
+            'Jump.fbx',
+            'Sitting Idle.fbx',
+            'Female Laying Pose.fbx',
+            'Male Laying Pose.fbx',
         ]
     }],
-    ["Cat", {
+    ["cat", {
+        builtInModelId: 'cat',
         name: 'Cat',
         basePath: './characters/cat/',
         fileName: 'cat_orange.glb',
