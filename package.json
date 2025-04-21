@@ -2,42 +2,25 @@
   "name": "ai-editor",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/main.js",
+  "type": "module",
+  "main": "backend/build/main.mjs",
+  "exports": "backend/build/main.mjs",
   "scripts": {
-    "dev:next": "next dev --port 3030",
-    "build:next": "next build && next export",
+    "dev:next": "next dev frontend --port 3030",
+    "build:next": "next build frontend",
     "start:next": "next start",
-
-    "build:electron": "tsc -p electron/tsconfig.json",
-    "watch:electron": "tsc -p electron/tsconfig.json --watch",
-
-    "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron .",
+    "build:electron": "tsc --project backend/tsconfig.json",
+    "watch:electron": "tsc --project backend/tsconfig.json --watch",
+    "start:electron": "wait-on http://localhost:3030 && yarn build:electron && electron backend/build/main.mjs",
     "dev": "concurrently -k \"yarn dev:next\" \"yarn start:electron\"",
-
+    "serve:next:build": "serve frontend/build -p 5000",
+    "start:electron:prod": "yarn build:electron && electron backend/build/main.mjs http://localhost:5000",
+    "test:build": "yarn build && concurrently -k \"yarn serve:next:build\" \"wait-on http://localhost:5000 && yarn start:electron:prod\"",
     "build": "yarn build:next && yarn build:electron",
     "pack": "yarn build && electron-builder --dir",
-    "dist": "yarn build && electron-builder"
-  },
-  "build": {
-    "appId": "com.example.myapp",
-    "productName": "MyApp",
-    "files": [
-      "main/**/*",
-      "renderer/out/**/*",
-      "package.json"
-    ],
-    "directories": {
-      "buildResources": "assets"
-    },
-    "extraMetadata": {
-      "main": "dist/main.js"
-    },
-    "mac": {
-      "target": "dmg"
-    },
-    "win": {
-      "target": "nsis"
-    }
+    "dist": "yarn build && electron-builder",
+    "pack-portable": "yarn build && electron-builder --win=portable",
+    "clean": "rimraf dist backend/build frontend/build frontend/.next"
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.3",
@@ -60,14 +43,15 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron-is-dev": "^3.0.1",
+    "electron-store": "^10.0.1",
     "install": "^0.13.0",
     "lucide-react": "^0.483.0",
     "next": "15.2.2",
     "next-themes": "^0.4.6",
     "posthog-js": "^1.234.1",
     "posthog-node": "^4.11.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "replicate": "^1.0.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.0.2",
@@ -78,13 +62,15 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^35.1.5",
     "electron-builder": "^26.0.12",
+    "node": "^20",
+    "rimraf": "^6.0.1",
+    "serve": "^14.2.4",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wait-on": "^8.0.3"

@@ -135,3 +135,8 @@ To add new functionality:
 5. Update the UI components to use the new functionality
 
 This architecture ensures clean separation of concerns and makes the codebase more maintainable.
+
+### Electron Build
+- `yarn build:next`
+- `yarn build:electron` (Powershell may not work, use Command Prompt)
+- `yarn electron-builder --dir --win` (with admin permission)

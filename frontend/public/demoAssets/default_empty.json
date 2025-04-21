@@ -1,0 +1,97 @@
+{
+  "version": "1.0.1",
+  "timestamp": "2025-04-02T03:31:38.183Z",
+  "entities": [
+    {
+      "id": "dba18014-0eac-433d-bcee-78150a412515",
+      "name": "entity-1743561307120",
+      "entityType": "shape",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-02T03:31:31.629Z",
+      "props": {
+        "shapeType": "floor"
+      }
+    },
+    {
+      "id": "76355aa7-4e86-4d0a-8cff-4378eff5ec5f",
+      "name": "entity-1743561308611",
+      "entityType": "light",
+      "position": {
+        "x": 0,
+        "y": 2.5504138469696045,
+        "z": 2.689049243927002
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-02T03:31:31.631Z",
+      "props": {
+        "intensity": 0.7,
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "shadowEnabled": true
+      }
+    }
+  ],
+  "environment": {
+    "ratioOverlay": {
+      "visible": true,
+      "ratio": "16:9",
+      "padding": 10,
+      "rightExtraPadding": 0
+    },
+    "camera": {
+      "fov": 0.47,
+      "farClip": 40,
+      "position": {
+        "x": 0.5874766459828428,
+        "y": 1.5594755083785188,
+        "z": 10.263080302591547
+      },
+      "target": {
+        "x": 0.12111444896488184,
+        "y": 1.2561448196308784,
+        "z": 0.9593097750024334
+      },
+      "radius": 9.320388899374283,
+      "alpha": 1.520712096455322,
+      "beta": 1.5382457257530497
+    }
+  },
+  "ProjectSettings": {
+    "prompt": "",
+    "promptStrength": 0.9,
+    "depthStrength": 0.9,
+    "noiseStrength": 0,
+    "selectedAPI": "flux-lora-depth",
+    "seed": 685428137,
+    "useRandomSeed": true,
+    "selectedLoras": [],
+    "renderLogs": [],
+    "openOnRendered": true
+  }
+}
