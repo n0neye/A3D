@@ -10,6 +10,7 @@ import { GenerativeEntity, GenerationStatus, } from '@/engine/entity/types/Gener
 import { IGenerationLog } from '@/engine/interfaces/generation';
 import { ImageRatio } from "@/engine/utils/imageUtil";
 import { toast } from 'sonner';
+import { useEditorEngine } from '@/context/EditorEngineContext';
 
 // TODO: This is a hack to get the previous entity.
 let PREV_ENTITY: GenerativeEntity | null = null;
@@ -17,6 +18,7 @@ let PREV_ENTITY: GenerativeEntity | null = null;
 
 const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
+  const { userPreferences } = useEditorEngine();
   const [promptInput, setPromptInput] = useState(props.entity.temp_prompt);
   const inputElementRef = useRef<HTMLTextAreaElement>(null);
   const [currentRatio, setCurrentRatio] = useState<ImageRatio>('3:4');
@@ -164,8 +166,22 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
     }
   }
 
+  const showFalApiKeyError = () => {
+    toast.error('This feature requires a FAL API key. Please enter a valid FAL API key in the settings');
+  }
+
+  const notValidApiKey = () => {
+    return !userPreferences.falApiKey || userPreferences.falApiKey.length < 60;
+  }
+
   // Handle image generation
   const handleGenerate2D = async () => {
+
+    if (notValidApiKey()) {
+      showFalApiKeyError();
+      return;
+    }
+
     console.log('handleGenerate2D', promptInput);
     if (!props.entity || !promptInput.trim()) return;
     try {
@@ -179,6 +195,12 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   // Convert to 3D model
   const handleGenerate3D = async () => {
+
+    if (!userPreferences.falApiKey) {
+      showFalApiKeyError();
+      return;
+    }
+
     const startTime = Date.now();
 
     // Track start of 3D conversion

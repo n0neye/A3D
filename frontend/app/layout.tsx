@@ -57,8 +57,8 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className={`bg-black text-gray-200`}>
-          <Toaster closeButton theme='dark' />
+      <body className={`bg-black `}>
+          <Toaster closeButton  expand={true} richColors={true} />
           {/* <PostHogProvider> */}
             {children}
           {/* </PostHogProvider> */}
