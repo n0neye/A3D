@@ -389,6 +389,10 @@ export class InputManager {
       case 'x':
         this.engine.getObjectManager().toggleGizmo();
         break;
+      // Toggle ratio overlay visibility
+      case 'z':
+        this.engine.getCameraManager().setRatioOverlayVisibility(!this.engine.getCameraManager().getRatioOverlayVisibility());
+        break;
       // Transform control mode
       case 'w':
         this.engine.setTransformControlMode(TransformMode.Position);
