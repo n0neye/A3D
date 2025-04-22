@@ -66,23 +66,6 @@ const GizmoModeSelector: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={gizmoMode === TransformMode.Scale ? 'default' : 'outline'}
-              disabled={!gizmoAllowedModes.includes(TransformMode.Scale)}
-              size="icon"
-              onClick={() => engine.setTransformControlMode(TransformMode.Scale)}
-              aria-label="scale gizmo"
-            >
-              <IconArrowsMaximize className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Scale (E)</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
               variant={gizmoMode === TransformMode.Rotation ? 'default' : 'outline'}
               disabled={!gizmoAllowedModes.includes(TransformMode.Rotation)}
               size="icon"
@@ -93,7 +76,24 @@ const GizmoModeSelector: React.FC = () => {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Rotate (R)</p>
+            <p>Rotate (E)</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={gizmoMode === TransformMode.Scale ? 'default' : 'outline'}
+              disabled={!gizmoAllowedModes.includes(TransformMode.Scale)}
+              size="icon"
+              onClick={() => engine.setTransformControlMode(TransformMode.Scale)}
+              aria-label="scale gizmo"
+            >
+              <IconArrowsMaximize className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Scale (R)</p>
           </TooltipContent>
         </Tooltip>
 

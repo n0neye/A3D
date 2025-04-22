@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { X, Keyboard, MousePointer, Info } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ButtonLink from './ui/buttonLink';
+import { siteConfig } from '@/siteConfig';
+import { IconBrandGithub, IconBrandX } from '@tabler/icons-react';
 
 // List of shortcuts extracted from EditorContainer
 const SHORTCUTS = [
@@ -17,7 +20,7 @@ const SHORTCUTS = [
 ];
 
 export default function Guide() {
-    const [showWelcome, setShowWelcome] = useState(false);
+    const [showWelcome, setShowWelcome] = useState(true);
     const [showShortcuts, setShowShortcuts] = useState(false);
 
     // Show welcome message on first visit
@@ -45,7 +48,7 @@ export default function Guide() {
             {/* Welcome overlay */}
             {showWelcome && (
                 <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-                    <Card className="max-w-2xl w-full relative panel-shape">
+                    <Card className="max-w-2xl w-full relative panel-shape p-8">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -55,24 +58,37 @@ export default function Guide() {
                             <X size={20} />
                         </Button>
 
-                        <CardHeader>
-                            <CardTitle className="text-2xl">{"Hi :)"}</CardTitle>
-                        </CardHeader>
+                        <div className='flex flex-col items-center gap-4'>
+                            <img src="./logo.svg" alt="A3D Logo" className="w-32 h-32 drop-shadow-lg" />
+                            <div className='flex flex-col gap-2 items-center'>
+                                {/* Social links */}
+                                <div className="flex items-center gap-2 mt-2">
+                                    <ButtonLink href={siteConfig.links.github} className='w-8 h-8 rounded-full' variant='outline' > <IconBrandGithub /> </ButtonLink>
+                                    <ButtonLink href={siteConfig.links.x} className='w-8 h-8 rounded-full' variant='outline' > <IconBrandX /> </ButtonLink>
+                                </div>
 
-                        <CardContent className="space-y-6">
-                            <p className="text-gray-300">
-                                Welcome to this 3D AI editor demo.
-                                Please notice that this is not a product and may stop working in anytime for maintenance. Enjoy!
-                            </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
                             <hr className="border-gray-500" />
+                            <h3 className="text-lg font-bold text-center">Getting Started</h3>
+                            <p className='text-center'>
+                                <ButtonLink href={siteConfig.guideLinks.falAPI} variant='ghost' >Enter your Fal.ai API key </ButtonLink> in the settings, or <ButtonLink href={siteConfig.guideLinks.comfyUI} variant='ghost'>install the ComfyUI Integration Node</ButtonLink> to get started.
 
+                                Please note this is the beta version and is not ready for production. Any feedback is appreciated!
+                            </p>
+
+
+                            <hr className="border-gray-500" />
+                            <h3 className="text-lg font-bold text-center">Keyboard Shortcuts</h3>
                             <div className="grid  md:grid-cols-2 gap-3 grid-rows-4 grid-flow-col">
                                 {SHORTCUTS.map((shortcut, index) => (
                                     <div key={index} className="flex items-center gap-3">
                                         <span className="inline-flex items-center justify-center px-2 py-1 bg-white/10 outline outline-gray-800 rounded text-sm font-mono">
                                             {shortcut.key}
                                         </span>
-                                        <span className="text-gray-300">{shortcut.description}</span>
+                                        <span className="">{shortcut.description}</span>
                                     </div>
                                 ))}
                             </div>
@@ -83,7 +99,7 @@ export default function Guide() {
                             >
                                 Get Started
                             </Button>
-                        </CardContent>
+                        </div>
                     </Card>
                 </div>
             )}
@@ -115,7 +131,7 @@ export default function Guide() {
                                     <span className="inline-flex items-center justify-center px-2 py-0.5 bg-white/20 rounded text-xs font-mono">
                                         {shortcut.key}
                                     </span>
-                                    <span className="text-gray-300 text-sm">{shortcut.description}</span>
+                                    <span className=" text-sm">{shortcut.description}</span>
                                 </div>
                             ))}
                         </CardContent>

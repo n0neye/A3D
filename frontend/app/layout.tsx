@@ -4,13 +4,13 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 // import { initAnalytics } from './engine/utils/external/analytics'
 import { Toaster } from 'sonner'
-
+import { siteConfig } from '@/siteConfig'
 console.log('layout.tsx')
 
 
 export const metadata: Metadata = {
-  title: 'PLAYMUD',
-  description: '3D Playground with AI Rendering',
+  title: siteConfig.productName,
+  description: siteConfig.description,
   icons: {
     icon: '/img/favicon.ico',
   },
@@ -56,6 +56,10 @@ export default function RootLayout({
             }
           `}
         </Script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+        <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch&display=swap" rel="stylesheet" />
       </head>
       <body className={`bg-black `}>
           <Toaster closeButton  expand={true} richColors={true} />

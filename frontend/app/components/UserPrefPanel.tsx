@@ -41,7 +41,7 @@ const UserPrefPanel: React.FC = () => {
       </Button>
       <div className="hidden group-hover:block absolute top-8 pt-5 right-0">
         <div className="panel-shape p-4 space-y-4 w-64">
-          <h3 className="text-sm font-medium">User Preferences</h3>
+          <h3 className="text-sm font-bold">User Preferences</h3>
 
           <div className="space-y-4">
             {/* Theme Toggle */}
@@ -54,6 +54,7 @@ const UserPrefPanel: React.FC = () => {
               </Label>
               <Switch
                 id="theme-toggle"
+                
                 checked={userPreferences.theme === 'dark'}
                 onCheckedChange={handleThemeToggle}
               />

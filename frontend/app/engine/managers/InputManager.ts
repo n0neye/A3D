@@ -390,16 +390,15 @@ export class InputManager {
         // TODO
         // this.engine.getTransformControlManager().toggleGizmo();
         break;
-
       // Transform control mode
       case 'w':
         this.engine.setTransformControlMode(TransformMode.Position);
         break;
       case 'e':
-        this.engine.setTransformControlMode(TransformMode.Scale);
-        break;
-      case 'r':
         this.engine.setTransformControlMode(TransformMode.Rotation);
+        break;
+        case 'r':
+        this.engine.setTransformControlMode(TransformMode.Scale);
         break;
       case 't':
         this.engine.setTransformControlMode(TransformMode.BoundingBox);

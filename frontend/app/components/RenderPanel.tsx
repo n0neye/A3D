@@ -432,7 +432,7 @@ const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
             onChange={(e) => setPrompt(e.target.value)}
             className="resize-none"
             rows={3}
-            placeholder="Describe how you want the scene to look..."
+            placeholder="Describe your scene. Use --no <negative_prompt> to exclude certain elements"
           />
         </div>
 
@@ -490,7 +490,7 @@ const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
         </div>
 
         {/* Debug Tools */}
-        {(true &&
+        {(false &&
           <div>
             <Label className="text-sm mb-2 block">Debug Tools</Label>
             <div className="grid grid-cols-2 gap-2">

@@ -200,6 +200,7 @@ button {
 }
 
 body {
+  font-family: 'Chakra Petch', cursive;
   /* ===== Scrollbar CSS ===== */
   /* Firefox */
   * {
