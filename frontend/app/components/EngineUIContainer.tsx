@@ -84,7 +84,7 @@ function EngineUIContainer() {
             {/* {timelineManager && uiLayoutMode === UiLayoutMode.Video && <TimelinePanel timelineManager={timelineManager} />} */}
 
             {/* Add the Debug Panel */}
-            <DebugPanel />
+            {!(process.env.NODE_ENV === 'production') && <DebugPanel />}
 
             {/* Add File Drag Drop Overlay */}
             <FileDragDropOverlay />

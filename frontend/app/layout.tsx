@@ -1,7 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
 // import { PostHogProvider } from './components/PostHogProvider'
-import Script from 'next/script'
 // import { initAnalytics } from './engine/utils/external/analytics'
 import { Toaster } from 'sonner'
 import { siteConfig } from '@/siteConfig'
@@ -34,38 +33,17 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         {/* Script to disable console.log in production */}
-        <Script id="disable-console-in-production" strategy="beforeInteractive">
-          {`
-            if (process.env.NODE_ENV === 'production') {
-              // Save the original console methods
-              const originalConsole = {
-                log: console.log,
-                warn: console.warn,
-                error: console.error,
-                info: console.info,
-                debug: console.debug
-              };
-              
-              // Only keep error and warn in production
-              console.log = function() {};
-              console.info = function() {};
-              console.debug = function() {};
-              
-              // Optionally keep a reference to the original methods on window
-              window._originalConsole = originalConsole;
-            }
-          `}
-        </Script>
+
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
         <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch&display=swap" rel="stylesheet" />
       </head>
       <body className={`bg-black `}>
-          <Toaster closeButton  expand={true} richColors={true} />
-          {/* <PostHogProvider> */}
-            {children}
-          {/* </PostHogProvider> */}
+        <Toaster closeButton expand={true} richColors={true} />
+        {/* <PostHogProvider> */}
+        {children}
+        {/* </PostHogProvider> */}
       </body>
     </html>
   )
