@@ -57,13 +57,11 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
         thumbnail: './characters/thumbs/xbot.webp',
         scale: 1,
         animationsFiles: [
-            'Idle.fbx',
             'Walking.fbx',
             'Fast Run.fbx',
             'Jump.fbx',
-            'Sitting Idle.fbx',
-            'Female Laying Pose.fbx',
-            'Male Laying Pose.fbx',
+            'Sitting.fbx',
+            'Female Dance Pose.fbx',
         ]
     }],
     ["cat", {

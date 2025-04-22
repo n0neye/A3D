@@ -18,10 +18,14 @@ export interface CharacterEntityProps {
 export interface SerializedCharacterEntityData extends SerializedEntityData {
     entityType: 'character';
     characterProps: CharacterEntityProps;
-    boneRotations?: boneRotations;
+    boneTransforms?: boneTransforms;
 }
 
-type boneRotations = Record<string, { x: number, y: number, z: number, w: number }>;
+interface IBoneTransform {
+    quaternion: {x: number, y: number, z: number, w: number};
+    position?: {x: number, y: number, z: number};
+}
+type boneTransforms = Record<string, IBoneTransform>;
 
 export class CharacterEntity extends EntityBase {
     public mainSkeleton: THREE.Skeleton | null = null;
@@ -205,17 +209,19 @@ export class CharacterEntity extends EntityBase {
                 } else if (this._builtInCharacterData?.animationsFiles) {
                     this.animationFiles = this._builtInCharacterData?.animationsFiles.map(fileName => this._builtInCharacterData.basePath + "animations/" + fileName)
                 }
-                this.modelAnimations = result.animations;
+                // TODO: Hack to remove Take 001 (Usually the mixamo TPose)
+                this.modelAnimations = result.animations.filter(animation => !animation.name.includes("Take 001"));
 
                 // Create animation mixer, if any animations are found
-                if (this.animationFiles.length + this.modelAnimations.length > 0) {
+                const hasAnimations = this.animationFiles.length + this.modelAnimations.length > 0;
+                if (hasAnimations) {
                     this.animationMixer = new THREE.AnimationMixer(this.rootMesh);
                     this.engine.addMixer(this.uuid, this.animationMixer);
                 }
 
-                if (initialData.boneRotations) {
+                if (initialData.boneTransforms) {
                     // Apply saved bone rotations stored in project
-                    this._applyBoneRotationsFromData(initialData.boneRotations);
+                    this._applyBoneTransformsFromData(initialData.boneTransforms);
                 } else {
                     // Set pose to the default modelAnimations animation
                     if (this.modelAnimations.length > 0) {
@@ -241,7 +247,7 @@ export class CharacterEntity extends EntityBase {
         }
     }
     
-    private _applyBoneRotationsFromData(boneRotations: boneRotations) {
+    private _applyBoneTransformsFromData(boneTransforms: boneTransforms) {
         try {
             // Apply saved bone rotations if available
             if (!this.mainSkeleton) {
@@ -254,15 +260,22 @@ export class CharacterEntity extends EntityBase {
 
             // Apply rotations in a try/catch to prevent errors from breaking deserialization
             try {
-                Object.entries(boneRotations).forEach(([boneName, rotation]) => {
+                Object.entries(boneTransforms).forEach(([boneName, transformData]) => {
                     const bone = this.mainSkeleton!.bones.find(b => b.name === boneName);
                     if (bone) {
                         bone.quaternion.set(
-                            rotation.x,
-                            rotation.y,
-                            rotation.z,
-                            rotation.w
+                            transformData.quaternion.x,
+                            transformData.quaternion.y,
+                            transformData.quaternion.z,
+                            transformData.quaternion.w
                         );
+                        if (transformData.position) {
+                            bone.position.set(
+                                transformData.position.x,
+                                transformData.position.y,
+                                transformData.position.z
+                            );
+                        }
                     }
                 });
             } catch (rotErr) {
@@ -451,16 +464,29 @@ export class CharacterEntity extends EntityBase {
     // --- Serialization ---
     public serialize(): SerializedCharacterEntityData {
         // Serialize bone rotations
-        const boneRotations: Record<string, { x: number, y: number, z: number, w: number }> = {};
+        const boneTransforms: boneTransforms = {};
 
         if (this.mainSkeleton) {
             this.mainSkeleton.bones.forEach(bone => {
-                boneRotations[bone.name] = {
-                    x: bone.quaternion.x,
-                    y: bone.quaternion.y,
-                    z: bone.quaternion.z,
-                    w: bone.quaternion.w
+
+                // Only save the rotation for now
+                boneTransforms[bone.name] = {
+                    quaternion: {
+                        x: bone.quaternion.x,
+                        y: bone.quaternion.y,
+                        z: bone.quaternion.z,
+                        w: bone.quaternion.w
+                    },
                 };
+
+                // Hack to keep the hip bone in place
+                if(bone.name.toLowerCase().includes("hip")) {
+                    boneTransforms[bone.name].position = {
+                        x: bone.position.x,
+                        y: bone.position.y,
+                        z: bone.position.z
+                    };
+                }
             });
         }
 
@@ -471,7 +497,7 @@ export class CharacterEntity extends EntityBase {
                 ...this.characterProps,
                 color: this.characterProps.color
             },
-            boneRotations
+            boneTransforms
         };
     }
 
