@@ -15,8 +15,8 @@ const SHORTCUTS = [
     { key: 'Scroll Wheel', description: 'Zoom camera' },
     { key: 'Ctrl+Click', description: 'Create new generation' },
     { key: 'W', description: 'Move handle' },
-    { key: 'E', description: 'Scale handle' },
-    { key: 'R', description: 'Rotate handle' },
+    { key: 'E', description: 'Rotate handle' },
+    { key: 'R', description: 'Scale handle' },
 ];
 
 export default function Guide() {
