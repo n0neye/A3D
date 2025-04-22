@@ -33,7 +33,7 @@ export class CharacterEntity extends EntityBase {
     public characterProps: CharacterEntityProps;
     public rootMesh: THREE.Object3D | null = null;
     public meshes: THREE.Mesh[] = [];
-    // public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
+    public initialBoneRotations: Map<string, THREE.Quaternion> = new Map();
     public modelAnimations: THREE.AnimationClip[] = [];
     public animationFiles: string[] = [];
     public animationMixer: THREE.AnimationMixer | null = null;
@@ -305,12 +305,12 @@ export class CharacterEntity extends EntityBase {
     public resetAllBones(): void {
         if (!this.mainSkeleton) return;
 
-        // this.mainSkeleton.bones.forEach(bone => {
-        //     const initialRotation = this.initialBoneRotations.get(bone.name);
-        //     if (initialRotation) {
-        //         bone.quaternion.copy(initialRotation);
-        //     }
-        // });
+        this.mainSkeleton.bones.forEach(bone => {
+            const initialRotation = this.initialBoneRotations.get(bone.name);
+            if (initialRotation) {
+                bone.quaternion.copy(initialRotation);
+            }
+        });
 
         // Track the reset action
         trackEvent(ANALYTICS_EVENTS.CHANGE_SETTINGS, {

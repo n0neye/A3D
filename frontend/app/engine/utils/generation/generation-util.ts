@@ -65,7 +65,7 @@ export async function generateBackground(
     if (success && result.data.images[0].url) {
 
         // Apply the image to the entity mesh
-        entity.applyImage(result.data.images[0].url, scene);
+        entity.applyImage(result.data.images[0].url);
 
         // Add to history
         log = entity.addImageGenerationLog(prompt, result.data.images[0].url, '16:9',);
@@ -113,7 +113,7 @@ export async function removeBackground(
         const success = result.data && result.data.image && result.data.image.url;
         if (success) {
             // Apply the image to the entity mesh
-            await entity.applyImage(result.data.image.url, scene, entity.temp_ratio);
+            await entity.applyImage(result.data.image.url, entity.temp_ratio);
 
             // Add to history - note this is a special case derived from another image
             const prompt = entity.getCurrentGenerationLog()?.prompt || '';
