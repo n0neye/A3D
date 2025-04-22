@@ -154,7 +154,7 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   // Updated function to set color from swatches or input
   const handleSetColor = (newColor: string) => {
     setCharacterColor(newColor);
-    entity.setColor(newColor);
+    entity.setCharacterColor(newColor);
     // Optionally close popover after selection, or keep it open
     // setShowColorPopover(false);
   };

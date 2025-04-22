@@ -4,7 +4,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics'
 import { BoneControl } from '../components/BoneControl';
 import { setupMeshShadows } from '@/engine/utils/lightUtil';
 import { loadModelFromUrl } from '@/engine/utils/3dModelUtils';
-import { characterDatas, ICharacterData, mixamoAnimationPaths } from '@/engine/data/CharacterData';
+import { characterDatas, getAnimationPathsById, getModelPathById, ICharacterData, mixamoAnimationPaths } from '@/engine/data/CharacterData';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { setWorldScale } from '@/engine/utils/transformUtils';
 
@@ -22,8 +22,8 @@ export interface SerializedCharacterEntityData extends SerializedEntityData {
 }
 
 interface IBoneTransform {
-    quaternion: {x: number, y: number, z: number, w: number};
-    position?: {x: number, y: number, z: number};
+    quaternion: { x: number, y: number, z: number, w: number };
+    position?: { x: number, y: number, z: number };
 }
 type boneTransforms = Record<string, IBoneTransform>;
 
@@ -87,19 +87,14 @@ export class CharacterEntity extends EntityBase {
             type: 'character',
             modelUrl: initialData.characterProps.modelUrl
         });
-        
+
         // Create visualization material
         this._createDefaultMaterials(scene);
 
         // Load character model
-        this._loadingPromise = this._loadCharacter(initialData, (entity) => {
+        this._loadingPromise = this._loadCharacterModel(initialData, (entity) => {
             onLoaded?.(entity);
         });
-
-        // Apply initial color if provided
-        if (this.characterProps.color) {
-            this.setColor(this.characterProps.color);
-        }
     }
 
     private _createDefaultMaterials(scene: THREE.Scene): void {
@@ -137,13 +132,13 @@ export class CharacterEntity extends EntityBase {
     }
 
 
-    private async _loadCharacter(initialData: SerializedCharacterEntityData, onLoaded?: (entity: EntityBase) => void): Promise<void> {
+    private async _loadCharacterModel(initialData: SerializedCharacterEntityData, onLoaded?: (entity: EntityBase) => void): Promise<void> {
 
         this._isLoading = true;
         console.log(`Loading character from: ${this.characterProps.modelUrl}`);
 
         try {
-            const modelUrl = this.characterProps.modelUrl || this._builtInCharacterData.basePath + this._builtInCharacterData.fileName;
+            const modelUrl = this.characterProps.modelUrl || getModelPathById(this.characterProps.builtInModelId);
             // Use the unified loading function
             const result = await loadModelFromUrl(modelUrl, (progress) => {
                 console.log(`Loading character: ${progress.message || 'in progress...'}`);
@@ -168,10 +163,6 @@ export class CharacterEntity extends EntityBase {
                             ...object.userData,
                             rootSelectable: this
                         };
-                        // Apply initial color to materials if set
-                        if (this.characterProps.color && object.material) {
-                            this._applyColorToMaterial(object.material, this.characterProps.color);
-                        }
                     }
 
                     // Find the main skinnedMesh and skeleton, and setup the bone visualization
@@ -204,11 +195,8 @@ export class CharacterEntity extends EntityBase {
                 }
 
                 // Handle model animations
-                if (this._builtInCharacterData?.useMixamoAnimations) {
-                    this.animationFiles = mixamoAnimationPaths
-                } else if (this._builtInCharacterData?.animationsFiles) {
-                    this.animationFiles = this._builtInCharacterData?.animationsFiles.map(fileName => this._builtInCharacterData.basePath + "animations/" + fileName)
-                }
+                this.animationFiles = getAnimationPathsById(this.characterProps.builtInModelId);
+                
                 // TODO: Hack to remove Take 001 (Usually the mixamo TPose)
                 this.modelAnimations = result.animations.filter(animation => !animation.name.includes("Take 001"));
 
@@ -240,13 +228,32 @@ export class CharacterEntity extends EntityBase {
             } else {
                 console.error(`No scene loaded for character ${this.name}`);
             }
+
+            // Create meshStandardMaterial for built-in models
+            const isBuiltIn = this.characterProps.builtInModelId !== null && this.characterProps.builtInModelId !== undefined;
+            if (isBuiltIn) {
+                this.meshes.forEach(mesh => {
+                    if (!(mesh.material instanceof THREE.MeshStandardMaterial)) {
+                        console.log("CharacterEntity: replace with meshStandardMaterial", mesh.name);
+                        const newMaterial = new THREE.MeshStandardMaterial();
+                        newMaterial.roughness = 0;
+                        newMaterial.metalness = 0;
+                        newMaterial.opacity = 1;
+                        newMaterial.transparent = false;
+                        mesh.material = newMaterial;
+                    }
+                });
+            }
+
+            // Apply initial color to materials if set
+            this.setCharacterColor(this.characterProps.color || "#ffffff");
         } catch (error) {
             console.error(`Error loading character model: ${error}`);
         } finally {
             this._isLoading = false;
         }
     }
-    
+
     private _applyBoneTransformsFromData(boneTransforms: boneTransforms) {
         try {
             // Apply saved bone rotations if available
@@ -354,7 +361,7 @@ export class CharacterEntity extends EntityBase {
             console.log("CharacterEntity: _createBoneVisualization", bone.name, boneControl.mesh.scale.x);
 
             // Hide initially
-            // boneControl.mesh.visible = false;
+            boneControl.mesh.visible = false;
 
             if (!this._drawLines) {
                 this._boneMap.set(bone.name, { bone, control: boneControl, childBones: [], lineConfigs: [] });
@@ -480,7 +487,7 @@ export class CharacterEntity extends EntityBase {
                 };
 
                 // Hack to keep the hip bone in place
-                if(bone.name.toLowerCase().includes("hip")) {
+                if (bone.name.toLowerCase().includes("hip")) {
                     boneTransforms[bone.name].position = {
                         x: bone.position.x,
                         y: bone.position.y,
@@ -592,21 +599,33 @@ export class CharacterEntity extends EntityBase {
         return result.animations[0];
     }
 
+
     /**
      * Applies a color string to a material or array of materials.
      * @param material The material or array of materials.
      * @param colorString The color string (e.g., "#ff0000").
      */
-    private _applyColorToMaterial(material: THREE.Material | THREE.Material[], colorString: string): void {
-        const color = new THREE.Color(colorString);
+    private _applyColorToMesh(mesh: THREE.Mesh, colorString: string): void {
+
+        // TODO: hack to not apply color to eyes
+        if (mesh.name.toLocaleLowerCase().includes("eye")) {
+            return;
+        }
+
+        const material = mesh.material;
+        const newColor = new THREE.Color(colorString);
+
+        // Log material type
+        console.log("CharacterEntity: _applyColorToMaterial", typeof material);
+
         if (Array.isArray(material)) {
             material.forEach(mat => {
                 if ('color' in mat) {
-                    (mat as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial).color.set(color);
+                    (mat as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial | THREE.MeshPhongMaterial).color.set(newColor);
                 }
             });
         } else if ('color' in material) {
-            (material as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial).color.set(color);
+            (material as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial | THREE.MeshPhongMaterial).color.set(newColor);
         }
     }
 
@@ -614,11 +633,11 @@ export class CharacterEntity extends EntityBase {
      * Sets the color of the character's main materials.
      * @param colorString The color string (e.g., "#ff0000").
      */
-    public setColor(colorString: string): void {
+    public setCharacterColor(colorString: string): void {
         this.characterProps.color = colorString;
         this.meshes.forEach(mesh => {
             // Apply color to materials
-            if (mesh.material) { this._applyColorToMaterial(mesh.material, colorString); }
+            if (mesh.material) { this._applyColorToMesh(mesh, colorString); }
         });
         // Track color change
         trackEvent(ANALYTICS_EVENTS.CHANGE_SETTINGS, {

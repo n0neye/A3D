@@ -94,9 +94,9 @@ export class EnvironmentManager {
 
     createLights = (scene: THREE.Scene): void => {
         // Create ambient light
-        // const ambientLight = new THREE.AmbientLight(new THREE.Color(1, 0.3, 0.3), 1);
+        // const ambientLight = new THREE.AmbientLight(new THREE.Color(0.3, 0.3, 0.3), 1);
         // scene.add(ambientLight);
-        // this.envObjects.ambientLight = ambientLight;
+        // this.envSetting.ambientLight = ambientLight;
 
         // Create directional light (sun)
         const sunLight = new THREE.DirectionalLight(0xffffff, 0.3);

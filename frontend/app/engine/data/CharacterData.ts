@@ -43,7 +43,7 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
         builtInModelId: 'mannequin',
         name: 'Mannequin',
         basePath: './characters/mannequin_man_idle/',
-        fileName: 'mannequin_idle_opt.fbx',
+        fileName: 'mannequin_embeded_1024_white.fbx',
         thumbnail: './characters/thumbs/mannequin.webp',
         scale: 1,
         useMixamoAnimations: true,
@@ -64,21 +64,25 @@ export const characterDatas: Map<string, ICharacterData> = new Map([
             'Female Dance Pose.fbx',
         ]
     }],
-    ["cat", {
-        builtInModelId: 'cat',
-        name: 'Cat',
-        basePath: './characters/cat/',
-        fileName: 'cat_orange.glb',
-        thumbnail: './characters/thumbs/cat.webp',
-        scale: 0.01,
-        animationsFiles: []
-    }],
-    // ["female_mannequin", {
-    //     name: 'female_mannequin',
-    //     basePath: './characters/female_mannequin/',
-    //     fileName: 'Female Mannequin@Standing Idle.fbx',
-    //     thumbnail: './characters/thumbs/female_mannequin.webp',
-    //     scale: 0.1,
-    //     animationsFiles: []
-    // }]
 ]);
+
+export const getModelPathById = (builtInModelId: string, ): string => {
+    const characterData = characterDatas.get(builtInModelId);
+    if (!characterData) {
+        throw new Error(`Character data not found for builtInModelId: ${builtInModelId}`);
+    }
+    return characterData.basePath + characterData.fileName;
+}
+
+export const getAnimationPathsById = (builtInModelId: string): string[] => {
+    const characterData = characterDatas.get(builtInModelId);
+    if (!characterData) {
+        throw new Error(`Character data not found for builtInModelId: ${builtInModelId}`);
+    }
+    
+    if (characterData.useMixamoAnimations) {
+        return mixamoAnimationPaths;
+    } else if (characterData.animationsFiles) {
+        return characterData.animationsFiles.map(fileName => characterData.basePath + "animations/" + fileName)
+    }
+}
