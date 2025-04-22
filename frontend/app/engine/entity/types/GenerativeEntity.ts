@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { EntityBase, SerializedEntityData, fromThreeVector3, toThreeVector3, toThreeEuler } from '../base/EntityBase';
+import { EntityBase, SerializedEntityData } from '../base/EntityBase';
 import { ProgressCallback } from '@/engine/utils/generation/generation-util';
 import { v4 as uuidv4 } from 'uuid';
-import { defaultGenerative3DMaterial, defaultShapeMaterial, placeholderMaterial } from '@/engine/utils/materialUtil';
+import { placeholderMaterial } from '@/engine/utils/materialUtil';
 import { setupMeshShadows } from '@/engine/utils/lightUtil';
 import { createShapeMesh } from '@/engine/utils/shapeUtil';
 import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/engine/utils/generation/3d-generation-util';
@@ -149,7 +149,7 @@ export class GenerativeEntity extends EntityBase {
       console.log('applyGenerationLog', log);
       if (log.assetType === 'image' && log.fileUrl) {
         // For image assets, apply the image to the entity
-        await this.applyImage(log.fileUrl, this.getScene(), log.imageParams?.ratio);
+        await this.applyImage(log.fileUrl, log.imageParams?.ratio);
         this.setDisplayMode('2d');
       } else if (log.assetType === 'model' && log.fileUrl) {
         // Load the model into the entity
@@ -223,22 +223,22 @@ export class GenerativeEntity extends EntityBase {
     this.onProgress.trigger({ entity: this, state, message: message || '' });
   }
 
-  async applyImage(imageUrl: string, scene: THREE.Scene, ratio?: ImageRatio): Promise<void> {
+  async applyImage(imageUrl: string, ratio?: ImageRatio): Promise<void> {
     try {
       // Create a texture loader
       const textureLoader = new THREE.TextureLoader();
-      
+
       // For file:// URLs, we need to use IPC to get the image data
       if (imageUrl.startsWith('file://') && window.electron?.loadImageData) {
         console.log('Loading local image via IPC:', imageUrl);
-        
+
         // Use the IPC bridge to get image as base64 data URL
         const base64Data = await window.electron.loadImageData(imageUrl);
-        
+
         // Replace the file:// URL with the base64 data
         imageUrl = base64Data;
       }
-      
+
       // Use a promise-based approach for texture loading
       return new Promise((resolve, reject) => {
         // Load the texture (now using either the original URL or base64 data)
@@ -252,19 +252,19 @@ export class GenerativeEntity extends EntityBase {
                 transparent: true,
                 side: THREE.DoubleSide
               });
-              
+
               // Apply to the placeholder mesh
               this.placeholderMesh.material = newMaterial;
-              
+
               // Update the mesh size based on the ratio
               if (ratio) {
                 const { width, height } = getPlaneSize(ratio);
                 this.placeholderMesh.scale.set(width, height, 1);
               }
-              
+
               // Set to 2D mode
               this.setDisplayMode('2d');
-              
+
               resolve();
             } catch (err) {
               reject(err);
@@ -290,7 +290,7 @@ export class GenerativeEntity extends EntityBase {
     } = { ratio: '1:1' }
   ): Promise<GenerationResult> {
     const scene = this.getScene();
-    return doGenerateRealtimeImage(prompt, this, scene, { ratio: options.ratio });
+    return doGenerateRealtimeImage(prompt, this, { ratio: options.ratio });
   }
 
   /**
@@ -461,15 +461,15 @@ export async function loadModel(
 
     // Load the model using GLTFLoader
     const loader = new GLTFLoader();
-    
+
     // Handle local file:// URLs using Electron's IPC bridge
     if (modelUrl.startsWith('file://') && window.electron?.readFile) {
       console.log('Loading local model via IPC:', modelUrl);
-      
+
       try {
         // Get model data through IPC
         const modelData = await window.electron.readFile(modelUrl);
-        
+
         // Create a promise wrapper for the async load from array buffer
         const gltf = await new Promise<GLTF>((resolve, reject) => {
           loader.parse(
@@ -479,7 +479,7 @@ export async function loadModel(
             (error) => reject(error)
           );
         });
-        
+
         // Continue with the model processing...
         return await processLoadedModel(entity, gltf, scene, onProgress);
       } catch (error) {
@@ -503,7 +503,7 @@ export async function loadModel(
           (error) => reject(error)
         );
       });
-      
+
       // Process the loaded model
       return await processLoadedModel(entity, gltf, scene, onProgress);
     }
@@ -519,14 +519,14 @@ export async function loadModel(
  * Helper function to share code between local and remote loading paths
  */
 async function processLoadedModel(
-  entity: GenerativeEntity, 
-  gltf: GLTF, 
+  entity: GenerativeEntity,
+  gltf: GLTF,
   scene: THREE.Scene,
   onProgress?: ProgressCallback
 ): Promise<boolean> {
   try {
     onProgress?.({ message: 'Processing model...' });
-    
+
     // If there's an existing model mesh, dispose it
     if (entity.gltfModel) {
       // Remove from parent

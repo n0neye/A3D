@@ -43,6 +43,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   useEffect(() => {
     const handleProgress = (param: { entity: GenerativeEntity, state: GenerationStatus, message: string }) => {
       if (param.entity.uuid === PREV_ENTITY?.uuid) {
+        console.log("handleProgress: ", param.state, param.message);
         setIsGenerating2D(param.state === 'generating2D');
         setIsGenerating3D(param.state === 'generating3D');
         setProgressMessage(param.message);
@@ -167,8 +168,13 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   const handleGenerate2D = async () => {
     console.log('handleGenerate2D', promptInput);
     if (!props.entity || !promptInput.trim()) return;
-    let result: GenerationResult;
-    result = await props.entity.generateRealtimeImage(promptInput, { ratio: currentRatio });
+    try {
+      let result: GenerationResult;
+      result = await props.entity.generateRealtimeImage(promptInput, { ratio: currentRatio });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
+      setIsGenerating2D(false);
+    }
   };
 
   // Convert to 3D model
