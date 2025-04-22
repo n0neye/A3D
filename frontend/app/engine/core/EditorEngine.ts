@@ -241,7 +241,7 @@ export class EditorEngine {
     this.mixers.delete(uuid);
   }
 
-  private _boundUpdateInterval = 1 / 15; // 15fps
+  private _boundUpdateInterval = 1 / 5; // 5fps
   private _boundUpdateCounter = 0;
 
   // Define update as an arrow function to correctly bind `this`
@@ -267,17 +267,18 @@ export class EditorEngine {
       this._boundUpdateCounter = 0;
     }
 
+    // TODO: Move to CharacterEntity?
     this.objectManager.getCharacterEntities().forEach((characterEntity: CharacterEntity) => {
       if (characterEntity.visible && characterEntity.mainSkinnedMesh !== null) {
         // check if animation is playing, and update bone visualization
         if (characterEntity.currentAnimationAction?.isRunning) {
           characterEntity.updateBoneVisualization();
-        }
 
-        // Update bounding box of for raycaster to work properly
-        if (shouldUpdateBoundingBox) {
-          characterEntity.mainSkinnedMesh.computeBoundingBox();
-          characterEntity.mainSkinnedMesh.computeBoundingSphere();
+          // Update bounding box for raycaster to work properly
+          if (shouldUpdateBoundingBox) {
+            characterEntity.mainSkinnedMesh.computeBoundingBox();
+            characterEntity.mainSkinnedMesh.computeBoundingSphere();
+          }
         }
       }
     });

@@ -209,20 +209,17 @@ export class CharacterEntity extends EntityBase {
 
                 if (initialData.boneTransforms) {
                     // Apply saved bone rotations stored in project
-                    this._applyBoneTransformsFromData(initialData.boneTransforms);
+                    this._applyBoneTransforms(initialData.boneTransforms);
                 } else {
                     // Set pose to the default modelAnimations animation
                     if (this.modelAnimations.length > 0) {
                         this.currentAnimationAction = this.animationMixer.clipAction(this.modelAnimations[this.modelAnimations.length - 1]);
                         this.currentAnimationAction.play();
                         this.currentAnimationAction.paused = true;
-                        // setTimeout(() => {
-                        //     if (this.currentAnimationAction) {
-                        //         this.currentAnimationAction.paused = true;
-                        //     }
-                        // }, 5);
+                        this._updateBoundingBox();
                     }
                 }
+
 
                 onLoaded?.(this);
             } else {
@@ -254,7 +251,7 @@ export class CharacterEntity extends EntityBase {
         }
     }
 
-    private _applyBoneTransformsFromData(boneTransforms: boneTransforms) {
+    private _applyBoneTransforms(boneTransforms: boneTransforms) {
         try {
             // Apply saved bone rotations if available
             if (!this.mainSkeleton) {
@@ -285,6 +282,11 @@ export class CharacterEntity extends EntityBase {
                         }
                     }
                 });
+                
+                // Update matrix world of the whole character and bounding box
+                this.updateMatrixWorld(true);
+                this._updateBoundingBox();
+
             } catch (rotErr) {
                 console.error("Error applying bone rotations:", rotErr);
             }
@@ -554,7 +556,16 @@ export class CharacterEntity extends EntityBase {
             this.currentAnimationAction = newAction;
             newAction.play();
             newAction.paused = !isPlaying;
+            this._updateBoundingBox();
         }
+    }
+
+    private _updateBoundingBox(): void {
+        if (!this.mainSkinnedMesh) {
+            return;
+        }
+        this.mainSkinnedMesh.computeBoundingBox();
+        this.mainSkinnedMesh.computeBoundingSphere();
     }
 
     public async selectAnimationFile(index: number, playOnLoaded: boolean): Promise<void> {
