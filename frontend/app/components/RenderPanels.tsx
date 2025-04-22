@@ -8,6 +8,7 @@ import { UiLayoutMode, useEditorEngine } from "../context/EditorEngineContext";
 import StylePanel from "./StylePanel";
 import { createPortal } from "react-dom";
 import RenderComfyUIPanel from "./RenderComfyUIPanel";
+import { Button } from "./ui/button";
 
 function RenderPanels() {
     const { userPreferences, setUserPreference } = useEditorEngine();
@@ -36,7 +37,7 @@ function RenderPanels() {
     return (
         <>
             {/* StylePanel Portal for fullscreen overlay */}
-            {isStylePanelOpen && createPortal(
+            {createPortal(
                 <StylePanel
                     isOpen={isStylePanelOpen}
                     onClose={() => setIsStylePanelOpen(false)}
@@ -46,9 +47,9 @@ function RenderPanels() {
                 document.body
             )}
 
-            <div className={`fixed right-4 h-full flex justify-center items-center`}>
-                <Card className={`panel-shape z-40 w-64 border-border max-h-[90vh] overflow-y-auto gap-2 `}>
-                    
+            <div className={`fixed right-4 h-full flex justify-center items-center `}>
+                <Card className={`panel-shape z-40 w-64 border-border max-h-[90vh] overflow-y-auto gap-2 flex flex-col `}>
+
                     {/* Temporary disable video mode */}
                     {/* <CardHeader className="flex flex-row justify-between items-center">
                         <div className="text-lg font-medium">Render</div>
@@ -64,13 +65,47 @@ function RenderPanels() {
 
                     <CardHeader className="flex flex-row justify-between items-center">
                         <div className="text-lg font-medium">Render</div>
-                        <div className="flex items-center gap-2">
+                        {/* <div className="flex items-center gap-2">
                             <Label className="text-xs text-gray-400">API/ComfyUI</Label>
                             <Switch checked={renderMode === "comfyui"} onCheckedChange={(val) => {
                                 handleRenderModeChange(val ? "comfyui" : "fal");
                             }} />
-                        </div>
+                        </div> */}
                     </CardHeader>
+
+
+                    {/* Switch for render mode */}
+                    {/* <div className="px-6 flex flex-row justify-between items-center">
+                        <Label className="text-sm mb-2 block">Provider</Label>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs opacity-60">Fal.ai/ComfyUI</span>
+                            <Switch checked={renderMode === "comfyui"} onCheckedChange={(val) => {
+                                handleRenderModeChange(val ? "comfyui" : "fal");
+                            }} />
+                        </div>
+                    </div> */}
+
+                    {/* Button group for render mode */}
+                    <div className="px-6 font-bold">
+                        <Label className="text-sm mb-2 block">Provider</Label>
+                        <div className=" w-full items-center gap-0 relative grid grid-cols-2 ">
+                            <Button
+                                variant={renderMode === "fal" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleRenderModeChange("fal")}
+                                className="w-full rounded-r-none">
+                                Fal
+                            </Button>
+                            <Button
+                                variant={renderMode === "comfyui" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleRenderModeChange("comfyui")}
+                                className="w-full rounded-l-none">
+                                ComfyUI
+                            </Button>
+                        </div>
+                    </div>
+
                     {renderMode === "fal" && <RenderPanel onOpenStylePanel={openStylePanel} />}
                     {renderMode === "comfyui" && <RenderComfyUIPanel />}
                 </Card>
