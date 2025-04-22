@@ -35,7 +35,7 @@ export const searchLoras = async (query: string): Promise<LoraInfo[]> => {
     try {
         console.log("Searching for LoRAs with query:", query);
         // Construct the search URL, ensuring the query is URL-encoded
-        const searchUrl = `https://civitai.com/api/v1/models?query=${encodeURIComponent(query)}&types=LORA&baseModel=Flux.1%20D`; // Ensure Flux.1 D is encoded if needed
+        const searchUrl = `https://civitai.com/api/v1/models?query=${encodeURIComponent(query)}&types=LORA&baseModel=Flux.1&limit=${10}`; // Ensure Flux.1 D is encoded if needed
         const response = await fetch(searchUrl);
 
         if (!response.ok) {

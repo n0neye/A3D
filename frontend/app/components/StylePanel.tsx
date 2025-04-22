@@ -3,10 +3,22 @@ import { getAllLoraInfo } from '@/engine/utils/generation/lora';
 import { searchLoras } from '@/engine/utils/generation/civitai-api';
 import { LoraInfo } from '@/engine/interfaces/rendering';
 import { Button } from './ui/button';
-import { IconInfoCircle, IconLoader, IconSearch, IconX } from '@tabler/icons-react';
+import { IconInfoCircle, IconLoader, IconPhotoOff, IconSearch, IconX } from '@tabler/icons-react';
 import { Card, CardContent, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { toast } from 'sonner';
+
+// Import shadcn/ui components
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  // DialogDescription, // Optional if needed
+  // DialogFooter, // Optional if needed
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 
 
 interface StylePanelProps {
@@ -15,6 +27,9 @@ interface StylePanelProps {
   onSelectStyle: (lora: LoraInfo) => void;
   selectedLoraIds: string[]; // To show which styles are already selected
 }
+
+// Define a consistent number of skeleton items
+const SKELETON_COUNT = 10;
 
 const StylePanel: React.FC<StylePanelProps> = ({
   isOpen,
@@ -30,37 +45,45 @@ const StylePanel: React.FC<StylePanelProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
 
-  const panelRef = useRef<HTMLDivElement>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // No longer need panelRef for click outside, Dialog handles it
+  // const panelRef = useRef<HTMLDivElement>(null);
 
   const loadDefaultStyles = useCallback(async () => {
-    if (Object.keys(availableStylesByCategory).length === 0) {
-      try {
-        setIsLoadingDefaults(true);
-        const categorizedLoraInfo = await getAllLoraInfo();
-        setAvailableStylesByCategory(categorizedLoraInfo);
-      } catch (error) {
-        console.error("Error loading default LoRA styles:", error);
-      } finally {
-        setIsLoadingDefaults(false);
-      }
+    // Prevent loading if already loaded
+    if (Object.keys(availableStylesByCategory).length > 0) return;
+    try {
+      setIsLoadingDefaults(true);
+      const categorizedLoraInfo = await getAllLoraInfo();
+      setAvailableStylesByCategory(categorizedLoraInfo);
+    } catch (error) {
+      console.error("Error loading default LoRA styles:", error);
+      toast.error("Failed to load default styles."); // Notify user
+    } finally {
+      setIsLoadingDefaults(false);
     }
   }, [availableStylesByCategory]);
 
+  // Load defaults when the dialog opens if they aren't loaded yet
   useEffect(() => {
     if (isOpen) {
       loadDefaultStyles();
     }
+    // Reset search state when dialog closes
+    if (!isOpen) {
+      setSearchQuery('');
+      setSearchResults([]);
+      setIsSearching(false);
+      setIsSearchLoading(false);
+    }
   }, [isOpen, loadDefaultStyles]);
 
-  const performSearch = async (query: string) => {
-    if (!query.trim()) {
+  const performSearch = async () => {
+    const query = searchQuery.trim();
+    if (!query) {
       setIsSearching(false);
       setSearchResults([]);
       setIsSearchLoading(false);
-      if (Object.keys(availableStylesByCategory).length === 0) {
-        loadDefaultStyles();
-      }
+      // Don't necessarily reload defaults here, just show them if available
       return;
     }
 
@@ -70,194 +93,216 @@ const StylePanel: React.FC<StylePanelProps> = ({
 
     try {
       const results = await searchLoras(query);
-      console.log('Search results:', results.length, 'for query:', query, searchQuery);
       setSearchResults(results);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during LoRA search:", error);
-       if (searchQuery === query) {
-           setSearchResults([]);
-       }
-       toast.error("Error during LoRA search:", error);
+      setSearchResults([]);
+      toast.error(`Search failed: ${error.message || 'Unknown error'}`);
     } finally {
-       if (searchQuery === query) {
-           setIsSearchLoading(false);
-       }
+      setIsSearchLoading(false);
     }
   };
 
   const handleSearchInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value;
-    setSearchQuery(query);
-
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      performSearch(query);
-    }, 500);
+    setSearchQuery(event.target.value);
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = 'hidden';
-    } else {
-        if (debounceTimeoutRef.current) {
-            clearTimeout(debounceTimeoutRef.current);
-        }
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      performSearch();
     }
+  };
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = '';
-       if (debounceTimeoutRef.current) {
-            clearTimeout(debounceTimeoutRef.current);
-        }
-    };
-  }, [isOpen, onClose]);
+  const handleSearchButtonClick = () => {
+    performSearch();
+  };
 
+  // Clear search and show default categories
   const clearSearch = () => {
     setSearchQuery('');
     setSearchResults([]);
     setIsSearching(false);
     setIsSearchLoading(false);
-    if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-    }
-    if (Object.keys(availableStylesByCategory).length === 0) {
-      loadDefaultStyles();
-    }
+    // Ensure defaults are visible if loaded
   };
 
   const selectStyle = (style: LoraInfo) => {
     onSelectStyle(style);
-    onClose();
+    onClose(); // Dialog's onOpenChange handles closing
   };
 
-  if (!isOpen) return null;
+  // --- Rendering Logic ---
 
-  const isLoading = isLoadingDefaults || isSearchLoading;
-
-  const renderStyleGrid = (styles: LoraInfo[]) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-      {styles.map(style => {
-        const isSelected = selectedLoraIds.includes(style.id);
-        return (
-          <Card
-            key={style.id}
-            className={`pt-0 pb-2 overflow-hidden cursor-pointer gap-1 ${isSelected ? 'opacity-60 cursor-not-allowed' : 'hover:border-blue-500 transition-colors'}`}
-            onClick={() => !isSelected && selectStyle(style)}
-            title={isSelected ? `${style.name} (Selected)` : style.name}
-          >
-            <div className="aspect-square overflow-hidden relative bg-black" style={{ aspectRatio: "4/5" }}>
-              <img
-                src={style.thumbUrl || '/placeholder-image.png'}
-                alt={style.name}
-                className={`object-cover w-full h-full ${isSelected ? 'opacity-50' : ''}`}
-                onError={(e) => (e.currentTarget.src = '/placeholder-image.png')}
-              />
-              {isSelected && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="bg-black bg-opacity-70 text-gray-300 px-2 py-1 rounded-md text-xs font-semibold">Selected</span>
-                </div>
-              )}
-            </div>
-            <div className="p-2 flex flex-col justify-start gap-2">
-              <CardTitle className="text-sm font-medium truncate">{style.name}</CardTitle>
-              <CardContent className='flex flex-col gap-2 px-0'>
-                <div className='flex flex-row items-center gap-2'>
-                  <p className="text-gray-400 text-xs truncate w-full">by {style.author}</p>
-                  <p className='text-gray-400 text-xs w-20 text-right truncate opacity-60'>{style.sizeKb && style.sizeKb > 0 ? (style.sizeKb / 1024).toFixed(0) + ' MB' : ''}</p>
-                  <div
-                    className='text-gray-400 hover:text-gray-200 cursor-pointer transition-colors'
-                    onClick={(e) => { e.stopPropagation(); window.open(style.linkUrl, '_blank'); }}
-                  >
-                    <IconInfoCircle size={16} />
-                  </div>
-                </div>
-              </CardContent>
-            </div>
-          </Card>
-        );
-      })}
+  // Skeleton Card for loading states
+  const renderSkeletonCard = (key: number) => (
+    <div key={key} className="flex flex-col space-y-2">
+      <Skeleton className="h-[150px] w-full rounded-md" style={{ aspectRatio: "4/5" }} />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-3 w-1/2" />
     </div>
   );
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="bg-black opacity-60 absolute inset-0 z-0"></div>
-      <div
-        ref={panelRef}
-        className="relative panel-shape p-0 rounded-lg shadow-lg w-4/5 max-w-5xl max-h-[80vh] overflow-hidden flex flex-col bg-gray-900 border border-gray-700"
-      >
-        <div className="flex justify-between items-center p-4 pl-8 border-b border-gray-700 gap-4">
-          <h3 className="text-lg font-medium text-gray-100 whitespace-nowrap">Select a Style</h3>
-          <div className="relative flex-grow mx-4">
-            <IconSearch size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-            <Input
-              placeholder="Search for LoRA styles..."
-              className="w-full pl-10 pr-10 bg-gray-800 border-gray-600 text-gray-200 focus:border-blue-500 focus:ring-blue-500"
-              value={searchQuery}
-              onChange={handleSearchInputChange}
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-200"
-                onClick={clearSearch}
-              >
-                <IconX size={16} />
-              </Button>
-            )}
-          </div>
-          <Button
-            onClick={onClose}
-            variant={'ghost'}
-            className='text-gray-400 hover:text-gray-100'
-            size='sm'
-          >
-            <IconX size={18} />
-          </Button>
+  // Grid rendering function (styles or skeletons)
+  const renderGrid = (items: LoraInfo[] | null, isLoading: boolean) => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Array.from({ length: SKELETON_COUNT }).map((_, index) => renderSkeletonCard(index))}
         </div>
+      );
+    }
 
-        <div className="p-6 overflow-y-auto flex-grow">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-40">
-              <IconLoader size={32} className="animate-spin text-blue-500" />
+    if (!items || items.length === 0) {
+      // Handle empty state within the calling component
+      return null;
+    }
+
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {items.map(style => {
+          const isSelected = selectedLoraIds.includes(style.id);
+          return (
+            <Card
+              key={style.id}
+              className={`pt-0 pb-2 overflow-hidden cursor-pointer gap-1 transition-opacity ${isSelected ? 'opacity-60 cursor-not-allowed' : 'hover:border-primary'}`} // Use primary color for hover border
+              onClick={() => !isSelected && selectStyle(style)}
+              title={isSelected ? `${style.name} (Selected)` : style.name}
+            >
+              <div className="aspect-[4/5] overflow-hidden relative bg-muted"> {/* Use muted background */}
+                {style.thumbUrl ? <img
+                  src={style.thumbUrl}
+                  alt={style.name}
+                  className={`object-cover w-full h-full transition-opacity ${isSelected ? 'opacity-50' : ''}`}
+                  onError={(e) => (e.currentTarget.src = '/placeholder-image.png')}
+                  loading="lazy" // Add lazy loading
+                /> : <div className="aspect-[4/5] overflow-hidden relative bg-muted">
+
+                  <IconPhotoOff size={100} className='text-muted-foreground' />
+                </div>}
+                {isSelected && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50"> {/* Darker overlay */}
+                    <span className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-xs font-semibold">Selected</span>
+                  </div>
+                )}
+              </div>
+              <div className="p-2 flex flex-col justify-start gap-1"> {/* Reduced gap */}
+                <CardTitle className="text-sm font-medium truncate">{style.name}</CardTitle>
+                <CardContent className='p-0 flex flex-col gap-1 text-xs'> {/* Adjusted padding and text size */}
+                  <div className='flex flex-row items-center justify-between gap-2'>
+                    <span className="text-muted-foreground truncate">by {style.author}</span>
+                    <span className='text-muted-foreground text-right shrink-0'>{style.sizeKb && style.sizeKb > 0 ? (style.sizeKb / 1024).toFixed(0) + ' MB' : ''}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon" // Use icon size for the button
+                      className='text-muted-foreground hover:text-foreground h-6 w-6 shrink-0' // Adjusted size and colors
+                      onClick={(e) => { e.stopPropagation(); window.open(style.linkUrl, '_blank'); }}
+                      title="View on Civitai" // Add title for accessibility
+                    >
+                      <IconInfoCircle size={14} /> {/* Slightly smaller icon */}
+                    </Button>
+                  </div>
+                </CardContent>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
+
+  // Dialog component replaces the manual modal structure
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="w-3/5 h-[85vh] flex flex-col p-0 gap-0"> {/* Adjusted size and padding */}
+        <DialogHeader className="p-4 pl-6 pr-6 border-b"> {/* Adjusted padding */}
+          <div className="flex justify-between items-center gap-4">
+            <DialogTitle className="text-lg whitespace-nowrap">Select a Style</DialogTitle>
+            {/* Search Input Group */}
+            <div className="flex flex-grow items-center gap-2 max-w-md mx-auto"> {/* Centered search */}
+              <div className="relative flex-grow">
+                <IconSearch size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search LoRA styles..."
+                  className="w-full pl-10 pr-10" // Removed specific bg/border, rely on theme
+                  value={searchQuery}
+                  onChange={handleSearchInputChange}
+                  onKeyDown={handleKeyDown}
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground h-auto px-2"
+                    onClick={clearSearch}
+                    title="Clear search"
+                  >
+                    <IconX size={16} />
+                  </Button>
+                )}
+              </div>
+              <Button
+                onClick={handleSearchButtonClick}
+                size="sm"
+                className="px-4" // Rely on default Button variant
+                disabled={isSearchLoading}
+              >
+                {isSearchLoading ? (
+                  <IconLoader size={16} className="animate-spin" />
+                ) : (
+                  <IconSearch size={16} />
+                )}
+                <span className="ml-2 hidden sm:inline">Search</span>
+              </Button>
             </div>
-          ) : isSearching ? (
+            {/* Close button is handled by Dialog overlay click or ESC, but can add one if needed */}
+            <DialogTitle>
+              <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto">
+                <IconX size={18} />
+              </Button>
+            </DialogTitle>
+          </div>
+        </DialogHeader>
+
+        {/* Content Area */}
+        <ScrollArea className="flex-grow p-6"> {/* Use ScrollArea */}
+          {isSearching ? (
+            // Display Search Results Area
             <div>
-              <h4 className="text-md font-semibold mb-4 text-gray-300">Search Results for "{searchQuery}"</h4>
-              {searchResults.length > 0 ? (
-                renderStyleGrid(searchResults)
-              ) : (
-                <p className="text-gray-500 text-center py-4">No LoRA styles found matching your search.</p>
+              <h4 className="text-base font-semibold mb-4"> {/* Adjusted text size */}
+                Search Results
+              </h4>
+              {renderGrid(searchResults, isSearchLoading)}
+              {!isSearchLoading && searchResults.length === 0 && (
+                <p className="text-muted-foreground text-center py-4">No LoRA styles found matching "{searchQuery}".</p>
               )}
             </div>
           ) : (
+            // Display Default Categories
             <div className="space-y-6">
-              {Object.entries(availableStylesByCategory).map(([category, styles]) => (
+              {isLoadingDefaults && Object.keys(availableStylesByCategory).length === 0 && (
+                // Show skeletons only on initial load
+                renderGrid(null, true)
+              )}
+              {!isLoadingDefaults && Object.entries(availableStylesByCategory).map(([category, styles]) => (
                 <div key={category}>
-                  <h4 className="text-md font-semibold mb-3 text-gray-300">{category}</h4>
-                  {renderStyleGrid(styles)}
+                  <h4 className="text-base font-semibold mb-3">{category}</h4>
+                  {renderGrid(styles, false)} {/* Pass false for loading here */}
                 </div>
               ))}
-              {Object.keys(availableStylesByCategory).length === 0 && !isLoadingDefaults && (
-                <p className="text-gray-500 text-center py-4">Could not load default styles.</p>
+              {!isLoadingDefaults && Object.keys(availableStylesByCategory).length === 0 && (
+                <p className="text-muted-foreground text-center py-4">Could not load default styles.</p>
               )}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </ScrollArea>
+        {/* Optional Footer */}
+        {/* <DialogFooter className="p-4 border-t">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        </DialogFooter> */}
+      </DialogContent>
+    </Dialog>
   );
 };
 
