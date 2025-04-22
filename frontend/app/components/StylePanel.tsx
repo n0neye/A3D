@@ -1,6 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { CivitaiResponse, customLoras, getAllLoraInfo,  } from '@/engine/utils/generation/lora';
 import { LoraInfo } from '@/engine/interfaces/rendering';
+import { Button } from './ui/button';
+import { IconInfoCircle, IconX } from '@tabler/icons-react';
+import { Card, CardContent, CardTitle } from './ui/card';
 
 
 interface StylePanelProps {
@@ -76,13 +79,15 @@ const StylePanel: React.FC<StylePanelProps> = ({
         className="relative panel-shape p-0 rounded-lg shadow-lg w-4/5 max-w-3xl max-h-[80vh] overflow-hidden flex flex-col"
       >
         <div className="flex justify-between items-center p-4 pl-8 border-b border-gray-700">
-          <h3 className="text-lg font-medium text-white">Select a Style</h3>
-          <button
+          <h3 className="text-lg font-medium ">Select a Style</h3>
+          <Button
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            variant={'ghost'}
+            className=''
+            size='sm'
           >
-            &times;
-          </button>
+            <IconX size={16} />
+          </Button>
         </div>
 
         <div className="p-8 overflow-y-auto flex-grow">
@@ -97,14 +102,13 @@ const StylePanel: React.FC<StylePanelProps> = ({
                 const isSelected = selectedLoraIds.includes(style.id);
 
                 return (
-                  <div
+                  <Card
                     key={style.id}
-                    className={`flex flex-col bg-gray-700 rounded-md overflow-hidden cursor-pointer 
-                      hover:bg-gray-600 transition ${isSelected ? '' : ''}`}
+                    className={` pt-0 pb-2 overflow-hidden cursor-pointer gap-2 ${isSelected ? 'opacity-60' : ''}`}
                     onClick={() => !isSelected && selectStyle(style)}
                   >
                     <div className="aspect-square overflow-hidden relative bg-black"
-                      style={{ aspectRatio: "2/3" }}>
+                      style={{ aspectRatio: "4/5" }}>
                       <img
                         src={style.thumbUrl}
                         alt={style.name}
@@ -116,21 +120,24 @@ const StylePanel: React.FC<StylePanelProps> = ({
                         </div>
                       )}
                     </div>
-                    <div className="p-2">
-                      <h5 className="text-white text-sm font-medium truncate">{style.name}</h5>
-                      <div className='flex flex-row items-center gap-2 justify-between'>
+                    <div className="p-2 flex flex-col justify-start">
+                      <CardTitle className=" text-sm font-medium truncate">{style.name}</CardTitle>
+                      <CardContent className='flex flex-row items-center gap-2 justify-between px-0'>
                         <p className="text-gray-400 text-xs truncate">by {style.author}</p>
                         {/* Info link */}
-                        <div onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(style.linkUrl, '_blank')
-                        }} className="text-gray-400 text-xs rounded-lg p-1 px-2 bg-gray-800 hover:bg-gray-700 transition">
-                          Info
-                        </div>
-                      </div>
+                        <Button
+                          variant={'ghost'}
+                          size='sm'
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(style.linkUrl, '_blank')
+                          }} >
+                          <IconInfoCircle size={16} />
+                        </Button>
+                      </CardContent>
                     </div>
 
-                  </div>
+                  </Card>
                 );
               })}
             </div>

@@ -238,11 +238,11 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   const renderSpinner = (message?: string) => {
     return (
       <>
-        <svg className=" animate-spin mb-1 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg className=" animate-spin mb-1 h-3 w-3 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        {message && <span className="text-xs text-white">{message}</span>}
+        {message && <span className="text-xs ">{message}</span>}
       </>
     );
   };
@@ -329,35 +329,38 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
                 {/* History navigation buttons */}
                 {props.entity.props.generationLogs.length > 1 && (
                   <>
-                    <button
-                      className={`p-1 rounded mr-0 ${hasPreviousGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                    <Button
+                      variant={'ghost'}
+                      className={`p-1 rounded mr-0 w-6 h-6`}
                       onClick={goToPreviousGeneration}
                       disabled={!hasPreviousGeneration || isGenerating}
                       title="Previous generation (Shift + ←)"
                     >
                       <IconArrowLeft size={16} />
-                    </button>
+                    </Button>
                     <span className="text-xs text-gray-400 self-center">
                       {currentGenLogIndex + 1}/{props.entity.props.generationLogs.length}
                     </span>
-                    <button
-                      className={`p-1 rounded ${hasNextGeneration ? 'text-white hover:bg-gray-700' : 'text-gray-500 cursor-not-allowed'}`}
+                    <Button
+                      variant={'ghost'}
+                      className={`p-1 rounded mr-0 w-6 h-6`}
                       onClick={goToNextGeneration}
                       disabled={!hasNextGeneration || isGenerating}
                       title="Next generation (Shift + →)"
                     >
                       <IconArrowRight size={16} />
-                    </button>
+                    </Button>
                   </>
                 )}
                 <div className='flex-grow'></div>
-                <button className="p-1 rounded text-white hover:bg-gray-700"
+                <Button className="p-1 rounded w-6 h-6 "
+                  variant={'ghost'}
                   onClick={handleDownload}
                   disabled={!currentGenLog?.fileUrl}
                 >
                   {/* Icon */}
                   <IconDownload size={16} />
-                </button>
+                </Button>
               </div>
               <textarea
                 ref={inputElementRef}

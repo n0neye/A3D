@@ -41,18 +41,18 @@ function LightEntityPanel(props: { entity: LightEntity }) {
         <>
             <div className="flex flex-col space-y-2 w-80">
                 <div className="flex items-center space-x-2">
-                    <label className="text-xs text-white w-20">Color</label>
+                    <label className="text-xs  w-20">Color</label>
                     <input
                         type="color"
                         value={lightColor}
                         onChange={handleLightColorChange}
                         className="w-8 h-8 bg-transparent border-none cursor-pointer rounded-full"
                     />
-                    <span className="text-xs text-white">{lightColor}</span>
+                    <span className="text-xs ">{lightColor}</span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                    <label className="text-xs text-white w-20">Intensity</label>
+                    <label className="text-xs  w-20">Intensity</label>
                     <Slider
                         value={[lightIntensity]}
                         min={0}
@@ -61,7 +61,7 @@ function LightEntityPanel(props: { entity: LightEntity }) {
                         className="w-32"
                         onValueChange={handleLightIntensityChange}
                     />
-                    <span className="text-xs text-white w-10 text-right">{lightIntensity.toFixed(2)}</span>
+                    <span className="text-xs  w-10 text-right">{lightIntensity.toFixed(2)}</span>
                 </div>
             </div>
         </>

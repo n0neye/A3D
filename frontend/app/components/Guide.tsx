@@ -50,7 +50,7 @@ export default function Guide() {
                             variant="ghost"
                             size="icon"
                             onClick={closeWelcome}
-                            className="absolute top-3 right-3 text-gray-400 hover:text-white"
+                            className="absolute top-3 right-3"
                         >
                             <X size={20} />
                         </Button>
