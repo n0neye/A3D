@@ -4,6 +4,7 @@ import { Observer } from '../utils/Observer';
 import { EditorEngine } from '../core/EditorEngine';
 import { BoneControl } from '../entity/components/BoneControl';
 import { Selectable } from '../entity/base/Selectable';
+import { CharacterEntity } from '../entity/types/CharacterEntity';
 
 export interface ObjectManagerEvents {
   entityAdded: { entity: EntityBase };
@@ -31,6 +32,7 @@ export class ObjectManager {
   private entities: Map<string, EntityBase> = new Map();
   private entitiesByType: Map<EntityType, Set<string>> = new Map();
   private deletedEntities: Set<string> = new Set();
+  private characterEntities: CharacterEntity[] = [];
 
   // Observable pattern for UI updates
   public observer = new Observer<ObjectManagerEvents>();
@@ -88,6 +90,10 @@ export class ObjectManager {
       return; // Already registered
     }
 
+    if (entity.entityType === 'character') {
+      this.characterEntities.push(entity as CharacterEntity);
+    }
+
     // Add to main collection
     this.entities.set(entity.uuid, entity);
 
@@ -112,6 +118,10 @@ export class ObjectManager {
   public unregisterEntity(entity: EntityBase): void {
     if (!this.entities.has(entity.uuid)) {
       return; // Not registered
+    }
+
+    if (entity.entityType === 'character') {
+      this.characterEntities = this.characterEntities.filter(c => c.uuid !== entity.uuid);
     }
 
     // Remove from main collection
@@ -228,6 +238,13 @@ export class ObjectManager {
     if (!typeSet) return [];
 
     return Array.from(typeSet).map(uuid => this.entities.get(uuid)!);
+  }
+
+  /**
+   * Get all character entities
+   */
+  public getCharacterEntities(): CharacterEntity[] {
+    return this.characterEntities;
   }
 
   /**

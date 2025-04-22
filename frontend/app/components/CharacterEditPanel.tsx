@@ -4,6 +4,29 @@ import { CharacterEntity } from '@/engine/entity/types/CharacterEntity';
 import { IconEye, IconEyeOff, IconLinkPlus, IconPlayerPlay, IconPlayerPause, IconChevronsDown, IconChevronsUp } from '@tabler/icons-react';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { BoneControl } from '../engine/entity/components/BoneControl';
+import { ICharacterData, characterDatas } from '../engine/data/CharacterData';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+
+// Define common skin tones
+const skinTones = [
+  // White Tones
+  '#F9E4D0', // Light Peach
+  '#FFE0BD', // Pale Ivory
+  '#FFCDA8', // Light Beige
+  // Asian Tones
+  '#EAC086', // Golden Beige
+  '#EEC8A9', // Light Olive
+  '#D8AE84', // Warm Beige
+  // Brown Tones
+  '#C68E71', // Medium Tan
+  '#A56A51', // Sienna
+  '#8D5524', // Caramel Brown
+  // Black Tones
+  '#693A2A', // Dark Brown
+  '#5C2D1E', // Deep Brown
+  '#3E1D10', // Espresso
+];
 
 const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const { selectedSelectable, engine } = useEditorEngine();
@@ -19,6 +42,10 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const [selectedAnimationIndex, setSelectedAnimationIndex] = useState<number | null>(null);
   const [showAnimationList, setShowAnimationList] = useState(false);
   const animationListRef = useRef<HTMLDivElement>(null);
+
+  const [characterColor, setCharacterColor] = useState(entity.characterProps.color || '#ffffff');
+  const [showColorPopover, setShowColorPopover] = useState(false); // State for popover visibility
+  const colorPopoverRef = useRef<HTMLDivElement>(null); // Ref for popover container
 
   useEffect(() => {
     if (selectedSelectable && selectedSelectable instanceof BoneControl) {
@@ -48,23 +75,26 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
       if (animationListRef.current && !animationListRef.current.contains(event.target as Node)) {
         setShowAnimationList(false);
       }
+      if (colorPopoverRef.current && !colorPopoverRef.current.contains(event.target as Node)) {
+        setShowColorPopover(false);
+      }
     };
 
-    if (showEntityList || showAnimationList) {
+    if (showEntityList || showAnimationList || showColorPopover) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEntityList, showAnimationList]);
+  }, [showEntityList, showAnimationList, showColorPopover]);
 
   // Initialize animation state when entity changes
   useEffect(() => {
     if (entity) {
       // Check if there are animations and set default animation
-      if (entity.animations && entity.animations.length > 0) {
-        setSelectedAnimationIndex(entity.animations.length - 1);
+      if (entity.modelAnimations && entity.modelAnimations.length > 0) {
+        setSelectedAnimationIndex(entity.modelAnimations.length - 1);
         setIsPlaying(entity.currentAnimationAction ? !entity.currentAnimationAction.paused : false);
       } else {
         setSelectedAnimationIndex(null);
@@ -72,6 +102,11 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
       }
     }
   }, [entity]);
+
+  // Update local color state if entity's color changes externally
+  useEffect(() => {
+    setCharacterColor(entity.characterProps.color || '#ffffff');
+  }, [entity.characterProps.color]);
 
   const handleLinkObject = () => {
     setShowEntityList(!showEntityList);
@@ -98,34 +133,88 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
     }
   };
 
-  const selectAnimation = (index: number) => {
-    if (entity.animations && entity.animations.length > index && entity.animationMixer) {
-      // Stop current animation
-      if (entity.currentAnimationAction) {
-        entity.currentAnimationAction.stop();
-      }
+  const selectFileAnimation = (index: number) => {
+    // entity.selectAnimation(index, isPlaying);
+    entity.selectAnimationFile(index, isPlaying);
+    setSelectedAnimationIndex(index);
+    setShowAnimationList(false);
+  };
 
-      // Start new animation
-      const newAction = entity.animationMixer.clipAction(entity.animations[index]);
-      entity.currentAnimationAction = newAction;
-      newAction.play();
-      newAction.paused = !isPlaying;
 
-      setSelectedAnimationIndex(index);
-      setShowAnimationList(false);
-    }
+  const selectModelAnimation = (index: number) => {
+    entity.selectModelAnimation(index, isPlaying);
+    setSelectedAnimationIndex(index);
+    setShowAnimationList(false);
   };
 
   const toggleAnimationList = () => {
     setShowAnimationList(!showAnimationList);
   };
 
+  // Updated function to set color from swatches or input
+  const handleSetColor = (newColor: string) => {
+    setCharacterColor(newColor);
+    entity.setCharacterColor(newColor);
+    // Optionally close popover after selection, or keep it open
+    // setShowColorPopover(false);
+  };
+
+  // Handler specifically for the color input element
+  const handleCustomColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleSetColor(event.target.value);
+  };
+
   return (
     <>
-      <div className="p-2 flex flex-row gap-2 justify-center items-center">
-        {/* Animation Controls */}
-        {entity.animations && entity.animations.length > 0 && (
-          <div className="flex items-center gap-2 mb-1">
+      <div className="p-2 flex flex-row gap-2 items-center justify-start">
+        {/* --- Enhanced Color Picker --- */}
+        <div ref={colorPopoverRef} className="relative flex items-center gap-2">
+          {/* <Label className="text-xs whitespace-nowrap">Color:</Label> */}
+          {/* Color Circle Trigger */}
+          <div
+            className="w-7 h-7 rounded-full border border-slate-500 cursor-pointer outline-1"
+            style={{ backgroundColor: characterColor }}
+            onClick={() => setShowColorPopover(!showColorPopover)}
+          />
+
+          {/* Color Popover */}
+          {showColorPopover && (
+            <div className="absolute bottom-full mb-5 -left-7 p-2">
+            <div
+              className="z-50 panel-shape p-3 w-48"
+            >
+              <div className="mb-2 text-xs font-medium">Select Color</div>
+              {/* Predefined Skin Tone Swatches */}
+              <div className="grid grid-cols-6 gap-2 mb-3">
+                {skinTones.map((tone) => (
+                  <div
+                    key={tone}
+                    className="w-6 h-6 rounded cursor-pointer border border-slate-600 hover:border-slate-400"
+                    style={{ backgroundColor: tone }}
+                    onClick={() => handleSetColor(tone)}
+                  />
+                ))}
+              </div>
+              {/* Custom Color Input */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="customColor" className="text-xs flex-shrink-0">Custom:</Label>
+                <Input
+                  id="customColor"
+                  type="color"
+                  value={characterColor}
+                  onChange={handleCustomColorInputChange}
+                  className="h-7 w-full p-0 border-none cursor-pointer"
+                />
+              </div>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* --- End Enhanced Color Picker --- */}
+
+        {/* --- Animation Controls --- */}
+        {entity.animationFiles.length + entity.modelAnimations.length > 0 && (
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -134,7 +223,6 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
             >
               {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
             </Button>
-
             <div className="relative">
               <Button
                 variant="outline"
@@ -142,9 +230,7 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
                 onClick={toggleAnimationList}
                 className="text-xs flex items-center"
               >
-                {selectedAnimationIndex !== null && entity.animations[selectedAnimationIndex]?.name
-                  ? entity.animations[selectedAnimationIndex].name
-                  : "Select Animation"}
+                {"Animation"}
                 {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
               </Button>
 
@@ -155,31 +241,37 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
                 >
                   <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
                     <h4 className="text-sm font-medium mb-2">Animations:</h4>
-                    {entity.animations.length === 0 ? (
-                      <p className="text-xs text-gray-400">No animations available</p>
-                    ) : (
-                      <ul className="space-y-1">
-                        {entity.animations.map((animation, index) => (
-                          <li
-                            key={`anim-${index}`}
-                            className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index ? 'bg-slate-700' : 'hover:bg-slate-700'
-                              }`}
-                            onClick={() => selectAnimation(index)}
-                          >
-                            {animation.name || `Animation ${index + 1}`}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <ul className="space-y-1">
+                      {entity.modelAnimations.map((animation, index) => (
+                        <li
+                          key={`model-anim-${index}`}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index && !entity.animationFiles.length ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
+                          onClick={() => selectModelAnimation(index)}
+                        >
+                          {animation.name || `Animation ${index + 1}`}
+                        </li>
+                      ))}
+                      {entity.animationFiles.map((animationFile, index) => (
+                        <li
+                          key={`file-anim-${index}`}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${selectedAnimationIndex === index + entity.modelAnimations.length ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
+                          onClick={() => selectFileAnimation(index)}
+                        >
+                          {animationFile.replace('.fbx', '').split('/').pop() || `File Anim ${index + 1}`}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               )}
             </div>
           </div>
         )}
+        {/* --- End Animation Controls --- */}
 
-        {/* Bone Controls */}
-        {selectedBone && (
+
+        {/* Row for Bone Controls (only if a bone is selected) */}
+        {/* {selectedBone && (
           <div className="relative">
             <Button
               variant="outline"
@@ -189,12 +281,11 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
               className="text-xs flex items-center"
             >
               <IconLinkPlus size={16} className="mr-2" />
-              Link Object to bone
+              Link Object to Bone
             </Button>
           </div>
-        )}
+        )} */}
       </div>
-
 
       {showEntityList && (
         <div
@@ -208,13 +299,13 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
               <p className="text-xs text-gray-400">No available objects to link</p>
             ) : (
               <ul className="space-y-1">
-                {availableEntities.map((entity) => (
+                {availableEntities.map((e) => (
                   <li
-                    key={entity.uuid}
+                    key={e.uuid}
                     className="text-xs p-2 hover:bg-slate-700 rounded cursor-pointer transition-colors"
-                    onClick={() => linkEntityToBone(entity)}
+                    onClick={() => linkEntityToBone(e)}
                   >
-                    {entity.name || `Entity-${entity.uuid.substring(0, 6)}`}
+                    {e.name || `Entity-${e.uuid.substring(0, 6)}`}
                   </li>
                 ))}
               </ul>

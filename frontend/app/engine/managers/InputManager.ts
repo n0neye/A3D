@@ -211,12 +211,29 @@ export class InputManager {
       return;
     }
 
+    // {
+    //   // Debug raycasting
+    //   const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+
+    //   // Scene meshes
+    //   const sceneMeshes = this.scene.children.filter(child => child instanceof THREE.Mesh);
+    //   console.log("InputManager: Scene meshes:", sceneMeshes.map(mesh => mesh.name));
+
+    //   // Filter and log all mesh, skinnedmesh, skeleton
+    //   const filteredIntersects = intersects.filter(intersect => {
+    //     const object = intersect.object;
+    //     return object instanceof THREE.Mesh || object instanceof THREE.SkinnedMesh || object instanceof THREE.Skeleton;
+    //   });
+
+    //   console.log("InputManager: Filtered Intersects:", filteredIntersects.map(intersect => intersect.object.name));
+    // }
+
     // Perform raycasting to find intersected objects
     const intersects = this.raycaster.intersectObjects(this.getSelectableObjects(), true);
 
     // If no intersections, deselect
     if (intersects.length === 0) {
-      console.log("InputManager: No object picked, deselecting");
+      console.log("InputManager: No intersections, deselecting");
       this.selectionManager.deselectAll();
       return;
     }

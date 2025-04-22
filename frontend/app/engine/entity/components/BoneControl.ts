@@ -37,9 +37,10 @@ export class BoneControl extends Selectable {
     super();
 
     // Create sphere geometry for the bone control
-    const geometry = new THREE.SphereGeometry(options.diameter || 0.025, 16, 16);
+    const geometry = new THREE.SphereGeometry( 0.025, 16, 16);
     const material = CharacterEntity.DefaultBoneMaterial;
     this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh.name = `_boneCtrlMesh`;
     this.mesh.userData = {
       isBoneControlMesh: true,
       rootSelectable: this
@@ -47,7 +48,7 @@ export class BoneControl extends Selectable {
     this.add(this.mesh);
     
     // Set properties
-    this.name = `${bone.name}`;
+    this.name = name;
     this.uuid = options.uuid || this.uuid;
     this.character = character;
     this.bone = bone;

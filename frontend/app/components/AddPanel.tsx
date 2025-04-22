@@ -19,6 +19,7 @@ import {
 import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';
 import { EditorEngine } from '@/engine/core/EditorEngine';
 import * as THREE from 'three';
+import { characterDatas, ICharacterData } from '@/engine/data/CharacterData'
 
 const AddPanel: React.FC = () => {
   const [showShapesMenu, setShowShapesMenu] = useState(false);
@@ -67,21 +68,21 @@ const AddPanel: React.FC = () => {
   };
 
   // Handle character entity creation
-  const handleCreateCharacter = (modelUrl: string, modelName: string, modelScale: number) => {
+  const handleCreateCharacter = (model: ICharacterData) => {
     EditorEngine.getInstance().createEntityCommand({
       type: 'character',
       characterProps: {
-        url: modelUrl,
-        name: modelName,
+        builtInModelId: model.builtInModelId,
+        name: model.name,
       },
-      scaling: new THREE.Vector3(modelScale, modelScale, modelScale),
+      scaling: new THREE.Vector3(model.scale, model.scale, model.scale),
     })
 
     // Track analytics
     trackEvent(ANALYTICS_EVENTS.CREATE_ENTITY, {
       method: 'button',
       entityType: 'character',
-      characterModel: modelName
+      characterModel: model.name
     });
 
     // Hide the characters menu after creation
@@ -98,13 +99,6 @@ const AddPanel: React.FC = () => {
     { type: 'floor', label: 'Floor', icon: <IconSquareRotated size={20} /> },
   ];
 
-  // List of available character models
-  const characterModels = [
-    { url: './characters/mannequin_man_idle/mannequin_man_idle_opt.glb', name: 'Mannequin', thumbnail: './characters/thumbs/mannequin.webp', scale: 1 },
-    { url: './characters/xbot/xbot_idle_opt.glb', name: 'Xbot', thumbnail: './characters/thumbs/xbot.webp', scale: 1 },
-    { url: './characters/cat/cat_orange.glb', name: 'Cat', thumbnail: './characters/thumbs/cat.webp', scale: 0.02 },
-    // { url: '/characters/cat/cat_-_walking_scale.glb', name: 'Cat', thumbnail: '/characters/thumbs/cat.png', scale: 1 },
-  ];
 
   return (
     <div className="fixed z-50 left-4 top-1/2 -translate-y-1/2 panel-shape p-1">
@@ -188,13 +182,13 @@ const AddPanel: React.FC = () => {
           {showCharactersMenu && (
             <div className="absolute left-14 -top-1 pl-2">
               <Card className="p-2 panel-shape flex flex-row gap-2">
-                {characterModels.map((model) => (
+                {Array.from(characterDatas.values()).map((model) => (
                   <Button
-                    key={model.url}
+                    key={model.fileName}
                     variant="ghost"
                     size="sm"
                     className="flex items-center justify-start gap-2 h-10 w-24 mb-1"
-                    onClick={() => handleCreateCharacter(model.url, model.name, model.scale)}
+                    onClick={() => handleCreateCharacter(model)}
                   >
                     {/* <IconUser size={16} />
                     <span className="text-xs truncate">{model.name}</span> */}

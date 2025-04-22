@@ -36,6 +36,7 @@ import { ObjectManager } from '../managers/ObjectManager';
 import { RenderVideoService } from '../services/RenderVideoService';
 import { FileService } from '../services/FileService/FileService';
 import { UserPrefManager } from '../managers/UserPrefManager';
+import { CharacterEntity } from '../entity/types/CharacterEntity';
 
 
 /**
@@ -99,7 +100,8 @@ export class EditorEngine {
     this.renderVideoService = new RenderVideoService(this, this.renderService, threeRenderer);
 
     // Register the update method to be called by the core
-    this.core.setEngineUpdate(this.update);
+    // Must be called after all managers are initialized
+    this.core.setEngineUpdate(this._animate);
   }
 
   public static async initEngine(canvas: HTMLCanvasElement): Promise<EditorEngine> {
@@ -230,7 +232,6 @@ export class EditorEngine {
 
   // TODO: Temp animation mixer
   private mixers: Map<string, THREE.AnimationMixer> = new Map();
-  private clock = new THREE.Clock();
 
   public addMixer(uuid: string, mixer: THREE.AnimationMixer): void {
     this.mixers.set(uuid, mixer);
@@ -240,20 +241,46 @@ export class EditorEngine {
     this.mixers.delete(uuid);
   }
 
+  private _boundUpdateInterval = 1 / 5; // 5fps
+  private _boundUpdateCounter = 0;
+
   // Define update as an arrow function to correctly bind `this`
-  public update = (): void => {
-    var delta = this.clock.getDelta();
-    // Update all managers that have update methods
-    // Use `this` directly now that it's correctly bound
+  private _animate = (delta: number): void => {
+
+    // Update camera
     this.cameraManager.update();
 
-    // Update all mixers
+    // Update all animation mixers
     if (this.mixers?.size > 0) {
       this.mixers.forEach((mixer) => {
         mixer.update(delta);
       });
     }
 
-    // Add other managers as needed
+    // =======================
+    // Update CharacterEntity 
+
+    // Limit the update to 15fps to avoid performance issues
+    this._boundUpdateCounter += delta;
+    const shouldUpdateBoundingBox = this._boundUpdateCounter >= this._boundUpdateInterval;
+    if (shouldUpdateBoundingBox) {
+      this._boundUpdateCounter = 0;
+    }
+
+    // TODO: Move to CharacterEntity?
+    this.objectManager.getCharacterEntities().forEach((characterEntity: CharacterEntity) => {
+      if (characterEntity.visible && characterEntity.mainSkinnedMesh !== null) {
+        // check if animation is playing, and update bone visualization
+        if (characterEntity.currentAnimationAction?.isRunning) {
+          characterEntity.updateBoneVisualization();
+
+          // Update bounding box for raycaster to work properly
+          if (shouldUpdateBoundingBox) {
+            characterEntity.mainSkinnedMesh.computeBoundingBox();
+            characterEntity.mainSkinnedMesh.computeBoundingSphere();
+          }
+        }
+      }
+    });
   }
 } 
