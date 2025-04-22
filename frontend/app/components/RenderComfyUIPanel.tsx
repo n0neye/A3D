@@ -193,8 +193,9 @@ const RenderComfyUIPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
                 // if (renderSettings.openOnRendered && window.openGallery) {
                 //     window.openGallery();
                 // }
+                toast.success("Color and depth image sent to ComfyUI");
             } else {
-                toast.error("Failed: " + result.message);
+                toast.error("Failed: Please make sure you have added the custom node in the ComfyUI workflow");
             }
 
             // Track successful render
