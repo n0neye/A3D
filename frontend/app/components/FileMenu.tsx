@@ -1,11 +1,17 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { IconDeviceFloppy, IconFolderOpen } from '@tabler/icons-react';
-import { Import } from 'lucide-react';
+import { IconDeviceFloppy, IconFolderOpen, IconMenu2 } from '@tabler/icons-react';
+import { Import, Save, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { trackEvent, ANALYTICS_EVENTS } from '@/engine/utils/external/analytics';
 import { isEntity } from '@/engine/entity/base/EntityBase';
 import { useEditorEngine } from '../context/EditorEngineContext';
@@ -51,15 +57,15 @@ export default function FileMenu() {
     engine.getProjectManager().updateProjectName(newName);
   };
 
-  const handleSaveProject = async (event?: React.MouseEvent | KeyboardEvent) => {
-    const isSaveAs = event?.shiftKey;
+  const handleSaveProject = async (options?: { isSaveAs?: boolean, event?: React.MouseEvent | KeyboardEvent }) => {
+    const isSaveAs = options?.isSaveAs ?? options?.event?.shiftKey ?? false;
     const projectManager = engine.getProjectManager();
 
     try {
       if (isSaveAs) {
         console.log("Triggering Save As...");
         await projectManager.saveProjectAs();
-        toast.success('Project saved successfully.');
+        toast.success('Project saved as successfully.');
       } else {
         console.log("Triggering Save...");
         await projectManager.saveProject();
@@ -190,7 +196,7 @@ export default function FileMenu() {
       if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
         if (document.activeElement?.tagName === 'INPUT') return;
         event.preventDefault();
-        handleSaveProject(event);
+        handleSaveProject({ event });
       }
 
       if (event.key === 'o' && (event.ctrlKey || event.metaKey)) {
@@ -204,71 +210,50 @@ export default function FileMenu() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [engine, isElectron, handleSaveProject, handleOpenProject]);
+  }, [engine, isElectron, handleOpenProject]);
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-0 items-center">
 
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleSaveProject}
-              className={`h-9 w-9 ${hasUnsaved ? 'border-primary text-primary hover:bg-primary/10' : ''}`}
-            >
-              <IconDeviceFloppy size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Save Project {hasUnsaved ? '(Unsaved)' : ''} (Ctrl+S)</p>
-            <p className="text-xs text-muted-foreground">Hold Shift for Save As</p>
-          </TooltipContent>
-        </Tooltip>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-9 w-9 outline-none">
+            <Menu size={18} />
+            <span className="sr-only">File Menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => handleSaveProject({ isSaveAs: false })}>
+            <IconDeviceFloppy size={16} className="mr-2" />
+            <span>Save Project {hasUnsaved ? '(Unsaved)' : ''}</span>
+            <span className="ml-auto text-xs tracking-widest opacity-60">Ctrl+S</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSaveProject({ isSaveAs: true })}>
+            <Save size={16} className="mr-2" />
+            <span>Save As...</span>
+            <span className="ml-auto text-xs tracking-widest opacity-60">Shift+Ctrl+S</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleOpenProject}>
+            <IconFolderOpen size={16} className="mr-2" />
+            <span>Open Project</span>
+            <span className="ml-auto text-xs tracking-widest opacity-60">Ctrl+O</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleImportClick}>
+            <Import size={16} className="mr-2" />
+            <span>Import Assets...</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleOpenProject}
-              className="h-9 w-9"
-            >
-              <IconFolderOpen size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Open Project (Ctrl+O)</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleImportClick}
-              className="h-9 w-9"
-            >
-              <Import size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Import Assets</p>
-            <p className="text-xs text-muted-foreground">Images (JPG, PNG), Models (GLB, FBX)</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Input
-          type="text"
-          value={projectName + (hasUnsaved ? '*' : '')}
-          onChange={handleProjectNameChange}
-          placeholder="Project Name"
-          className="w-48 h-9 text-sm"
-          aria-label="Project Name"
-        />
-      </TooltipProvider>
+      <Input
+        type="text"
+        value={projectName + (hasUnsaved ? '*' : '')}
+        onChange={handleProjectNameChange}
+        placeholder="Project Name"
+        className="w-48 h-9 text-sm"
+        aria-label="Project Name"
+      />
 
       {!isElectron && (
         <input
