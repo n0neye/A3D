@@ -65,6 +65,10 @@ const CameraPanel: React.FC = () => {
     const unsubRatio = cameraManager.observer.subscribe('ratioOverlayRatioChanged', 
       ({ ratio }) => setRatio(ratio)
     );
+
+    const unsubGizmosVisibility = engine.getObjectManager().observer.subscribe('gizmosVisibilityChanged', 
+      ({ visible }) => setIsGizmoVisible(visible)
+    );
     
     // Cleanup subscriptions
     return () => {
@@ -74,6 +78,7 @@ const CameraPanel: React.FC = () => {
       unsubPadding();
       unsubRightPadding();
       unsubRatio();
+      unsubGizmosVisibility();
     };
   }, [engine]);
 

@@ -20,7 +20,7 @@ const SHORTCUTS = [
 ];
 
 export default function Guide() {
-    const [showWelcome, setShowWelcome] = useState(true);
+    const [showWelcome, setShowWelcome] = useState(false);
     const [showShortcuts, setShowShortcuts] = useState(false);
 
     // Show welcome message on first visit

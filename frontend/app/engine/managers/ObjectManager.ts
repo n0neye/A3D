@@ -13,6 +13,7 @@ export interface ObjectManagerEvents {
   entityVisibilityChanged: { entity: EntityBase, visible: boolean };
   entityDeletedStateChanged: { entity: EntityBase, isDeleted: boolean };
   hierarchyChanged: {};
+  gizmosVisibilityChanged: { visible: boolean };
 }
 
 /**
@@ -33,6 +34,8 @@ export class ObjectManager {
   private entitiesByType: Map<EntityType, Set<string>> = new Map();
   private deletedEntities: Set<string> = new Set();
   private characterEntities: CharacterEntity[] = [];
+
+  private showGizmos: boolean = true;
 
   // Observable pattern for UI updates
   public observer = new Observer<ObjectManagerEvents>();
@@ -318,5 +321,18 @@ export class ObjectManager {
       child.position.set(0, 0, 0);
       child.updateWorldMatrix(true, true);
     }
+  }
+
+  public toggleGizmo(): void {
+    this.showGizmos = !this.showGizmos;
+    this.getAllEntities().forEach(entity => {
+      entity.setGizmoVisible(this.showGizmos);
+    });
+
+    // environment
+    this.engine.getEnvironmentManager().setEnviromentGizmosVisible(this.showGizmos);
+    
+    // notify
+    this.observer.notify('gizmosVisibilityChanged', { visible: this.showGizmos });
   }
 } 

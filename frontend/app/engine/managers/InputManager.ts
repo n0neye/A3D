@@ -387,8 +387,7 @@ export class InputManager {
     switch (event.key.toLowerCase()) {
       // Toggle gizmo visibility
       case 'x':
-        // TODO
-        // this.engine.getTransformControlManager().toggleGizmo();
+        this.engine.getObjectManager().toggleGizmo();
         break;
       // Transform control mode
       case 'w':

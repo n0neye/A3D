@@ -28,7 +28,6 @@ export interface SerializedLightEntityData extends SerializedEntityData {
 export class LightEntity extends EntityBase {
   // LightEntity specific properties
   _light: THREE.Light;
-  _gizmoMesh: THREE.Mesh;
   _material: THREE.MeshStandardMaterial;
   
   props: LightProps;
@@ -64,7 +63,7 @@ export class LightEntity extends EntityBase {
 
     // Create light visual representation
     const { lightSphere, material } = this.createLightGizmo();
-    this._gizmoMesh = lightSphere;
+    this._gizmoObject = lightSphere;
     this._material = material as THREE.MeshStandardMaterial;
 
     onLoaded?.(this);
@@ -135,8 +134,8 @@ export class LightEntity extends EntityBase {
       this._light.color = color;
 
       // Update the gizmo color
-      if (this._gizmoMesh && this._gizmoMesh.material) {
-        const material = this._gizmoMesh.material as THREE.MeshStandardMaterial;
+      if (this._gizmoObject && this._gizmoObject instanceof THREE.Mesh) {
+        const material = this._gizmoObject.material as THREE.MeshStandardMaterial;
         material.color = color;
         material.emissive = color;
       }
@@ -199,20 +198,20 @@ export class LightEntity extends EntityBase {
       }
     }
 
-    if (this._gizmoMesh) {
+    if (this._gizmoObject) {
       // Remove the gizmo mesh from this entity
-      this.remove(this._gizmoMesh);
+      this.remove(this._gizmoObject);
 
       // Dispose of geometry and material
-      if (this._gizmoMesh.geometry) {
-        this._gizmoMesh.geometry.dispose();
+      if (this._gizmoObject instanceof THREE.Mesh && this._gizmoObject.geometry) {
+        this._gizmoObject.geometry.dispose();
       }
 
-      if (this._gizmoMesh.material) {
-        if (Array.isArray(this._gizmoMesh.material)) {
-          this._gizmoMesh.material.forEach(material => material.dispose());
+      if (this._gizmoObject instanceof THREE.Mesh && this._gizmoObject.material) {
+        if (Array.isArray(this._gizmoObject.material)) {
+          this._gizmoObject.material.forEach(material => material.dispose());
         } else {
-          this._gizmoMesh.material.dispose();
+          this._gizmoObject.material.dispose();
         }
       }
     }
@@ -224,7 +223,7 @@ export class LightEntity extends EntityBase {
    * Get the gizmo target for manipulation
    */
   getGizmoTarget(): THREE.Object3D {
-    return this._gizmoMesh;
+    return this._gizmoObject;
   }
 
   public static isLightEntity(entity: EntityBase): entity is LightEntity {

@@ -20,6 +20,9 @@ export class EntityBase extends Selectable {
   created: Date;
   engine: EditorEngine;
 
+  
+  _gizmoObject: THREE.Object3D;
+
   // ISelectable implementation
   selectableConfig: SelectableConfig = {
     allowedTransformModes: [TransformMode.Position, TransformMode.Rotation, TransformMode.Scale, TransformMode.BoundingBox],
@@ -175,6 +178,12 @@ export class EntityBase extends Selectable {
 
     // Notify object manager about deletion state change
     this.engine.getObjectManager().updateEntityDeletedState(this, false);
+  }
+
+  setGizmoVisible(visible: boolean): void {
+    if (this._gizmoObject) {
+      this._gizmoObject.visible = visible;
+    }
   }
 }
 

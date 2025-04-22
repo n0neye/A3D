@@ -278,4 +278,10 @@ export class EnvironmentManager {
             // This would require exposing the orbit controls
         }
     }
+
+    setEnviromentGizmosVisible(visible: boolean): void {
+        if (this.envSetting.grid) {
+            this.envSetting.grid.visible = visible;
+        }
+    }
 }
