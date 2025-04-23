@@ -214,13 +214,13 @@ const StylePanel: React.FC<StylePanelProps> = ({
 
   // Dialog component replaces the manual modal structure
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-3/5 h-[85vh] flex flex-col p-0 gap-0"> {/* Adjusted size and padding */}
-        <DialogHeader className="p-4 pl-6 pr-6 border-b"> {/* Adjusted padding */}
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()} >
+      <DialogContent className="max-w-[90vw] min-w-[50vw] w-full h-[85vh] flex flex-col p-0 gap-0">
+        <div className="p-4 pl-6 pr-6 border-b">
           <div className="flex justify-between items-center gap-4">
-            <DialogTitle className="text-lg whitespace-nowrap">Select a Style</DialogTitle>
+            <div className="text-lg whitespace-nowrap">Style Lora</div>
             {/* Search Input Group */}
-            <div className="flex flex-grow items-center gap-2 max-w-md mx-auto"> {/* Centered search */}
+            <div className="flex flex-grow items-center gap-2 mx-auto max-w-md"> {/* Removed max-w-md */}
               <div className="relative flex-grow">
                 <IconSearch size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
@@ -257,16 +257,18 @@ const StylePanel: React.FC<StylePanelProps> = ({
               </Button>
             </div>
             {/* Close button is handled by Dialog overlay click or ESC, but can add one if needed */}
-            <DialogTitle>
-              <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto">
+            {/* <DialogTitle> */}
+              
+              {/* <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto">
                 <IconX size={18} />
-              </Button>
-            </DialogTitle>
+              </Button> */}
+            {/* </DialogTitle> */}
+            <div className='ml-auto'></div>
           </div>
-        </DialogHeader>
+        </div>
 
-        {/* Content Area */}
-        <ScrollArea className="flex-grow p-6"> {/* Use ScrollArea */}
+        {/* Content Area wrapped in ScrollArea */}
+        <div className="flex-grow p-6 overflow-y-scroll"> {/* <--- ScrollArea is used here */}
           {isSearching ? (
             // Display Search Results Area
             <div>
@@ -296,7 +298,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
               )}
             </div>
           )}
-        </ScrollArea>
+        </div>
         {/* Optional Footer */}
         {/* <DialogFooter className="p-4 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
