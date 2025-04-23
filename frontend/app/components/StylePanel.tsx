@@ -17,7 +17,6 @@ import {
   // DialogDescription, // Optional if needed
   // DialogFooter, // Optional if needed
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 
 
@@ -25,17 +24,18 @@ interface StylePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectStyle: (lora: LoraInfo) => void;
-  selectedLoraIds: string[]; // To show which styles are already selected
+  selectedLoras: LoraInfo[]; // To show which styles are already selected
 }
 
 // Define a consistent number of skeleton items
 const SKELETON_COUNT = 10;
+const GB_IN_KB = 1024 * 1024; // 1GB in Kilobytes
 
 const StylePanel: React.FC<StylePanelProps> = ({
   isOpen,
   onClose,
   onSelectStyle,
-  selectedLoraIds
+  selectedLoras
 }) => {
   const [availableStylesByCategory, setAvailableStylesByCategory] = useState<Record<string, LoraInfo[]>>({});
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
@@ -127,7 +127,32 @@ const StylePanel: React.FC<StylePanelProps> = ({
     // Ensure defaults are visible if loaded
   };
 
+
   const selectStyle = (style: LoraInfo) => {
+    // Calculate size of currently selected LoRAs
+    let currentSizeKb = 0;
+    selectedLoras.forEach(lora => {
+      // Add size only if the LoRA info is found and has a valid sizeKb
+        currentSizeKb += lora.sizeKb;
+    });
+
+    // Calculate potential new total size (ensure new style size is valid)
+    const newStyleSizeKb = (typeof style.sizeKb === 'number' && style.sizeKb > 0) ? style.sizeKb : 0;
+    const newPotentialSizeKb = currentSizeKb + newStyleSizeKb;
+
+    // Validate against 1GB limit
+    if (newPotentialSizeKb > GB_IN_KB) {
+      const currentSizeMb = (currentSizeKb / 1024).toFixed(0);
+      const newStyleSizeMb = (newStyleSizeKb / 1024).toFixed(0);
+      const totalSizeMb = (newPotentialSizeKb / 1024).toFixed(0);
+      toast.error(`Cannot add style: Total size would exceed 1GB (${totalSizeMb}MB).`, {
+        description: `Current: ${currentSizeMb}MB + New: ${newStyleSizeMb}MB = ${totalSizeMb}MB`,
+        duration: 5000, // Show toast longer
+      });
+      return; // Stop execution, do not select or close
+    }
+
+    // If validation passes:
     onSelectStyle(style);
     onClose(); // Dialog's onOpenChange handles closing
   };
@@ -161,7 +186,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {items.map(style => {
-          const isSelected = selectedLoraIds.includes(style.id);
+          const isSelected = selectedLoras.includes(style);
           return (
             <Card
               key={style.id}

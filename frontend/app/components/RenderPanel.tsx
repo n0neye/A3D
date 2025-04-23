@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 // Update the props of RenderPanel
 interface RenderPanelProps {
   // isDebugMode: boolean;
-  onOpenStylePanel?: (selectedLoraIds: string[], onSelectStyle: (lora: any) => void) => void;
+  onOpenStylePanel?: (selectedLoras: LoraInfo[], onSelectStyle: (lora: any) => void) => void;
 }
 
 const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
@@ -178,7 +178,7 @@ const RenderPanel = ({ onOpenStylePanel }: RenderPanelProps) => {
           size="sm"
           className="w-full"
           onClick={() => onOpenStylePanel && onOpenStylePanel(
-            selectedLoras.map((lora: LoraConfig) => lora.info.id),
+            selectedLoras.map((lora: LoraConfig) => lora.info),
             handleSelectStyle
           )}
         >

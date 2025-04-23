@@ -9,17 +9,18 @@ import StylePanel from "./StylePanel";
 import { createPortal } from "react-dom";
 import RenderComfyUIPanel from "./RenderComfyUIPanel";
 import { Button } from "./ui/button";
+import { LoraInfo } from "@/engine/interfaces/rendering";
 
 function RenderPanels() {
     const { userPreferences, setUserPreference } = useEditorEngine();
     const [renderMode, setRenderMode] = useState<"fal" | "comfyui">("fal");
     const [isStylePanelOpen, setIsStylePanelOpen] = useState(false);
-    const [selectedLoraIds, setSelectedLoraIds] = useState<string[]>([]);
+    const [selectedLoras, setSelectedLoras] = useState<LoraInfo[]>([]);
     const [onSelectStyle, setOnSelectStyle] = useState<(lora: any) => void>(() => () => { });
 
     // Handler to open the style panel
-    const openStylePanel = (selectedIds: string[], selectHandler: (lora: any) => void) => {
-        setSelectedLoraIds(selectedIds);
+    const openStylePanel = (selectedLoras: LoraInfo[], selectHandler: (lora: any) => void) => {
+        setSelectedLoras(selectedLoras);
         setOnSelectStyle(() => selectHandler);
         setIsStylePanelOpen(true);
     };
@@ -42,7 +43,7 @@ function RenderPanels() {
                     isOpen={isStylePanelOpen}
                     onClose={() => setIsStylePanelOpen(false)}
                     onSelectStyle={onSelectStyle}
-                    selectedLoraIds={selectedLoraIds}
+                    selectedLoras={selectedLoras}
                 />,
                 document.body
             )}
