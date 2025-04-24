@@ -8,7 +8,7 @@ function PreviewPanel({ executionTime, imageUrl, isLoading, handleCancelRender }
 
     if(!isLoading && !imageUrl) return null;
     return (
-        <Card className={`panel-shape z-40 w-64 flex flex-col gap-1 p-0 overflow-hidden`}>
+        <Card className={`panel-shape z-40 w-64 max-h-[256px] flex flex-col gap-1 p-0 overflow-hidden`}>
             {/* <div className="text-lg font-medium absolute px-6 py-2">Preview</div> */}
             {isLoading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">

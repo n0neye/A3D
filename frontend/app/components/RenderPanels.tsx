@@ -436,41 +436,66 @@ function RenderPanels() {
                         </div> */}
                     </CardHeader>
 
-
-                    {/* Switch for render mode */}
-                    {/* <div className="px-6 flex flex-row justify-between items-center">
-                        <Label className="text-sm mb-2 block">Provider</Label>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs opacity-60">Fal.ai/ComfyUI</span>
-                            <Switch checked={renderMode === "comfyui"} onCheckedChange={(val) => {
-                                handleRenderModeChange(val ? "comfyui" : "fal");
-                            }} />
-                        </div>
-                    </div> */}
-
-                    {/* Button group for render mode */}
-                    <div className="px-6 font-bold">
-                        <Label className="text-sm mb-2 block">Provider</Label>
-                        <div className=" w-full items-center gap-0 relative grid grid-cols-2 ">
-                            <Button
-                                variant={renderMode === "fal" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => handleRenderModeChange("fal")}
-                                className="w-full rounded-r-none">
-                                Fal
-                            </Button>
-                            <Button
-                                variant={renderMode === "comfyui" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => handleRenderModeChange("comfyui")}
-                                className="w-full rounded-l-none">
-                                ComfyUI
-                            </Button>
-                        </div>
-                    </div>
-
-
                     <CardContent className="space-y-4">
+
+                        {/* <div className="flex flex-col gap-2">
+                            <div className="flex flex-row justify-between items-center">
+                                <Label className="text-sm mb-2 block">Provider</Label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs opacity-60">Fal.ai/ComfyUI</span>
+                                    <Switch checked={renderMode === "comfyui"} onCheckedChange={(val) => {
+                                        handleRenderModeChange(val ? "comfyui" : "fal");
+                                    }} />
+                                </div>
+                            </div>
+                            <div className="flex flex-row justify-between items-center">
+                                <Label className="text-sm mb-2 block">Use Depth</Label>
+                                <div className="flex items-center gap-2">
+                                    <Switch checked={selectedAPI.useDepthImage} onCheckedChange={(val) => {
+                                        val ? handleAPIChange(availableAPIs[1]) : handleAPIChange(availableAPIs[0]);
+                                    }} />
+                                </div>
+                            </div>
+                        </div> */}
+
+                        {/* Button group for render mode */}
+                        <div className="font-bold">
+                            <Label className="text-sm mb-2 block">Provider</Label>
+                            <div className=" w-full items-center gap-0 relative grid grid-cols-2 ">
+                                <Button
+                                    variant={renderMode === "fal" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => handleRenderModeChange("fal")}
+                                    className="w-full rounded-r-none">
+                                    Fal
+                                </Button>
+                                <Button
+                                    variant={renderMode === "comfyui" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => handleRenderModeChange("comfyui")}
+                                    className="w-full rounded-l-none">
+                                    ComfyUI
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Model selection */}
+                        {renderMode === "fal" && <div>
+                            <Label className="text-sm mb-2 block">Model</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {availableAPIs.map((aiModel) => (
+                                    <Button
+                                        key={aiModel.id}
+                                        variant={selectedAPI.id === aiModel.id ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handleAPIChange(aiModel)}
+                                        className="w-full overflow-ellipsis text-xs"
+                                    >
+                                        {aiModel.name}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>}
 
                         {/* Styles section */}
                         {renderMode === "fal" && <div>
@@ -567,23 +592,6 @@ function RenderPanels() {
                             </div>
                         </div>
 
-                        {/* Model selection */}
-                        {renderMode === "fal" && <div>
-                            <Label className="text-sm mb-2 block">Model</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {availableAPIs.map((aiModel) => (
-                                    <Button
-                                        key={aiModel.id}
-                                        variant={selectedAPI.id === aiModel.id ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => handleAPIChange(aiModel)}
-                                        className="w-full overflow-ellipsis text-xs"
-                                    >
-                                        {aiModel.name}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>}
 
                         {/* Debug Tools */}
                         {(false &&
