@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import RenderVideoPanel from "./RenderVideoPanel";
-import RenderPanel from "./RenderPanel";
 import { UiLayoutMode, useEditorEngine } from "../context/EditorEngineContext";
 import StylePanel from "./StylePanel";
 import { createPortal } from "react-dom";
-import RenderComfyUIPanel from "./RenderComfyUIPanel";
 import { Button } from "./ui/button";
 import { ANALYTICS_EVENTS } from "@/engine/utils/external/analytics";
 import { trackEvent } from "@/engine/utils/external/analytics";
