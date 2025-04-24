@@ -12,12 +12,9 @@ import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  // DialogDescription, // Optional if needed
-  // DialogFooter, // Optional if needed
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
+import { LoadingSpinner } from './ui/loadingSpinner';
 
 
 interface StylePanelProps {
@@ -201,9 +198,9 @@ const StylePanel: React.FC<StylePanelProps> = ({
                   className={`object-cover w-full h-full transition-opacity ${isSelected ? 'opacity-50' : ''}`}
                   onError={(e) => (e.currentTarget.src = '/placeholder-image.png')}
                   loading="lazy" // Add lazy loading
-                /> : <div className="aspect-[4/5] overflow-hidden relative bg-muted">
+                /> : <div className="aspect-[4/5] overflow-hidden relative bg-muted flex items-center justify-center">
 
-                  <IconPhotoOff size={100} className='text-muted-foreground' />
+                  <IconPhotoOff size={100} className='text-muted-foreground opacity-10' />
                 </div>}
                 {isSelected && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50"> {/* Darker overlay */}
@@ -236,6 +233,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
     );
   };
 
+  const showSearch = false;
 
   // Dialog component replaces the manual modal structure
   return (
@@ -245,11 +243,11 @@ const StylePanel: React.FC<StylePanelProps> = ({
           <div className="flex justify-between items-center gap-4">
             <div className="text-lg whitespace-nowrap">Style Lora</div>
             {/* Search Input Group */}
-            <div className="flex flex-grow items-center gap-2 mx-auto max-w-md"> {/* Removed max-w-md */}
+            {showSearch && <div className="flex flex-grow items-center gap-2 mx-auto max-w-md"> {/* Removed max-w-md */}
               <div className="relative flex-grow">
                 <IconSearch size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
-                  placeholder="Search LoRA styles..."
+                  placeholder="Search on civitai..."
                   className="w-full pl-10 pr-10" // Removed specific bg/border, rely on theme
                   value={searchQuery}
                   onChange={handleSearchInputChange}
@@ -280,7 +278,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                 )}
                 <span className="ml-2 hidden sm:inline">Search</span>
               </Button>
-            </div>
+            </div>}
             {/* Close button is handled by Dialog overlay click or ESC, but can add one if needed */}
             {/* <DialogTitle> */}
               
@@ -310,7 +308,10 @@ const StylePanel: React.FC<StylePanelProps> = ({
             <div className="space-y-6">
               {isLoadingDefaults && Object.keys(availableStylesByCategory).length === 0 && (
                 // Show skeletons only on initial load
-                renderGrid(null, true)
+                // renderGrid(null, true)
+                <div className='flex flex-col items-center justify-center h-full'>
+                  <LoadingSpinner className='w-10 h-10' />
+                </div>
               )}
               {!isLoadingDefaults && Object.entries(availableStylesByCategory).map(([category, styles]) => (
                 <div key={category}>
