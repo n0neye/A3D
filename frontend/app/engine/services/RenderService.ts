@@ -21,6 +21,7 @@ import { EntityBase } from '@/engine/entity/base/EntityBase';
 import { resizeImage, addNoiseToImage, dataURLtoBlob, cropImageToRatioFrame } from '@/engine/utils/generation/image-processing';
 import { API_Info, ImageToImageResult, renderImage } from '@/engine/utils/generation/image-render-api';
 import { IRenderLog, LoraConfig } from '@/engine/interfaces/rendering';
+import { ImageRatio } from '../utils/imageUtil';
 
 interface RenderParams {
     isTest: boolean;
@@ -44,6 +45,21 @@ export class RenderService {
         this.scene = scene;
         this.engine = engine;
         this.renderer = renderer;
+    }
+
+    // Ratio to render size
+    public getRenderSize(): { width: number, height: number } {
+        const cameraManager = this.engine.getCameraManager();
+        const ratio = cameraManager.getRatioOverlayRatio();
+
+        const sizes = {
+            "1:1": { width: 1024, height: 1024 },
+            "4:3": { width: 1024, height: 768 },
+            "3:4": { width: 768, height: 1024 },
+            "16:9": { width: 1280, height: 720 },
+            "9:16": { width: 1280, height: 720 },
+        }
+        return sizes[ratio];
     }
 
     /**
@@ -134,7 +150,8 @@ export class RenderService {
         }
 
         // Resize the image to final dimensions before sending to API
-        const resizedImage = await this.resizeImage(processedImage, 1280, 720);
+        const renderSize = this.getRenderSize();
+        const resizedImage = await this.resizeImage(processedImage, renderSize.width, renderSize.height);
 
         // Convert the resized image to blob for API
         const imageBlob = this.dataURLtoBlob(resizedImage);
@@ -179,8 +196,8 @@ export class RenderService {
             promptStrength: params.promptStrength,
             modelApiInfo: params.selectedAPI,
             seed: params.seed,
-            width: 1280,
-            height: 720,
+            width: renderSize.width,
+            height: renderSize.height,
             // Optional
             loras: params.selectedLoras,
             depthImageUrl: depthImage,

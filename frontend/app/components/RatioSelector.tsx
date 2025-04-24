@@ -16,9 +16,10 @@ interface RatioSelectorProps {
   value: ImageRatio;
   onChange: (value: ImageRatio) => void;
   disabled?: boolean;
+  dropdownClassName?: string;
 }
 
-const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled }) => {
+const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled, dropdownClassName }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +66,7 @@ const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled
       </Button>
 
       {isOpen && !disabled && (
-        <div className="absolute bottom-8 z-10 left-0 mt-1 panel-shape shadow-lg rounded-md py-1 min-w-[160px]">
+        <div className={`absolute bottom-8 z-10 left-0 mt-1 panel-shape shadow-lg rounded-md py-1 overflow-hidden min-w-[160px] min-h-[190px] ${dropdownClassName}`}>
           {ratioOptions.map((option) => (
             <div
               key={option.value}

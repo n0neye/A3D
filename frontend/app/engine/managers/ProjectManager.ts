@@ -320,6 +320,12 @@ export class ProjectManager {
         }
         this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
 
+        // Set ratio
+        // TODO: Move to better place?
+        if (this.settings.ratio) {
+            this.engine.getCameraManager().setRatioOverlayRatio(this.settings.ratio);
+        }
+
         if (data.renderLogs) {
             this.renderLogs = data.renderLogs;
             this.latestRender = data.renderLogs.length > 0 ? data.renderLogs[data.renderLogs.length - 1] : null;
