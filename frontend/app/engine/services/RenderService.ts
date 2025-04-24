@@ -161,18 +161,16 @@ export class RenderService {
         if (params.selectedAPI.useDepthImage) {
             // Promise to get depth image
             await new Promise(async (resolve) => {
-                this.showDepthRenderSeconds(1, (imageUrl) => {
+                this.showDepthRenderSeconds(1, async (imageUrl) => {
                     depthImage = imageUrl;
+                    if (depthImage) {
+                        console.log('Render: depthImage', depthImage);
+                        depthImage = await this.cropByRatio(depthImage);
+                        params.onPreview(depthImage);
+                    }
+                    resolve(null);
                 });
-
-                if (depthImage) {
-                    depthImage = await this.cropByRatio(depthImage);
-                    params.onPreview(depthImage);
-                }
-
-                resolve(null);
             });
-
         }
 
         // Log pre-processing time
@@ -189,6 +187,8 @@ export class RenderService {
             };
         }
 
+        
+        console.log('Render: call api');
         // Call the API with the selected model and seed
         const result = await renderImage({
             imageUrl: imageBlob,
@@ -332,7 +332,7 @@ export class RenderService {
             renderer.render(postScene, postCamera);
 
             if (onGetDepthMap) {
-                console.log('onGetDepthMap');
+                console.log('startDepthRender: onGetDepthMap');
                 const depthSnapshot = renderer.domElement.toDataURL('image/png');
                 onGetDepthMap(depthSnapshot);
             }
