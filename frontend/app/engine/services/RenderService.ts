@@ -139,15 +139,23 @@ export class RenderService {
         // Convert the resized image to blob for API
         const imageBlob = this.dataURLtoBlob(resizedImage);
 
+        // TODO: Over complex, need to refactor
         let depthImage: string | undefined = undefined;
         if (params.selectedAPI.useDepthImage) {
-            await this.showDepthRenderSeconds(1, (imageUrl) => {
-                depthImage = imageUrl;
+            // Promise to get depth image
+            await new Promise(async (resolve) => {
+                this.showDepthRenderSeconds(1, (imageUrl) => {
+                    depthImage = imageUrl;
+                });
+
+                if (depthImage) {
+                    depthImage = await this.cropByRatio(depthImage);
+                    params.onPreview(depthImage);
+                }
+
+                resolve(null);
             });
-            if (depthImage) {
-                depthImage = await this.cropByRatio(depthImage);
-                params.onPreview(depthImage);
-            }
+
         }
 
         // Log pre-processing time
@@ -227,6 +235,7 @@ export class RenderService {
     }
 
     startDepthRender(onGetDepthMap?: (imageUrl: string) => void) {
+        console.log('startDepthRender');
         const camera = this.engine.getCameraManager().getCamera();
         const renderer = this.renderer;
         const scene = this.scene;
@@ -306,6 +315,7 @@ export class RenderService {
             renderer.render(postScene, postCamera);
 
             if (onGetDepthMap) {
+                console.log('onGetDepthMap');
                 const depthSnapshot = renderer.domElement.toDataURL('image/png');
                 onGetDepthMap(depthSnapshot);
             }

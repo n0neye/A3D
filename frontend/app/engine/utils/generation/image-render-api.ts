@@ -152,6 +152,7 @@ export async function renderImage(params: ImageToImageParams): Promise<ImageToIm
     }
     return result;
   } catch (error) {
+    console.error("Error generating image:", params.modelApiInfo.id, error);
     // Check if api key is stored in userPreferences
     const prefManager = EditorEngine.getInstance().getUserPrefManager();
     const falApiKey = await prefManager.getPreference("falApiKey");
@@ -160,9 +161,12 @@ export async function renderImage(params: ImageToImageParams): Promise<ImageToIm
       // No api key, throw error
       throw new Error(`Failed to call ${params.modelApiInfo.provider} API. Please enter a valid API key in the settings.`);
     }
+    // if 401 unauthorized, throw error
+    if (String(error).toLocaleLowerCase().includes("apierror")) {
+      throw new Error(`Failed to call ${params.modelApiInfo.provider} API. Please make sure you have entered a valid API key in the settings, and enough credits in your ${params.modelApiInfo.provider} account.`);
+    }
 
-    // Api key is stored, but still failed
-    throw new Error(`Failed to call ${params.modelApiInfo.provider} API. Please make sure you have entered a valid API key in the settings, and enough credits in your ${params.modelApiInfo.provider} account.`);
+    throw error;
   }
 
 }
@@ -250,6 +254,7 @@ async function generateFluxLoraDepthImage(params: ImageToImageParams): Promise<I
 
 
 async function generateFluxControlLoraDepthI2I(params: ImageToImageParams): Promise<ImageToImageResult> {
+  console.log('generateFluxControlLoraDepthI2I', params.prompt, params.imageUrl, params.depthImageUrl);
   const result = await fal.subscribe("fal-ai/flux-control-lora-depth/image-to-image", {
     input: {
       image_url: params.imageUrl,
