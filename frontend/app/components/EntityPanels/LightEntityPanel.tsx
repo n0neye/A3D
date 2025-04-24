@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { Slider } from '@/components/ui/slider';
 import { LightEntity } from '@/engine/entity/types/LightEntity';
+import ColorPickerMenu from '../ColorPickerMenu';
 
 function LightEntityPanel(props: { entity: LightEntity }) {
     // State for light settings
@@ -20,11 +21,9 @@ function LightEntityPanel(props: { entity: LightEntity }) {
     }, [props.entity]);
 
     // Handle light color change
-    const handleLightColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newColor = e.target.value;
-        setLightColor(newColor);
-
+    const handleLightColorChange = (newColor: string) => {
         // Update the entity using its method
+        setLightColor(newColor);
         props.entity.setColorFromHex(newColor);
     };
 
@@ -39,29 +38,19 @@ function LightEntityPanel(props: { entity: LightEntity }) {
 
     return (
         <>
-            <div className="flex flex-col space-y-2 w-80">
-                <div className="flex items-center space-x-2">
-                    <label className="text-xs  w-20">Color</label>
-                    <input
-                        type="color"
-                        value={lightColor}
-                        onChange={handleLightColorChange}
-                        className="w-8 h-8 bg-transparent border-none cursor-pointer rounded-full"
-                    />
-                    <span className="text-xs ">{lightColor}</span>
-                </div>
+            <div className="flex flex-row space-x-2 p-1 px-2">
+                <ColorPickerMenu color={lightColor} onColorChange={handleLightColorChange} />
 
-                <div className="flex items-center space-x-2">
-                    <label className="text-xs  w-20">Intensity</label>
+                <div className="flex items-center space-x-1">
                     <Slider
                         value={[lightIntensity]}
                         min={0}
                         max={2}
                         step={0.05}
-                        className="w-32"
+                        className="w-24"
                         onValueChange={handleLightIntensityChange}
                     />
-                    <span className="text-xs  w-10 text-right">{lightIntensity.toFixed(2)}</span>
+                    <span className="text-xs text-left">{lightIntensity.toFixed(2)}</span>
                 </div>
             </div>
         </>
