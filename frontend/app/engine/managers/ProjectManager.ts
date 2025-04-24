@@ -157,7 +157,7 @@ export class ProjectManager {
         this.observers.notify('projectLoaded', { project });
     }
 
-    public async saveProject(): Promise<void> {
+    public async saveProject(): Promise<{ saved: boolean, error: string | null }> {
         const fileName = `${this.currentProjectName}.mud`;
         if (this.isElectron && this.currentProjectPath) {
             try {
@@ -168,18 +168,20 @@ export class ProjectManager {
                 await this.localFileWorker.saveFileToPath(arrayBuffer, this.currentProjectPath);
                 console.log(`Project saved to: ${this.currentProjectPath}`);
                 this.setUnsavedChanges(false);
+                return { saved: true, error: null };
             } catch (error) {
                 console.error(`Error saving project to ${this.currentProjectPath}:`, error);
-                throw error;
+                return { saved: false, error: error instanceof Error ? error.message : String(error) };
             }
         } else {
-            await this.saveProjectAs(fileName);
+            const result = await this.saveProjectAs(fileName);
+            return result;
         }
     }
 
     public async saveProjectAs(
         fileName: string = `${this.currentProjectName}.mud`
-    ): Promise<void> {
+    ): Promise<{ saved: boolean, error: string | null }> {
         const projectData = this.serializeProject();
         const jsonString = JSON.stringify(projectData, null, 2);
 
@@ -198,12 +200,13 @@ export class ProjectManager {
                     this.observers.notify('projectNameChanged', { name: this.currentProjectName });
                     console.log(`Project saved as: ${this.currentProjectPath}`);
                     this.setUnsavedChanges(false);
+                    return { saved: true, error: null };
                 } else {
                     console.log("Save As cancelled by user.");
+                    return { saved: false, error: null };
                 }
             } catch (err) {
-                console.error("Error during Electron Save As:", err);
-                throw err;
+                return { saved: false, error: err instanceof Error ? err.message : String(err) };
             }
         } else {
             const blob = new Blob([jsonString], { type: 'application/mud' });
@@ -227,9 +230,10 @@ export class ProjectManager {
                     this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
                     this.observers.notify('projectNameChanged', { name: this.currentProjectName });
                     this.setUnsavedChanges(false);
-                    return;
+                    return { saved: true, error: null };
                 } catch (err) {
                     console.log("File System Access API failed or cancelled, falling back to download method");
+                    return { saved: false, error: err instanceof Error ? err.message : String(err) };
                 }
             }
 
@@ -248,6 +252,7 @@ export class ProjectManager {
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
             this.observers.notify('projectNameChanged', { name: this.currentProjectName });
             this.setUnsavedChanges(false);
+            return { saved: true, error: null };
         }
     }
 

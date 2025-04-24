@@ -57,19 +57,30 @@ export default function FileMenu() {
     engine.getProjectManager().updateProjectName(newName);
   };
 
-  const handleSaveProject = async (options?: { isSaveAs?: boolean, event?: React.MouseEvent | KeyboardEvent }) => {
-    const isSaveAs = options?.isSaveAs ?? options?.event?.shiftKey ?? false;
+  const handleSaveProject = async (options?: { isSaveAs?: boolean}) => {
+    console.log("handleSaveProject options:", options);
+    const isSaveAs = options?.isSaveAs ?? false;
     const projectManager = engine.getProjectManager();
 
     try {
       if (isSaveAs) {
         console.log("Triggering Save As...");
-        await projectManager.saveProjectAs();
-        toast.success('Project saved as successfully.');
+        const result = await projectManager.saveProjectAs();
+        console.log("Save As result:", result);
+        if (result.saved) {
+          toast.success('Project saved as successfully.');
+        } else if (result.error !== null) {
+          toast.error(`Save As failed: ${result.error}`);
+        }
       } else {
         console.log("Triggering Save...");
-        await projectManager.saveProject();
-        toast.success('Project saved successfully.');
+        const result = await projectManager.saveProject();
+        console.log("Save result:", result);
+        if (result.saved) {
+          toast.success('Project saved successfully.');
+        } else if (result.error !== null) {
+          toast.error(`Save failed: ${result.error}`);
+        }
       }
 
       trackEvent(ANALYTICS_EVENTS.SAVE_PROJECT, {
@@ -193,14 +204,23 @@ export default function FileMenu() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
-        if (document.activeElement?.tagName === 'INPUT') return;
+      // Skip if we're in an input field
+      if (document.activeElement?.tagName === 'INPUT') return;
+      
+      // Handle Save (Ctrl+S)
+      if (event.key === 's' && (event.ctrlKey || event.metaKey) && !event.shiftKey) {
         event.preventDefault();
-        handleSaveProject({ event });
+        handleSaveProject({ isSaveAs: false });
+      }
+      
+      // Handle Save As (Ctrl+Shift+S)
+      if (event.key === 's' && (event.ctrlKey || event.metaKey) && event.shiftKey) {
+        event.preventDefault();
+        handleSaveProject({ isSaveAs: true });
       }
 
+      // Handle Open (Ctrl+O)
       if (event.key === 'o' && (event.ctrlKey || event.metaKey)) {
-        if (document.activeElement?.tagName === 'INPUT') return;
         event.preventDefault();
         handleOpenProject();
       }
@@ -210,7 +230,7 @@ export default function FileMenu() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [engine, isElectron, handleOpenProject]);
+  }, [engine, isElectron]);
 
   return (
     <div className="flex gap-0 items-center">
@@ -231,7 +251,7 @@ export default function FileMenu() {
           <DropdownMenuItem onClick={() => handleSaveProject({ isSaveAs: true })}>
             <Save size={16} className="mr-2" />
             <span>Save As...</span>
-            <span className="ml-auto text-xs tracking-widest opacity-60">Shift+Ctrl+S</span>
+            <span className="ml-auto text-xs tracking-widest opacity-60">Ctrl+Shift+S</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleOpenProject}>
             <IconFolderOpen size={16} className="mr-2" />
