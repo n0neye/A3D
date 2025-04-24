@@ -42,4 +42,5 @@ export interface LoraInfo {
     authorLinkUrl: string;
     linkUrl?: string;
     description?: string;
+    sizeKb?: number;
 }
