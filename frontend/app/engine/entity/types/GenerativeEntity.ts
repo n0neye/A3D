@@ -11,6 +11,7 @@ import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { get3DSimulationData } from '@/engine/utils/simulation-data';
 import { IGenerationLog, AssetType } from '@/engine/interfaces/generation';
 import { ImageRatio } from '@/engine/utils/imageUtil';
+import { text } from 'stream/consumers';
 
 
 /**
@@ -23,6 +24,39 @@ export interface GenerativeEntityProps {
   currentGenerationIdx?: number;
   isImported?: boolean;
 }
+
+export const StylePromptOptions = {
+  BASIC_3D: {
+    label: "Basic 3D",
+    description: "Standard 3D look",
+    promptSuffix: "at the center of the frame, full body shot, 3d model, uncropped, solid black background"
+  },
+  WHITE_3D: {
+    label: "White 3D",
+    description: "Clean white 3D model",
+    promptSuffix: "at the center of the frame, full body shot, white 3d model, no texture, uncropped, solid black background"
+  },
+  TOY_3D: {
+    label: "3D Toy",
+    description: "Toy-like appearance",
+    promptSuffix: "3d toy style, at the center of the frame, full body shot, 3d model, uncropped, solid black background"
+  },
+  REALISTIC_3D: {
+    label: "3D Realistic",
+    description: "Highly detailed realistic 3D",
+    promptSuffix: "photorealistic 3d model, highly detailed, at the center of the frame, full body shot, 3d model, uncropped, solid black background"
+  },
+  CUSTOM: {
+    label: "Custom",
+    description: "Custom style settings",
+    promptSuffix: ""
+  }
+} as const;
+
+export type StylePromptOptionKey = keyof typeof StylePromptOptions;
+export type StylePromptOption = typeof StylePromptOptions[StylePromptOptionKey]["label"];
+
+export const styleOptions = Object.values(StylePromptOptions).map(option => option.label);
 
 // Processing states
 export type GenerationStatus = 'idle' | 'generating2D' | 'generating3D' | 'error';
@@ -37,7 +71,7 @@ export class GenerativeEntity extends EntityBase {
   props: GenerativeEntityProps;
 
   gltfModel?: THREE.Object3D;
-  placeholderMesh: THREE.Mesh;
+  billboardMesh: THREE.Mesh;
 
   status: GenerationStatus;
   statusMessage: string;
@@ -45,6 +79,7 @@ export class GenerativeEntity extends EntityBase {
   temp_prompt: string;
   temp_ratio?: ImageRatio;
   temp_displayMode?: "3d" | "2d";
+  temp_styleOption?: StylePromptOptionKey;
 
   public readonly onProgress = new EventHandler<{ entity: GenerativeEntity, state: GenerationStatus, message: string }>();
   public readonly onGenerationChanged = new EventHandler<{ entity: GenerativeEntity }>();
@@ -60,13 +95,13 @@ export class GenerativeEntity extends EntityBase {
     // Create initial placeholder mesh
     const ratio = '3:4';
     const { width, height } = getPlaneSize(ratio);
-    this.placeholderMesh = createShapeMesh(scene, "plane");
-    this.placeholderMesh.material = placeholderMaterial;
-    this.placeholderMesh.scale.set(width, height, 1);
+    this.billboardMesh = createShapeMesh(scene, "plane");
+    this.billboardMesh.material = placeholderMaterial;
+    this.billboardMesh.scale.set(width, height, 1);
 
     // Add the mesh to the entity instead of setting parent
-    this.add(this.placeholderMesh);
-    this.placeholderMesh.userData = { rootSelectable: this };
+    this.add(this.billboardMesh);
+    this.billboardMesh.userData = { rootSelectable: this };
 
     this.props = data.props || {
       generationLogs: []
@@ -77,6 +112,7 @@ export class GenerativeEntity extends EntityBase {
     this.temp_prompt = '';
     this.temp_ratio = '1:1';
     this.temp_displayMode = '2d';
+    this.temp_styleOption = 'BASIC_3D';
 
     // Apply generation log if available
     const currentLog = this.getCurrentGenerationLog();
@@ -92,12 +128,12 @@ export class GenerativeEntity extends EntityBase {
     if (this.gltfModel) {
       this.gltfModel.visible = mode === '3d';
     }
-    this.placeholderMesh.visible = mode === '2d';
+    this.billboardMesh.visible = mode === '2d';
     this.temp_displayMode = mode;
   }
 
   getPrimaryMesh(): THREE.Object3D | undefined {
-    return this.temp_displayMode === '3d' ? this.gltfModel : this.placeholderMesh;
+    return this.temp_displayMode === '3d' ? this.gltfModel : this.billboardMesh;
   }
 
   getScene(): THREE.Scene {
@@ -107,14 +143,14 @@ export class GenerativeEntity extends EntityBase {
 
   // Update aspect ratio of the entity
   public updateAspectRatio(ratio: ImageRatio): void {
-    if (!this.placeholderMesh) return;
+    if (!this.billboardMesh) return;
 
     // Save the new ratio in metadata
     this.temp_ratio = ratio;
 
     // Get the new dimensions based on ratio
     const { width, height } = getPlaneSize(ratio);
-    this.placeholderMesh.scale.set(width, height, 1);
+    this.billboardMesh.scale.set(width, height, 1);
   }
 
   onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): IGenerationLog {
@@ -127,7 +163,8 @@ export class GenerativeEntity extends EntityBase {
       fileUrl: fileUrl,
       derivedFromId: derivedFromId,
       imageParams: {
-        ratio: this.temp_ratio || '1:1'
+        ratio: this.temp_ratio || '1:1',
+        stylePrompt: this.temp_styleOption || 'CUSTOM'
       }
     };
 
@@ -239,58 +276,54 @@ export class GenerativeEntity extends EntityBase {
         imageUrl = base64Data;
       }
 
-      // Use a promise-based approach for texture loading
-      return new Promise((resolve, reject) => {
-        // Load the texture (now using either the original URL or base64 data)
-        textureLoader.load(
-          imageUrl,
-          (texture) => {
-            try {
-              // Update the material
-              const newMaterial = new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                side: THREE.DoubleSide
-              });
+      // Load the image
+      const texture = await textureLoader.loadAsync(imageUrl);
+      texture.colorSpace = THREE.SRGBColorSpace;
 
-              // Apply to the placeholder mesh
-              this.placeholderMesh.material = newMaterial;
+      // if is placeholder material, create a new material
+      if (this.billboardMesh.material === placeholderMaterial) {
 
-              // Update the mesh size based on the ratio
-              if (ratio) {
-                const { width, height } = getPlaneSize(ratio);
-                this.placeholderMesh.scale.set(width, height, 1);
-              }
+        // Update the material
+        const newMaterial = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: false,
+          side: THREE.DoubleSide,
+          fog: false,
+        });
 
-              // Set to 2D mode
-              this.setDisplayMode('2d');
+        // Apply to the billboard mesh
+        this.billboardMesh.material = newMaterial;
+      }
+      // Else, update the texture
+      else if (this.billboardMesh.material instanceof THREE.MeshBasicMaterial) {
+        this.billboardMesh.material.map = texture;
+      }
 
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
-          },
-          undefined, // onProgress not used
-          (error) => {
-            console.error('Error loading image texture:', error);
-            reject(error);
-          }
-        );
-      });
+      // Update the mesh size based on the ratio
+      if (ratio) {
+        const { width, height } = getPlaneSize(ratio);
+        this.billboardMesh.scale.set(width, height, 1);
+      }
+
+      // Set to 2D mode
+      this.setDisplayMode('2d');
+
     } catch (error) {
       console.error('Error in applyImage:', error);
     }
   }
 
+
   async generateRealtimeImage(
     prompt: string,
     options: {
+      stylePrompt?: StylePromptOptionKey;
       negativePrompt?: string;
       ratio?: ImageRatio;
     } = { ratio: '1:1' }
   ): Promise<GenerationResult> {
     const scene = this.getScene();
-    return doGenerateRealtimeImage(prompt, this, { ratio: options.ratio });
+    return doGenerateRealtimeImage(prompt, this, { ratio: options.ratio, styleOption: options.stylePrompt });
   }
 
   /**
@@ -356,7 +389,7 @@ export class GenerativeEntity extends EntityBase {
     }
   }
 
-  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio): IGenerationLog {
+  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio, stylePrompt?: StylePromptOptionKey): IGenerationLog {
     const log: IGenerationLog = {
       id: uuidv4(),
       timestamp: Date.now(),
@@ -364,7 +397,8 @@ export class GenerativeEntity extends EntityBase {
       assetType: 'image',
       fileUrl: imageUrl,
       imageParams: {
-        ratio: ratio
+        ratio: ratio,
+        stylePrompt: stylePrompt || 'CUSTOM'
       }
     };
     this.props.generationLogs.push(log);
@@ -387,16 +421,16 @@ export class GenerativeEntity extends EntityBase {
   // Clean up resources
   dispose(): void {
     // Clean up materials and geometries
-    if (this.placeholderMesh) {
-      if (this.placeholderMesh.material) {
-        if (Array.isArray(this.placeholderMesh.material)) {
-          this.placeholderMesh.material.forEach(mat => mat.dispose());
+    if (this.billboardMesh) {
+      if (this.billboardMesh.material) {
+        if (Array.isArray(this.billboardMesh.material)) {
+          this.billboardMesh.material.forEach(mat => mat.dispose());
         } else {
-          this.placeholderMesh.material.dispose();
+          this.billboardMesh.material.dispose();
         }
       }
-      if (this.placeholderMesh.geometry) {
-        this.placeholderMesh.geometry.dispose();
+      if (this.billboardMesh.geometry) {
+        this.billboardMesh.geometry.dispose();
       }
     }
 

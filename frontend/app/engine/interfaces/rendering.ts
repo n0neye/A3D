@@ -1,4 +1,4 @@
-
+import { ImageRatio } from "@/engine/utils/imageUtil";
 // RenderSettings: Represents the settings for the AI render of a project.
 export interface IRenderSettings {
     prompt: string;
@@ -10,6 +10,7 @@ export interface IRenderSettings {
     useRandomSeed: boolean;
     selectedLoras: LoraConfig[];
     openOnRendered: boolean;
+    ratio: ImageRatio;
 }
 
 

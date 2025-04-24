@@ -8,6 +8,7 @@ import Store from 'electron-store';
 import fsPromises from 'fs/promises'; // Use promises version of fs
 import { fileURLToPath } from 'url';
 
+const __projectExtension = 'a3d';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -221,7 +222,7 @@ ipcMain.handle('showOpenDialog', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Open Project',
     properties: ['openFile'],
-    filters: [{ name: 'MUD Project Files', extensions: ['mud'] }],
+    filters: [{ name: 'Project Files', extensions: [__projectExtension] }],
   });
 
   if (result.canceled || result.filePaths.length === 0) {
@@ -247,8 +248,8 @@ ipcMain.handle('showSaveDialog', async (event, defaultName: string) => {
 
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Save Project As',
-    defaultPath: path.join(app.getPath('documents'), defaultName || 'scene-project.mud'), // Suggest documents folder
-    filters: [{ name: 'MUD Project Files', extensions: ['mud'] }],
+    defaultPath: path.join(app.getPath('documents'), defaultName || 'scene-project.' + __projectExtension), // Suggest documents folder
+    filters: [{ name: 'Project Files', extensions: [__projectExtension] }],
   });
 
   if (result.canceled || !result.filePath) {

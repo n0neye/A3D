@@ -135,6 +135,8 @@ export class LocalFileWorker implements FileWorker {
 
     // Use the Electron IPC bridge to write the file to the specified path
     const result = await window.electron.writeFile(filePath, data);
+
+    console.log(`LocalFileWorker: saveFileToPath: result:`, result);
     if (!result.success) {
         throw new Error(`Failed to save file to path ${filePath}: ${result.error || 'Unknown error'}`);
     }

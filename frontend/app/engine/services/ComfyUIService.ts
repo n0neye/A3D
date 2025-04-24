@@ -51,6 +51,15 @@ interface ComfyUIPayload {
 export class ComfyUIService {
     private serverUrl: string;
 
+    static instance: ComfyUIService;
+
+    static getInstance(): ComfyUIService {
+        if (!ComfyUIService.instance) {
+            ComfyUIService.instance = new ComfyUIService();
+        }
+        return ComfyUIService.instance;
+    }
+
     constructor(serverUrl: string = 'http://localhost:8199') {
         this.serverUrl = serverUrl;
     }

@@ -7,6 +7,7 @@ import { BoneControl } from '../engine/entity/components/BoneControl';
 import { ICharacterData, characterDatas } from '../engine/data/CharacterData';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import ColorPickerMenu from './ColorPickerMenu';
 
 // Define common skin tones
 const skinTones = [
@@ -30,7 +31,6 @@ const skinTones = [
 
 const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const { selectedSelectable, engine } = useEditorEngine();
-  const [showBones, setShowBones] = useState(true);
   const [selectedBone, setSelectedBone] = useState<BoneControl | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showEntityList, setShowEntityList] = useState(false);
@@ -44,8 +44,6 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   const animationListRef = useRef<HTMLDivElement>(null);
 
   const [characterColor, setCharacterColor] = useState(entity.characterProps.color || '#ffffff');
-  const [showColorPopover, setShowColorPopover] = useState(false); // State for popover visibility
-  const colorPopoverRef = useRef<HTMLDivElement>(null); // Ref for popover container
 
   useEffect(() => {
     if (selectedSelectable && selectedSelectable instanceof BoneControl) {
@@ -75,19 +73,12 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
       if (animationListRef.current && !animationListRef.current.contains(event.target as Node)) {
         setShowAnimationList(false);
       }
-      if (colorPopoverRef.current && !colorPopoverRef.current.contains(event.target as Node)) {
-        setShowColorPopover(false);
-      }
     };
-
-    if (showEntityList || showAnimationList || showColorPopover) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEntityList, showAnimationList, showColorPopover]);
+  }, [showEntityList, showAnimationList]);
 
   // Initialize animation state when entity changes
   useEffect(() => {
@@ -154,81 +145,30 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
   // Updated function to set color from swatches or input
   const handleSetColor = (newColor: string) => {
     setCharacterColor(newColor);
-    entity.setCharacterColor(newColor);
-    // Optionally close popover after selection, or keep it open
-    // setShowColorPopover(false);
-  };
-
-  // Handler specifically for the color input element
-  const handleCustomColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleSetColor(event.target.value);
+    entity.setColor(newColor);
   };
 
   return (
     <>
       <div className="p-2 flex flex-row gap-2 items-center justify-start">
-        {/* --- Enhanced Color Picker --- */}
-        <div ref={colorPopoverRef} className="relative flex items-center gap-2">
-          {/* <Label className="text-xs whitespace-nowrap">Color:</Label> */}
-          {/* Color Circle Trigger */}
-          <div
-            className="w-7 h-7 rounded-full border border-slate-500 cursor-pointer outline-1"
-            style={{ backgroundColor: characterColor }}
-            onClick={() => setShowColorPopover(!showColorPopover)}
-          />
-
-          {/* Color Popover */}
-          {showColorPopover && (
-            <div className="absolute bottom-full mb-5 -left-7 p-2">
-            <div
-              className="z-50 panel-shape p-3 w-48"
-            >
-              <div className="mb-2 text-xs font-medium">Select Color</div>
-              {/* Predefined Skin Tone Swatches */}
-              <div className="grid grid-cols-6 gap-2 mb-3">
-                {skinTones.map((tone) => (
-                  <div
-                    key={tone}
-                    className="w-6 h-6 rounded cursor-pointer border border-slate-600 hover:border-slate-400"
-                    style={{ backgroundColor: tone }}
-                    onClick={() => handleSetColor(tone)}
-                  />
-                ))}
-              </div>
-              {/* Custom Color Input */}
-              <div className="flex items-center gap-2">
-                <Label htmlFor="customColor" className="text-xs flex-shrink-0">Custom:</Label>
-                <Input
-                  id="customColor"
-                  type="color"
-                  value={characterColor}
-                  onChange={handleCustomColorInputChange}
-                  className="h-7 w-full p-0 border-none cursor-pointer"
-                />
-              </div>
-              </div>
-            </div>
-          )}
-        </div>
-        {/* --- End Enhanced Color Picker --- */}
+        <ColorPickerMenu color={characterColor} onColorChange={handleSetColor} colorOptions={skinTones} />
 
         {/* --- Animation Controls --- */}
         {entity.animationFiles.length + entity.modelAnimations.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0">
             <Button
               variant="outline"
               size="sm"
               onClick={toggleAnimationPlayback}
-              className="w-10 h-8 flex justify-center items-center"
+              className="w-10 h-8 flex justify-center items-center rounded-r-none"
             >
               {isPlaying ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
             </Button>
-            <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={toggleAnimationList}
-                className="text-xs flex items-center"
+                className="text-xs flex items-center rounded-l-none"
               >
                 {"Animation"}
                 {showAnimationList ? <IconChevronsUp size={14} className="ml-1" /> : <IconChevronsDown size={14} className="ml-1" />}
@@ -240,7 +180,6 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
                   className="absolute bottom-full left-0 z-50 mt-1"
                 >
                   <div className="panel-shape p-2 w-52 max-h-60 overflow-y-auto">
-                    <h4 className="text-sm font-medium mb-2">Animations:</h4>
                     <ul className="space-y-1">
                       {entity.modelAnimations.map((animation, index) => (
                         <li
@@ -264,7 +203,6 @@ const CharacterEditPanel = ({ entity }: { entity: CharacterEntity }) => {
                   </div>
                 </div>
               )}
-            </div>
           </div>
         )}
         {/* --- End Animation Controls --- */}

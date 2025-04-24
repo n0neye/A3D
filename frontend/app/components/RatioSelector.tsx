@@ -16,9 +16,10 @@ interface RatioSelectorProps {
   value: ImageRatio;
   onChange: (value: ImageRatio) => void;
   disabled?: boolean;
+  dropdownClassName?: string;
 }
 
-const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled }) => {
+const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled, dropdownClassName }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -55,16 +56,17 @@ const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled
         variant={'ghost'}
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`h-6 px-1`}
+        className={`h-6 px-1 flex items-center justify-center gap-1`}
         title="Aspect Ratio"
       >
-        <div className='flex items-center justify-center  h-4 mr-1 rounded'>
-          <div className={`${getRatioIconClass(value)}`}></div></div>
-        <span className="text-xs ">{value}</span>
+        <div className='flex items-center justify-center h-4 rounded'>
+          <div className={`${getRatioIconClass(value)}`}></div>
+        </div>
+        <span className="text-xs">{value}</span>
       </Button>
 
       {isOpen && !disabled && (
-        <div className="absolute bottom-8 z-10 left-0 mt-1 panel-shape shadow-lg rounded-md py-1 min-w-[160px]">
+        <div className={`absolute bottom-8 z-10 left-0 mt-1 panel-shape shadow-lg rounded-md py-1 overflow-hidden min-w-[160px] min-h-[190px] ${dropdownClassName}`}>
           {ratioOptions.map((option) => (
             <div
               key={option.value}

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Keyboard, MousePointer, Info } from 'lucide-react';
+import { X, Keyboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ButtonLink from './ui/buttonLink';
 import { siteConfig } from '@/siteConfig';
-import { IconBrandGithub, IconBrandX } from '@tabler/icons-react';
+import { IconBrandGithub, IconBrandX,  IconInfoSmall } from '@tabler/icons-react';
+import { useEditorEngine } from '@/context/EditorEngineContext';
 
 // List of shortcuts extracted from EditorContainer
 const SHORTCUTS = [
@@ -20,7 +21,7 @@ const SHORTCUTS = [
 ];
 
 export default function Guide() {
-    const [showWelcome, setShowWelcome] = useState(false);
+    const { showGuide, setShowGuide } = useEditorEngine();
     const [showShortcuts, setShowShortcuts] = useState(false);
 
     // Show welcome message on first visit
@@ -28,14 +29,14 @@ export default function Guide() {
         const hasVisited = localStorage.getItem('hasVisitedBefore');
         // const hasVisited = false;
         if (!hasVisited) {
-            setShowWelcome(true);
+            setShowGuide(true);
             localStorage.setItem('hasVisitedBefore', 'true');
         }
     }, []);
 
     // Close the welcome message
     const closeWelcome = () => {
-        setShowWelcome(false);
+        setShowGuide(false);
     };
 
     // Toggle shortcuts panel
@@ -46,7 +47,7 @@ export default function Guide() {
     return (
         <>
             {/* Welcome overlay */}
-            {showWelcome && (
+            {showGuide && (
                 <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
                     <Card className="max-w-2xl w-full relative panel-shape p-8">
                         <Button
@@ -105,7 +106,7 @@ export default function Guide() {
             )}
 
             {/* Shortcuts panel (toggled) */}
-            {showShortcuts && !showWelcome && (
+            {showShortcuts && !showGuide && (
                 <div className="fixed right-4 bottom-16 z-40">
                     <Card className="w-80 panel-shape">
                         <CardHeader className="pb-2">
@@ -140,7 +141,7 @@ export default function Guide() {
             )}
 
             {/* Toggle shortcuts button */}
-            <Button
+            {/* <Button
                 onClick={toggleShortcuts}
                 variant="secondary"
                 size="icon"
@@ -148,6 +149,16 @@ export default function Guide() {
                 title="Keyboard shortcuts"
             >
                 <Keyboard size={20} />
+            </Button> */}
+
+            <Button
+                onClick={() => setShowGuide(true)}
+                className="fixed right-4 bottom-4 z-30 rounded-full shadow-lg p-1 w-5 h-5 p-1"
+                title="Keyboard shortcuts"
+                variant='secondary'
+                style={{ padding: 0 }}
+            >
+                <IconInfoSmall size={32} className='w-4 h-4' style={{ width: '32px', height: '32px' }} />
             </Button>
         </>
     );

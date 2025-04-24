@@ -243,7 +243,7 @@ export class CharacterEntity extends EntityBase {
             }
 
             // Apply initial color to materials if set
-            this.setCharacterColor(this.characterProps.color || "#ffffff");
+            this.setColor(this.characterProps.color || "#ffffff");
         } catch (error) {
             console.error(`Error loading character model: ${error}`);
         } finally {
@@ -504,7 +504,6 @@ export class CharacterEntity extends EntityBase {
             entityType: 'character',
             characterProps: {
                 ...this.characterProps,
-                color: this.characterProps.color
             },
             boneTransforms
         };
@@ -644,7 +643,7 @@ export class CharacterEntity extends EntityBase {
      * Sets the color of the character's main materials.
      * @param colorString The color string (e.g., "#ff0000").
      */
-    public setCharacterColor(colorString: string): void {
+    public setColor(colorString: string): void {
         this.characterProps.color = colorString;
         this.meshes.forEach(mesh => {
             // Apply color to materials

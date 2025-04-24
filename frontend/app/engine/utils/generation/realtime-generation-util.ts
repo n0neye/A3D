@@ -1,6 +1,6 @@
 
 import { getImageSimulationData, } from "../simulation-data";
-import { GenerativeEntity } from '@/engine/entity/types/GenerativeEntity';
+import { GenerativeEntity, StylePromptOptionKey, StylePromptOptions } from '@/engine/entity/types/GenerativeEntity';
 import { ImageRatio, IMAGE_SIZE_MAP, RATIO_MAP } from "@/engine/utils/imageUtil";
 import { Runware, RunwareClient } from "@runware/sdk-js";
 import { IGenerationLog } from '@/engine/interfaces/generation';
@@ -30,6 +30,7 @@ export async function doGenerateRealtimeImage(
     entity: GenerativeEntity,
     options: {
         ratio?: ImageRatio,
+        styleOption?: StylePromptOptionKey
     } = {}
 ): Promise<GenerationResult> {
     const startTime = performance.now();
@@ -66,7 +67,7 @@ export async function doGenerateRealtimeImage(
     }
 
     // Enhance prompt based on entity type
-    let enhancedPrompt = `${positivePrompt}, at the center of the frame, full-body, white 3d model, no texture, uncropped, solid black background`;
+    let enhancedPrompt = `${positivePrompt}, ${StylePromptOptions[options.styleOption].promptSuffix}`;
 
     // If the prompt is "_", use the test data
     let result: Generation2DRealtimResult;

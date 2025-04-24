@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 import { LoadingSpinner } from './ui/loadingSpinner';
@@ -34,7 +35,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
   onSelectStyle,
   selectedLoras
 }) => {
-  const [availableStylesByCategory, setAvailableStylesByCategory] = useState<Record<string, LoraInfo[]>>({});
+  const [defaultStyles, setDefaultStyles] = useState<Record<string, LoraInfo[]>>({});
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,26 +46,28 @@ const StylePanel: React.FC<StylePanelProps> = ({
   // No longer need panelRef for click outside, Dialog handles it
   // const panelRef = useRef<HTMLDivElement>(null);
 
-  const loadDefaultStyles = useCallback(async () => {
+  const loadDefaultStyles = async () => {
     // Prevent loading if already loaded
-    if (Object.keys(availableStylesByCategory).length > 0) return;
+    if (Object.keys(defaultStyles).length > 0) return;
     try {
       setIsLoadingDefaults(true);
       const categorizedLoraInfo = await getAllLoraInfo();
-      setAvailableStylesByCategory(categorizedLoraInfo);
+      setDefaultStyles(categorizedLoraInfo);
     } catch (error) {
       console.error("Error loading default LoRA styles:", error);
       toast.error("Failed to load default styles."); // Notify user
     } finally {
       setIsLoadingDefaults(false);
     }
-  }, [availableStylesByCategory]);
+  }
+
+  useEffect(() => {
+    // Load style before dialog opens
+    loadDefaultStyles();
+  }, []);
 
   // Load defaults when the dialog opens if they aren't loaded yet
   useEffect(() => {
-    if (isOpen) {
-      loadDefaultStyles();
-    }
     // Reset search state when dialog closes
     if (!isOpen) {
       setSearchQuery('');
@@ -72,7 +75,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
       setIsSearching(false);
       setIsSearchLoading(false);
     }
-  }, [isOpen, loadDefaultStyles]);
+  }, [isOpen]);
 
   const performSearch = async () => {
     const query = searchQuery.trim();
@@ -130,7 +133,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
     let currentSizeKb = 0;
     selectedLoras.forEach(lora => {
       // Add size only if the LoRA info is found and has a valid sizeKb
-        currentSizeKb += lora.sizeKb;
+      currentSizeKb += lora.sizeKb;
     });
 
     // Calculate potential new total size (ensure new style size is valid)
@@ -241,7 +244,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
       <DialogContent className="max-w-[90vw] min-w-[50vw] w-full h-[85vh] flex flex-col p-0 gap-0">
         <div className="p-4 pl-6 pr-6 border-b">
           <div className="flex justify-between items-center gap-4">
-            <div className="text-lg whitespace-nowrap">Style Lora</div>
+            <DialogTitle className="text-lg whitespace-nowrap">Style Lora</DialogTitle>
             {/* Search Input Group */}
             {showSearch && <div className="flex flex-grow items-center gap-2 mx-auto max-w-md"> {/* Removed max-w-md */}
               <div className="relative flex-grow">
@@ -281,8 +284,8 @@ const StylePanel: React.FC<StylePanelProps> = ({
             </div>}
             {/* Close button is handled by Dialog overlay click or ESC, but can add one if needed */}
             {/* <DialogTitle> */}
-              
-              {/* <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto">
+
+            {/* <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto">
                 <IconX size={18} />
               </Button> */}
             {/* </DialogTitle> */}
@@ -306,20 +309,20 @@ const StylePanel: React.FC<StylePanelProps> = ({
           ) : (
             // Display Default Categories
             <div className="space-y-6">
-              {isLoadingDefaults && Object.keys(availableStylesByCategory).length === 0 && (
+              {isLoadingDefaults && Object.keys(defaultStyles).length === 0 && (
                 // Show skeletons only on initial load
                 // renderGrid(null, true)
                 <div className='flex flex-col items-center justify-center h-full'>
                   <LoadingSpinner className='w-10 h-10' />
                 </div>
               )}
-              {!isLoadingDefaults && Object.entries(availableStylesByCategory).map(([category, styles]) => (
+              {!isLoadingDefaults && Object.entries(defaultStyles).map(([category, styles]) => (
                 <div key={category}>
                   <h4 className="text-base font-semibold mb-3">{category}</h4>
                   {renderGrid(styles, false)} {/* Pass false for loading here */}
                 </div>
               ))}
-              {!isLoadingDefaults && Object.keys(availableStylesByCategory).length === 0 && (
+              {!isLoadingDefaults && Object.keys(defaultStyles).length === 0 && (
                 <p className="text-muted-foreground text-center py-4">Could not load default styles.</p>
               )}
             </div>

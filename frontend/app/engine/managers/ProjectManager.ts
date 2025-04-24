@@ -17,6 +17,7 @@ import { EntityFactory } from '../entity/EntityFactory';
 import { FileService } from '../services/FileService/FileService';
 import { LocalFileWorker } from '../services/FileService/LocalFileWorker';
 import { HistoryManager } from './HistoryManager';
+import { siteConfig } from '@/siteConfig';
 
 // Interface for serialized render settings
 
@@ -157,8 +158,8 @@ export class ProjectManager {
         this.observers.notify('projectLoaded', { project });
     }
 
-    public async saveProject(): Promise<void> {
-        const fileName = `${this.currentProjectName}.mud`;
+    public async saveProject(): Promise<{ saved: boolean, error: string | null }> {
+        const fileName = `${this.currentProjectName}.${siteConfig.projectFileExtension}`;
         if (this.isElectron && this.currentProjectPath) {
             try {
                 const projectData = this.serializeProject();
@@ -168,18 +169,20 @@ export class ProjectManager {
                 await this.localFileWorker.saveFileToPath(arrayBuffer, this.currentProjectPath);
                 console.log(`Project saved to: ${this.currentProjectPath}`);
                 this.setUnsavedChanges(false);
+                return { saved: true, error: null };
             } catch (error) {
                 console.error(`Error saving project to ${this.currentProjectPath}:`, error);
-                throw error;
+                return { saved: false, error: error instanceof Error ? error.message : String(error) };
             }
         } else {
-            await this.saveProjectAs(fileName);
+            const result = await this.saveProjectAs(fileName);
+            return result;
         }
     }
 
     public async saveProjectAs(
-        fileName: string = `${this.currentProjectName}.mud`
-    ): Promise<void> {
+        fileName: string = `${this.currentProjectName}.${siteConfig.projectFileExtension}`
+    ): Promise<{ saved: boolean, error: string | null }> {
         const projectData = this.serializeProject();
         const jsonString = JSON.stringify(projectData, null, 2);
 
@@ -198,23 +201,24 @@ export class ProjectManager {
                     this.observers.notify('projectNameChanged', { name: this.currentProjectName });
                     console.log(`Project saved as: ${this.currentProjectPath}`);
                     this.setUnsavedChanges(false);
+                    return { saved: true, error: null };
                 } else {
                     console.log("Save As cancelled by user.");
+                    return { saved: false, error: null };
                 }
             } catch (err) {
-                console.error("Error during Electron Save As:", err);
-                throw err;
+                return { saved: false, error: err instanceof Error ? err.message : String(err) };
             }
         } else {
-            const blob = new Blob([jsonString], { type: 'application/mud' });
+            const blob = new Blob([jsonString], { type: `application/${siteConfig.projectFileExtension}` });
 
             if ('showSaveFilePicker' in window) {
                 try {
                     const fileHandle = await window.showSaveFilePicker!({
                         suggestedName: fileName,
                         types: [{
-                            description: 'MUD Files',
-                            accept: { 'application/mud': ['.mud'] },
+                            description: 'Project Files',
+                            accept: { [`application/${siteConfig.projectFileExtension}`]: [`.${siteConfig.projectFileExtension}`] },
                         }],
                     });
                     const writable = await fileHandle.createWritable();
@@ -227,9 +231,10 @@ export class ProjectManager {
                     this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
                     this.observers.notify('projectNameChanged', { name: this.currentProjectName });
                     this.setUnsavedChanges(false);
-                    return;
+                    return { saved: true, error: null };
                 } catch (err) {
                     console.log("File System Access API failed or cancelled, falling back to download method");
+                    return { saved: false, error: err instanceof Error ? err.message : String(err) };
                 }
             }
 
@@ -248,6 +253,7 @@ export class ProjectManager {
             this.observers.notify('projectPathChanged', { path: this.currentProjectPath });
             this.observers.notify('projectNameChanged', { name: this.currentProjectName });
             this.setUnsavedChanges(false);
+            return { saved: true, error: null };
         }
     }
 
@@ -314,6 +320,12 @@ export class ProjectManager {
             this.settings = defaultSettings;
         }
         this.observers.notify('renderSettingsChanged', { renderSettings: this.settings });
+
+        // Set ratio
+        // TODO: Move to better place?
+        if (this.settings.ratio) {
+            this.engine.getCameraManager().setRatioOverlayRatio(this.settings.ratio);
+        }
 
         if (data.renderLogs) {
             this.renderLogs = data.renderLogs;

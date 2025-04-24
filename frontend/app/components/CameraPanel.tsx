@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { IconVideo } from '@tabler/icons-react';
 import { ImageRatio } from '@/engine/utils/imageUtil';
 import { useEditorEngine } from '../context/EditorEngineContext';
+import { IRenderSettings } from '@/engine/interfaces/rendering';
 
 const CameraPanel: React.FC = () => {
   const { engine } = useEditorEngine();
@@ -86,6 +87,7 @@ const CameraPanel: React.FC = () => {
   const handleRatioChange = (newRatio: ImageRatio) => {
     setRatio(newRatio);
     engine.getCameraManager().setRatioOverlayRatio(newRatio);
+    engine.getProjectManager().updateRenderSettings({ ratio: newRatio })
   };
 
   const handlePaddingChange = (newValues: number[]) => {
@@ -133,6 +135,20 @@ const CameraPanel: React.FC = () => {
 
           <div className="space-y-4">
 
+            {/* Ratio */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="ratio-selector" className="text-xs">Aspect Ratio</Label>
+                <RatioSelector
+                  value={ratio}
+                  onChange={handleRatioChange}
+                  disabled={!overlayVisible}
+                  dropdownClassName="-top-5 left-0"
+                />
+              </div>
+            </div>
+
+            {/* Field of View */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="fov-slider" className="text-xs">Field of View</Label>
@@ -189,18 +205,6 @@ const CameraPanel: React.FC = () => {
                 onCheckedChange={handleVisibilityChange}
               />
             </div>
-
-
-            {/* <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="ratio-selector" className="text-xs">Aspect Ratio</Label>
-              <RatioSelector
-                value={ratio}
-                onChange={handleRatioChange}
-                disabled={!overlayVisible}
-              />
-            </div>
-          </div> */}
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
