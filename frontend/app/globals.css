@@ -47,7 +47,7 @@
   background: rgba(255, 255, 255, 0.8);
   color: black;
   backdrop-filter: blur(20px);
-  box-shadow: 0 10 10px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 0 5 10px 0 rgba(0, 0, 0, 0.1);
   border-radius: 1rem;
   padding: 1rem;
 }
@@ -56,7 +56,7 @@
   background: rgba(255, 255, 255, 0.8);
   color: black;
   backdrop-filter: blur(20px);
-  box-shadow: 0 10 10px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 0 5 10px 0 rgba(0, 0, 0, 0.1);
   border-radius: 1rem;
 }
 

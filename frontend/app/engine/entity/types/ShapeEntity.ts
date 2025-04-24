@@ -47,7 +47,7 @@ export class ShapeEntity extends EntityBase {
     setupMeshShadows(newMesh);
 
     // Apply the color
-    if (this.props.material.color) {
+    if (this.props.material?.color) {
       this._applyColorToMesh(this.props.material.color);
     }
 
