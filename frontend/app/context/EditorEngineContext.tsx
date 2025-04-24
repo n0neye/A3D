@@ -36,6 +36,8 @@ interface EditorEngineContextType {
   gizmoSpace: 'world' | 'local';
   userPreferences: UserPreferences;
   setUserPreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
+  showGuide: boolean;
+  setShowGuide: (show: boolean) => void;
 }
 
 export enum UiLayoutMode {
@@ -58,6 +60,7 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
   const [uiLayoutMode, setUiLayoutMode] = useState<UiLayoutMode>(UiLayoutMode.Image);
   const [gizmoSpace, setGizmoSpace] = useState<'world' | 'local'>('world');
   const [userPreferences, setUserPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -158,6 +161,8 @@ export function EditorEngineProvider({ children }: { children: React.ReactNode }
         gizmoSpace,
         userPreferences,
         setUserPreference: storeUserPreference,
+        showGuide,
+        setShowGuide,
       }}
     >
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full"></canvas>
