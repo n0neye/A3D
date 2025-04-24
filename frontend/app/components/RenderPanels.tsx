@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "./ui/card";
 import { ComfyUIRenderParams, ComfyUIService } from "@/engine/services/ComfyUIService";
+import PreviewPanel from "./PreviewPanel";
 
 
 
@@ -409,8 +410,10 @@ function RenderPanels() {
                 document.body
             )}
 
-            <div className={`fixed right-4 h-full flex justify-center items-center `}>
-                <Card className={`panel-shape z-40 w-64 border-border max-h-[90vh] overflow-y-auto gap-2 flex flex-col `}>
+            <div className={`fixed right-4 h-full flex flex-col gap-2 justify-center items-center `}>
+
+                {/*  */}
+                <Card className={`panel-shape z-40 w-64 border-border max-h-[90vh] overflow-y-auto gap-2 flex flex-col px-0`}>
 
                     {/* Temporary disable video mode */}
                     {/* <CardHeader className="flex flex-row justify-between items-center">
@@ -641,6 +644,9 @@ function RenderPanels() {
                         </Button>
                     </CardContent>
                 </Card>
+
+                {/* Preview image */}
+                <PreviewPanel executionTime={executionTime} imageUrl={imageUrl} isLoading={isLoading} handleCancelRender={handleCancelRender} />
             </div>
         </>
     );
