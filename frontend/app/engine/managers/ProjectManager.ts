@@ -17,6 +17,7 @@ import { EntityFactory } from '../entity/EntityFactory';
 import { FileService } from '../services/FileService/FileService';
 import { LocalFileWorker } from '../services/FileService/LocalFileWorker';
 import { HistoryManager } from './HistoryManager';
+import { siteConfig } from '@/siteConfig';
 
 // Interface for serialized render settings
 
@@ -158,7 +159,7 @@ export class ProjectManager {
     }
 
     public async saveProject(): Promise<{ saved: boolean, error: string | null }> {
-        const fileName = `${this.currentProjectName}.mud`;
+        const fileName = `${this.currentProjectName}.${siteConfig.projectFileExtension}`;
         if (this.isElectron && this.currentProjectPath) {
             try {
                 const projectData = this.serializeProject();
@@ -180,7 +181,7 @@ export class ProjectManager {
     }
 
     public async saveProjectAs(
-        fileName: string = `${this.currentProjectName}.mud`
+        fileName: string = `${this.currentProjectName}.${siteConfig.projectFileExtension}`
     ): Promise<{ saved: boolean, error: string | null }> {
         const projectData = this.serializeProject();
         const jsonString = JSON.stringify(projectData, null, 2);
@@ -209,15 +210,15 @@ export class ProjectManager {
                 return { saved: false, error: err instanceof Error ? err.message : String(err) };
             }
         } else {
-            const blob = new Blob([jsonString], { type: 'application/mud' });
+            const blob = new Blob([jsonString], { type: `application/${siteConfig.projectFileExtension}` });
 
             if ('showSaveFilePicker' in window) {
                 try {
                     const fileHandle = await window.showSaveFilePicker!({
                         suggestedName: fileName,
                         types: [{
-                            description: 'MUD Files',
-                            accept: { 'application/mud': ['.mud'] },
+                            description: 'Project Files',
+                            accept: { [`application/${siteConfig.projectFileExtension}`]: [`.${siteConfig.projectFileExtension}`] },
                         }],
                     });
                     const writable = await fileHandle.createWritable();

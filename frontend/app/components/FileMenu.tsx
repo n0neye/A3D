@@ -17,6 +17,7 @@ import { isEntity } from '@/engine/entity/base/EntityBase';
 import { useEditorEngine } from '../context/EditorEngineContext';
 import { toast } from 'sonner';
 import { ImportService, ACCEPTED_EXTENSIONS } from '../engine/services/ImportService';
+import { siteConfig } from '@/siteConfig';
 
 export default function FileMenu() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -280,7 +281,7 @@ export default function FileMenu() {
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept=".mud"
+          accept={`.${siteConfig.projectFileExtension}`}
           className="hidden"
         />
       )}

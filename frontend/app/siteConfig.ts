@@ -1,9 +1,10 @@
 export const siteConfig = {
-  productName: 'AQ3D',
-  title: 'AQ3D Editor',
-  description: 'AQ3D Editor is a tool for creating and editing 3D models.',
+  productName: 'A3D',
+  title: 'A3D Editor',
+  description: 'A3D Editor is a tool for creating and editing 3D models.',
   version: '0.0.1',
-  author: 'AQ3D',
+  author: 'A3D',
+  projectFileExtension: 'a3d',
 
   brandColor: '#6FFF31',
 
