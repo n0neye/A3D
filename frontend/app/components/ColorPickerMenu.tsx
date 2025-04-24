@@ -8,7 +8,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-
 const defaultColors = [
     '#ffffff', // White
     '#888888', // Gray  
@@ -24,9 +23,7 @@ const defaultColors = [
     '#ff44aa', // Pink
 ]
 
-
 function ColorPickerMenu({ color, onColorChange, colorOptions = defaultColors }: { color: string, onColorChange: (color: string) => void, colorOptions?: string[] }) {
-    // const [colorDisplay, setColorDisplay] = useState(entity.props.material?.color || '#ffffff');
     return (
         <>
             <DropdownMenu>

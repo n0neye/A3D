@@ -55,12 +55,13 @@ const RatioSelector: React.FC<RatioSelectorProps> = ({ value, onChange, disabled
         variant={'ghost'}
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`h-6 px-1`}
+        className={`h-6 px-1 flex items-center justify-center gap-1`}
         title="Aspect Ratio"
       >
-        <div className='flex items-center justify-center  h-4 mr-1 rounded'>
-          <div className={`${getRatioIconClass(value)}`}></div></div>
-        <span className="text-xs ">{value}</span>
+        <div className='flex items-center justify-center h-4 rounded'>
+          <div className={`${getRatioIconClass(value)}`}></div>
+        </div>
+        <span className="text-xs">{value}</span>
       </Button>
 
       {isOpen && !disabled && (

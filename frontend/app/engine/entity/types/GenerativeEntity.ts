@@ -24,6 +24,39 @@ export interface GenerativeEntityProps {
   isImported?: boolean;
 }
 
+export const StylePromptOptions = {
+  BASIC_3D: { 
+    label: "Basic 3D", 
+    description: "Standard 3D look",
+    promptSuffix: "at the center of the frame, full-body, 3d model, uncropped, solid black background" 
+  },
+  WHITE_3D: { 
+    label: "White 3D", 
+    description: "Clean white 3D model",
+    promptSuffix: "at the center of the frame, full-body, white 3d model, no texture, uncropped, solid black background" 
+  },
+  TOY_3D: { 
+    label: "3D Toy", 
+    description: "Toy-like appearance",
+    promptSuffix: "3d toy style, at the center of the frame, full-body, 3d model, uncropped, solid black background" 
+  },
+  REALISTIC_3D: { 
+    label: "3D Realistic", 
+    description: "Highly detailed realistic 3D",
+    promptSuffix: "photorealistic 3d model, highly detailed, at the center of the frame, full-body, 3d model, uncropped, solid black background" 
+  },
+  CUSTOM: { 
+    label: "Custom", 
+    description: "Custom style settings",
+    promptSuffix: "" 
+  }
+} as const;
+
+export type StylePromptOptionKey = keyof typeof StylePromptOptions;
+export type StylePromptOption = typeof StylePromptOptions[StylePromptOptionKey]["label"];
+
+export const styleOptions = Object.values(StylePromptOptions).map(option => option.label);
+
 // Processing states
 export type GenerationStatus = 'idle' | 'generating2D' | 'generating3D' | 'error';
 
@@ -45,6 +78,7 @@ export class GenerativeEntity extends EntityBase {
   temp_prompt: string;
   temp_ratio?: ImageRatio;
   temp_displayMode?: "3d" | "2d";
+  temp_styleOption?: StylePromptOptionKey;
 
   public readonly onProgress = new EventHandler<{ entity: GenerativeEntity, state: GenerationStatus, message: string }>();
   public readonly onGenerationChanged = new EventHandler<{ entity: GenerativeEntity }>();
@@ -77,6 +111,7 @@ export class GenerativeEntity extends EntityBase {
     this.temp_prompt = '';
     this.temp_ratio = '1:1';
     this.temp_displayMode = '2d';
+    this.temp_styleOption = 'BASIC_3D';
 
     // Apply generation log if available
     const currentLog = this.getCurrentGenerationLog();
@@ -127,7 +162,8 @@ export class GenerativeEntity extends EntityBase {
       fileUrl: fileUrl,
       derivedFromId: derivedFromId,
       imageParams: {
-        ratio: this.temp_ratio || '1:1'
+        ratio: this.temp_ratio || '1:1',
+        stylePrompt: this.temp_styleOption || 'CUSTOM'
       }
     };
 
@@ -282,15 +318,17 @@ export class GenerativeEntity extends EntityBase {
     }
   }
 
+
   async generateRealtimeImage(
     prompt: string,
     options: {
+      stylePrompt?: StylePromptOptionKey;
       negativePrompt?: string;
       ratio?: ImageRatio;
     } = { ratio: '1:1' }
   ): Promise<GenerationResult> {
     const scene = this.getScene();
-    return doGenerateRealtimeImage(prompt, this, { ratio: options.ratio });
+    return doGenerateRealtimeImage(prompt, this, { ratio: options.ratio, styleOption: options.stylePrompt });
   }
 
   /**
@@ -356,7 +394,7 @@ export class GenerativeEntity extends EntityBase {
     }
   }
 
-  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio): IGenerationLog {
+  addImageGenerationLog(prompt: string, imageUrl: string, ratio: ImageRatio, stylePrompt?: StylePromptOptionKey): IGenerationLog {
     const log: IGenerationLog = {
       id: uuidv4(),
       timestamp: Date.now(),
@@ -364,7 +402,8 @@ export class GenerativeEntity extends EntityBase {
       assetType: 'image',
       fileUrl: imageUrl,
       imageParams: {
-        ratio: ratio
+        ratio: ratio,
+        stylePrompt: stylePrompt || 'CUSTOM'
       }
     };
     this.props.generationLogs.push(log);
