@@ -39,6 +39,7 @@ interface ComfyUIPayload {
         timestamp: number;
         filename?: string;
         prompt?: string;
+        negative_prompt?: string;
         prompt_strength?: number;
         seed?: number;
         depth_strength?: number;
@@ -50,6 +51,7 @@ interface ComfyUIPayload {
 
 export class ComfyUIService {
     private serverUrl: string;
+    private comfyUiBaseUrl: string;
 
     static instance: ComfyUIService;
 
@@ -60,8 +62,9 @@ export class ComfyUIService {
         return ComfyUIService.instance;
     }
 
-    constructor(serverUrl: string = 'http://localhost:8199') {
-        this.serverUrl = serverUrl;
+    constructor(comfyUiBaseUrl: string = 'http://localhost:8188', endpointPath: string = '/a3d_data') {
+        this.comfyUiBaseUrl = comfyUiBaseUrl;
+        this.serverUrl = endpointPath;
     }
 
     /**
@@ -75,15 +78,23 @@ export class ComfyUIService {
             const colorImageBase64 = this.stripDataUrlPrefix(params.colorImage);
             const depthImageBase64 = params.depthImage ? this.stripDataUrlPrefix(params.depthImage) : undefined;
 
+            // Separate prompt into positive and negative prompts
+            let positivePrompt = params.prompt;
+            let negativePrompt = '';
+            
+            if (params.prompt.includes('--no')) {
+                [positivePrompt, negativePrompt] = params.prompt.split('--no');
+            }
+
             // Create payload object with correct typing
             const payload: ComfyUIPayload = {
                 color_image_base64: colorImageBase64,
                 metadata: {
                     filename: `render_${Date.now()}.png`,
                     timestamp: Date.now() / 1000,
-                      prompt: params.prompt,
-                    //   prompt_strength: params.promptStrength,
-                      seed: params.seed,
+                    prompt: positivePrompt.trim(),
+                    negative_prompt: negativePrompt.trim(),
+                    seed: params.seed,
                     ...params.metadata
                 }
             };
@@ -94,17 +105,21 @@ export class ComfyUIService {
                 payload.metadata.depth_strength = params.depthStrength || 0.5;
             }
 
-            // Convert to JSON
-            const jsonData = JSON.stringify(payload);
+            // Construct the full URL
+            const fullUrl = `${this.comfyUiBaseUrl}${this.serverUrl}`;
+            
+            console.log(`Sending request to ComfyUI at ${fullUrl}`);
+            console.log('Payload:', payload);
 
-            // Send request
-            console.log(`Sending request to ComfyUI at ${this.serverUrl}`);
-            const response = await fetch(this.serverUrl, {
+            // Send request with proper CORS headers
+            const response = await fetch(fullUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
-                body: jsonData
+                mode: 'cors', // Explicitly set CORS mode
+                body: JSON.stringify(payload)
             });
 
             console.log("ComfyUI response:", response);
@@ -120,25 +135,9 @@ export class ComfyUIService {
                 throw new Error(responseData.error || 'Unknown error from ComfyUI server');
             }
 
-            // Add render log
-            // const renderLog: IRenderLog = {
-            //     timestamp: new Date(),
-            //     imageUrl: responseData.data?.image_url || '',
-            //     prompt: params.prompt || '',
-            //     model: 'ComfyUI',
-            //     seed: params.seed || 0,
-            //     promptStrength: params.promptStrength || 0.5,
-            //     depthStrength: params.depthStrength,
-            //     selectedLoras: params.selectedLoras || [],
-            // };
-
-            // // Add render log to project manager
-            // EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog, true);
-
             return {
                 success: true,
-                // imageUrl: responseData.data?.image_url || null,
-                // seed: params.seed
+                message: responseData.message || 'Success'
             };
         } catch (error) {
             console.error('Error sending to ComfyUI:', error);
