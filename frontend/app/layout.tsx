@@ -1,7 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
-// import { PostHogProvider } from './components/PostHogProvider'
-// import { initAnalytics } from './engine/utils/external/analytics'
+import { PostHogProvider } from './components/PostHogProvider'
+import { initAnalytics } from './engine/utils/external/analytics'
 import { Toaster } from 'sonner'
 import { siteConfig } from '@/siteConfig'
 console.log('layout.tsx')
@@ -26,7 +26,7 @@ export default function RootLayout({
 }) {
   // Initialize analytics on client side
   if (typeof window !== 'undefined') {
-    // initAnalytics();
+    initAnalytics();
   }
 
   return (
@@ -41,9 +41,9 @@ export default function RootLayout({
       </head>
       <body className={`bg-black `}>
         <Toaster closeButton expand={true} richColors={true} />
-        {/* <PostHogProvider> */}
-        {children}
-        {/* </PostHogProvider> */}
+        <PostHogProvider>
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   )

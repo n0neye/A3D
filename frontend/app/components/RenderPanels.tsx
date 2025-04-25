@@ -233,12 +233,15 @@ function RenderPanels() {
 
 
     const handleSubmit = async (isTest: boolean = false) => {
+        
+        const trackEventName = renderMode === "fal" ? ANALYTICS_EVENTS.RENDER_IMAGE : ANALYTICS_EVENTS.RENDER_COMFYUI;
+
         try {
             setIsLoading(true);
             setExecutionTime(null);
 
             // Track that render started
-            trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_started', {
+            trackEvent(trackEventName + '_started', {
                 model: selectedAPI.name,
                 prompt_length: prompt.length,
                 use_depth: selectedAPI.useDepthImage,
@@ -314,7 +317,7 @@ function RenderPanels() {
             setExecutionTime(result.executionTimeMs);
 
             // Track successful render
-            trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_completed', {
+            trackEvent(trackEventName + '_completed', {
                 test_mode: isTest,
                 model: selectedAPI.name,
                 execution_time_ms: result.executionTimeMs,
@@ -329,7 +332,7 @@ function RenderPanels() {
             }
         } catch (error) {
             // Track failed render
-            trackEvent(ANALYTICS_EVENTS.RENDER_IMAGE + '_error', {
+            trackEvent(trackEventName + '_error', {
                 test_mode: isTest,
                 render_mode: renderMode,
                 model: selectedAPI.name,
