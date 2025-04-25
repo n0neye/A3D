@@ -10,6 +10,7 @@ export const defaultSettings: IRenderSettings = {
     seed: Math.floor(Math.random() * 2147483647),
     useRandomSeed: true,
     selectedLoras: [],
-    openOnRendered: true
+    openOnRendered: true,
+    ratio: '16:9'
   };
   
