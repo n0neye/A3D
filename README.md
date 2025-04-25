@@ -1,142 +1,57 @@
-# 3D AI Scene Editor
+![A3D Logo](/frontend/public/logo.svg)
 
-This project is a browser-based 3D scene editor that leverages AI for content generation. It allows users to create, manipulate and render 3D scenes using Three.js with AI-assisted generation capabilities.
+# A3D Editor (beta)
 
-## System Architecture
+A3D is a 3DxAI hybrid editor that allows you to compose 3D scene, generate 3D models and render them with AI.
 
-The application follows a decoupled architecture that separates the 3D engine from the React UI layer:
 
-```
-Application
-├── Engine Layer
-│   ├── EditorEngine (Singleton)
-│   │   ├── ThreeCore
-│   │   ├── Managers
-│   │   │   ├── CameraManager
-│   │   │   ├── SelectionManager
-│   │   │   ├── TransformControlManager
-│   │   │   ├── HistoryManager
-│   │   │   ├── InputManager
-│   │   │   ├── ProjectManager
-│   │   │   └── EnvironmentManager
-│   │   └── Services
-│   │       ├── RenderService
-│   │       └── EntityFactory
-│   └── Utils
-│       ├── Observer (Type-safe event system)
-│       └── Other utilities
-│
-└── UI Layer (React)
-    ├── EditorEngineContext (Bridge to Engine)
-    └── Components
-        ├── EditorUIContainer
-        ├── FramePanel
-        ├── RenderPanel
-        ├── EntityPanel
-        └── Other UI components
-```
+## Main Features
 
-### Key Architectural Components
+- Dummy characters and pose control
+- 2D image and 3D model generation with AI (Fal.ai)
+- Depth guided final rendering with AI (Fal.ai or [ComfyUI](https://github.com/n0neye/A3D-comfyui-integration))
+- 3D scene composition, 2D/3D import, project management.
 
-- **EditorEngine**: The central singleton that coordinates all engine functionality and provides a clean API for React components
-- **ThreeCore**: Low-level wrapper around Three.js engine and scene, handling initialization and rendering
-- **Managers**: Specialized classes that handle specific aspects of the editor (camera, selection, history, etc.)
-- **Services**: Higher-level operations that involve multiple managers or external systems
-- **Observer Pattern**: Type-safe event system that enables communication between components without tight coupling
-
-## Communication Patterns
-
-We've moved from a direct reference model to a more loosely coupled event-based architecture:
-
-1. **Type-Safe Observer Pattern**: All communication between managers and with the UI uses a strongly-typed Observer system
-2. **Context as Bridge**: EditorEngineContext serves as the bridge between React components and the engine layer
-3. **Direct API Calls**: Simple operations use direct method calls on the EditorEngine singleton
-
-```typescript
-// Example of UI component interaction with the engine
-const { engine } = useEditorEngine();
-const handleCreateEntity = () => {
-  engine.createEntityDefaultCommand('generative');
-};
-```
-
-## Entity System
-
-Entities are managed through the EditorEngine, with operations going through the proper managers:
-
-```typescript
-// Creation through commands (with history support)
-engine.createEntityCommand({
-  type: 'generative',
-  position: new THREE.Vector3(0, 1, 0)
-});
-
-// Selection
-engine.selectEntity(entity);
-
-// Deletion (with history support)
-engine.deleteEntity(entity);
-```
-
-Each entity maintains its own generation history and metadata, accessible through a standardized API.
-
-## Input Handling
-
-All user input is managed by the InputManager, which:
-
-1. Captures pointer events (clicks, drags, wheel)
-2. Maintains keyboard state
-3. Implements command shortcuts
-4. Delegates to appropriate managers based on context
-
-This centralizes input logic and removes it from UI components.
-
-## Rendering Pipeline
-
-The RenderService handles all rendering operations:
-
-- Taking screenshots with proper framing
-- Processing depth maps
-- Managing gizmo visibility during renders
-- Image processing for API operations
-
-## Getting Started
-
-1. Install dependencies: `npm install`
-2. Run the development server: `npm run dev`
-3. Open your browser to `http://localhost:3030`
 
 ## Usage
 
-- Click "Add" buttons to create new entities
-- Click on entities to select them
-- Use gizmos to move, rotate, and scale entities (keyboard shortcuts: W, E, R, T)
-- Delete selected entities with the Delete key
-- Duplicate selected entities with Ctrl+D
-- Undo/Redo with Ctrl+Z and Ctrl+Shift+Z
-- Use the Render panel to take screenshots and generate AI variations
+1. Download the latest release from [Releases](https://github.com/n0neye/A3D/releases/), windows only for now.
+2. Unzip the file and run `A3D.exe`
+3. (Optional) Create a [Fal.ai](https://fal.ai) account and add an [API key](https://fal.ai/dashboard/keys) in User Setting for 3D model generation, and cloud rendering.
+4. (Optional) Install the [ComfyUI integration](https://github.com/n0neye/A3D-comfyui-integration) custom nodes, to send the color and depth images to ComfyUI for final rendering.
+5. Please note that the app is still in early beta, and bugs are expected. Any feedback is welcome!
+
+
+## Cost
+The app is free to use, but some features require 3rd party services for now. We'll try to make all features available with local computation in the future.
+- Fast image generation with [Fast-LCM](https://fal.ai/models/fal-ai/fast-lcm-diffusion): 1739 images/$1
+- 3D model generation with [Trellis](https://fal.ai/models/fal-ai/trellis): 50 models/$1
+- Final render with [Flux lora depth](https://fal.ai/models/fal-ai/flux-control-lora-depth/image-to-image): 800 images/$1
+
+
+## TODO
+
+- [ ] Send OpenPose image to ComfyUI
+- [ ] Animation system & Depth guided video rendering with Wan2.1
+- [ ] Local 3D model generation, with ComfyUI and/or built-in python
+- [ ] Skybox generation
+- [ ] More built-in characters & poses
 
 ## Development
 
-The project uses:
-- Next.js for the React framework
-- Three.js for 3D rendering
-- TailwindCSS for styling
-- Various AI services for content generation
+1. Install dependencies: `yarn`
+1. Run the electron app & nextjs development server: `yarn dev`
+1. Build electron app: `yarn dist`
 
-## Extending the Engine
+see [guide/development.md](guide/development.md) for more details
 
-To add new functionality:
+## Looking forCollaborators
 
-1. Create a new manager or service in the appropriate directory
-2. Register it with the EditorEngine singleton
-3. Expose a clean API through EditorEngine
-4. Subscribe to events using the Observer pattern
-5. Update the UI components to use the new functionality
+I'm looking for collaborators to help me improve the project, especially in ComfyUI integration and local 3D model generation. DM me on X if you're interested!
 
-This architecture ensures clean separation of concerns and makes the codebase more maintainable.
+## Author
+X: [_@n0neye](https://x.com/_n0neye)
+IG: [@n0neye](https://www.instagram.com/n0neye/) 
 
-### Electron Build
-- `yarn build:next`
-- `yarn build:electron` (Powershell may not work, use Command Prompt)
-- `yarn electron-builder --dir --win` (with admin permission)
+
+⭐ if you like the project!

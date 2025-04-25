@@ -6,16 +6,16 @@ export const siteConfig = {
   author: 'A3D',
   projectFileExtension: 'a3d',
 
-  brandColor: '#6FFF31',
+  brandColor: '#FF6600',
 
   guideLinks: {
-    comfyUI: 'https://docs.comfy.org/nodes/comfyui-nodes',
-    falAPI: 'https://fal.ai/api-key',
+    comfyUI: 'https://github.com/n0neye/A3D-comfyui-integration',
+    falAPI: 'https://github.com/n0neye/A3D',
   },
 
   links: {
-    github: 'https://github.com/a3d-io/a3d-editor',
-    x: 'https://x.com/a3d_io',
+    github: 'https://github.com/n0neye/A3D',
+    x: 'https://x.com/_n0neye',
   }
 };
 
