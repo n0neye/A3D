@@ -49,7 +49,7 @@ interface ComfyUIPayload {
 }
 
 export class ComfyUIService {
-    private serverUrl: string;
+    private endpoint: string;
 
     static instance: ComfyUIService;
 
@@ -60,8 +60,8 @@ export class ComfyUIService {
         return ComfyUIService.instance;
     }
 
-    constructor(serverUrl: string = 'http://localhost:8199') {
-        this.serverUrl = serverUrl;
+    constructor(serverUrl: string = '/a3d_data') {
+        this.endpoint = serverUrl;
     }
 
     /**
@@ -75,15 +75,19 @@ export class ComfyUIService {
             const colorImageBase64 = this.stripDataUrlPrefix(params.colorImage);
             const depthImageBase64 = params.depthImage ? this.stripDataUrlPrefix(params.depthImage) : undefined;
 
+            // Separate prompt into positive and negative prompts
+            const [positivePrompt, negativePrompt] = params.prompt.split('--no');
+
             // Create payload object with correct typing
             const payload: ComfyUIPayload = {
                 color_image_base64: colorImageBase64,
                 metadata: {
                     filename: `render_${Date.now()}.png`,
                     timestamp: Date.now() / 1000,
-                      prompt: params.prompt,
+                    prompt: positivePrompt,
+                    negative_prompt: negativePrompt,
                     //   prompt_strength: params.promptStrength,
-                      seed: params.seed,
+                    seed: params.seed,
                     ...params.metadata
                 }
             };
@@ -97,9 +101,14 @@ export class ComfyUIService {
             // Convert to JSON
             const jsonData = JSON.stringify(payload);
 
+            // Get base URL dynamically - handles both development and production scenarios
+            const baseUrl = this.getBaseUrl();
+            const fullUrl = new URL(this.endpoint, baseUrl).toString();
+
             // Send request
-            console.log(`Sending request to ComfyUI at ${this.serverUrl}`);
-            const response = await fetch(this.serverUrl, {
+            console.log(`Sending request to ComfyUI at ${fullUrl}`);
+            // console.log(`Sending request to ComfyUI`, jsonData);
+            const response = await fetch(fullUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -120,21 +129,6 @@ export class ComfyUIService {
                 throw new Error(responseData.error || 'Unknown error from ComfyUI server');
             }
 
-            // Add render log
-            // const renderLog: IRenderLog = {
-            //     timestamp: new Date(),
-            //     imageUrl: responseData.data?.image_url || '',
-            //     prompt: params.prompt || '',
-            //     model: 'ComfyUI',
-            //     seed: params.seed || 0,
-            //     promptStrength: params.promptStrength || 0.5,
-            //     depthStrength: params.depthStrength,
-            //     selectedLoras: params.selectedLoras || [],
-            // };
-
-            // // Add render log to project manager
-            // EditorEngine.getInstance().getProjectManager().addRenderLog(renderLog, true);
-
             return {
                 success: true,
                 // imageUrl: responseData.data?.image_url || null,
@@ -148,6 +142,14 @@ export class ComfyUIService {
                 message: error instanceof Error ? error.message : String(error)
             };
         }
+    }
+
+    /**
+     * Dynamically determine the base URL based on environment
+     */
+    private getBaseUrl(): string {
+        // Default fallback for SSR
+        return 'http://localhost:8188';
     }
 
     /**
