@@ -39,6 +39,7 @@ interface ComfyUIPayload {
         timestamp: number;
         filename?: string;
         prompt?: string;
+        negative_prompt?: string;
         prompt_strength?: number;
         seed?: number;
         depth_strength?: number;
@@ -49,7 +50,8 @@ interface ComfyUIPayload {
 }
 
 export class ComfyUIService {
-    private endpoint: string;
+    private serverUrl: string;
+    private comfyUiBaseUrl: string;
 
     static instance: ComfyUIService;
 
@@ -60,8 +62,9 @@ export class ComfyUIService {
         return ComfyUIService.instance;
     }
 
-    constructor(serverUrl: string = '/a3d_data') {
-        this.endpoint = serverUrl;
+    constructor(comfyUiBaseUrl: string = 'http://localhost:8188', endpointPath: string = '/a3d_data') {
+        this.comfyUiBaseUrl = comfyUiBaseUrl;
+        this.serverUrl = endpointPath;
     }
 
     /**
@@ -76,7 +79,12 @@ export class ComfyUIService {
             const depthImageBase64 = params.depthImage ? this.stripDataUrlPrefix(params.depthImage) : undefined;
 
             // Separate prompt into positive and negative prompts
-            const [positivePrompt, negativePrompt] = params.prompt.split('--no');
+            let positivePrompt = params.prompt;
+            let negativePrompt = '';
+            
+            if (params.prompt.includes('--no')) {
+                [positivePrompt, negativePrompt] = params.prompt.split('--no');
+            }
 
             // Create payload object with correct typing
             const payload: ComfyUIPayload = {
@@ -84,9 +92,8 @@ export class ComfyUIService {
                 metadata: {
                     filename: `render_${Date.now()}.png`,
                     timestamp: Date.now() / 1000,
-                    prompt: positivePrompt,
-                    negative_prompt: negativePrompt,
-                    //   prompt_strength: params.promptStrength,
+                    prompt: positivePrompt.trim(),
+                    negative_prompt: negativePrompt.trim(),
                     seed: params.seed,
                     ...params.metadata
                 }
@@ -98,22 +105,21 @@ export class ComfyUIService {
                 payload.metadata.depth_strength = params.depthStrength || 0.5;
             }
 
-            // Convert to JSON
-            const jsonData = JSON.stringify(payload);
-
-            // Get base URL dynamically - handles both development and production scenarios
-            const baseUrl = this.getBaseUrl();
-            const fullUrl = new URL(this.endpoint, baseUrl).toString();
-
-            // Send request
+            // Construct the full URL
+            const fullUrl = `${this.comfyUiBaseUrl}${this.serverUrl}`;
+            
             console.log(`Sending request to ComfyUI at ${fullUrl}`);
-            // console.log(`Sending request to ComfyUI`, jsonData);
+            console.log('Payload:', payload);
+
+            // Send request with proper CORS headers
             const response = await fetch(fullUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
-                body: jsonData
+                mode: 'cors', // Explicitly set CORS mode
+                body: JSON.stringify(payload)
             });
 
             console.log("ComfyUI response:", response);
@@ -131,8 +137,7 @@ export class ComfyUIService {
 
             return {
                 success: true,
-                // imageUrl: responseData.data?.image_url || null,
-                // seed: params.seed
+                message: responseData.message || 'Success'
             };
         } catch (error) {
             console.error('Error sending to ComfyUI:', error);
@@ -142,14 +147,6 @@ export class ComfyUIService {
                 message: error instanceof Error ? error.message : String(error)
             };
         }
-    }
-
-    /**
-     * Dynamically determine the base URL based on environment
-     */
-    private getBaseUrl(): string {
-        // Default fallback for SSR
-        return 'http://localhost:8188';
     }
 
     /**
