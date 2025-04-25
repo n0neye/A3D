@@ -76,7 +76,7 @@ export class CameraManager {
     );
     
     // Set initial position
-    camera.position.set(0, 1, 5);
+    camera.position.set(0, 3, 5);
     this.scene.add(camera);
     
     return camera;
@@ -321,6 +321,10 @@ export class CameraManager {
 
   public getCamera(): THREE.PerspectiveCamera {
     return this.mainCamera;
+  }
+
+  public getOrbitControls(): OrbitControls {
+    return this.orbitControls;
   }
 
   public setOrbitControlsEnabled(enabled: boolean): void {

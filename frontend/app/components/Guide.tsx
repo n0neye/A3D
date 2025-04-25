@@ -14,7 +14,7 @@ const SHORTCUTS = [
     { key: 'Left/Middle Click Drag', description: 'Rotate camera' },
     { key: 'Right Click Drag', description: 'Pan camera' },
     { key: 'Scroll Wheel', description: 'Zoom camera' },
-    { key: 'Ctrl+Click', description: 'Create new generation' },
+    // { key: 'Ctrl+Click', description: 'Create new generation' },
     { key: 'W', description: 'Move handle' },
     { key: 'E', description: 'Rotate handle' },
     { key: 'R', description: 'Scale handle' },
@@ -77,7 +77,8 @@ export default function Guide() {
                             <hr className="border-gray-500" />
                             <h3 className="text-lg font-bold text-center">Getting Started</h3>
                             <p className='text-center'>
-                                <ButtonLink href={siteConfig.guideLinks.falAPI} variant='ghost' >Enter your Fal.ai API key </ButtonLink> in the settings, or <ButtonLink href={siteConfig.guideLinks.comfyUI} variant='ghost'>install the ComfyUI Integration Node</ButtonLink> to get started.
+                                Enter your <ButtonLink href={siteConfig.guideLinks.falAPI} variant='secondary' >Fal.ai API key </ButtonLink> in the settings, 
+                                or <ButtonLink href={siteConfig.guideLinks.comfyUI} variant='secondary'>install the ComfyUI Integration Node</ButtonLink> to get started.
 
                                 Please note this is the beta version and is not ready for production. Any feedback is appreciated!
                             </p>

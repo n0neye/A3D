@@ -115,7 +115,7 @@ export class EditorEngine {
     await loadShapeMeshes(scene);
     await createDefaultMaterials(scene);
 
-    await EditorEngine.instance.projectManager.loadProjectFromUrl('./demoAssets/demo_xbot.json');
+    await EditorEngine.instance.projectManager.loadProjectFromUrl('./demoAssets/default.json');
 
     return EditorEngine.instance;
   }

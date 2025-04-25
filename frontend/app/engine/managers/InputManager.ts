@@ -95,11 +95,14 @@ export class InputManager {
     if (event.button === 0) { // Left click
       this.updateRaycaster(event);
 
-      if (this.isKeyPressed('Control') || this.isKeyPressed('Meta')) {
-        this.handleCtrlClick(event);
-      } else {
-        this.handleRegularClick(event);
-      }
+      this.handleRegularClick(event);
+
+      // TODO: Fix ctrl click bug
+      // if (this.isKeyPressed('Control') || this.isKeyPressed('Meta')) {
+      //   this.handleCtrlClick(event);
+      // } else {
+      //   this.handleRegularClick(event);
+      // }
     }
   }
 

@@ -84,6 +84,8 @@ export class EnvironmentManager {
         // Create a grid helper
         const grid = new THREE.GridHelper(size, divisions);
         grid.position.y = -0.01; // Slightly above 0 to avoid z-fighting
+        grid.material.transparent = true;
+        grid.material.opacity = 0.25;
         scene.add(grid);
 
         // Store in environment objects
@@ -251,6 +253,7 @@ export class EnvironmentManager {
         }
 
         // Apply camera settings
+        // TODO: Move to CameraManager
         if (data.camera) {
             const cameraManager = this.engine.getCameraManager();
             const camera = cameraManager.getCamera();
@@ -274,8 +277,17 @@ export class EnvironmentManager {
                 );
             }
 
-            // Orbit controls target would need to be updated separately
-            // This would require exposing the orbit controls
+            // Update target
+            if (data.camera.target) {
+                const orbitControls = this.engine.getCameraManager().getOrbitControls();
+                if (orbitControls) {
+                    orbitControls.target.set(
+                        data.camera.target.x,
+                        data.camera.target.y,
+                        data.camera.target.z
+                    );
+                }
+            }
         }
     }
 
