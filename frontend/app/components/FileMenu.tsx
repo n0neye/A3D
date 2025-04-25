@@ -58,6 +58,17 @@ export default function FileMenu() {
     engine.getProjectManager().updateProjectName(newName);
   };
 
+  const handleNewProject = () => {
+    if (hasUnsaved) {
+      const confirm = window.confirm('Are you sure you want to create a new project? This will clear the current project.');
+      if (!confirm) return;
+    }
+
+    engine.getProjectManager().createNewProject();
+    setProjectName('untitled');
+    setHasUnsaved(false);
+  };
+
   const handleSaveProject = async (options?: { isSaveAs?: boolean}) => {
     console.log("handleSaveProject options:", options);
     const isSaveAs = options?.isSaveAs ?? false;
@@ -207,7 +218,13 @@ export default function FileMenu() {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Skip if we're in an input field
       if (document.activeElement?.tagName === 'INPUT') return;
-      
+
+      // Handle New Project (Ctrl+N)
+      if (event.key === 'n' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        handleNewProject();
+      }
+
       // Handle Save (Ctrl+S)
       if (event.key === 's' && (event.ctrlKey || event.metaKey) && !event.shiftKey) {
         event.preventDefault();
@@ -244,9 +261,14 @@ export default function FileMenu() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => handleNewProject()}>
+            <IconDeviceFloppy size={16} className="mr-2" />
+            <span>New Project</span>
+            <span className="ml-auto text-xs tracking-widest opacity-60">Ctrl+N</span>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleSaveProject({ isSaveAs: false })}>
             <IconDeviceFloppy size={16} className="mr-2" />
-            <span>Save Project {hasUnsaved ? '(Unsaved)' : ''}</span>
+            <span>Save {hasUnsaved ? '(Unsaved)' : ''}</span>
             <span className="ml-auto text-xs tracking-widest opacity-60">Ctrl+S</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleSaveProject({ isSaveAs: true })}>

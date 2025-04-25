@@ -41,7 +41,7 @@ const EnvironmentPanel: React.FC = () => {
         <IconCloud className="h-4 w-4" />
       </Button>
       <div className="hidden group-hover:block absolute top-8 pt-5 left-1/2 -translate-x-1/2 z-10">
-        <div className="panel-shape space-y-2 w-48 py-2">
+        <div className="panel-shape space-y-2 w-56 py-2">
           <ScrollArea className="h-48">
             <h3 className="text-sm font-medium px-4 py-2">Skybox</h3>
             <div className="grid grid-cols-3 gap-2 px-4 py-2">

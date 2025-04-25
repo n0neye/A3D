@@ -1,22 +1,13 @@
-import * as THREE from 'three';
 import { EditorEngine } from "../core/EditorEngine";
 import { Observer } from "@/engine/utils/Observer";
-import { SerializedShapeEntityData } from "../entity/types/ShapeEntity";
-import { SerializedGenerativeEntityData } from "../entity/types/GenerativeEntity";
 import { CharacterEntity } from "../entity/types/CharacterEntity";
-import { SerializedCharacterEntityData } from "../entity/types/CharacterEntity";
-import { GenerativeEntity } from "../entity/types/GenerativeEntity";
-import { ShapeEntity } from "../entity/types/ShapeEntity";
-import { LightEntity } from "../entity/types/LightEntity";
-import { SerializedLightEntityData } from "../entity/types/LightEntity";
-import { EntityBase, SerializedEntityData, isEntity } from "../entity/base/EntityBase";
+import { EntityBase, SerializedEntityData } from "../entity/base/EntityBase";
 import { defaultSettings } from "@/engine/utils/ProjectUtil";
 import { IRenderLog, IRenderSettings } from '@/engine/interfaces/rendering';
 import { SerializedTimelineData } from './timeline/TimelineManager';
 import { EntityFactory } from '../entity/EntityFactory';
 import { FileService } from '../services/FileService/FileService';
 import { LocalFileWorker } from '../services/FileService/LocalFileWorker';
-import { HistoryManager } from './HistoryManager';
 import { siteConfig } from '@/siteConfig';
 
 // Interface for serialized render settings
@@ -156,6 +147,11 @@ export class ProjectManager {
     onProjectLoaded(project: IRenderSettings): void {
         console.log("ProjectManager: onProjectLoaded", project, this.observers);
         this.observers.notify('projectLoaded', { project });
+    }
+
+    public createNewProject(): void {
+        this.clearScene();
+        this.observers.notify('projectNameChanged', { name: DEFAULT_PROJECT_NAME });
     }
 
     public async saveProject(): Promise<{ saved: boolean, error: string | null }> {
