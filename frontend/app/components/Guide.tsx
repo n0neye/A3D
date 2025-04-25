@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ButtonLink from './ui/buttonLink';
 import { siteConfig } from '@/siteConfig';
-import { IconBrandGithub, IconBrandX,  IconInfoSmall } from '@tabler/icons-react';
+import { IconBrandGithub, IconBrandX, IconInfoSmall } from '@tabler/icons-react';
 import { useEditorEngine } from '@/context/EditorEngineContext';
 
 // List of shortcuts extracted from EditorContainer
@@ -60,7 +60,9 @@ export default function Guide() {
                         </Button>
 
                         <div className='flex flex-col items-center gap-4'>
-                            <img src="./logo.svg" alt="A3D Logo" className="w-32 h-32 drop-shadow-lg" />
+                            <div className='p-5'>
+                                <img src="./logo.svg" alt="A3D Logo" className="w-64 drop-shadow-lg" />
+                            </div>
                             <div className='flex flex-col gap-2 items-center'>
                                 {/* Social links */}
                                 <div className="flex items-center gap-2 mt-2">
