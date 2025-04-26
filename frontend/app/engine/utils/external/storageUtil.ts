@@ -1,7 +1,21 @@
+import { IGenerationLog } from "@/engine/interfaces/generation";
 
 // Get the persistent URL for a 3D model, even if it's not uploaded yet
 export const get3DModelPersistentUrl = (uuid: string): string => {
     return `https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/${uuid}.glb`;
+}
+
+export const upload3DModelToGCPAndModifyUrl = async (blobUrl: string, log: IGenerationLog): Promise<void> => {
+    const result = await upload3DModelToGCP(blobUrl, log.id);
+
+    if (!result.success) {
+        // TODO: toast error
+        throw new Error('Failed to upload model to GCP');
+    }
+    
+    // Modify the generation log for future reference
+    log.fileUrl = result.url;
+    return;
 }
 
 /**
@@ -9,7 +23,7 @@ export const get3DModelPersistentUrl = (uuid: string): string => {
  * @param blobUrl URL of the blob to upload
  * @param uuid Unique identifier for the file
  */
-export const upload3DModelToGCP = async (blobUrl: string, uuid: string): Promise<boolean> => {
+export const upload3DModelToGCP = async (blobUrl: string, uuid: string): Promise<{ success: boolean, url: string | null }> => {
     try {
         console.log(`Uploading model to GCP with id: ${uuid}`);
         
@@ -56,9 +70,9 @@ export const upload3DModelToGCP = async (blobUrl: string, uuid: string): Promise
         }
         
         console.log(`Successfully uploaded model to GCP: ${uploadResponse.url}`);
-        return true;
+        return { success: true, url: uploadResponse.url };
     } catch (error) {
         console.error('Error uploading file to GCP:', error);
-        return false;
+        return { success: false, url: null };
     }
 }

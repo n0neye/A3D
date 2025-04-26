@@ -5,13 +5,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { placeholderMaterial } from '@/engine/utils/materialUtil';
 import { setupMeshShadows } from '@/engine/utils/lightUtil';
 import { createShapeMesh } from '@/engine/utils/shapeUtil';
-import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider, finalize3DGeneration } from '@/engine/utils/generation/3d-generation-util';
+import { generate3DModel_Runpod, generate3DModel_Trellis, ModelApiProvider } from '@/engine/utils/generation/3d-generation-util';
 import { doGenerateRealtimeImage, GenerationResult } from '@/engine/utils/generation/realtime-generation-util';
 import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { get3DSimulationData } from '@/engine/utils/simulation-data';
 import { IGenerationLog, AssetType } from '@/engine/interfaces/generation';
 import { ImageRatio } from '@/engine/utils/imageUtil';
 import { text } from 'stream/consumers';
+import { upload3DModelToGCP, upload3DModelToGCPAndModifyUrl } from '@/engine/utils/external/storageUtil';
 
 
 /**
@@ -153,15 +154,15 @@ export class GenerativeEntity extends EntityBase {
     this.billboardMesh.scale.set(width, height, 1);
   }
 
-  onNewGeneration(assetType: AssetType, fileUrl: string, prompt: string, derivedFromId?: string): IGenerationLog {
-    console.log("onNewGeneration", assetType, fileUrl, prompt, derivedFromId);
+  async createAndApplyNewGenerationLog(assetType: AssetType, props: { fileUrl: string, prompt: string, derivedFromId?: string }): Promise<IGenerationLog> {
+    console.log("onNewGeneration", props);
     const log: IGenerationLog = {
       id: uuidv4(),
       timestamp: Date.now(),
-      prompt: prompt,
+      prompt: props.prompt,
       assetType: assetType,
-      fileUrl: fileUrl,
-      derivedFromId: derivedFromId,
+      fileUrl: props.fileUrl,
+      derivedFromId: props.derivedFromId,
       imageParams: {
         ratio: this.temp_ratio || '1:1',
         stylePrompt: this.temp_styleOption || 'CUSTOM'
@@ -174,9 +175,9 @@ export class GenerativeEntity extends EntityBase {
     this.props.currentGenerationIdx = this.props.generationLogs.length - 1;
 
     // Update prompt
-    this.temp_prompt = prompt;
+    this.temp_prompt = props.prompt;
 
-    this.applyGenerationLog(log);
+    await this.applyGenerationLog(log);
 
     return log;
   }
@@ -190,7 +191,7 @@ export class GenerativeEntity extends EntityBase {
         this.setDisplayMode('2d');
       } else if (log.assetType === 'model' && log.fileUrl) {
         // Load the model into the entity
-        await loadModel(this, log.fileUrl, this.getScene(), (progress) => {
+        await loadModel(this, log.fileUrl, log, (progress) => {
           console.log("loadModel progress", progress);
         });
         this.setDisplayMode('3d');
@@ -346,19 +347,13 @@ export class GenerativeEntity extends EntityBase {
     this.onProgress.trigger({ entity: this, state: this.status, message: this.statusMessage });
 
 
+    // If prompt is "_", use simulation data
     if (options.prompt === "_") {
       // Wait for 1 second
       await new Promise(resolve => setTimeout(resolve, 500));
       const result = get3DSimulationData();
-      return finalize3DGeneration(
-        result.data.model_mesh.url,
-        true,
-        this,
-        this.getScene(),
-        derivedFromId,
-        options.prompt || "",
-        performance.now()
-      );
+      const log = await this.createAndApplyNewGenerationLog("model", { fileUrl: result.data.model_mesh.url, prompt: options.prompt, derivedFromId: derivedFromId });
+      return { success: true, generationLog: log };
     }
 
     try {
@@ -486,13 +481,21 @@ export class EventHandler<T> {
 export async function loadModel(
   entity: GenerativeEntity,
   modelUrl: string,
-  scene: THREE.Scene,
+  log: IGenerationLog,
   onProgress?: ProgressCallback
 ): Promise<boolean> {
   try {
     onProgress?.({ message: 'Downloading 3D model...' });
     console.log("loadModel", modelUrl);
 
+
+    // If not persistent url, upload to GCP.
+    if (modelUrl.startsWith('blob:')) {
+      // Upload to GCP
+      upload3DModelToGCPAndModifyUrl(modelUrl, log);
+    }
+
+    // TODO: ATM, we'll continue to load the model from the data url, without waiting for the upload to GCP to complete. May need to change this.
     // Load the model using GLTFLoader
     const loader = new GLTFLoader();
 
@@ -515,7 +518,7 @@ export async function loadModel(
         });
 
         // Continue with the model processing...
-        return await processLoadedModel(entity, gltf, scene, onProgress);
+        return await processLoadedModel(entity, gltf, log, onProgress);
       } catch (error) {
         console.error("Failed to load local model:", error);
         onProgress?.({ message: `Failed to load local model: ${(error as Error).message}` });
@@ -539,7 +542,7 @@ export async function loadModel(
       });
 
       // Process the loaded model
-      return await processLoadedModel(entity, gltf, scene, onProgress);
+      return await processLoadedModel(entity, gltf, log, onProgress);
     }
   } catch (error) {
     console.error("Failed to load model:", error);
@@ -555,13 +558,14 @@ export async function loadModel(
 async function processLoadedModel(
   entity: GenerativeEntity,
   gltf: GLTF,
-  scene: THREE.Scene,
+  log: IGenerationLog,
   onProgress?: ProgressCallback
 ): Promise<boolean> {
   try {
     onProgress?.({ message: 'Processing model...' });
 
     // If there's an existing model mesh, dispose it
+    // TODO: move to other place
     if (entity.gltfModel) {
       // Remove from parent
       entity.remove(entity.gltfModel);
@@ -588,25 +592,42 @@ async function processLoadedModel(
     // Set model mesh in entity
     entity.gltfModel = newModel;
 
-    // Position the model on the pivot point
-    // Calculate the bounding box to center the model
-    const boundingBox = new THREE.Box3().setFromObject(newModel);
-    const center = new THREE.Vector3();
-    boundingBox.getCenter(center);
-    const size = new THREE.Vector3();
-    boundingBox.getSize(size);
 
-    // Adjust the position to put the bottom center at the pivot point
-    newModel.position.set(
-      newModel.position.x,          // Center horizontally
-      -boundingBox.min.y,           // Bottom at the pivot point
-      newModel.position.z           // Center depth-wise
-    );
+    // If we haven't set the child position before, set it to the center of the model
+    if (!log.childPosition) {
+      // Calculate the bounding box to center the model
+      const boundingBox = new THREE.Box3().setFromObject(newModel);
+      const center = new THREE.Vector3();
+      boundingBox.getCenter(center);
+      const size = new THREE.Vector3();
+      boundingBox.getSize(size);
+
+      // Adjust the position to put the bottom center at the pivot point
+      // TODO: Fatal issue if the model is not world centered.
+      newModel.position.set(
+        newModel.position.x,          // Center horizontally
+        -boundingBox.min.y,           // Bottom at the pivot point
+        newModel.position.z           // Center depth-wise
+      );
+
+      // Set child position
+      log.childPosition = {
+        x: newModel.position.x,
+        y: newModel.position.y,
+        z: newModel.position.z
+      };
+    } else {
+      // If we have set the child position before (Load from project file), set the model to the position
+      newModel.position.set(
+        log.childPosition.x,
+        log.childPosition.y,
+        log.childPosition.z
+      );
+    }
 
     // setupMeshShadows
-    newModel.traverse((child) => {
+    entity.gltfModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        setupMeshShadows(child);
       }
     });
 

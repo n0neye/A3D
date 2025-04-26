@@ -1,60 +1,10 @@
 import { fal, Result } from "@fal-ai/client";
 import { GenerationResult } from "./realtime-generation-util";
 import { TrellisOutput } from "@fal-ai/client/endpoints";
-import { blobToBase64 } from "@/engine/utils/generation/image-processing";
-import { v4 as uuidv4 } from 'uuid';
-import { get3DModelPersistentUrl, upload3DModelToGCP } from "@/engine/utils/external/storageUtil";
 import { GenerativeEntity } from "@/engine/entity/types/GenerativeEntity";
-import { loadModel } from "@/engine/entity/types/GenerativeEntity";
 import * as THREE from 'three';
 import { FileService } from "@/engine/services/FileService/FileService";
 
-/**
- * Common helpers for 3D model generation
- */
-
-// Handle the final model loading process that's common to both implementations
-export async function finalize3DGeneration(
-    modelUrl: string,
-    isPersistentUrl: boolean,
-    entity: GenerativeEntity,
-    scene: THREE.Scene,
-    derivedFromId: string,
-    prompt: string,
-    startTime: number
-): Promise<GenerationResult> {
-    // Log time
-    const elapsedTime = performance.now() - startTime;
-    const seconds = (elapsedTime / 1000).toFixed(2);
-    console.log(`%c3D conversion completed in ${seconds} seconds`, "color: #4CAF50; font-weight: bold;");
-
-    entity.setProcessingState("generating3D", "Starting 3D conversion...");
-
-    // Load the model
-    await loadModel(
-        entity,
-        modelUrl,
-        scene,
-        (progress) => {
-            entity.setProcessingState("generating3D", progress.message);
-        }
-    );
-
-    let persistentUrl = modelUrl;
-    // if not persistent url, create a uuid and upload to GCP Storage
-    if (!isPersistentUrl) {
-        const uuid = uuidv4();
-        persistentUrl = get3DModelPersistentUrl(uuid);
-        upload3DModelToGCP(modelUrl, uuid);
-    }
-
-    // Add generation log
-    const log = entity.onNewGeneration("model", persistentUrl, prompt, derivedFromId);
-
-    entity.setProcessingState("idle", "");
-
-    return { success: true, generationLog: log };
-}
 
 /**
  * Generate a 3D model from an image using the FAL AI Trellis API
@@ -99,20 +49,12 @@ export async function generate3DModel_Trellis(
             },
         });
 
-        // Return result
-        if (result.data?.model_mesh?.url) {
-            return finalize3DGeneration(
-                result.data.model_mesh.url,
-                true,
-                entity,
-                scene,
-                derivedFromId,
-                options.prompt || "",
-                startTime
-            );
-        }
 
-        throw new Error('No 3D model generated');
+        const log = await entity.createAndApplyNewGenerationLog("model", { fileUrl: result.data.model_mesh.url, prompt: options.prompt, derivedFromId: derivedFromId });
+
+        entity.setProcessingState("idle", "");
+
+        return { success: true, generationLog: log };
     } catch (error) {
         console.error("3D conversion failed:", error);
         entity.setProcessingState("idle", "Failed to generate 3D model");
@@ -234,16 +176,9 @@ export async function generate3DModel_Runpod(
 
             console.log("Model converted to blob URL with filename:", fileName);
 
-            // When we load the model later, we need to modify loadModel to handle blob URLs better
-            return finalize3DGeneration(
-                modelUrl,
-                false,
-                entity,
-                scene,
-                derivedFromId,
-                options.prompt || "",
-                startTime
-            );
+            const log = await entity.createAndApplyNewGenerationLog("model", { fileUrl: modelUrl, prompt: options.prompt, derivedFromId: derivedFromId });
+            entity.setProcessingState("idle", "");
+            return { success: true, generationLog: log };
         }
 
         throw new Error('No 3D model data found in response');
