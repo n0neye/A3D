@@ -56,3 +56,4 @@ next-env.d.ts
 # assets
 /_assets
 /.memory-bank
+/.releases
