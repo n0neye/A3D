@@ -72,6 +72,7 @@ export class ShapeEntity extends EntityBase {
       // if is using default material, create a new one
       if (this.modelMesh.material === defaultShapeMaterial) {
         this.modelMesh.material = new THREE.MeshStandardMaterial({ color: new THREE.Color(colorString) });
+        this.modelMesh.material.side = THREE.DoubleSide;
       } else {
         (this.modelMesh.material as THREE.MeshStandardMaterial).color.set(new THREE.Color(colorString));
       }

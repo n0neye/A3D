@@ -19,6 +19,13 @@ export interface IGenerationLog {
       stylePrompt?: StylePromptOptionKey;
       ratio: ImageRatio;
     }
+
+    // Child position
+    childPosition?: {
+        x: number;
+        y: number;
+        z: number;
+    }
   }
 
   

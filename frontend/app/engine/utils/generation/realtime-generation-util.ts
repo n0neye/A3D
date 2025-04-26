@@ -100,7 +100,7 @@ export async function doGenerateRealtimeImage(
         await entity.applyImage(result.imageUrl, ratio);
 
         // Add to history
-        const log = entity.onNewGeneration("image", result.imageUrl, promptInput);
+        const log = await entity.createAndApplyNewGenerationLog("image", { fileUrl: result.imageUrl, prompt: promptInput });
 
         console.log(`%cTask completed in ${((performance.now() - startTime) / 1000).toFixed(2)} seconds`, "color: #4CAF50; font-weight: bold;");
 

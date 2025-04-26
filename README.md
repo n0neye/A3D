@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="/frontend/public/logo.svg" width="250" alt="A3D Logo">
+  <img src="/frontend/public/logo.svg" width="250" alt="A3D Logo" style="filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.2)); margin-bottom: 20px;">
+  <img src="/screenshot.png" alt="A3D Screenshot" style="max-width: 1200px; width: 100%; height: auto; display: block; margin: 0 auto;">
 </p>
 
 
@@ -27,9 +28,10 @@ A3D is a 3D x AI hybrid editor that allows you to compose 3D scene, generate 2D 
 
 ## 💸 Cost
 The app is **free to use**, but some optional features require 3rd party services for now. We aim to offer fully local workflows in future updates.
-- Fast image generation with [Fast-LCM](https://fal.ai/models/fal-ai/fast-lcm-diffusion): ~1739 images/$1
 - 3D model generation with [Trellis](https://fal.ai/models/fal-ai/trellis): ~50 models/$1
 - Final render with [Flux lora depth](https://fal.ai/models/fal-ai/flux-control-lora-depth/image-to-image): ~800 images/$1
+- Fast image generation with [Fast-LCM](https://fal.ai/models/fal-ai/fast-lcm-diffusion): ~1739 images/$1
+- Remove background with [rembg](https://fal.ai/models/fal-ai/imageutils/rembg): ~1739 images/$1
 
 
 ## 🛠️ Roadmap

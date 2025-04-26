@@ -87,7 +87,6 @@ export async function generateBackground(
 export async function removeBackground(
     imageUrl: string,
     entity: GenerativeEntity,
-    scene: THREE.Scene,
     derivedFromId: string
 ): Promise<GenerationResult> {
     // Update entity state

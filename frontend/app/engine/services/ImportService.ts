@@ -185,7 +185,7 @@ export class ImportService {
             entity.updateAspectRatio(ratio);
 
             // Register the image in the entity
-            const log = entity.onNewGeneration('image', imageUrl, prompt);
+            const log = entity.createAndApplyNewGenerationLog('image', { fileUrl: imageUrl, prompt: prompt });
 
             // Notify user
             console.log(`Imported image as entity: ${entity.name}`);
@@ -233,7 +233,7 @@ export class ImportService {
         if (!basic3D) {
             throw new Error("Failed to create entity for model import");
         }
-        
+
         // TODO: Import as character at first place?
         // Check if the model has a skeleton, and if so, convert to character entity
         const skeleton = basic3D.findSkinnedMesh();
