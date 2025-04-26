@@ -602,11 +602,13 @@ async function processLoadedModel(
       const size = new THREE.Vector3();
       boundingBox.getSize(size);
 
+      // Calculate the y offset to put the bottom center at the pivot point
+      const yOffset = entity.position.y - boundingBox.min.y;
+
       // Adjust the position to put the bottom center at the pivot point
-      // TODO: Fatal issue if the model is not world centered.
       newModel.position.set(
         newModel.position.x,          // Center horizontally
-        -boundingBox.min.y,           // Bottom at the pivot point
+        yOffset,           // Bottom at the pivot point
         newModel.position.z           // Center depth-wise
       );
 
@@ -625,9 +627,17 @@ async function processLoadedModel(
       );
     }
 
-    // setupMeshShadows
+    // Setup shadows and material
     entity.gltfModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
+        setupMeshShadows(child);
+
+        // Set emissive 
+        if (child.material instanceof THREE.MeshStandardMaterial) {
+          child.material.emissiveMap = child.material.map;
+          child.material.emissive.set(1, 1, 1);
+          child.material.emissiveIntensity = 0.5;
+        }
       }
     });
 
