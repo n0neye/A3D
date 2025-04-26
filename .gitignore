@@ -17,8 +17,16 @@
 /.next/
 /out/
 
+# Build
+dist
+backend/build
+frontend/build
+frontend/.next
+frontend/next-env.d.ts
+
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -39,6 +47,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local config
 /gcp
 .env
 .env.local
+
+# assets
+/_assets
+/.memory-bank
+/.releases

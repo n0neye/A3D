@@ -1,0 +1,175 @@
+{
+  "version": "1.0.1",
+  "timestamp": "2025-04-07T07:03:42.552Z",
+  "entities": [
+    {
+      "entityId": "7cc0f451-818b-4ff7-ba3e-a66d10594656",
+      "name": "Floor",
+      "entityType": "shape",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-07T07:01:06.874Z",
+      "props": {
+        "shapeType": "floor"
+      }
+    },
+    {
+      "entityId": "de7f5b32-e47c-4e0d-b074-7534d635cdf8",
+      "name": "Light",
+      "entityType": "light",
+      "position": {
+        "x": 1,
+        "y": 0.9742319003969611,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-07T07:01:06.875Z",
+      "props": {
+        "intensity": 0.7,
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "shadowEnabled": true
+      }
+    },
+    {
+      "entityId": "93668710-da1c-4a5c-b27f-7951d7c4c5e2",
+      "name": "Cube",
+      "entityType": "shape",
+      "position": {
+        "x": -1.3227522405340855,
+        "y": 0,
+        "z": -1.1453004551474266
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-07T07:01:06.877Z",
+      "props": {
+        "shapeType": "cube"
+      }
+    },
+    {
+      "entityId": "kid_403f67f4-19dd-46fd-bfab-f61c3e88b3d8",
+      "name": "kid_entity-1744009273108",
+      "entityType": "generative",
+      "position": {
+        "x": 0.022860904360666567,
+        "y": 1.011152527627848,
+        "z": -1.221569670553914
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-07T07:01:13.108Z",
+      "props": {
+        "generationLogs": [
+          {
+            "id": "15f127a4-77c7-4506-abc1-1ee08727cd81",
+            "timestamp": 1744009282512,
+            "prompt": "kid",
+            "assetType": "image",
+            "fileUrl": "https://im.runware.ai/image/ws/2/ii/7b92e233-d315-4c3a-bb47-20312cfb3a67.webp",
+            "imageParams": {
+              "ratio": "3:4"
+            }
+          },
+          {
+            "id": "6d6e2adb-4b70-4e46-a8db-cd868a20f908",
+            "timestamp": 1744009356733,
+            "prompt": "",
+            "assetType": "model",
+            "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/3b172193-5fda-4a0a-beed-a66987297d31.glb",
+            "derivedFromId": "15f127a4-77c7-4506-abc1-1ee08727cd81",
+            "imageParams": {
+              "ratio": "3:4"
+            }
+          }
+        ],
+        "currentGenerationId": "6d6e2adb-4b70-4e46-a8db-cd868a20f908",
+        "currentGenerationIdx": 1
+      }
+    }
+  ],
+  "environment": {
+    "camera": {
+      "fov": 45,
+      "farClip": 1000,
+      "position": {
+        "x": -0.4123562474304565,
+        "y": 1.8819235595215056,
+        "z": 4.817702707107011
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  },
+  "renderSettings": {
+    "prompt": "kid",
+    "promptStrength": 0.9,
+    "depthStrength": 0.9,
+    "noiseStrength": 0,
+    "selectedAPI": "flux-lora-depth",
+    "seed": 1713113284,
+    "useRandomSeed": true,
+    "selectedLoras": [],
+    "openOnRendered": true
+  },
+  "renderLogs": [
+    {
+      "timestamp": "2025-04-07T07:03:34.910Z",
+      "imageUrl": "https://fal.media/files/elephant/hF_ZzTHajkHK_gdx6J1bq_c8152f849b724e5296d5e900228cefba.jpg",
+      "prompt": "kid",
+      "model": "Flux Dev",
+      "seed": 1713113284,
+      "promptStrength": 0.9,
+      "depthStrength": 0,
+      "selectedLoras": []
+    }
+  ]
+}

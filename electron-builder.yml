@@ -1,0 +1,15 @@
+artifactName: ${productName}-${os}-${arch}.${ext}
+win:
+  target: nsis
+linux:
+  target: AppImage
+  synopsis: Electron + NextJS Boilerplate
+  category: Chat
+mac:
+  target: dmg
+  category: public.app-category.social-networking
+files: ['backend/build/**/*', 'frontend/build/**/*']
+extraResources: ['./assets/**']
+directories:
+  buildResources: 'assets'
+asar: true

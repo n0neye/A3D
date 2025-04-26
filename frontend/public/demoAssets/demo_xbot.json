@@ -1,0 +1,269 @@
+{
+  "version": "1.0.1",
+  "timestamp": "2025-04-17T05:41:28.860Z",
+  "entities": [
+    {
+      "uuid": "9eb82d9c-64b2-43d5-afd9-26be6b4c235e",
+      "name": "sword_entity-1743669208423",
+      "entityType": "generative",
+      "position": {
+        "x": 0.5361814498901367,
+        "y": 0.5109806656837463,
+        "z": -0.07580261677503586
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 0.47573211789131165,
+        "y": 0.5200435519218445,
+        "z": 0.47573211789131165
+      },
+      "created": "2025-04-17T05:41:16.103Z",
+      "props": {
+        "generationLogs": [
+          {
+            "id": "26ef9d47-726e-4c28-ba61-cb49b204bcb8",
+            "timestamp": 1743669214261,
+            "prompt": "sword",
+            "assetType": "image",
+            "fileUrl": "https://im.runware.ai/image/ws/2/ii/6152c08c-ab62-4f66-a145-ed5af8ff81a1.webp"
+          },
+          {
+            "id": "53929cd6-8fee-473a-ba95-bd1a523b10f0",
+            "timestamp": 1743669255006,
+            "prompt": "",
+            "assetType": "model",
+            "fileUrl": "https://storage.googleapis.com/nontech-webpage/ai-editor/3d_models/4d9f5e7e-1813-4e74-b659-b4d6a0bd896e.glb",
+            "derivedFromId": "26ef9d47-726e-4c28-ba61-cb49b204bcb8"
+          }
+        ],
+        "currentGenerationId": "53929cd6-8fee-473a-ba95-bd1a523b10f0",
+        "currentGenerationIdx": 1
+      }
+    },
+    {
+      "uuid": "346267f4-0c1b-45fd-b77e-8352bf8d944f",
+      "name": "floor",
+      "entityType": "shape",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-17T05:41:16.105Z",
+      "props": {
+        "shapeType": "floor"
+      }
+    },
+    {
+      "uuid": "0f46d4ba-339c-4517-9dcb-e45d4ccab11f",
+      "name": "light",
+      "entityType": "light",
+      "position": {
+        "x": 0,
+        "y": 2.8546679196024085,
+        "z": 2.24625555594751
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-17T05:41:16.105Z",
+      "props": {
+        "intensity": 0.7,
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "shadowEnabled": true
+      }
+    },
+    {
+      "uuid": "0da49ddb-9243-4253-b583-0432141b3561",
+      "name": "sphere",
+      "entityType": "shape",
+      "position": {
+        "x": -0.017501034511371305,
+        "y": 1.046521749110143,
+        "z": -1.9310096912777288
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-17T05:41:16.108Z",
+      "props": {
+        "shapeType": "sphere"
+      }
+    },
+    {
+      "uuid": "656a962b-2d31-4db0-a323-8134b1211244",
+      "name": "light",
+      "entityType": "light",
+      "position": {
+        "x": -0.15173029475748212,
+        "y": 0.48059411254695494,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "order": "XYZ"
+      },
+      "scaling": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "created": "2025-04-17T05:41:16.109Z",
+      "props": {
+        "intensity": 0.7,
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "shadowEnabled": false
+      }
+    }
+  ],
+  "environment": {
+    "skybox": {
+      "path": "./demoAssets/skybox/6.jpg"
+    },
+    "sun": {
+      "intensity": 0.3,
+      "color": {
+        "r": 1,
+        "g": 1,
+        "b": 1
+      },
+      "direction": {
+        "x": 0,
+        "y": 2,
+        "z": 0
+      }
+    },
+    "camera": {
+      "fov": 20,
+      "farClip": 40,
+      "position": {
+        "x": 0.766118009177105,
+        "y": 1.2456453682702235,
+        "z": 11.32152604109652
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  },
+  "renderSettings": {
+    "prompt": "",
+    "promptStrength": 0.9,
+    "depthStrength": 0.9,
+    "noiseStrength": 0,
+    "selectedAPI": "flux-lora-depth",
+    "seed": 690732651,
+    "useRandomSeed": true,
+    "selectedLoras": [],
+    "openOnRendered": true
+  },
+  "renderLogs": [],
+  "timeline": {
+    "duration": 5,
+    "currentTime": 0,
+    "tracks": [
+      {
+        "name": "Camera",
+        "type": "camera",
+        "targetUUID": "6c504957-4ca6-48df-817a-df89b280350f",
+        "keyframes": [
+          {
+            "time": 0,
+            "data": {
+              "position": [
+                -0.22490113178514637,
+                2.8409747893811126,
+                14.094197491081871
+              ],
+              "quaternion": [
+                -0.09927332158442713,
+                -0.007938328169711493,
+                -0.0007920018623816834,
+                0.9950282223638255
+              ],
+              "fov": 20
+            }
+          },
+          {
+            "time": 2.0068664169787764,
+            "data": {
+              "position": [
+                -7.279924807012604,
+                1.1844803737087082,
+                6.641602698188126
+              ],
+              "quaternion": [
+                -0.025513139593718336,
+                -0.41262830758463176,
+                -0.011562663872288412,
+                0.9104687058279877
+              ],
+              "fov": 20
+            }
+          },
+          {
+            "time": 4.9469413233458175,
+            "data": {
+              "position": [
+                0.20161428676127308,
+                11.502913102559944,
+                -8.626149953769879
+              ],
+              "quaternion": [
+                -0.005224785209034335,
+                0.8943825698564157,
+                0.44715020605036976,
+                0.010450530401136676
+              ],
+              "fov": 20
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
