@@ -1,6 +1,6 @@
 {
   "version": "1.0.1",
-  "timestamp": "2025-04-25T10:08:38.481Z",
+  "timestamp": "2025-04-26T02:57:31.903Z",
   "projectName": "CAT",
   "entities": [
     {
@@ -23,7 +23,7 @@
         "y": 1,
         "z": 1
       },
-      "created": "2025-04-25T10:08:30.157Z",
+      "created": "2025-04-26T02:56:55.604Z",
       "props": {
         "shapeType": "floor"
       }
@@ -48,7 +48,7 @@
         "y": 1,
         "z": 1
       },
-      "created": "2025-04-25T10:08:30.157Z",
+      "created": "2025-04-26T02:56:55.604Z",
       "props": {
         "intensity": 2,
         "color": {
@@ -79,7 +79,7 @@
         "y": 1,
         "z": 1
       },
-      "created": "2025-04-25T10:08:30.158Z",
+      "created": "2025-04-26T02:56:55.604Z",
       "characterProps": {
         "builtInModelId": "lily",
         "name": "Lily",
@@ -649,7 +649,7 @@
         "y": 0.4836042582729132,
         "z": 0.4836042582729132
       },
-      "created": "2025-04-25T10:08:30.160Z",
+      "created": "2025-04-26T02:56:55.606Z",
       "props": {
         "shapeType": "cube"
       }
@@ -659,22 +659,22 @@
       "name": "cat_cat_generative",
       "entityType": "generative",
       "position": {
-        "x": 0.7663052917948912,
-        "y": 0.32005552673175497,
-        "z": 0
+        "x": -0.29108282393349305,
+        "y": 0.0544668894215915,
+        "z": -0.2645938174592075
       },
       "rotation": {
         "x": 0,
-        "y": -0.6646155901857335,
+        "y": 0.6191618024707474,
         "z": 0,
         "order": "XYZ"
       },
       "scaling": {
-        "x": 0.7801927326957243,
-        "y": 0.7801927326957243,
-        "z": 0.7801927326957243
+        "x": 0.5136938187722505,
+        "y": 0.5136938187722505,
+        "z": 0.5136938187722505
       },
-      "created": "2025-04-25T10:08:30.160Z",
+      "created": "2025-04-26T02:56:55.606Z",
       "props": {
         "generationLogs": [
           {
@@ -709,42 +709,16 @@
             "imageParams": {
               "ratio": "1:1",
               "stylePrompt": "WHITE_3D"
+            },
+            "childPosition": {
+              "x": 0,
+              "y": 0.39000933577620833,
+              "z": 0
             }
           }
         ],
         "currentGenerationId": "58b8b806-ee23-4440-9e37-3cca11c28547",
         "currentGenerationIdx": 2
-      }
-    },
-    {
-      "uuid": "12e6be05-7a18-4855-86d2-35711fa188d7",
-      "name": "light",
-      "entityType": "light",
-      "position": {
-        "x": 0.9797150831363018,
-        "y": 0.2771988324878219,
-        "z": 2.3139005606397647
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "order": "XYZ"
-      },
-      "scaling": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "created": "2025-04-25T10:08:30.161Z",
-      "props": {
-        "intensity": 2,
-        "color": {
-          "r": 1,
-          "g": 1,
-          "b": 1
-        },
-        "shadowEnabled": false
       }
     }
   ],
@@ -769,13 +743,13 @@
       "fov": 30,
       "farClip": 40,
       "position": {
-        "x": 0,
-        "y": 1,
-        "z": 11
+        "x": -0.28479482458008265,
+        "y": 0.49861391470385785,
+        "z": 7.792875515375019
       },
       "target": {
         "x": 0,
-        "y": 1,
+        "y": 0,
         "z": 0
       }
     }
@@ -799,7 +773,7 @@
       {
         "name": "Camera",
         "type": "camera",
-        "targetUUID": "ab1fc364-9fc4-4a78-b637-35a7abb9990a",
+        "targetUUID": "f6fbacf1-9cf7-4f32-9bec-33cd31945594",
         "keyframes": [
           {
             "time": 0,
