@@ -78,7 +78,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
       const currentGen = props.entity.getCurrentGenerationLog();
       if (currentGen) {
         applyGenerationLogToUI(currentGen);
-      }else{
+      } else {
         trySetPrompt('onEntityChange', props.entity.temp_prompt);
         setStyleOption(props.entity.temp_styleOption || "BASIC_3D");
         setCurrentRatio(props.entity.temp_ratio || "3:4");
@@ -305,22 +305,21 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
 
   // Handler for removing background
   // TODO: bring back later
-  // const handleRemoveBackground = async () => {
-  //   if (!props.entity || !currentGenLog || !scene) return;
-  //   if (currentGenLog.assetType !== 'image' || !currentGenLog.fileUrl) return;
+  const handleRemoveBackground = async () => {
+    if (!props.entity || !currentGenLog) return;
+    if (currentGenLog.assetType !== 'image' || !currentGenLog.fileUrl) return;
 
-  //   // Call the background removal function
-  //   const result = await removeBackground(
-  //     currentGenLog.fileUrl,
-  //     props.entity,
-  //     scene,
-  //     currentGenLog.id // Pass current image ID as the derived from ID
-  //   );
+    // Call the background removal function
+    const result = await removeBackground(
+      currentGenLog.fileUrl,
+      props.entity,
+      currentGenLog.id // Pass current image ID as the derived from ID
+    );
 
-  //   if (result.success && result.generationLog) {
-  //     onNewGeneration(result.generationLog);
-  //   }
-  // };
+    if (result.success && result.generationLog) {
+      props.entity.addImageGenerationLog(promptInput, result.generationLog.fileUrl, currentRatio, styleOption);
+    }
+  };
 
   const handleDownload = () => {
     console.log('handleDownload');
@@ -338,7 +337,7 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
   const isGenerating = isGenerating2D || isGenerating3D;
 
   // Check if we can remove background (only if we have a current image)
-  const canRemoveBackground =
+  const hasImage =
     !isGenerating &&
     props.entity.getCurrentGenerationLog()?.assetType === 'image' &&
     !!props.entity.getCurrentGenerationLog()?.fileUrl;
@@ -373,8 +372,8 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="panel-shape py-2 rounded-2xl overflow-hidden" side="bottom" sideOffset={15}>
                   {Object.keys(StylePromptOptions).map((key) => (
-                    <DropdownMenuItem 
-                      key={key} 
+                    <DropdownMenuItem
+                      key={key}
                       className="cursor-pointer text-sm hover:bg-gray-100 px-2 py-1"
                       onClick={() => handleStyleOptionChange(key as StylePromptOptionKey)}
                     >
@@ -436,18 +435,36 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
           </div>
         }
 
-        <div className="flex flex-row space-x-1 min-h-16">
+        <div className="flex flex-row gap-1 min-h-16">
+          <div className='flex flex-col space-x-1 h-full'>
+            {(props.entity.props.isImported === false || props.entity.props.isImported === undefined) &&
+              <Button
+                variant={"outline"}
+                className={`relative text-xs whitespace-normal w-20  flex-grow flex-col gap-0`}
+                onClick={handleGenerate2D}
+                disabled={isGenerating || !promptInput.trim()}
+              >
+                {isGenerating2D && renderSpinner('Generating')}
+                {!isGenerating2D && <>
+                  {hasImage ? 'Regenerate' : 'Generate Image'}
+                  {!hasImage && <span className="mx-1 text-xxxs opacity-50 block my-0">
+                    <IconCornerDownLeft size={10} className='inline' />
+                  </span>}
+                </>}
+              </Button>}
 
-          {(props.entity.props.isImported === false || props.entity.props.isImported === undefined) &&
-            <Button
-              variant={"outline"}
-              className={`relative text-xs whitespace-normal w-20 h-full flex-col `}
-              onClick={handleGenerate2D}
-              disabled={isGenerating || !promptInput.trim()}
-            >
-              {isGenerating2D && renderSpinner('Generating')}
-              {!isGenerating2D && <>Generate Image<span className="mx-1 text-xxxs opacity-50 block"><IconCornerDownLeft size={10} className='inline' /></span></>}
-            </Button>}
+            {/* Remove Background button. Temporarily disabled */}
+            {hasImage && (
+              <Button
+                className={`relative text-xs flex-grow w-20`}
+                onClick={handleRemoveBackground}
+                variant={'outline'}
+                disabled={isGenerating}
+              >
+                Remove BG
+              </Button>
+            )}
+          </div>
 
           {<Button
             className={`relative text-xs whitespace-normal w-20 h-full flex-col p-1`}
@@ -462,23 +479,6 @@ const GenerativeEntityPanel = (props: { entity: GenerativeEntity }) => {
               <span>{progressMessage}</span>}
           </Button>}
 
-          {/* Remove Background button. Temporarily disabled */}
-          {/* {canRemoveBackground && (
-                        <button
-                          className={`relative py-1 pt-4 text-xs whitespace-normal w-20 p-2 ${isGenerating && progressMessage.includes('background') ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'
-                            } rounded text-white`}
-                          onClick={handleRemoveBackground}
-                          disabled={isGenerating}
-                        >
-                          {isGenerating2D && progressMessage.includes('background') && renderSpinner('Processing')}
-                          {!(isGenerating2D && progressMessage.includes('background')) && (
-                            <>
-                              <IconScissors size={14} className="mx-auto mb-1" />
-                              Remove BG
-                            </>
-                          )}
-                        </button>
-                      )} */}
         </div>
 
       </div>

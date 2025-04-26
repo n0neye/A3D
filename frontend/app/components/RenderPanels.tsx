@@ -103,7 +103,7 @@ function RenderPanels() {
     const handleSelectStyle = (lora: LoraInfo) => {
         // Only add if not already present
         if (!selectedLoras.some((config: LoraConfig) => config.info.id === lora.id)) {
-            setSelectedLoras([...selectedLoras, { info: lora, strength: 0.5 }]);
+            setSelectedLoras([...selectedLoras, { info: lora, strength: DEFAULT_STYLE_STRENGTH }]);
         }
     };
 
@@ -381,8 +381,9 @@ function RenderPanels() {
 
 
     // Handler to open the style panel
+    const DEFAULT_STYLE_STRENGTH = 0.8;
     const openStylePanel = (selectedLoras: LoraInfo[], selectHandler: (lora: any) => void) => {
-        setSelectedLoras(selectedLoras.map(lora => ({ info: lora, strength: 0.5 })));
+        setSelectedLoras(selectedLoras.map(lora => ({ info: lora, strength: DEFAULT_STYLE_STRENGTH })));
         setOnSelectStyle(() => selectHandler);
         setIsStylePanelOpen(true);
     };

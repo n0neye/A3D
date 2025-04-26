@@ -90,14 +90,19 @@ function createWindow() {
   });
 
   // Global Shortcuts
-
   globalShortcut.register('f5', function () {
-    console.log('f5 is pressed')
-    mainWindow?.reload()
+    // Check if window is focused
+    if (mainWindow?.isFocused()) {
+      console.log('f5 is pressed')
+      mainWindow?.reload()
+    }
   })
   globalShortcut.register('CommandOrControl+R', function () {
-    console.log('CommandOrControl+R is pressed')
-    mainWindow?.reload()
+    // Check if window is focused
+    if (mainWindow?.isFocused()) {
+      console.log('CommandOrControl+R is pressed')
+      mainWindow?.reload()
+    }
   })
 
   mainWindow?.webContents.on('before-input-event', (_, input) => {

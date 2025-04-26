@@ -287,7 +287,7 @@ export class GenerativeEntity extends EntityBase {
         // Update the material
         const newMaterial = new THREE.MeshBasicMaterial({
           map: texture,
-          transparent: false,
+          transparent: true,
           side: THREE.DoubleSide,
           fog: false,
         });
