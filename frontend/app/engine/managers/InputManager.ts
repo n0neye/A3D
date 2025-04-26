@@ -356,6 +356,12 @@ export class InputManager {
       return;
     }
 
+    // Esc -> Deselect
+    if (event.key === 'Escape') {
+      this.selectionManager.deselectAll();
+      return;
+    }
+
     // Duplicate selected entity (Ctrl+D)
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
       event.preventDefault(); // Prevent browser's bookmark dialog
