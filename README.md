@@ -1,5 +1,4 @@
 <p align="center">
-  <img src="/frontend/public/logo.svg" width="250" alt="A3D Logo" style="filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.2)); margin-bottom: 20px;">
   <img src="/screenshot.png" alt="A3D Screenshot" style="max-width: 1200px; width: 100%; height: auto; display: block; margin: 0 auto;">
 </p>
 
