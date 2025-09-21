@@ -8,6 +8,7 @@
 
 A3D is a 3D x AI hybrid editor that allows you to compose 3D scene, generate 2D & 3D assets and render them with AI.
 
+<video src="https://storage.googleapis.com/nontech-webpage/videos/A3D-0.01-preview.mp4" width="720" height="405" controls></video>
 
 ## ✨ Main Features
 
